@@ -20,7 +20,7 @@ This implementation aims to follow the Model Context Protocol standard, working 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/touchdesigner-mcp.git
+git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
 cd touchdesigner-mcp
 
 # Install dependencies
