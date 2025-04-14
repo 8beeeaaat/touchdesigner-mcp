@@ -41,7 +41,7 @@ npm run build
 2. Import the provided `td/mcp_webserver_base.tox` component
 3. Ensure the TouchDesigner web server is running (this component handles the communication between the MCP server and TouchDesigner)
 
-> Note: By default, the MCP server connects to TouchDesigner at `http://localhost:9080`. If you need to change this connection address, modify the `TD_WEB_SERVER_URL` value in the `.env` file, then rebuild the project with `npm run build`.
+> Note: By default, the MCP server connects to TouchDesigner at `http://localhost:9981`. If you need to change this connection address, modify the `TD_WEB_SERVER_URL` value in the `.env` file, then rebuild the project with `npm run build`.
 
 ### Starting the MCP Server
 
