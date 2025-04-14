@@ -4,6 +4,9 @@ An evolving Model Context Protocol (MCP) server implementation for TouchDesigner
 
 ## Overview
 
+![スクリーンショット 2025-04-14 21 45 47](https://github.com/user-attachments/assets/b7130ebe-406c-4e05-9efc-5d493eb800cb)
+
+
 TouchDesigner MCP is a bridge between AI models and TouchDesigner, allowing AI assistants to:
 - Create, modify, and delete nodes in TouchDesigner projects
 - Query node properties and project structure
@@ -118,6 +121,9 @@ Once the server is running, you can connect any MCP-compatible AI assistant to i
 ## MCP Protocol Implementation Details
 
 TouchDesigner MCP implements the three key elements of the Model Context Protocol (MCP):
+
+![スクリーンショット 2025-04-14 21 53 38](https://github.com/user-attachments/assets/55dd9076-be42-482d-9bdf-cae4c6d823d3)
+
 
 ### 1. Tools
 The MCP server provides seven tools that enable AI to directly manipulate TouchDesigner:
