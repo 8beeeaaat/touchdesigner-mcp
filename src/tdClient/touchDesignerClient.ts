@@ -14,7 +14,7 @@ import {
 } from "../gen/endpoints/touchDesignerAPI.js";
 import type { GetNodeTypeDefaultParametersParams } from "../gen/models/getNodeTypeDefaultParametersParams.js";
 import type { TDConnectionParams } from "../gen/models/tDConnectionParams.js";
-import type { TopNodeSchemas, TopNodeType } from "../schemas/index.js";
+import type { TopNodeSchemas, TopNodeType } from "../nodeSchemas/index.js";
 import type { ILogger } from "../util.js";
 
 /**
