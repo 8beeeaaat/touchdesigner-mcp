@@ -20,7 +20,7 @@ TouchDesigner MCPは、AIモデルとTouchDesignerの間のブリッジとして
 
 ```bash
 # リポジトリのクローン
-git clone https://github.com/yourusername/touchdesigner-mcp.git
+git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
 cd touchdesigner-mcp
 
 # 依存関係のインストール
