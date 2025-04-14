@@ -1,0 +1,72 @@
+{
+	"name": "touchdesigner-mcp",
+	"version": "0.1.0",
+	"description": "",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/8beeeaaat/touchdesigner-mcp.git"
+	},
+	"keywords": [
+		"MCP",
+		"TouchDesigner"
+	],
+	"author": "8beeeaaat",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/8beeeaaat/touchdesigner-mcp/issues"
+	},
+	"homepage": "https://github.com/8beeeaaat/touchdesigner-mcp#readme",
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.9.0",
+		"@mozilla/readability": "^0.6.0",
+		"@types/axios": "^0.14.4",
+		"@types/ws": "^8.18.1",
+		"@types/yargs": "^17.0.33",
+		"axios": "^1.8.4",
+		"dotenv": "^16.5.0",
+		"html-to-md": "^0.8.7",
+		"jsdom": "^26.1.0",
+		"swr": "^2.3.3",
+		"ws": "^8.18.1",
+		"yargs": "^17.7.2",
+		"zod": "^3.24.2"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@faker-js/faker": "^9.7.0",
+		"@types/jsdom": "^21.1.7",
+		"@types/node": "^22.14.1",
+		"@vitest/coverage-v8": "^3.1.1",
+		"msw": "^2.7.4",
+		"npm-run-all": "^4.1.5",
+		"orval": "^7.8.0",
+		"typescript": "^5.8.3",
+		"vitest": "^3.1.1"
+	},
+	"type": "module",
+	"main": "src/server.ts",
+	"bin": {
+		"mcp-server": "dist/server.js"
+	},
+	"scripts": {
+		"build": "npm run gen && tsc",
+		"lint": "run-p lint:*",
+		"lint:biome": "biome check",
+		"lint:tsc": "tsc --noEmit",
+		"format": "biome check --fix",
+		"dev": "npx @modelcontextprotocol/inspector node dist/index.js --stdio",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"gen": "npm-run-all --parallel gen:*",
+		"gen:api": "orval --config ./orval.config.ts"
+	},
+	"files": [
+		"dist/**/*"
+	],
+	"msw": {
+		"workerDirectory": [
+			"public"
+		]
+	}
+}

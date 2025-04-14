@@ -1,0 +1,375 @@
+info:
+  description: OpenAPI schema for generating TouchDesigner API client code
+  title: TouchDesigner API
+  version: 0.1.0
+
+openapi: 3.0.0
+
+servers:
+  - url: '{baseUrl}'
+    variables:
+      baseUrl:
+        default: http://localhost:9980
+
+
+components:
+  schemas:
+    CreateNodeRequest:
+      properties:
+        connection:
+          $ref: '#/components/schemas/TDConnectionParams'
+        nodeFamily:
+          $ref: '#/components/schemas/NodeFamilyType'
+        nodeName:
+          type: string
+        nodeType:
+          type: string
+        parameters:
+          additionalProperties: true
+          type: object
+      required:
+        - nodeFamily
+        - nodeType
+      type: object
+    NodeFamilyType:
+      enum:
+        - COMP
+        - CHOP
+        - TOP
+        - SOP
+        - DAT
+        - MAT
+        - CUSTOM
+      type: string
+    TDConnectionParams:
+      properties:
+        clearExisting:
+          type: boolean
+          description: Indicates whether to clear existing connections
+        fromNodePath:
+          type: string
+          description: Path to the node to connect from
+        outIndex:
+          type: integer
+          description: Index of the output connector
+        toNodePath:
+          type: string
+          description: Path to the node to connect to
+        toIndex:
+          type: integer
+          description: Index of the output connector
+      type: object
+      description: Parameters for connecting nodes
+    TDCreateNodeResponse:
+      properties:
+        message:
+          type: string
+        node:
+          $ref: '#/components/schemas/TDNode'
+      required:
+        - node
+        - message
+      type: object
+    TDData:
+      additionalProperties: true
+      type: object
+    TDDeleteNodeResponse:
+      properties:
+        message:
+          type: string
+        nodePath:
+          type: string
+      required:
+        - nodePath
+        - message
+      type: object
+    TDNode:
+      properties:
+        family:
+          $ref: '#/components/schemas/NodeFamilyType'
+        id:
+          type: integer
+        inputConnectors:
+          items:
+            $ref: '#/components/schemas/TDNodeInputConnector'
+          type: array
+        name:
+          type: string
+        node:
+          additionalProperties: true
+          type: object
+        nodeCenterX:
+          type: number
+        nodeCenterY:
+          type: number
+        nodeHeight:
+          type: number
+        nodeWidth:
+          type: number
+        nodeX:
+          type: number
+        nodeY:
+          type: number
+        opType:
+          type: string
+        outputConnectors:
+          items:
+            $ref: '#/components/schemas/TDNodeOutputConnector'
+          type: array
+        parameters:
+          additionalProperties: true
+          type: object
+        path:
+          type: string
+        type:
+          type: string
+      required:
+        - id
+        - type
+        - name
+        - path
+        - opType
+        - family
+        - parameters
+        - node
+      type: object
+    TDNodeOutputConnection:
+      properties:
+        index:
+          type: integer
+        to:
+          type: string
+        inOP:
+          type: string
+          nullable: true
+      required:
+        - to
+        - index
+        - inOP
+      type: object
+    TDNodeOutputConnector:
+      properties:
+        connections:
+          items:
+            $ref: '#/components/schemas/TDNodeOutputConnection'
+          type: array
+        index:
+          type: integer
+      required:
+        - index
+        - connections
+      type: object
+    TDNodeInputConnection:
+      properties:
+        index:
+          type: integer
+        from:
+          type: string
+        outOP:
+          type: string
+          nullable: true
+      required:
+        - from
+        - index
+        - outOP
+      type: object
+    TDNodeInputConnector:
+      properties:
+        connections:
+          items:
+            $ref: '#/components/schemas/TDNodeInputConnection'
+          type: array
+        index:
+          type: integer
+      required:
+        - index
+        - connections
+      type: object
+    TDNodePropertyResponse:
+      $ref: '#/components/schemas/TDNode'
+    TDProjectNodesResponse:
+      properties:
+        projectNodes:
+          items:
+            allOf:
+              - $ref: '#/components/schemas/TDNode'
+              - properties:
+                  children:
+                    items:
+                      $ref: '#/components/schemas/TDNode'
+                    type: array
+                type: object
+            type: object
+          type: array
+      required:
+        - projectNodes
+      type: object
+    TDServerInfoResponse:
+      properties:
+        server:
+          type: string
+        status:
+          type: string
+        version:
+          type: string
+      required:
+        - server
+      type: object
+    TDUpdateNodeResponse:
+      properties:
+        message:
+          type: string
+        node:
+          additionalProperties: true
+          type: object
+        nodeInfo:
+          additionalProperties: true
+          type: object
+        warnings:
+          items:
+            type: string
+          type: array
+      required:
+        - message
+        - warnings
+      type: object
+    UpdateNodeRequest:
+      properties:
+        connection:
+          $ref: '#/components/schemas/TDConnectionParams'
+        parameters:
+          additionalProperties: true
+          type: object
+      type: object
+    MCPToolUpdateNodeParams:
+      properties:
+        nodePath:
+          type: string
+          description: Node path to the node to update
+        connection:
+          $ref: '#/components/schemas/TDConnectionParams'
+        parameters:
+          additionalProperties: true
+          type: object
+      type: object
+
+paths:
+  /api/nodes:
+    get:
+      operationId: getProjectNodes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TDProjectNodesResponse'
+          description: List of nodes in the project
+      summary: Get list of nodes in the project
+    post:
+      operationId: createNode
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNodeRequest'
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TDCreateNodeResponse'
+          description: Information about the created node
+      summary: Create a node
+  /api/nodes/default-parameters:
+    get:
+      operationId: getNodeTypeDefaultParameters
+      parameters:
+        - description: Node family type
+          in: query
+          name: nodeFamily
+          required: true
+          schema:
+            $ref: '#/components/schemas/NodeFamilyType'
+        - description: Node type
+          in: query
+          name: nodeType
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Default parameters for the node type
+      summary: Get default parameters for a node type
+  /api/nodes/{nodePath}:
+    delete:
+      operationId: deleteNode
+      parameters:
+        - description: Node path
+          in: path
+          name: nodePath
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TDDeleteNodeResponse'
+          description: Information about the deleted node
+      summary: Delete a node
+    get:
+      operationId: getNodeProperty
+      parameters:
+        - description: Node path
+          in: path
+          name: nodePath
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TDNodePropertyResponse'
+          description: Node properties
+      summary: Get node properties
+    patch:
+      operationId: updateNode
+      parameters:
+        - description: Node path
+          in: path
+          name: nodePath
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNodeRequest'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TDUpdateNodeResponse'
+          description: Information about the updated node
+      summary: Update a node
+  /api/server:
+    get:
+      operationId: getServerInfo
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TDServerInfoResponse'
+          description: Server information
+      summary: Get server information
