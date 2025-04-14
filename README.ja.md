@@ -4,6 +4,9 @@ TouchDesignerのためのMCP(Model Context Protocol) サーバー実装です。
 
 ## 概要
 
+![スクリーンショット 2025-04-14 21 45 47](https://github.com/user-attachments/assets/0091ca65-c2aa-45fe-be32-e59c288e2264)
+
+
 TouchDesigner MCPは、AIモデルとTouchDesignerの間のブリッジとして機能し、AIアシスタントが以下のことを行えるようにします：
 - TouchDesignerプロジェクト内のノードの作成、変更、削除
 - ノードプロパティやプロジェクト構造の照会
@@ -67,6 +70,9 @@ Claude Desktop、Cursor、GitHub Copilotなど
 ```
 
 サーバーが起動したら、任意のMCP対応AIアシスタントを接続してTouchDesignerプロジェクトを操作できます。
+
+![スクリーンショット 2025-04-14 21 53 38](https://github.com/user-attachments/assets/a7f9351f-404b-42d1-8de2-e0bf2a55a586)
+
 
 ## プロジェクト構造
 
