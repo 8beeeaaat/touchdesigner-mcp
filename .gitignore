@@ -136,6 +136,7 @@ dist
 .pnp.*
 
 .DS_Store
-./dist
+dist
+tmp
 src/gen
 .github/copilot-instructions.md

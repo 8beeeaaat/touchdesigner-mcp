@@ -6,8 +6,7 @@ import {
 	ListResourcesRequestSchema,
 	ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import type { NodeFamilyType } from "./gen/models/nodeFamilyType.js";
-import { PROMPTS, getPrompt } from "./prompts/index.js";
+import type { NodeFamilyType } from "./gen/models";
 import {
 	CreateTDNodeParams,
 	DeleteTDNodeParams,
@@ -15,14 +14,14 @@ import {
 	GetTDNodePropertiesParams,
 	NodeSchemasByFamily,
 	UpdateTDNodePropertiesParams,
-} from "./schemas/common/index.js";
+} from "./nodeSchemas/index.js";
+import { PROMPTS, getPrompt } from "./prompts/index.js";
 import {
 	type TouchDesignerClient,
 	createTouchDesignerClient,
 } from "./tdClient/index.js";
 import { Logger } from "./util.js";
 
-// Result型の定義
 export type Result<T, E = Error> =
 	| { success: true; data: T }
 	| { success: false; error: E };
@@ -56,8 +55,6 @@ export class TouchDesignerServer {
 		this.registerTools();
 		this.registerResources();
 		this.logger = new Logger(this.server);
-
-		// Use factory function for client creation
 		this.tdClient = createTouchDesignerClient({
 			logger: this.logger,
 		});
@@ -278,8 +275,6 @@ export class TouchDesignerServer {
 			},
 		);
 
-		// ...remaining tools with similar error handling pattern...
-
 		this.server.tool(
 			"get_td_server_info",
 			"Get server information from TouchDesigner",
@@ -367,20 +362,21 @@ export class TouchDesignerServer {
 			async (params) => {
 				try {
 					const { nodeFamily, nodeType } = params;
-					const validationResult = this.validateToolParams(
-						nodeFamily,
-						nodeType,
-					);
-					if (!validationResult.success) {
-						return {
-							content: [
-								{
-									type: "text" as const,
-									text: `Validation error: ${validationResult.error.message}`,
-								},
-							],
-						};
-					}
+					// TODO: 全てのノードのスキーマを取得して、nodeFamilyとnodeTypeを検証できたらコメントアウトを戻す
+					// const validationResult = this.validateToolParams(
+					// 	nodeFamily,
+					// 	nodeType,
+					// );
+					// if (!validationResult.success) {
+					// 	return {
+					// 		content: [
+					// 			{
+					// 				type: "text" as const,
+					// 				text: `Validation error: ${validationResult.error.message}`,
+					// 			},
+					// 		],
+					// 	};
+					// }
 
 					const result = await this.tdClient.getNodeTypeDefaultParameters({
 						nodeFamily: nodeFamily as NodeFamilyType,
