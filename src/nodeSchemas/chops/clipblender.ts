@@ -1,0 +1,45 @@
+import { z } from "zod";
+import { createCHOPSchema } from "./utils.js";
+
+/**
+ * Schema for clipblender CHOP node parameters
+ */
+export const clipblender = createCHOPSchema({
+	default: z.any().optional().describe("Default"),
+	datlist: z.any().optional().describe("DAT List"),
+	targetx: z.number().optional().describe("Target X"),
+	targety: z.number().optional().describe("Target Y"),
+	targetz: z.number().optional().describe("Target Z"),
+	playspeed: z.number().optional().describe("Play Speed"),
+	stepforward: z.boolean().optional().describe("Step Forward"),
+	stepbackward: z.boolean().optional().describe("Step Backward"),
+	aend: z.string().optional().describe("Active End"),
+	delay: z.number().optional().describe("Delay"),
+	reset: z.boolean().optional().describe("Reset"),
+	resetpulse: z.boolean().optional().describe("Reset Pulse"),
+	timeremaining: z.string().optional().describe("Time Remaining"),
+	timechannel: z.string().optional().describe("Time Channel"),
+	xtrans: z.string().optional().describe("X Translation"),
+	ytrans: z.string().optional().describe("Y Translation"),
+	ztrans: z.string().optional().describe("Z Translation"),
+	xrot: z.string().optional().describe("X Rotation"),
+	yrot: z.string().optional().describe("Y Rotation"),
+	zrot: z.string().optional().describe("Z Rotation"),
+	qenable: z.string().optional().describe("Queue Enable"),
+	qtrigger: z.boolean().optional().describe("Queue Trigger"),
+	prerotate: z.boolean().optional().describe("Pre-rotate"),
+	doxform: z.boolean().optional().describe("Do Transform"),
+	tx: z.number().optional().describe("TX"),
+	ty: z.number().optional().describe("TY"),
+	tz: z.number().optional().describe("TZ"),
+	rx: z.number().optional().describe("RX"),
+	ry: z.number().optional().describe("RY"),
+	rz: z.number().optional().describe("RZ"),
+	printstate: z.boolean().optional().describe("Print State"),
+	logjumps: z.boolean().optional().describe("Log Jumps"),
+	jumpmin: z.number().optional().describe("Jump Min"),
+	jumpmax: z.number().optional().describe("Jump Max"),
+	jumpxy: z.number().optional().describe("Jump XY"),
+	fixjump: z.boolean().optional().describe("Fix Jump"),
+	logpulse: z.boolean().optional().describe("Log Pulse"),
+});

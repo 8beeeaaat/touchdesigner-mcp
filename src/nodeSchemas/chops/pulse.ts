@@ -1,0 +1,30 @@
+import { z } from "zod";
+import { createCHOPSchema } from "./utils.js";
+
+export const pulse = createCHOPSchema({
+	number: z.number().optional().describe("Number"),
+	interp: z.string().optional().describe("Interpolation"),
+	width: z.number().optional().describe("Width"),
+	widthunit: z.string().optional().describe("Width Unit"),
+	limit: z.string().optional().describe("Limit"),
+	min: z.number().optional().describe("Min"),
+	max: z.number().optional().describe("Max"),
+	minspacing: z.number().optional().describe("Min Spacing"),
+	cascade: z.boolean().optional().describe("Cascade"),
+	outpulse: z.string().optional().describe("Out Pulse"),
+	pulseunit: z.string().optional().describe("Pulse Unit"),
+	separateoutchan: z.boolean().optional().describe("Separate Out Channel"),
+	nonadditives: z.boolean().optional().describe("Non Additives"),
+	lastpulse: z.boolean().optional().describe("Last Pulse"),
+	pulse: z.number().optional().describe("Pulse"),
+	pulse0value: z.number().optional().describe("Pulse 0 Value"),
+	channelname: z.string().optional().describe("Channel Name"),
+	start: z.number().optional().describe("Start"),
+	startunit: z.string().optional().describe("Start Unit"),
+	end: z.number().optional().describe("End"),
+	endunit: z.string().optional().describe("End Unit"),
+	rate: z.number().optional().describe("Rate"),
+	left: z.string().optional().describe("Left"),
+	right: z.string().optional().describe("Right"),
+	defval: z.number().optional().describe("Default Value"),
+});

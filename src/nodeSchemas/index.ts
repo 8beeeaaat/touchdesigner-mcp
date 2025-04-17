@@ -11,6 +11,7 @@ import {
 	updateNodeParams,
 } from "../gen/mcp/touchDesignerAPI.zod.js";
 import type { NodeFamilyType } from "../gen/models/nodeFamilyType.js";
+import { ChopNodeSchemas } from "./chops/index.js";
 import { CompNodeSchemas } from "./comp/index.js";
 import { TopNodeSchemas } from "./tops/index.js";
 
@@ -20,7 +21,7 @@ export const NodeSchemasByFamily: Record<
 > = {
 	TOP: TopNodeSchemas,
 	COMP: CompNodeSchemas,
-	CHOP: {},
+	CHOP: ChopNodeSchemas,
 	SOP: {},
 	DAT: {},
 	CUSTOM: {},
