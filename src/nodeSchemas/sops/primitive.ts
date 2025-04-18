@@ -1,0 +1,41 @@
+import { z } from "zod";
+import { createSOPSchema } from "./utils.js";
+
+const primitive = createSOPSchema({
+	group: z.string().optional().describe("Group"),
+	templategrp: z.string().optional().describe("Template Group"),
+	doxform: z.boolean().optional().describe("Do Transform"),
+	dorot: z.string().optional().describe("Do Rotation"),
+	xord: z.string().optional().describe("Transform Order"),
+	sx: z.number().optional().describe("Scale X"),
+	sy: z.number().optional().describe("Scale Y"),
+	sz: z.number().optional().describe("Scale Z"),
+	lookat: z.union([z.string(), z.null()]).optional().describe("Look At"),
+	doclr: z.string().optional().describe("Do Color"),
+	diffr: z.number().optional().describe("Diffuse R"),
+	diffg: z.number().optional().describe("Diffuse G"),
+	diffb: z.number().optional().describe("Diffuse B"),
+	alpha: z.number().optional().describe("Alpha"),
+	docrease: z.string().optional().describe("Do Crease"),
+	attr: z.number().optional().describe("Attribute"),
+	attr0name: z.string().optional().describe("Attribute 0 Name"),
+	attr0size: z.string().optional().describe("Attribute 0 Size"),
+	attr0value1: z.number().optional().describe("Attribute 0 Value 1"),
+	attr0value2: z.number().optional().describe("Attribute 0 Value 2"),
+	attr0value3: z.number().optional().describe("Attribute 0 Value 3"),
+	attr0value4: z.number().optional().describe("Attribute 0 Value 4"),
+	pshapeu: z.boolean().optional().describe("P Shape U"),
+	pshapev: z.boolean().optional().describe("P Shape V"),
+	closeu: z.string().optional().describe("Close U"),
+	closev: z.string().optional().describe("Close V"),
+	clampu: z.string().optional().describe("Clamp U"),
+	clampv: z.string().optional().describe("Clamp V"),
+	vtxsort: z.string().optional().describe("Vertex Sort"),
+	vtxuoff: z.number().optional().describe("Vertex U Offset"),
+	vtxvoff: z.number().optional().describe("Vertex V Offset"),
+	metaweight: z.boolean().optional().describe("Meta Weight"),
+	doprender: z.boolean().optional().describe("Do Render"),
+	prtype: z.string().optional().describe("Primitive Type"),
+});
+
+export { primitive };

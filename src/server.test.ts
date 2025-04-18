@@ -2,13 +2,17 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TouchDesignerServer } from "./server.js";
 
-vi.mock("./schemas/common/index.js", () => ({
+vi.mock("./nodeSchemas/index.js", () => ({
 	NodeSchemasByFamily: {
 		TOP: {
 			null: {},
 		},
 		COMP: {
 			null: {},
+		},
+		SOP: {
+			null: {},
+			box: {},
 		},
 	},
 	CreateTDNodeParams: {},
@@ -18,12 +22,16 @@ vi.mock("./schemas/common/index.js", () => ({
 	UpdateTDNodePropertiesParams: {},
 }));
 
-vi.mock("./schemas/tops/index.js", () => ({
+vi.mock("./nodeSchemas/tops/index.js", () => ({
 	createTOPSchema: vi.fn(),
 }));
 
-vi.mock("./schemas/comp/utils.js", () => ({
+vi.mock("./nodeSchemas/comp/utils.js", () => ({
 	createCOMPSchema: vi.fn(),
+}));
+
+vi.mock("./nodeSchemas/sops/utils.js", () => ({
+	createSOPSchema: vi.fn(),
 }));
 
 vi.mock("./prompts/index.js", () => ({

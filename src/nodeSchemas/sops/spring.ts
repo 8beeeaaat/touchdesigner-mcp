@@ -1,0 +1,43 @@
+import { z } from "zod";
+import { createSOPSchema } from "./utils.js";
+
+const spring = createSOPSchema({
+	timepreroll: z.number().optional().describe("Time Preroll"),
+	timeinc: z.number().optional().describe("Time Increment"),
+	accurate: z.boolean().optional().describe("Accurate"),
+	attractmode: z.string().optional().describe("Attract Mode"),
+	reset: z.boolean().optional().describe("Reset"),
+	resetpulse: z.boolean().optional().describe("Reset Pulse"),
+	externalx: z.number().optional().describe("External X"),
+	externaly: z.number().optional().describe("External Y"),
+	externalz: z.number().optional().describe("External Z"),
+	windx: z.number().optional().describe("Wind X"),
+	windy: z.number().optional().describe("Wind Y"),
+	windz: z.number().optional().describe("Wind Z"),
+	turbx: z.number().optional().describe("Turbulence X"),
+	turby: z.number().optional().describe("Turbulence Y"),
+	turbz: z.number().optional().describe("Turbulence Z"),
+	period: z.number().optional().describe("Period"),
+	seed: z.number().optional().describe("Seed"),
+	fixed: z.string().optional().describe("Fixed"),
+	revertfixed: z.boolean().optional().describe("Revert Fixed"),
+	copygroups: z.boolean().optional().describe("Copy Groups"),
+	domass: z.boolean().optional().describe("Do Mass"),
+	mass: z.number().optional().describe("Mass"),
+	dodrag: z.boolean().optional().describe("Do Drag"),
+	drag: z.number().optional().describe("Drag"),
+	springbehavior: z.string().optional().describe("Spring Behavior"),
+	springk: z.number().optional().describe("Spring K"),
+	tension: z.number().optional().describe("Tension"),
+	limitposx: z.number().optional().describe("Limit Pos X"),
+	limitposy: z.number().optional().describe("Limit Pos Y"),
+	limitposz: z.number().optional().describe("Limit Pos Z"),
+	limitnegx: z.number().optional().describe("Limit Neg X"),
+	limitnegy: z.number().optional().describe("Limit Neg Y"),
+	limitnegz: z.number().optional().describe("Limit Neg Z"),
+	hit: z.string().optional().describe("Hit"),
+	gaintan: z.number().optional().describe("Gain Tangent"),
+	gainnorm: z.number().optional().describe("Gain Normal"),
+});
+
+export { spring };

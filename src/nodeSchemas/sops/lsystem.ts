@@ -1,0 +1,42 @@
+import { z } from "zod";
+import { createSOPSchema } from "./utils.js";
+
+const lsystem = createSOPSchema({
+	type: z.string().optional().describe("Type"),
+	generations: z.number().optional().describe("Generations"),
+	randscale: z.number().optional().describe("Random Scale"),
+	randseed: z.number().optional().describe("Random Seed"),
+	contangl: z.boolean().optional().describe("Continuous Angle"),
+	contlength: z.boolean().optional().describe("Continuous Length"),
+	contwidth: z.boolean().optional().describe("Continuous Width"),
+	docolor: z.boolean().optional().describe("Do Color"),
+	colormap: z.string().nullable().optional().describe("Color Map"),
+	incu: z.number().optional().describe("Inc U"),
+	incv: z.number().optional().describe("Inc V"),
+	pointwidth: z.boolean().optional().describe("Point Width"),
+	rows: z.number().optional().describe("Rows"),
+	cols: z.number().optional().describe("Columns"),
+	tension: z.number().optional().describe("Tension"),
+	smooth: z.number().optional().describe("Smooth"),
+	thickinit: z.number().optional().describe("Thickness Initial"),
+	thickscale: z.number().optional().describe("Thickness Scale"),
+	dotexture: z.boolean().optional().describe("Do Texture"),
+	vertinc: z.number().optional().describe("Vertex Increment"),
+	stepinit: z.number().optional().describe("Step Initial"),
+	stepscale: z.number().optional().describe("Step Scale"),
+	angleinit: z.number().optional().describe("Angle Initial"),
+	anglescale: z.number().optional().describe("Angle Scale"),
+	varb: z.number().optional().describe("Variable B"),
+	varc: z.number().optional().describe("Variable C"),
+	vard: z.number().optional().describe("Variable D"),
+	gravity: z.number().optional().describe("Gravity"),
+	pictop: z.string().nullable().optional().describe("Picture TOP"),
+	grpprefix: z.string().optional().describe("Group Prefix"),
+	chanprefix: z.string().optional().describe("Channel Prefix"),
+	stampa: z.string().optional().describe("Stamp A"),
+	stampb: z.string().optional().describe("Stamp B"),
+	stampc: z.string().optional().describe("Stamp C"),
+	rules: z.string().optional().describe("Rules"),
+});
+
+export { lsystem };
