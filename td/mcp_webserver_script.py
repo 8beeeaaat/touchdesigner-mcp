@@ -895,11 +895,25 @@ def _collect_nodes_recursive(parent, nodes_list, path="", processed_nodes=None):
 def _get_node_parameters(node):
     params_dict = {}
     for par in node.pars("*"):
-        value = par.eval()
-        # For OP values (e.g., operator reference parameters), use path
-        if isinstance(value, td.OP):
-            value = value.path
-        params_dict[par.name] = value
+        try:
+            log_message(f"Getting parameter: {par.name} of type {type(par)}", "DEBUG")
+            value = par.eval()
+            log_message(
+                f"Parameter {par.name} evaluated to value of type {type(value)}",
+                "DEBUG",
+            )
+
+            # For OP values (e.g., operator reference parameters), use path
+            if isinstance(value, td.OP):
+                value = value.path
+                log_message(f"Converted OP to path: {value}", "DEBUG")
+
+            params_dict[par.name] = value
+        except Exception as param_err:
+            log_message(f"Error processing parameter {par.name}: {param_err}", "ERROR")
+            traceback.print_exc()
+            # Continue with next parameter instead of failing completely
+            params_dict[par.name] = f"ERROR: {str(param_err)}"
 
     return params_dict
 
