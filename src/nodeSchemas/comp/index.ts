@@ -10,15 +10,13 @@ import { bulletsolver } from "./bulletsolver.js";
 import { button } from "./button.js";
 import { camera } from "./camera.js";
 import { camerablend } from "./camerablend.js";
-import { chop } from "./chop.js";
 import { constraint } from "./constraint.js";
 import { container } from "./container.js";
-import { custom } from "./custom.js";
-import { dat } from "./dat.js";
 import { engine } from "./engine.js";
 import { environmentlight } from "./environmentlight.js";
 import { fbx } from "./fbx.js";
 import { field } from "./field.js";
+import { force } from "./force.js";
 import { geometry } from "./geometry.js";
 import { geotext } from "./geotext.js";
 import { glsl } from "./glsl.js";
@@ -35,7 +33,6 @@ import { select } from "./select.js";
 import { sharedmemin } from "./sharedmemin.js";
 import { sharedmemout } from "./sharedmemout.js";
 import { slider } from "./slider.js";
-import { sop } from "./sop.js";
 import { table } from "./table.js";
 import { text } from "./text.js";
 import { time } from "./time.js";
@@ -49,49 +46,46 @@ import { window } from "./window.js";
  * Using internal TouchDesigner node type names (lowercase) for consistency
  */
 export const CompNodeSchemas = {
-	actor,
-	ambientlight,
-	animation,
-	annotate,
-	base,
-	blend,
-	bone,
-	bulletsolver,
-	button,
-	camera,
-	camerablend,
-	chop,
-	constraint,
-	container,
-	custom,
-	dat,
-	engine,
-	environmentlight,
-	fbx,
-	field,
-	geotext,
-	geometry,
-	glsl,
-	handle,
-	light,
-	list,
-	null: nullNode,
-	flexsolver: nvidiaflexsolver,
-	flowemitter: nvidiaflowemitter,
-	opviewer,
-	parameter,
-	replicator,
-	select,
-	sharedmemin,
-	sharedmemout,
-	slider,
-	sop,
-	table,
-	text,
-	time,
-	usd,
-	widget,
-	window,
+actor,
+ambientlight,
+animation,
+annotate,
+base,
+blend,
+bone,
+bulletsolver,
+button,
+camera,
+camerablend,
+constraint,
+container,
+engine,
+environmentlight,
+fbx,
+field,
+force,
+geometry,
+geotext,
+glsl,
+handle,
+light,
+list,
+null: nullNode,
+nvidiaflexsolver,
+nvidiaflowemitter,
+opviewer,
+parameter,
+replicator,
+select,
+sharedmemin,
+sharedmemout,
+slider,
+table,
+text,
+time,
+usd,
+widget,
+window,
 };
 
 export type CompNodeSchema = z.infer<
