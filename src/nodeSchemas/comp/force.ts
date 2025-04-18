@@ -16,7 +16,7 @@ const force = createCOMPSchema({
 	ffactive: z.boolean().optional().describe("Force Field Active"),
 	strength: z.number().optional().describe("Strength"),
 	radius: z.number().optional().describe("Radius"),
-	falloff: z.boolean().optional().describe("Falloff")
+	falloff: z.boolean().optional().describe("Falloff"),
 });
 
 export { force };
