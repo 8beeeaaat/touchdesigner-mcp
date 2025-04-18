@@ -1,0 +1,43 @@
+import { z } from "zod";
+import { createSOPSchema } from "./utils.js";
+
+const clay = createSOPSchema({
+	group: z.string().optional().describe("Group"),
+	method: z.string().optional().describe("Method"),
+	xord: z.string().optional().describe("Transform Order"),
+	rord: z.string().optional().describe("Rotation Order"),
+	tx: z.number().optional().describe("Translate X"),
+	ty: z.number().optional().describe("Translate Y"),
+	tz: z.number().optional().describe("Translate Z"),
+	rx: z.number().optional().describe("Rotate X"),
+	ry: z.number().optional().describe("Rotate Y"),
+	rz: z.number().optional().describe("Rotate Z"),
+	sx: z.number().optional().describe("Scale X"),
+	sy: z.number().optional().describe("Scale Y"),
+	sz: z.number().optional().describe("Scale Z"),
+	px: z.number().optional().describe("Pivot X"),
+	py: z.number().optional().describe("Pivot Y"),
+	pz: z.number().optional().describe("Pivot Z"),
+	dist: z.number().optional().describe("Distance"),
+	normal: z.boolean().optional().describe("Normal"),
+	dirx: z.number().optional().describe("Direction X"),
+	diry: z.number().optional().describe("Direction Y"),
+	dirz: z.number().optional().describe("Direction Z"),
+	coordx: z.number().optional().describe("Coordinate X"),
+	coordy: z.number().optional().describe("Coordinate Y"),
+	coordz: z.number().optional().describe("Coordinate Z"),
+	uvsnap1: z.number().optional().describe("UV Snap 1"),
+	uvsnap2: z.number().optional().describe("UV Snap 2"),
+	uwarp: z.boolean().optional().describe("U Warp"),
+	u: z.number().optional().describe("U"),
+	uusebias: z.boolean().optional().describe("U Use Bias"),
+	ubias: z.number().optional().describe("U Bias"),
+	usharp: z.number().optional().describe("U Sharp"),
+	vwarp: z.boolean().optional().describe("V Warp"),
+	v: z.number().optional().describe("V"),
+	vusebias: z.boolean().optional().describe("V Use Bias"),
+	vbias: z.number().optional().describe("V Bias"),
+	vsharp: z.number().optional().describe("V Sharp"),
+});
+
+export { clay };

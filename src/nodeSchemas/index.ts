@@ -1,4 +1,5 @@
 export * from "./comp/index.js";
+export * from "./sops/index.js";
 export * from "./tops/index.js";
 
 import type { z } from "zod";
@@ -13,6 +14,7 @@ import {
 import type { NodeFamilyType } from "../gen/models/nodeFamilyType.js";
 import { ChopNodeSchemas } from "./chops/index.js";
 import { CompNodeSchemas } from "./comp/index.js";
+import { SopNodeSchemas } from "./sops/index.js";
 import { TopNodeSchemas } from "./tops/index.js";
 
 export const NodeSchemasByFamily: Record<
@@ -22,7 +24,7 @@ export const NodeSchemasByFamily: Record<
 	TOP: TopNodeSchemas,
 	COMP: CompNodeSchemas,
 	CHOP: ChopNodeSchemas,
-	SOP: {},
+	SOP: SopNodeSchemas,
 	DAT: {},
 	CUSTOM: {},
 	MAT: {},

@@ -56,14 +56,14 @@ import { fileout } from "./fileout.js";
 import { filter } from "./filter.js";
 import { freedin } from "./freedin.js";
 import { freedout } from "./freedout.js";
-import { function_ } from "./function.js";
+import { functionNode } from "./function.js";
 import { gesture } from "./gesture.js";
 import { handle } from "./handle.js";
 import { hog } from "./hog.js";
 import { hokuyo } from "./hokuyo.js";
 import { hold } from "./hold.js";
 import { importselect } from "./importselect.js";
-import { inChop } from "./in.js";
+import { inNode } from "./in.js";
 import { info } from "./info.js";
 import { interpolate } from "./interpolate.js";
 import { inversecurve } from "./inversecurve.js";
@@ -95,7 +95,7 @@ import { mousein } from "./mousein.js";
 import { mouseout } from "./mouseout.js";
 import { ncam } from "./ncam.js";
 import { noise } from "./noise.js";
-import { nullChop } from "./null.js";
+import { nullNode } from "./null.js";
 import { oakdevice } from "./oakdevice.js";
 import { oakselect } from "./oakselect.js";
 import { object } from "./object.js";
@@ -105,7 +105,7 @@ import { openvr } from "./openvr.js";
 import { optitrackin } from "./optitrackin.js";
 import { oscin } from "./oscin.js";
 import { oscout } from "./oscout.js";
-import { outChop } from "./out.js";
+import { outNode } from "./out.js";
 import { override } from "./override.js";
 import { panel } from "./panel.js";
 import { pangolin } from "./pangolin.js";
@@ -142,7 +142,7 @@ import { spring } from "./spring.js";
 import { stretch } from "./stretch.js";
 import { stypein } from "./stypein.js";
 import { stypeout } from "./stypeout.js";
-import { switch_ } from "./switch.js";
+import { switchNode } from "./switch.js";
 import { syncin } from "./syncin.js";
 import { syncout } from "./syncout.js";
 import { tablet } from "./tablet.js";
@@ -225,14 +225,14 @@ export const ChopNodeSchemas = {
 	filter,
 	freedin,
 	freedout,
-	function: function_,
+	function: functionNode,
 	gesture,
 	handle,
 	hog,
 	hokuyo,
 	hold,
 	importselect,
-	in: inChop,
+	in: inNode,
 	info,
 	interpolate,
 	inversecurve,
@@ -264,7 +264,7 @@ export const ChopNodeSchemas = {
 	mouseout,
 	ncam,
 	noise,
-	null: nullChop,
+	null: nullNode,
 	oakdevice,
 	oakselect,
 	object,
@@ -274,7 +274,7 @@ export const ChopNodeSchemas = {
 	optitrackin,
 	oscin,
 	oscout,
-	out: outChop,
+	out: outNode,
 	override,
 	panel,
 	pangolin,
@@ -311,7 +311,7 @@ export const ChopNodeSchemas = {
 	stretch,
 	stypein,
 	stypeout,
-	switch: switch_,
+	switch: switchNode,
 	syncin,
 	syncout,
 	tablet,

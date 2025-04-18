@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createCHOPSchema } from "./utils.js";
 
-export const function_ = createCHOPSchema({
+export const functionNode = createCHOPSchema({
 	func: z.string().optional().describe("Function"),
 	baseval: z.number().optional().describe("Base Value"),
 	expval: z.number().optional().describe("Exponent Value"),

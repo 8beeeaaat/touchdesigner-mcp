@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createCHOPSchema } from "./utils.js";
 
-export const inChop = createCHOPSchema({
+export const inNode = createCHOPSchema({
 	label: z.string().optional().describe("Label"),
 	connectorder: z.number().optional().describe("Connect Order"),
 	specifynum: z.boolean().optional().describe("Specify Number"),
