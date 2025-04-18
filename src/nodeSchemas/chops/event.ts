@@ -1,0 +1,30 @@
+import { z } from "zod";
+import { createCHOPSchema } from "./utils.js";
+
+export const event = createCHOPSchema({
+	id: z.string().optional().describe("ID"),
+	index: z.string().optional().describe("Index"),
+	active: z.string().optional().describe("Active"),
+	input: z.string().optional().describe("Input"),
+	time: z.string().optional().describe("Time"),
+	adsr: z.string().optional().describe("ADSR"),
+	state: z.string().optional().describe("State"),
+	resetcondition: z.string().optional().describe("Reset Condition"),
+	reset: z.boolean().optional().describe("Reset"),
+	resetpulse: z.boolean().optional().describe("Reset Pulse"),
+	callbacks: z.string().optional().describe("Callbacks"),
+	attacktime: z.number().optional().describe("Attack Time"),
+	attacktunit: z.string().optional().describe("Attack Time Unit"),
+	attacklevel: z.number().optional().describe("Attack Level"),
+	decaytime: z.number().optional().describe("Decay Time"),
+	decaytunit: z.string().optional().describe("Decay Time Unit"),
+	sustaintime: z.number().optional().describe("Sustain Time"),
+	sustaintunit: z.string().optional().describe("Sustain Time Unit"),
+	sustainmin: z.number().optional().describe("Sustain Min"),
+	sustainmax: z.number().optional().describe("Sustain Max"),
+	releasetime: z.number().optional().describe("Release Time"),
+	releasetunit: z.string().optional().describe("Release Time Unit"),
+	releaselevel: z.number().optional().describe("Release Level"),
+	speed: z.number().optional().describe("Speed"),
+	globalspeed: z.number().optional().describe("Global Speed"),
+});

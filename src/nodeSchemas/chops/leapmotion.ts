@@ -1,0 +1,31 @@
+import { z } from "zod";
+import { createCHOPSchema } from "./utils.js";
+
+export const leapmotion = createCHOPSchema({
+	active: z.boolean().optional().describe("Active"),
+	api: z.string().optional().describe("API"),
+	libfolder: z.string().optional().describe("Library Folder"),
+	hmd: z.string().optional().describe("HMD"),
+	deviceinfo: z.boolean().optional().describe("Device Info"),
+	debugchannels: z.boolean().optional().describe("Debug Channels"),
+	statuschannels: z.boolean().optional().describe("Status Channels"),
+	namedhands: z.boolean().optional().describe("Named Hands"),
+	hands: z.number().optional().describe("Hands"),
+	lefthands: z.number().optional().describe("Left Hands"),
+	righthands: z.number().optional().describe("Right Hands"),
+	handvelocity: z.boolean().optional().describe("Hand Velocity"),
+	handsphere: z.boolean().optional().describe("Hand Sphere"),
+	pinchstrength: z.boolean().optional().describe("Pinch Strength"),
+	grabstrength: z.boolean().optional().describe("Grab Strength"),
+	namedfingers: z.boolean().optional().describe("Named Fingers"),
+	fingersperhand: z.number().optional().describe("Fingers Per Hand"),
+	fingerrotation: z.boolean().optional().describe("Finger Rotation"),
+	fingersize: z.boolean().optional().describe("Finger Size"),
+	fingerextended: z.boolean().optional().describe("Finger Extended"),
+	fingerjoints: z.boolean().optional().describe("Finger Joints"),
+	tools: z.number().optional().describe("Tools"),
+	circlegestures: z.number().optional().describe("Circle Gestures"),
+	swipegestures: z.number().optional().describe("Swipe Gestures"),
+	keytapgestures: z.number().optional().describe("Keytap Gestures"),
+	screentapgestures: z.number().optional().describe("Screentap Gestures"),
+});
