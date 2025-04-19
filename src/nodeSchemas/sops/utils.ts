@@ -11,7 +11,6 @@ export function createSOPSchema<T extends Record<string, z.ZodTypeAny>>(
 	return z
 		.object({
 			...{
-				// 共通パラメータ
 				pageindex: z.number().optional().describe("Page Index"),
 				tx: z.number().optional().describe("Translate X"),
 				ty: z.number().optional().describe("Translate Y"),

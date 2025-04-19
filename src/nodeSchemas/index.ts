@@ -1,4 +1,5 @@
 export * from "./comp/index.js";
+export * from "./mat/index.js";
 export * from "./sops/index.js";
 export * from "./tops/index.js";
 
@@ -14,6 +15,7 @@ import {
 import type { NodeFamilyType } from "../gen/models/nodeFamilyType.js";
 import { ChopNodeSchemas } from "./chops/index.js";
 import { CompNodeSchemas } from "./comp/index.js";
+import { MatNodeSchemas } from "./mat/index.js";
 import { SopNodeSchemas } from "./sops/index.js";
 import { TopNodeSchemas } from "./tops/index.js";
 
@@ -27,7 +29,7 @@ export const NodeSchemasByFamily: Record<
 	SOP: SopNodeSchemas,
 	DAT: {},
 	CUSTOM: {},
-	MAT: {},
+	MAT: MatNodeSchemas,
 };
 
 // for MCP Server tools
