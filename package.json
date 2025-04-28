@@ -41,9 +41,9 @@
 		"yaml": "^2.7.1"
 	},
 	"type": "module",
-	"main": "src/server.ts",
+	"main": "src/index.ts",
 	"bin": {
-		"mcp-server": "dist/server.js"
+		"mcp-server": "dist/index.js"
 	},
 	"scripts": {
 		"build": "run-s build:*",
