@@ -14,25 +14,34 @@ from mcp.controllers.openapi_router import OpenAPIRouter
 from utils.error_handling import ErrorCategory
 from utils.logging import log_message
 from utils.result import error_result
+from utils.serialization import safe_serialize
 from utils.types import LogLevel, Result
 
 try:
-    from td_server.openapi_server.models.create_node200_response import \
-        CreateNode200Response
-    from td_server.openapi_server.models.delete_node200_response import \
-        DeleteNode200Response
-    from td_server.openapi_server.models.exec_node_method200_response import \
-        ExecNodeMethod200Response
-    from td_server.openapi_server.models.exec_python_script200_response import \
-        ExecPythonScript200Response
-    from td_server.openapi_server.models.get_node_detail200_response import \
-        GetNodeDetail200Response
-    from td_server.openapi_server.models.get_nodes200_response import \
-        GetNodes200Response
-    from td_server.openapi_server.models.get_td_info200_response import \
-        GetTdInfo200Response
-    from td_server.openapi_server.models.update_node200_response import \
-        UpdateNode200Response
+    from td_server.openapi_server.models.create_node200_response import (
+        CreateNode200Response,
+    )
+    from td_server.openapi_server.models.delete_node200_response import (
+        DeleteNode200Response,
+    )
+    from td_server.openapi_server.models.exec_node_method200_response import (
+        ExecNodeMethod200Response,
+    )
+    from td_server.openapi_server.models.exec_python_script200_response import (
+        ExecPythonScript200Response,
+    )
+    from td_server.openapi_server.models.get_node_detail200_response import (
+        GetNodeDetail200Response,
+    )
+    from td_server.openapi_server.models.get_nodes200_response import (
+        GetNodes200Response,
+    )
+    from td_server.openapi_server.models.get_td_info200_response import (
+        GetTdInfo200Response,
+    )
+    from td_server.openapi_server.models.update_node200_response import (
+        UpdateNode200Response,
+    )
 
     log_message("OpenAPI response models imported successfully", LogLevel.DEBUG)
 except ImportError as e:
@@ -300,7 +309,7 @@ class APIControllerOpenAPI(IController):
             if result["success"]:
                 response["statusCode"] = 200
                 response["statusReason"] = "OK"
-                response["data"] = json.dumps(result)
+                response["data"] = json.dumps(safe_serialize(result))
             else:
                 error_category = result.get("errorCategory", ErrorCategory.VALIDATION)
                 response["statusCode"] = 200
