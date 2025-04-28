@@ -20,7 +20,7 @@ export const TOOL_NAMES = {
 	UPDATE_TD_NODE_PARAMETERS: "update_td_node_parameters",
 } as const;
 
-export const REFERENCE_COMMENT = `Check reference resources: ${TD_PYTHON_CLASS_REFERENCE_INDEX_URL}.`;
+export const REFERENCE_COMMENT = `Check reference resources: ${TD_PYTHON_CLASS_REFERENCE_INDEX_URL}`;
 
 export const PROMPT_NAMES = {
 	SEARCH_NODE: "Search node",
