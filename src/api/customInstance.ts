@@ -24,6 +24,6 @@ export const customInstance = <T>(
 	return promise;
 };
 
-export type ErrorType<e> = AxiosError<e>;
+export type ErrorType<E> = AxiosError<E>;
 
 export type BodyType<BodyData> = BodyData;
