@@ -1,0 +1,51 @@
+post:
+  summary: Execute python code on the server
+  description: |
+    Execute a Python script directly in TouchDesigner.
+    Multiline scripts and scripts containing comments are supported.
+    The script can optionally set a `result` variable to explicitly return a value.
+    This endpoint allows you to interact with TouchDesigner nodes programmatically.
+  operationId: exec_python_script
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - script
+          properties:
+            script:
+              type: string
+              description: e.g., "op('/project1/text_over_image').outputConnectors[0].connect(op('/project1/out1'))"
+  responses:
+    '200':
+      description: Script executed successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                type: boolean
+                description: Whether the operation was successful
+              data:
+                type: object
+                required:
+                  - result
+                nullable: true
+                properties:
+                  result:
+                    description: Result of the executed script
+                    type: object
+                    properties:
+                      value:
+                        description: Return value of the executed script, can be any serializable value
+              error:
+                nullable: true
+                type: string
+                description: Error message if the operation was not successful

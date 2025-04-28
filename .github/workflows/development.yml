@@ -30,4 +30,4 @@ jobs:
       - run: npm ci
       - run: npm run gen
       - run: npm run lint
-      - run: npm test
+      - run: npm run test:unit

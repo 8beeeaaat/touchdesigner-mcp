@@ -1,4 +1,4 @@
-import type { ILogger } from "../util.js";
+import type { ILogger } from "../core/logger.js";
 import { TouchDesignerClient } from "./touchDesignerClient.js";
 
 export interface CreateTouchDesignerClientParams {
@@ -10,7 +10,7 @@ export function createTouchDesignerClient(
 ) {
 	const { logger } = params;
 
-	return new TouchDesignerClient(logger);
+	return new TouchDesignerClient({ logger });
 }
 
 export { TouchDesignerClient } from "./touchDesignerClient.js";

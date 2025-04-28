@@ -135,7 +135,14 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# Compiled Python files
+__pycache__/
+
 .DS_Store
-./dist
+dist
+tmp
 src/gen
+**/generated_handlers.py
 .github/copilot-instructions.md
+.venv
+td/modules/td_server
