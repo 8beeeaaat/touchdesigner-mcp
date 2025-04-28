@@ -64,7 +64,8 @@
 		"gen:mcp": "orval --config ./orval.config.ts"
 	},
 	"files": [
-		"dist/**/*"
+		"dist/**/*",
+		"README*"
 	],
 	"msw": {
 		"workerDirectory": [
