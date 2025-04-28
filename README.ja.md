@@ -4,6 +4,8 @@ TouchDesignerのためのMCP(Model Context Protocol) サーバー実装です。
 
 ## 概要
 
+![スクリーンショット 2025-04-14 21 45 47](https://github.com/user-attachments/assets/b7130ebe-406c-4e05-9efc-5d493eb800cb)
+
 TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッジとして機能し、AIエージェントが以下のことが可能になります
 - ノードの作成、変更、削除
 - ノードプロパティやプロジェクト構造の照会
@@ -11,7 +13,7 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 
 ## 前提条件
 
-- Node.js（特定のバージョンが必要な場合は `.nvmrc` または `package.json` の `engines` フィールドを確認してください）
+- Node.js（最新のLTSバージョンを推奨）
 - TouchDesigner（最新の安定版を推奨）
 - Docker（Pythonサーバーコードの生成に必要）
 
