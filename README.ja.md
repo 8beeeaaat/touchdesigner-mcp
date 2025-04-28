@@ -6,7 +6,7 @@ TouchDesignerのためのMCP(Model Context Protocol) サーバー実装です。
 
 ## 概要
 
-![demo](./assets/nodes_list.png)
+![demo](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/nodes_list.png)
 
 TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッジとして機能し、AIエージェントが以下のことが可能になります
 - ノードの作成、変更、削除
@@ -30,7 +30,7 @@ TouchDesignerを起動し、`td/mcp_webserver_base.tox` コンポーネントを
 
 tox のimport により `td/import_modules.py` スクリプトが動作し、APIサーバのコントローラなどのモジュールがロードされます。
 
-![import](./assets/import.png)
+![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
 
 #### APIサーバの動作確認
 `npm run test` を実行することでMCPサーバーコードのユニットテストと TouchDesigner への接続テストが実行されます。

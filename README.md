@@ -6,7 +6,7 @@ This is an implementation of an MCP (Model Context Protocol) server for TouchDes
 
 ## Overview
 
-![demo](./assets/nodes_list.png)
+![demo](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/nodes_list.png)
 
 TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebServer DAT, enabling AI agents to:
 - Create, modify, and delete nodes
@@ -30,7 +30,7 @@ Example: Place it as `/project1/mcp_webserver_base`
 
 Importing the tox will trigger the `td/import_modules.py` script, which loads modules such as API server controllers.
 
-![import](./assets/import.png)
+![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
 
 #### Verify API server operation
 Run `npm run test` to execute unit tests for the MCP server code and connection tests to TouchDesigner.
