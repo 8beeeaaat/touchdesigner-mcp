@@ -2,6 +2,8 @@
 
 This is an implementation of an MCP (Model Context Protocol) server for TouchDesigner. The goal is to enable AI agents to control and operate TouchDesigner projects.
 
+[English](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/README.md) / [日本語](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/README.ja.md)
+
 ## Overview
 
 ![demo](https://github.com/user-attachments/assets/333b7db8-ebcb-4ac2-812e-c2174fa4bb2b)

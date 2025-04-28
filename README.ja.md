@@ -2,6 +2,8 @@
 
 TouchDesignerのためのMCP(Model Context Protocol) サーバー実装です。AIエージェントがTouchDesignerプロジェクトを制御・操作できるようになることを目指しています。
 
+[English](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/README.md) / [日本語](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/README.ja.md)
+
 ## 概要
 
 ![demo](https://github.com/user-attachments/assets/333b7db8-ebcb-4ac2-812e-c2174fa4bb2b)
