@@ -1,129 +1,240 @@
-import type { NodeFamilyType } from "src/gen/models/nodeFamilyType.js";
-/**
- * TouchDesigner client implementation using Orval generated API client
- */
-import type { z } from "zod";
+import type { ILogger } from "../core/logger.js";
 import {
-	createNode,
-	deleteNode,
-	getNodeProperty,
-	getNodeTypeDefaultParameters,
-	getProjectNodes,
-	getServerInfo,
-	updateNode,
-} from "../gen/endpoints/touchDesignerAPI.js";
-import type { GetNodeTypeDefaultParametersParams } from "../gen/models/getNodeTypeDefaultParametersParams.js";
-import type { TDConnectionParams } from "../gen/models/tDConnectionParams.js";
-import type { TopNodeSchemas, TopNodeType } from "../nodeSchemas/index.js";
-import type { ILogger } from "../util.js";
+	type CreateNodeRequest,
+	type DeleteNodeParams,
+	type ExecNodeMethodRequest,
+	type ExecPythonScriptRequest,
+	type GetNodeDetailParams,
+	type GetNodesParams,
+	type UpdateNodeRequest,
+	createNode as apiCreateNode,
+	deleteNode as apiDeleteNode,
+	execNodeMethod as apiExecNodeMethod,
+	execPythonScript as apiExecPythonScript,
+	getNodeDetail as apiGetNodeDetail,
+	getNodes as apiGetNodes,
+	getTdInfo as apiGetTdInfo,
+	getTdPythonClassDetails as apiGetTdPythonClassDetails,
+	getTdPythonClasses as apiGetTdPythonClasses,
+	updateNode as apiUpdateNode,
+} from "../gen/endpoints/TouchDesignerAPI.js";
 
 /**
- * Result type representing API operation result
+ * Server information returned by TouchDesigner
  */
-export type Result<T, E = Error> =
-	| { success: true; data: T }
-	| { success: false; error: E };
+export interface TdInfo {
+	server: string;
+	version: string;
+	status?: string;
+	buildDate?: string;
+	platform?: string;
+}
 
+/**
+ * Interface for TouchDesignerClient HTTP operations
+ */
+export interface ITouchDesignerApi {
+	execNodeMethod: typeof apiExecNodeMethod;
+	execPythonScript: typeof apiExecPythonScript;
+	getTdInfo: typeof apiGetTdInfo;
+	getNodes: typeof apiGetNodes;
+	getNodeDetail: typeof apiGetNodeDetail;
+	createNode: typeof apiCreateNode;
+	updateNode: typeof apiUpdateNode;
+	deleteNode: typeof apiDeleteNode;
+	getTdPythonClasses: typeof apiGetTdPythonClasses;
+	getTdPythonClassDetails: typeof apiGetTdPythonClassDetails;
+}
+
+/**
+ * Default implementation of ITouchDesignerApi using generated API clients
+ */
+const defaultApiClient: ITouchDesignerApi = {
+	execNodeMethod: apiExecNodeMethod,
+	execPythonScript: apiExecPythonScript,
+	getTdInfo: apiGetTdInfo,
+	getNodes: apiGetNodes,
+	getNodeDetail: apiGetNodeDetail,
+	createNode: apiCreateNode,
+	updateNode: apiUpdateNode,
+	deleteNode: apiDeleteNode,
+	getTdPythonClasses: apiGetTdPythonClasses,
+	getTdPythonClassDetails: apiGetTdPythonClassDetails,
+};
+
+export type TdResponse<T> = {
+	success: boolean;
+	data: T | null;
+	error: string | null;
+};
+
+export type ErrorResult<E = Error> = { success: false; error: E };
+export type SuccessResult<T> = { success: true; data: NonNullable<T> };
+
+export type Result<T, E = Error> = SuccessResult<T> | ErrorResult<E>;
+
+/**
+ * Null logger implementation that discards all logs
+ */
+const nullLogger: ILogger = {
+	debug: () => {},
+	log: () => {},
+	warn: () => {},
+	error: () => {},
+};
+
+/**
+ * Handle API error response
+ * @param response - API response object
+ * @returns ErrorResult object indicating failure
+ */
+function handleError<T>(response: TdResponse<T>): ErrorResult {
+	if (response.error) {
+		const errorMessage = response.error;
+		return { success: false, error: new Error(errorMessage) };
+	}
+	return { success: false, error: new Error("Unknown error occurred") };
+}
+/**
+ * Handle API response and return a structured result
+ * @param response - API response object
+ * @returns Result object indicating success or failure
+ */
+function handleApiResponse<T>(response: TdResponse<T>): Result<T> {
+	const { success, data } = response;
+	if (!success) {
+		return handleError(response);
+	}
+	if (data === null) {
+		return { success: false, error: new Error("No data received") };
+	}
+	if (data === undefined) {
+		return { success: false, error: new Error("No data received") };
+	}
+	return { success: true, data };
+}
+
+/**
+ * TouchDesigner client implementation with dependency injection
+ * for better testability and separation of concerns
+ */
 export class TouchDesignerClient {
 	private readonly logger: ILogger;
+	private readonly api: ITouchDesignerApi;
 
-	constructor(logger: ILogger) {
-		this.logger = logger;
+	/**
+	 * Initialize TouchDesigner client with optional dependencies
+	 */
+	constructor(
+		params: {
+			logger?: ILogger;
+			httpClient?: ITouchDesignerApi;
+		} = {},
+	) {
+		this.logger = params.logger || nullLogger;
+		this.api = params.httpClient || defaultApiClient;
 	}
 
-	private async handleRequest<T>(
-		requestFn: () => Promise<T>,
-		operationName: string,
-	): Promise<Result<T, Error>> {
-		try {
-			this.logger.debug(`Executing ${operationName}...`);
-			const result = await requestFn();
-			this.logger.debug(`${operationName} succeeded`);
-			return { success: true, data: result };
-		} catch (error) {
-			this.logger.error(`Error occurred in ${operationName}`, error);
-			const err = error instanceof Error ? error : new Error(String(error));
-			return { success: false, error: err };
-		}
+	/**
+	 * Execute a node method
+	 */
+	async execNodeMethod<
+		DATA extends NonNullable<{
+			result: unknown;
+		}>,
+	>(params: ExecNodeMethodRequest) {
+		this.logger.debug(
+			`Executing node method: ${params.method} on ${params.nodePath}`,
+		);
+
+		const result = await this.api.execNodeMethod(params);
+		return handleApiResponse<DATA>(result as TdResponse<DATA>);
+	}
+
+	/**
+	 * Execute a script in TouchDesigner
+	 */
+	async execPythonScript<
+		DATA extends {
+			result: unknown;
+		},
+	>(params: ExecPythonScriptRequest) {
+		this.logger.debug(`Executing Python script: ${params}`);
+		const result = await this.api.execPythonScript(params);
+		return handleApiResponse<DATA>(result as TdResponse<DATA>);
 	}
 
 	/**
 	 * Get TouchDesigner server information
 	 */
-	async getServerInfo() {
-		return this.handleRequest(() => getServerInfo(), "Server info retrieval");
+	async getTdInfo() {
+		this.logger.debug("Getting server info");
+		const result = await this.api.getTdInfo();
+		return handleApiResponse<(typeof result)["data"]>(result);
 	}
 
 	/**
-	 * Get list of nodes in project
+	 * Get list of nodes
 	 */
-	async getProjectNodes() {
-		return this.handleRequest(() => getProjectNodes(), "Project nodes listing");
+	async getNodes(params: GetNodesParams) {
+		this.logger.debug(`Getting nodes for parent: ${params.parentPath}`);
+		const result = await this.api.getNodes(params);
+		return handleApiResponse<(typeof result)["data"]>(result);
 	}
 
 	/**
 	 * Get node properties
 	 */
-	async getNodeProperty(nodePath: string) {
-		return this.handleRequest(
-			() => getNodeProperty(nodePath),
-			`Node properties retrieval for '${nodePath}'`,
-		);
+	async getNodeDetail(params: GetNodeDetailParams) {
+		this.logger.debug(`Getting properties for node: ${params.nodePath}`);
+		const result = await this.api.getNodeDetail(params);
+		return handleApiResponse<(typeof result)["data"]>(result);
 	}
 
 	/**
-	 * Get default parameters for node type
+	 * Create a new node
 	 */
-	async getNodeTypeDefaultParameters(
-		params: GetNodeTypeDefaultParametersParams,
-	): Promise<Result<unknown, Error>> {
-		return this.handleRequest(
-			() => getNodeTypeDefaultParameters(params),
-			`Default parameters retrieval for '${params.nodeType}'`,
+	async createNode(params: CreateNodeRequest) {
+		this.logger.debug(
+			`Creating node: ${params.nodeName} of type ${params.nodeType} under ${params.parentPath}`,
 		);
+		const result = await this.api.createNode(params);
+		return handleApiResponse<(typeof result)["data"]>(result);
 	}
 
 	/**
-	 * Create node
+	 * Update node properties
 	 */
-	async createNode(params: {
-		nodeName?: string;
-		nodeFamily: NodeFamilyType;
-		nodeType: string;
-		connection?: TDConnectionParams;
-		parameters?: Record<string, unknown>;
-	}): Promise<Result<unknown, Error>> {
-		return this.handleRequest(
-			() => createNode(params),
-			`Node creation for '${params.nodeName || params.nodeType}'`,
-		);
+	async updateNode(params: UpdateNodeRequest) {
+		this.logger.debug(`Updating node: ${params.nodePath}`);
+		const result = await this.api.updateNode(params);
+		return handleApiResponse<(typeof result)["data"]>(result);
 	}
 
 	/**
-	 * Update node
+	 * Delete a node
 	 */
-	async updateNode<T extends TopNodeType>(params: {
-		nodePath: string;
-		parameters?: Partial<z.infer<(typeof TopNodeSchemas)[T]>>;
-		connection?: TDConnectionParams;
-	}): Promise<Result<unknown, Error>> {
-		return this.handleRequest(
-			() =>
-				updateNode(params.nodePath, {
-					parameters: params.parameters,
-					connection: params.connection,
-				}),
-			`Node update for '${params.nodePath}'`,
-		);
+	async deleteNode(params: DeleteNodeParams) {
+		this.logger.debug(`Deleting node: ${params.nodePath}`);
+		const result = await this.api.deleteNode(params);
+		return handleApiResponse<(typeof result)["data"]>(result);
 	}
 
 	/**
-	 * Delete node
+	 * Get list of available Python classes/modules in TouchDesigner
 	 */
-	async deleteNode(nodePath: string): Promise<Result<unknown, Error>> {
-		return this.handleRequest(
-			() => deleteNode(nodePath),
-			`Node deletion for '${nodePath}'`,
-		);
+	async getClasses() {
+		this.logger.debug("Getting Python classes");
+		const result = await this.api.getTdPythonClasses();
+		return handleApiResponse<(typeof result)["data"]>(result);
+	}
+
+	/**
+	 * Get details of a specific class/module
+	 */
+	async getClassDetails(className: string) {
+		this.logger.debug(`Getting class details for: ${className}`);
+		const result = await this.api.getTdPythonClassDetails(className);
+		return handleApiResponse<(typeof result)["data"]>(result);
 	}
 }

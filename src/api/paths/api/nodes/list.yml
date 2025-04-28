@@ -1,0 +1,135 @@
+get:
+  summary: Get nodes in the path
+  operationId: get_nodes
+  parameters:
+    - name: parentPath
+      description: Parent path  e.g., "/project1"
+      in: query
+      required: true
+      schema:
+        type: string
+        description: e.g., "/project1"
+    - name: pattern
+      description: Pattern to match against node names e.g., "null*"
+      in: query
+      required: false
+      schema:
+        type: string
+        description: e.g., "null*"
+        default: "*"
+  responses:
+    '200':
+      description: List of nodes matching the specified criteria
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                type: boolean
+                description: Whether the operation was successful
+              data:
+                type: object
+                nullable: true
+                properties:
+                  nodes:
+                    description: Result of the execution
+                    type: array
+                    items:
+                      $ref: ../../../index.yml#/components/schemas/TdNode
+              error:
+                type: string
+                nullable: true
+                description: Error message if the operation was not successful
+post:
+  summary: Create a new node
+  operationId: create_node
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - parentPath
+            - nodeType
+          properties:
+            parentPath:
+              type: string
+              description: Path to the parent node (e.g., /project1)
+            nodeType:
+              type: string
+              description: Type of the node to create (e.g., textTop)
+            nodeName:
+              type: string
+              description: Name of the new node (optional)
+  responses:
+    '200':
+      description: Node created successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                type: boolean
+                description: Whether the operation was successful
+              data:
+                type: object
+                nullable: true
+                properties:
+                  result:
+                    description: Result of the execution
+                    $ref: ../../../index.yml#/components/schemas/TdNode
+              error:
+                type: string
+                nullable: true
+                description: Error message if the operation was not successful
+delete:
+  summary: Delete an existing node
+  operationId: delete_node
+  parameters:
+    - name: nodePath
+      description: Path to the node to delete. e.g., "/project1/geo1"
+      in: query
+      required: true
+      schema:
+        type: string
+        description: e.g., "/project1/geo1"
+  responses:
+    '200':
+      description: Node deleted successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                type: boolean
+                description: Whether the operation was successful
+              data:
+                type: object
+                nullable: true
+                properties:
+                  deleted:
+                    type: boolean
+                    description: Whether the node was successfully deleted
+                  node:
+                    description: Information about the deleted node
+                    $ref: ../../../index.yml#/components/schemas/TdNode
+              error:
+                type: string
+                nullable: true
+                description: Error message if the operation was not successful

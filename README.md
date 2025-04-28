@@ -13,8 +13,9 @@ This implementation aims to follow the Model Context Protocol standard, working 
 
 ## Prerequisites
 
-- Node.js
+- Node.js (Check `.nvmrc` or `package.json` engines field for specific version if available)
 - TouchDesigner (latest stable version recommended)
+- Docker (Required for generating Python server code)
 
 ## Installation
 
@@ -27,9 +28,11 @@ cd touchdesigner-mcp
 npm install
 
 # Set up environment configuration
+# Copy the template and adjust TD_WEB_SERVER_URL if needed
 cp dotenv .env
 
-# Build the project
+# Build the project (Generates API clients/servers and compiles TypeScript)
+# Ensure Docker daemon is running before executing this command
 npm run build
 ```
 
@@ -37,129 +40,169 @@ npm run build
 
 ### Setting Up TouchDesigner
 
-1. Open TouchDesigner
-2. Import the provided `td/mcp_webserver_base.tox` component
-3. Ensure the TouchDesigner web server is running (this component handles the communication between the MCP server and TouchDesigner)
+1.  **Generate Code:** Run `npm run build` in the project root. This generates Python server code (`td/modules/td_server/`) and handler code (`td/modules/mcp/controllers/generated_handlers.py`).
+2.  **Open TouchDesigner:** Launch TouchDesigner.
+3.  **Import Component:** Load the `td/mcp_webserver_base.tox` component into your TouchDesigner project.
+4.  **Configure Python Path:** Ensure the Python modules within the `td/modules` directory are accessible to the `mcp_webserver_base` component. This might involve adjusting Python path settings within TouchDesigner or ensuring the `.tox` file correctly references the modules. The `td/import_modules.py` script might assist with this.
+5.  **Web Server DAT:** The `mcp_webserver_base.tox` contains a Web Server DAT configured to run the generated Python Flask application. Ensure this DAT is active and running on the port specified by `TD_WEB_SERVER_URL` in your `.env` file (default is `9981`).
 
-> Note: By default, the MCP server connects to TouchDesigner at `http://localhost:9981`. If you need to change this connection address, modify the `TD_WEB_SERVER_URL` value in the `.env` file, then rebuild the project with `npm run build`.
+> **Note:** The Node.js MCP server (running outside TouchDesigner) communicates with the Python Flask server (running inside TouchDesigner via the Web Server DAT). The `TD_WEB_SERVER_URL` in `.env` tells the Node.js server where to find the Python server.
 
 ### Starting the MCP Server
 
+You can start the server using the MCP Inspector for debugging or directly:
+
 ```bash
-# Start the server in CLI mode
+# Start the server with the MCP Inspector
 npm run dev
+
+# Or, start the server directly
+node dist/index.js --stdio
 ```
 
 ### Connecting with an MCP-compatible AI Assistant
-Like Claude Desktop, Cursor, GitHub Copilot ...etc.
+
+Configure your AI assistant (like Cursor, VS Code Copilot Chat, etc.) to connect to the MCP server. Use the full path to the built server script:
 
 ```json
-    "servers": {
-      "TouchDesigner": {
+// Example configuration (e.g., in VS Code settings.json for Copilot Chat)
+"github.copilot.advanced": {
+    "touchdesigner": {
         "command": "node",
         "args": [
-          "/Users/[user_name]/.../touchdesigner-mcp/dist/index.js", // full path
-          "--stdio"
+            "/full/path/to/touchdesigner-mcp/dist/index.js", // <-- Replace with actual full path
+            "--stdio"
         ],
-        "transportType": "stdio",
-      }
+        "transportType": "stdio"
     }
+}
 ```
 
-Once the server is running, you can connect any MCP-compatible AI assistant to interact with your TouchDesigner project.
+Replace `/full/path/to/touchdesigner-mcp/dist/index.js` with the actual absolute path on your system. Once configured and the server is running, the assistant can use the provided TouchDesigner tools.
 
 ## Project Structure
 
 ```
-├── src/               # Source code
-│   ├── api/           # API specifications and client configuration
-│   ├── gen/           # Generated API models and endpoints
-│   ├── schemas/       # Node schema definitions
-│   ├── tdClient/      # TouchDesigner client implementation
+├── src/                     # Node.js MCP Server Source Code
+│   ├── api/                 # OpenAPI specification (index.yml) and components
+│   ├── core/                # Core utilities (logger, error handling)
+│   ├── features/            # MCP features implementation
+│   │   ├── prompts/         # Prompt handlers
+│   │   ├── resources/       # Resource handlers
+│   │   └── tools/           # Tool handlers (e.g., tdTools.ts)
+│   ├── server/              # MCP Server logic (connection, main server class)
+│   ├── tdClient/            # Generated TypeScript client for TD Python API
+│   ├── index.ts             # Main entry point for the Node.js server
 │   └── ...
-├── td/                # TouchDesigner components
-│   └── mcp_webserver_base.tox  # Web server component for TouchDesigner
-└── ...
+├── td/                      # TouchDesigner specific files
+│   ├── modules/             # Python modules for TouchDesigner
+│   │   ├── mcp/             # Core Python logic for handling MCP requests in TD
+│   │   │   ├── controllers/ # Request handlers (api_controller.py, generated_handlers.py)
+│   │   │   └── services/    # Business logic (api_service.py)
+│   │   ├── td_server/       # Generated Python Flask server code (via openapi-generator)
+│   │   └── utils/           # Shared Python utilities
+│   ├── templates/           # Mustache templates for Python code generation
+│   ├── genHandlers.js       # Node.js script to generate Python handlers
+│   ├── import_modules.py    # Helper script for Python imports in TD
+│   └── mcp_webserver_base.tox # Main TouchDesigner component
+├── tests/                   # Automated tests
+│   ├── integration/
+│   └── unit/
+├── public/                  # Files for mock service worker (if used)
+├── .env                     # Local environment variables (gitignored)
+├── dotenv                   # Template for .env
+├── biome.json               # Biome formatter/linter config
+├── package.json             # Node.js project manifest
+├── tsconfig.json            # TypeScript configuration
+├── orval.config.ts          # Orval configuration (TS client generation)
+├── README.md                # This file
+└── README.ja.md             # Japanese README
 ```
 
 ## MCP Server Capabilities
 
-### Current Features
+This server exposes TouchDesigner functionality through the Model Context Protocol (MCP), including Tools, Prompts, and Resources.
 
-#### Tools
-- **create_td_node**: Create a new TOP node in TouchDesigner (currently only TOP family is supported)
-- **delete_td_node**: Delete a node at the specified path
-- **get_td_server_info**: Get TouchDesigner server information
-- **get_td_project_nodes**: Get all nodes in the current project
-- **get_td_default_node_parameters**: Get default parameters for a specific node type
-- **get_td_node_property**: Get properties of a specific node
-- **update_td_node_properties**: Update node parameters, including node connections
+### Tools
 
-#### Prompts
-- **check-node**: Prompt for checking information about a specific node
-  - Usage example: Provide `nodeName`, `nodeFamily`, and `nodeType` information to get descriptions and usage guidance for that node
+Tools allow the AI assistant to perform actions in TouchDesigner.
 
-#### Resources
-- **node_schemas** (`tdmcp:///node_schemas`): Provides schema definitions for TouchDesigner nodes
-  - Information about available node types and their parameters
-  - Referenced by AI assistants when generating node operation commands
-  - Defined with Zod schemas to support type-safe operations
+| Tool Name                   | Description                                          | Key Parameters                                  |
+| :-------------------------- | :--------------------------------------------------- | :---------------------------------------------- |
+| `create_td_node`            | Create a new node.                                   | `parentPath`, `nodeType`, `nodeName` (opt.)     |
+| `delete_td_node`            | Delete an existing node.                             | `nodePath`                                      |
+| `get_td_nodes`              | Get nodes within a parent path, optionally filtered. | `parentPath`, `pattern` (opt.)                  |
+| `get_td_node_parameters`    | Get parameters of a specific node.                   | `nodePath`                                      |
+| `update_td_node_parameters` | Update parameters of a specific node.                | `nodePath`, `properties` (object)               |
+| `EXECUTE_NODE_METHOD`| Call a Python method on a node.                      | `nodePath`, `method`, `args` (opt.), `kwargs` (opt.) |
+| `get_td_classes`            | Get a list of available TouchDesigner Python classes. | *(None)*                                        |
+| `get_td_class_details`      | Get detailed info about a TD Python class/module.    | `className`                                     |
+| `get_td_info`           | Get information about the TD server environment.     | *(None)*                                        |
+| `execute_python_script`     | Execute an arbitrary Python script in TD.            | `script`                                        |
+
+*(Refer to the MCP server connection details in your AI assistant for the exact input schemas.)*
+
+### Prompts
+
+*(Currently, no specific prompts are registered in the provided server definition. This section can be updated if prompts are added.)*
+
+### Resources
+
+Resources provide contextual information to the AI assistant.
+
+| Resource URI                                                     | Description                                                                 | Access                                     |
+| :--------------------------------------------------------------- | :-------------------------------------------------------------------------- | :----------------------------------------- |
+| `tdmcp:///td_python_class_reference_index`                       | Index of TouchDesigner Python classes and modules.                          | Direct Access                              |
+| `tdmcp:///td_python_class_reference_docs`                        | Documentation for specific TD Python classes.                               | Template: `?class=ClassName1,ClassName2` |
+| `tdmcp:///td_python_class_reference_docs?class={ClassNameList}` | Template URI to fetch documentation for specific classes (e.g., `TextTOP`). | Template Access                            |
 
 ### Current Limitations
 
-- Web interface is not yet available - currently only supports CLI mode
-- Limited to operations exposed through the TouchDesigner Web API
-- Currently only supports creating TOP nodes, other families (COMP, CHOP, SOP, DAT, MAT) are not yet supported
-- The validateToolParams method will throw errors for unsupported node families or types
-- Does not support direct DAT editing functionality
-- Limited support for complex parameter types
-- No support for custom components development
+- **Web Interface:** No web UI is provided; interaction is via MCP tools/resources.
+- **Error Handling:** Error reporting from TouchDesigner back to the AI might be basic.
+- **Complex Operations:** Very complex multi-step operations might require careful prompting or breaking down into smaller tool calls.
+- **Real-time Sync:** The state known by the AI might not always be perfectly synchronized with the real-time state of the TouchDesigner project if changes are made manually in TD.
 
-## MCP Protocol Implementation Details
-
-TouchDesigner MCP implements the three key elements of the Model Context Protocol (MCP):
-
-### 1. Tools
-The MCP server provides seven tools that enable AI to directly manipulate TouchDesigner:
-
-| Tool Name | Description | Parameters |
-|---------|------|-----------|
-| create_td_node | Create TOP nodes | nodeFamily, nodeType, nodeName (optional), parameters (optional), connection (optional) |
-| delete_td_node | Delete nodes | nodePath |
-| get_td_server_info | Get server information | None |
-| get_td_project_nodes | Get all nodes in the project | None |
-| get_td_default_node_parameters | Get default parameters for a node type | nodeFamily, nodeType |
-| get_td_node_property | Get properties of a specific node | nodePath |
-| update_td_node_properties | Update node properties | nodePath, parameters (optional), connection (optional) |
-
-### 2. Prompts
-Providing reusable prompt templates:
-
-| Prompt Name | Description | Arguments |
-|------------|------|-----|
-| check-node | Guidance on node usage | nodeName, nodeFamily, nodeType |
-
-### 3. Resources
-Data and content that AI can reference:
-
-| Resource URI | Description | MIME Type |
-|------------|------|-----------|
-| tdmcp:///node_schemas | TouchDesigner node schema definitions | application/json |
+*(This list may not be exhaustive and depends on the specific implementation details within the Python handlers.)*
 
 ## Development
 
 ### Development Setup
 
 ```bash
-# Run in inspector
+# Install dependencies
+npm install
+
+# Run linters and type checker
+npm run lint
+
+# Run tests
+npm test
+
+# Start the server with MCP Inspector for debugging
 npm run dev
 ```
 
-## APIs For TD WebServer
+### Code Generation Workflow
 
-- The APIs for communicating with TouchDesigner WebServer are defined using OpenAPI schema in `src/api/index.yml`
-- Client code and Zod schemas are automatically generated using `npm run gen` command
-- Currently exploring options to also generate Python client code for the TouchDesigner side - contributors with experience in Python OpenAPI code generation are welcome!
+The project uses OpenAPI and code generation tools extensively:
+
+1.  **API Definition:** The API contract between the Node.js MCP server and the Python server running in TouchDesigner is defined in `src/api/index.yml` using the OpenAPI 3.0 standard.
+2.  **TypeScript Client Generation (`npm run gen:mcp`):**
+    *   Uses `orval` (configured via `orval.config.ts`).
+    *   Reads `src/api/index.yml`.
+    *   Generates a typed TypeScript client (`src/tdClient/`) that the Node.js server uses to make requests to the Python server in TouchDesigner. Includes Zod schemas for request/response validation.
+3.  **Python Server Generation (`npm run gen:webserver`):**
+    *   Uses `openapi-generator-cli` via Docker.
+    *   Reads `src/api/index.yml`.
+    *   Generates a Python Flask server skeleton (`td/modules/td_server/`) based on the API definition. This code runs inside TouchDesigner via a Web Server DAT.
+    *   **Requires Docker to be installed and running.**
+4.  **Python Handler Generation (`npm run gen:handlers`):**
+    *   Uses a custom Node.js script (`td/genHandlers.js`) and Mustache templates (`td/templates/`).
+    *   Reads the generated Python server code or the OpenAPI spec.
+    *   Generates Python handler implementations (`td/modules/mcp/controllers/generated_handlers.py`) that connect the generated Flask routes to the actual TouchDesigner control logic found in `td/modules/mcp/services/api_service.py`.
+
+The complete build process (`npm run build`) executes all necessary generation steps (`npm run gen`) followed by TypeScript compilation (`tsc`).
 
 ## Contributing
 

@@ -1,5 +1,5 @@
 export { startServer } from "./cli.js";
-export { TouchDesignerServer } from "./server.js";
+export { TouchDesignerServer } from "./server/touchDesignerServer.js";
 export {
 	createTouchDesignerClient,
 	TouchDesignerClient,

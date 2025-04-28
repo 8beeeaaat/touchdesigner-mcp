@@ -1,0 +1,31 @@
+get:
+  summary: Get a list of Python classes and modules
+  operationId: get_td_python_classes
+  description: Returns a list of Python classes, modules, and functions available in TouchDesigner
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                type: boolean
+                description: Whether the operation was successful
+              data:
+                nullable: true
+                type: object
+                properties:
+                  classes:
+                    type: array
+                    items:
+                      $ref: ../../../../index.yml#/components/schemas/TdPythonClassInfo
+              error:
+                nullable: true
+                type: string
+                description: Error message if the operation was not successful

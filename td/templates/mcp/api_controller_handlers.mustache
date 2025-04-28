@@ -1,0 +1,63 @@
+# Auto-generated MCP handlers
+import json
+import inspect
+import re
+from utils.types import Result
+from utils.result import error_result
+
+# Service instance singleton pattern
+_api_service_instance = None
+
+def get_api_service():
+    global _api_service_instance
+    if _api_service_instance is None:
+        from mcp.services.api_service import api_service
+        _api_service_instance = api_service
+    return _api_service_instance
+
+def camel_to_snake(name):
+    """Convert camelCase to snake_case"""
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+{{#operations}}
+def {{operationId}}(body: str = None, **kwargs) -> Result:
+    """
+    Auto-generated handler for operation: {{operationId}}
+    """
+    try:
+        print(f"[DEBUG] Handler '{{operationId}}' called with body: {body}, kwargs: {kwargs}")
+        service_method = getattr(get_api_service(), "{{operationId}}", None)
+        if not callable(service_method):
+            return error_result("Service method '{{operationId}}' not implemented")
+
+        # Merge body
+        if body:
+            try:
+                parsed_body = json.loads(body)
+                kwargs.update(parsed_body)
+            except Exception as e:
+                return error_result(f"Invalid JSON body: {str(e)}")
+
+        # CamelCase → SnakeCase 変換
+        kwargs_snake_case = {camel_to_snake(k): v for k, v in kwargs.items()}
+
+        sig = inspect.signature(service_method)
+
+        # Prepare args matching the function signature
+        call_args = {}
+        for param_name in sig.parameters:
+            if param_name in kwargs_snake_case:
+                call_args[param_name] = kwargs_snake_case[param_name]
+
+        return service_method(**call_args)
+
+    except Exception as e:
+        return error_result(f"Handler for '{{operationId}}' failed: {str(e)}")
+{{/operations}}
+
+__all__ = [
+{{#operations}}
+  "{{operationId}}",
+{{/operations}}
+]

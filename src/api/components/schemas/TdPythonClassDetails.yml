@@ -1,0 +1,28 @@
+type: object
+description: Detailed information about a Python class or module
+required:
+  - name
+  - type
+  - methods
+  - properties
+properties:
+  name:
+    type: string
+    description: Name of the class or module
+  type:
+    type: string
+    enum: [class, module, function, object]
+    description: Type of the Python entity
+  description:
+    type: string
+    description: Description of the class or module
+  methods:
+    type: array
+    description: List of methods available in the class or module
+    items:
+      $ref: ../../index.yml#/components/schemas/TdPythonMethodInfo
+  properties:
+    type: array
+    description: List of properties available in the class or module
+    items:
+      $ref: ../../index.yml#/components/schemas/TdPythonPropertyInfo

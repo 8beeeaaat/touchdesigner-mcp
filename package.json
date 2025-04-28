@@ -17,31 +17,28 @@
 	},
 	"homepage": "https://github.com/8beeeaaat/touchdesigner-mcp#readme",
 	"dependencies": {
-		"@modelcontextprotocol/sdk": "^1.9.0",
+		"@modelcontextprotocol/sdk": "^1.10.2",
 		"@mozilla/readability": "^0.6.0",
 		"@types/axios": "^0.14.4",
 		"@types/ws": "^8.18.1",
 		"@types/yargs": "^17.0.33",
-		"axios": "^1.8.4",
+		"axios": "^1.9.0",
 		"dotenv": "^16.5.0",
-		"html-to-md": "^0.8.7",
-		"jsdom": "^26.1.0",
-		"swr": "^2.3.3",
-		"ws": "^8.18.1",
-		"yargs": "^17.7.2",
-		"zod": "^3.24.2"
+		"zod": "^3.24.3"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
 		"@faker-js/faker": "^9.7.0",
 		"@types/jsdom": "^21.1.7",
-		"@types/node": "^22.14.1",
-		"@vitest/coverage-v8": "^3.1.1",
-		"msw": "^2.7.4",
+		"@types/node": "^22.15.2",
+		"@vitest/coverage-v8": "^3.1.2",
+		"msw": "^2.7.5",
+		"mustache": "^4.2.0",
 		"npm-run-all": "^4.1.5",
-		"orval": "^7.8.0",
+		"orval": "^7.9.0",
 		"typescript": "^5.8.3",
-		"vitest": "^3.1.1"
+		"vitest": "^3.1.2",
+		"yaml": "^2.7.1"
 	},
 	"type": "module",
 	"main": "src/server.ts",
@@ -49,17 +46,22 @@
 		"mcp-server": "dist/server.js"
 	},
 	"scripts": {
-		"build": "npm run gen && tsc",
+		"build": "run-s build:*",
+		"build:gen": "npm run gen",
+		"build:dist": "tsc",
 		"lint": "run-p lint:*",
 		"lint:biome": "biome check",
 		"lint:tsc": "tsc --noEmit",
 		"format": "biome check --fix",
 		"dev": "npx @modelcontextprotocol/inspector node dist/index.js --stdio",
-		"test": "vitest run",
-		"test:watch": "vitest",
-		"test:coverage": "vitest run --coverage",
-		"gen": "npm-run-all --parallel gen:*",
-		"gen:api": "orval --config ./orval.config.ts"
+		"test": "run-p test:*",
+		"test:integration": "vitest run ./tests/integration",
+		"test:unit": "vitest run ./tests/unit",
+		"coverage": "vitest run --coverage",
+		"gen": "run-s gen:*",
+		"gen:webserver": "docker run --rm -v ${PWD}:/local openapitools/openapi-generator-cli generate -i /local/src/api/index.yml -g python-flask -o /local/td/modules/td_server",
+		"gen:handlers": "node td/genHandlers.js",
+		"gen:mcp": "orval --config ./orval.config.ts"
 	},
 	"files": [
 		"dist/**/*"

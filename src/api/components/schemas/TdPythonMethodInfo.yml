@@ -1,0 +1,14 @@
+type: object
+description: Information about a Python method
+required:
+  - name
+properties:
+  name:
+    type: string
+    description: Method name
+  signature:
+    type: string
+    description: Method signature including parameters
+  description:
+    type: string
+    description: Description of the method

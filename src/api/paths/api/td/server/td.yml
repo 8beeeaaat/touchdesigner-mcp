@@ -1,0 +1,45 @@
+get:
+  summary: Get TouchDesigner information
+  description: Returns information about the TouchDesigner
+  operationId: get_td_info
+  responses:
+    "200":
+      description: TouchDesigner information
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                description: Whether the operation was successful
+                type: boolean
+              data:
+                nullable: true
+                type: object
+                required:
+                  - server
+                  - version
+                  - compileDate
+                  - osName
+                  - osVersion
+                properties:
+                  server:
+                    type: string
+                    description: Server name (typically "TouchDesigner")
+                  version:
+                    type: string
+                    description: TouchDesigner version number
+                  osName:
+                    type: string
+                    description: Operating system name
+                  osVersion:
+                    type: string
+                    description: Operating system version
+              error:
+                nullable: true
+                description: Error message if the operation was not successful
+                type: string

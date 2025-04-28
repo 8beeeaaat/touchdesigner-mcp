@@ -1,6 +1,9 @@
 import Axios, { type AxiosError, type AxiosRequestConfig } from "axios";
 
-export const AXIOS_INSTANCE = Axios.create();
+const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:9981";
+export const AXIOS_INSTANCE = Axios.create({
+	baseURL: API_BASE_URL,
+});
 
 export const customInstance = <T>(
 	config: AxiosRequestConfig,
@@ -21,6 +24,6 @@ export const customInstance = <T>(
 	return promise;
 };
 
-export type ErrorType<Error> = AxiosError<Error>;
+export type ErrorType<e> = AxiosError<e>;
 
 export type BodyType<BodyData> = BodyData;

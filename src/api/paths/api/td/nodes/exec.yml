@@ -1,0 +1,62 @@
+post:
+  summary: Call a method of the specified node
+  description: |
+    Call a method on the node at the specified path (e.g., /project1).
+    This allows operations equivalent to TouchDesigner's Python API such as
+    `parent_comp = op('/project1')` and `parent_comp.create('textTOP', 'myText')`.
+  operationId: exec_node_method
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - nodePath
+            - method
+          properties:
+            nodePath:
+              type: string
+              description: Path to the node (e.g., /project1/null1)
+            method:
+              type: string
+              description: Name of the method to call
+            args:
+              type: array
+              description: List of arguments for the method call
+              items:
+                oneOf:
+                  - type: string
+                  - type: number
+                  - type: boolean
+            kwargs:
+              type: object
+              additionalProperties: true
+              description: Keyword arguments for the method call
+  responses:
+    '200':
+      description: Method call successful
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                type: boolean
+                description: Whether the operation was successful
+              data:
+                nullable: true
+                type: object
+                required:
+                  - result
+                properties:
+                  result:
+                    description: Result of the method call. Can be any type (equivalent to unknown in TypeScript).
+              error:
+                nullable: true
+                type: string
+                description: Error message if the operation was not successful

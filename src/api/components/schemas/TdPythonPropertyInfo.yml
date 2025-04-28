@@ -1,0 +1,16 @@
+type: object
+description: Information about a Python property
+required:
+  - name
+  - type
+properties:
+  name:
+    type: string
+    description: Property name
+  type:
+    type: string
+    description: Type of the property
+  value:
+    type: object
+    description: Current value of the property (if serializable)
+    nullable: true

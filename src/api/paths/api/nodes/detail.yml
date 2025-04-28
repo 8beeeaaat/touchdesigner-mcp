@@ -1,0 +1,99 @@
+get:
+  summary: Get node detail
+  description: Retrieves detailed information about a specific node including its properties, parameters and connections
+  operationId: get_node_detail
+  parameters:
+    - description: Node path. e.g., "/project1/textTOP"
+      in: query
+      name: nodePath
+      required: true
+      schema:
+        type: string
+        description: e.g., "/project1/textTOP"
+  responses:
+    "200":
+      description: Node properties
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                type: boolean
+                description: Whether the operation was successful
+              data:
+                nullable:
+                $ref: ../../../index.yml#/components/schemas/TdNode
+              error:
+                nullable: true
+                type: string
+                description: Error message if the operation was not successful
+
+patch:
+  summary: Update node properties
+  operationId: update_node
+  requestBody:
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - nodePath
+            - properties
+          properties:
+            nodePath:
+              type: string
+              description: Path to the node (e.g., /project1/null1)
+            properties:
+              additionalProperties: true
+              type: object
+  responses:
+    "200":
+      description: Information about the updated node
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                type: boolean
+                description: Whether the update operation was successful
+              data:
+                nullable: true
+                type: object
+                properties:
+                  path:
+                    type: string
+                    description: Path of the node that was updated
+                  updated:
+                    type: array
+                    description: List of property names that were successfully updated
+                    items:
+                      type: string
+                  failed:
+                    type: array
+                    description: List of properties that failed to update
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Name of the property that failed to update
+                        reason:
+                          type: string
+                          description: Reason for the failure
+                  message:
+                    type: string
+                    description: Summary message about the update operation
+              error:
+                nullable: true
+                type: string
+                description: Error message if the operation was not successful
