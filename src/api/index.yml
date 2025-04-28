@@ -1,7 +1,7 @@
 info:
   description: OpenAPI schema for generating TouchDesigner API client code
   title: TouchDesigner API
-  version: 0.2.0
+  version: 0.2.1
 
 openapi: 3.0.0
 
