@@ -25,7 +25,7 @@ export class TouchDesignerServer {
 		this.server = new McpServer(
 			{
 				name: "TouchDesigner",
-				version: "0.2.3",
+				version: "0.2.4",
 			},
 			{
 				capabilities: {
