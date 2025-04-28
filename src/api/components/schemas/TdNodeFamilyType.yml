@@ -1,0 +1,9 @@
+enum:
+  - COMP
+  - CHOP
+  - TOP
+  - SOP
+  - DAT
+  - MAT
+  - CUSTOM
+type: string

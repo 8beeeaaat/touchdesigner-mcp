@@ -1,38 +1,39 @@
 # TouchDesigner MCP
 
-TouchDesignerのためのMCP(Model Context Protocol) サーバー実装です。AIアシスタントがTouchDesignerプロジェクトを制御・操作できるようになることを目指しています。
+TouchDesignerのためのMCP(Model Context Protocol) サーバー実装です。AIエージェントがTouchDesignerプロジェクトを制御・操作できるようになることを目指しています。
 
 ## 概要
 
-![スクリーンショット 2025-04-14 21 45 47](https://github.com/user-attachments/assets/0091ca65-c2aa-45fe-be32-e59c288e2264)
-
-
-TouchDesigner MCPは、AIモデルとTouchDesignerの間のブリッジとして機能し、AIアシスタントが以下のことを行えるようにします：
-- TouchDesignerプロジェクト内のノードの作成、変更、削除
+TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッジとして機能し、AIエージェントが以下のことが可能になります
+- ノードの作成、変更、削除
 - ノードプロパティやプロジェクト構造の照会
-- 標準化されたプロトコルを通じたTouchDesigner操作のプログラム的制御
-
-この実装はModel Context Protocolの標準に従い、AIモデルとTouchDesignerのパワフルなリアルタイムビジュアル開発環境との間でシームレスな統合を提供することを目指しています。
+- PythonスクリプトによるTouchDesignerのプログラム的制御
 
 ## 前提条件
 
-- Node.js
+- Node.js（特定のバージョンが必要な場合は `.nvmrc` または `package.json` の `engines` フィールドを確認してください）
 - TouchDesigner（最新の安定版を推奨）
+- Docker（Pythonサーバーコードの生成に必要）
 
-## インストール
+## MCPサーバーコードのビルド
 
+1. リポジトリのクローン
 ```bash
-# リポジトリのクローン
 git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
+```
+
+2. 依存パッケージのインストール
+```bash
 cd touchdesigner-mcp
-
-# 依存関係のインストール
 npm install
-
-# 環境設定ファイルの設置
+```
+3. 環境設定ファイルの設置とビルド
+```
+# テンプレートをコピーし、必要に応じて TD_WEB_SERVER_URL を調整してください
 cp dotenv .env
 
-# プロジェクトのビルド
+# プロジェクトのビルド（APIクライアント/サーバー向けスキーマを生成し、MCPリソースをコンパイルします）
+# このコマンドを実行する前にDockerデーモンが実行されていることを確認してください
 npm run build
 ```
 
@@ -40,132 +41,154 @@ npm run build
 
 ### TouchDesignerのセットアップ
 
-1. TouchDesignerを開く
-2. 提供されている`td/mcp_webserver_base.tox`コンポーネントをインポート
-3. TouchDesignerのWebサーバーが実行されていることを確認（このコンポーネントはMCPサーバーとTouchDesigner間の通信を処理します）
+1.  **コード生成:**
+[MCPサーバーコードのビルド](#MCPサーバーコードのビルド) を参考に、プロジェクトルートで `npm run build` を実行します。これにより以下のコードが生成されます。
+- MCPサーバコード
+- TouchDesigner WebSever DAT向けのAPIサーバーコード
+2.  **TouchDesigner に MCPサーバー向けWebServerをインポートする:**
+TouchDesignerを起動し、`td/mcp_webserver_base.tox` コンポーネントをTouchDesignerプロジェクト直下にimportします。
+tox のimport により `td/import_modules.py` スクリプトが動作し、APIサーバのコントローラなどのモジュールがロードされます。
 
-> 注意：デフォルトでは、MCPサーバーは`http://localhost:9981`でTouchDesignerに接続します。この接続アドレスを変更する必要がある場合は、`.env`ファイルの`TD_WEB_SERVER_URL`値を修正し、`npm run build`でプロジェクトを再ビルドしてください。
+3.  **APIサーバの動作確認:**
+`td/modules` ディレクトリ内のPythonモジュールが `mcp_webserver_base` コンポーネントからアクセス可能であることを確認します。
+`npm run test` を実行することでMCPサーバーコードのユニットテストと TouchDesigner への結合テストが実行されます。
+TOuchDesigner のメニューから Textportを起動すると通信のログを確認することができます。
 
-### MCPサーバーの起動
+*TIPS*
+`mcp_webserver_base.tox` には、MCPサーバーとTouchDesignerを連携させるように設定された WebServer DAT が含まれています。
+このDATがActiveであり、`.env` ファイルの `TD_WEB_SERVER_URL` で指定されたポートで実行されていることを確認してください。（デフォルト: `9981`）
+実行するポートを任意のものに変更したい場合は、以下の手順に従ってください。
+1. `.env` ファイルの `TD_WEB_SERVER_PORT` を変更
+2. `npm run build` を再実行
+3. mcp_webserver_base (WebServer DAT) のポートを変更し、WebServer DATをRestart
 
-```bash
-# CLIモードでサーバーを起動
-npm run dev
-```
+### MCP対応 AIエージェントとの接続
 
-### MCP対応AIアシスタントとの接続
-Claude Desktop、Cursor、GitHub Copilotなど
+TouchDesignerが起動した状態で、AIエージェント（Cursor, Claude Desktop, VSCode CopilotChatなど）をMCPサーバーに接続するように設定します。
 
 ```json
-    "servers": {
-      "TouchDesigner": {
+// 設定例（例：VS Code settings.json の Copilot Chat 用）
+"github.copilot.advanced": {
+    "touchdesigner": {
         "command": "node",
         "args": [
-          "/Users/[user_name]/.../touchdesigner-mcp/dist/index.js", // 完全なパス
-          "--stdio"
+            "/path/to/your/touchdesigner-mcp/dist/index.js", // <-- npm run buildによって生成された dist/index.js への絶対パスに置き換えてください
+            "--stdio"
         ],
-        "transportType": "stdio",
-      }
+        "transportType": "stdio"
     }
+}
 ```
 
-サーバーが起動したら、任意のMCP対応AIアシスタントを接続してTouchDesignerプロジェクトを操作できます。
+TouchDesigner で APIサーバーが実行されていれば、エージェントは提供された TouchDesigner ツールを通じてTouchDesignerを使用できます。
 
-![スクリーンショット 2025-04-14 21 53 38](https://github.com/user-attachments/assets/a7f9351f-404b-42d1-8de2-e0bf2a55a586)
-
-
-## プロジェクト構造
+## セットアップ後のプロジェクト構造概要
 
 ```
-├── src/               # ソースコード
-│   ├── api/           # API仕様とクライアント設定
-│   ├── gen/           # 生成されたAPIモデルとエンドポイント
-│   ├── schemas/       # ノードスキーマ定義
-│   ├── tdClient/      # TouchDesignerクライアント実装
+├── src/                       # MCPサーバー ソースコード
+│   ├── api/                  # TD WebServerに対するOpenAPI仕様
+│   ├── core/                 # コアユーティリティ (ロガー, エラーハンドリング)
+│   ├── features/             # MCP機能実装
+│   │   ├── prompts/         # プロンプトハンドラ
+│   │   ├── resources/       # リソースハンドラ
+│   │   └── tools/           # ツールハンドラ (例: tdTools.ts)
+│   ├── gen/                  # OpenAPIスキーマから生成されたMCPサーバー向けコード
+│   ├── server/               # MCPサーバーロジック (接続, メインサーバークラス)
+│   ├── tdClient/             # TD接続API用クライアント
+│   ├── index.ts              # Node.jsサーバーのメインエントリーポイント
 │   └── ...
-├── td/                # TouchDesignerコンポーネント
-│   └── mcp_webserver_base.tox  # TouchDesigner用Webサーバーコンポーネント
-└── ...
+├── td/                        # TouchDesigner関連ファイル
+│   ├── modules/              # TouchDesigner用Pythonモジュール
+│   │   ├── mcp/              # TD内でMCPからのリクエストを処理するコアロジック
+│   │   │   ├── controllers/ # APIリクエストコントローラ (api_controller.py, generated_handlers.py)
+│   │   │   └── services/    # ビジネスロジック (api_service.py)
+│   │   ├── td_server/        # OpenAPIスキーマから生成されたPythonモデルコード
+│   │   └── utils/            # 共有Pythonユーティリティ
+│   ├── templates/             # Pythonコード生成用Mustacheテンプレート
+│   ├── genHandlers.js         # generated_handlers.py 生成用のNode.jsスクリプト
+│   ├── import_modules.py      # TDへ APIサーバ関連モジュールをインポートするヘルパースクリプト
+│   └── mcp_webserver_base.tox # メインTouchDesignerコンポーネント
+├── tests/                      # テストコード
+│   ├── integration/
+│   └── unit/
+├── .env                        # ローカル環境変数 (git無視)
+├── dotenv                      # .env用テンプレート
+└── orval.config.ts             # Orval 設定 (TSクライアント生成)
 ```
 
 ## MCPサーバーの機能
 
-### 現在の機能
+このサーバーは、Model Context Protocol (MCP) を通じてTouchDesigner への操作、および各種実装ドキュメントへの参照を可能にします。
 
-#### ツール（Tools）
-- **create_td_node**: TouchDesignerに新しいTOPノードを作成（現在はTOPファミリーのみサポート）
-- **delete_td_node**: 指定されたパスのノードを削除
-- **get_td_server_info**: TouchDesignerのサーバー情報を取得
-- **get_td_project_nodes**: 現在のプロジェクト内のすべてのノードを取得
-- **get_td_default_node_parameters**: 特定のノードタイプのデフォルトパラメータを取得
-- **get_td_node_property**: 特定のノードのプロパティを取得
-- **update_td_node_properties**: ノードパラメータを更新（ノード間接続も含む）
+### ツール (Tools)
 
-#### プロンプト（Prompts）
-- **check-node**: 特定のノードに関する情報を確認するためのプロンプト
-  - 使用例: `nodeName`、`nodeFamily`、`nodeType`の情報を提供すると、そのノードに関する説明や使用方法のガイダンスが得られます
+ツールは、AIエージェントがTouchDesignerでアクションを実行できるようにします。
 
-#### リソース（Resources）
-- **node_schemas** (`tdmcp:///node_schemas`): TouchDesignerノードのスキーマ定義を提供
-  - 利用可能なノードタイプとそのパラメータの情報
-  - AIアシスタントがノード操作コマンドを生成する際に参照される
-  - Zodスキーマで定義されており、型安全な操作をサポート
+| ツール名                    | 説明                                           |
+| :-------------------------- | :--------------------------------------------- |
+| `create_td_node`            | 新しいノードを作成します。                     |
+| `delete_td_node`            | 既存のノードを削除します。                     |
+| `exec_node_method`| ノードに対しPythonメソッドを呼び出します。       |
+| `execute_python_script`     | TD内で任意のPythonスクリプトを実行します。     |
+| `get_td_class_details`      | TD Pythonクラス/モジュールの詳細情報を取得します。 |
+| `get_td_classes`            | TouchDesigner Pythonクラスのリストを取得します。 |
+| `get_td_info`           | TDサーバー環境に関する情報を取得します。       |
+| `get_td_node_parameters`    | 特定ノードのパラメータを取得します。           |
+| `get_td_nodes`              | 親パス内のノードを取得します（オプションでフィルタリング）。 |
+| `update_td_node_parameters` | 特定ノードのパラメータを更新します。           |
 
-### 現在の制限事項
+### プロンプト (Prompts)
 
-- Webインターフェースはまだ利用できません - 現在はCLIモードのみサポート
-- TouchDesigner Web APIを通じて公開されている操作のみに限定
-- 現在はTOPノードの作成のみをサポート（COMP、CHOP、SOP、DAT、MATなどの他のファミリーはまだサポートされていません）
-- validateToolParamsメソッドはサポートされていないノードファミリーまたはタイプに対してエラーを発生させます
-- DAT直接編集機能はサポートしていません
-- 複雑なパラメータタイプに対する限定的なサポート
-- カスタムコンポーネント開発のサポートなし
+プロンプトは、AIエージェントがTouchDesignerで特定のアクションを実行するための指示を提供します。
 
-## MCPプロトコル実装の詳細
+| プロンプト名                | 説明                                           |
+| :-------------------------- | :--------------------------------------------- |
+| `Search node`               | ノードをファジー検索し、指定されたノード名、ファミリー、タイプに基づいて情報を取得します。 |
+| `Node connection`          | TouchDesigner内でノード同士を接続するための指示を提供します。 |
+| `Check node errors`               | 指定されたノードのエラーをチェックします。子ノードがあれば再帰的にチェックします。           |
 
-TouchDesigner MCPは、Model Context Protocol (MCP) の主要な3つの要素を実装しています：
+### リソース (Resources)
 
-### 1. ツール（Tools）
-MCPサーバーは7つのツールを提供し、AIがTouchDesignerを直接操作できるようにします：
-
-| ツール名 | 説明 | パラメータ |
-|---------|------|-----------|
-| create_td_node | TOPノードの作成 | nodeFamily, nodeType, nodeName（オプション）, parameters（オプション）, connection（オプション） |
-| delete_td_node | ノードの削除 | nodePath |
-| get_td_server_info | サーバー情報の取得 | なし |
-| get_td_project_nodes | プロジェクト内のすべてのノードの取得 | なし |
-| get_td_default_node_parameters | ノードタイプのデフォルトパラメータの取得 | nodeFamily, nodeType |
-| get_td_node_property | 特定ノードのプロパティ取得 | nodePath |
-| update_td_node_properties | ノードのプロパティ更新 | nodePath, parameters（オプション）, connection（オプション） |
-
-### 2. プロンプト（Prompts）
-再利用可能なプロンプトテンプレートを提供：
-
-| プロンプト名 | 説明 | 引数 |
-|------------|------|-----|
-| check-node | ノードの使用法に関するガイダンス | nodeName, nodeFamily, nodeType |
-
-### 3. リソース（Resources）
-AIが参照できるデータやコンテンツ：
-
-| リソースURI | 説明 | MIME Type |
-|------------|------|-----------|
-| tdmcp:///node_schemas | TouchDesignerノードのスキーマ定義 | application/json |
+未実装
 
 ## 開発
 
 ### 開発環境のセットアップ
 
 ```bash
-# インスペクターモードで実行
+# 依存関係のインストール
+npm install
+
+# リンターと型チェッカーの実行
+npm run lint
+
+# テストの実行
+npm test
+
+# デバッグ用にMCP Inspectorを使用してサーバーを起動
 npm run dev
 ```
 
-## TouchDesigner WebServer用のAPI
+### APIコード生成ワークフロー
 
-- TouchDesigner WebServerとの通信用APIは、`src/api/index.yml`でOpenAPIスキーマを使用して定義されています
-- クライアントコードとZodスキーマは`npm run gen`コマンドを使用して自動生成されます
-- TouchDesigner側のPythonクライアントコードの生成オプションも検討中です - Python OpenAPIコード生成の経験がある貢献者を歓迎します！
+このプロジェクトでは、OpenAPIによるコード生成ツール ( Orval / openapi-generator-cli )を使用しています：
+
+**API定義:** Node.js MCPサーバーとTouchDesigner内で実行されるPythonサーバー間のAPI規約は `src/api/index.yml` で定義されます。
+
+1.  **Pythonサーバー生成 (`npm run gen:webserver`):**
+    *   Docker経由で `openapi-generator-cli` を使用します。
+    *   `src/api/index.yml` を読み取ります。
+    *   API定義に基づいてPythonサーバーのスケルトン (`td/modules/td_server/`) を生成します。このコードはWebServer DATを介してTouchDesigner内で実行されます。
+    *   **Dockerがインストールされ、実行されている必要があります。**
+2.  **Pythonハンドラ生成 (`npm run gen:handlers`):**
+    *   カスタムNode.jsスクリプト (`td/genHandlers.js`) とMustacheテンプレート (`td/templates/`) を使用します。
+    *   生成されたPythonサーバーコードまたはOpenAPI仕様を読み取ります。
+    *   `td/modules/mcp/services/api_service.py` にあるビジネスロジックに接続するハンドラ実装 (`td/modules/mcp/controllers/generated_handlers.py`) を生成します。
+3.  **TypeScriptクライアント生成 (`npm run gen:mcp`):**
+    *   `Orval` を使用し `openapi-generator-cli` がバンドルしたスキーマYAMLからAPIクライアントコードとToolの検証に用いるZodスキーマを生成します。
+    *   Node.jsサーバーが WebServerDAT にリクエストを行うために使用する、型付けされたTypeScriptクライアント (`src/tdClient/`) を生成します。
+
+ビルドプロセス (`npm run build`) は、必要なすべての生成ステップ (`npm run gen`) を実行し、その後にTypeScriptコンパイル (`tsc`) を行います。
 
 ## 貢献
 

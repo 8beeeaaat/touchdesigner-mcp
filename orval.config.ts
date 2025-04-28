@@ -6,7 +6,7 @@ dotenv.config();
 export default defineConfig({
 	api: {
 		input: {
-			target: "./src/api/index.yml",
+			target: "./td/modules/td_server/openapi_server/openapi/openapi.yaml",
 		},
 		output: {
 			baseUrl: {
@@ -15,11 +15,12 @@ export default defineConfig({
 					baseUrl: process.env.TD_WEB_SERVER_URL || "http://localhost:9981",
 				},
 			},
-			mode: "split",
+			namingConvention: "PascalCase",
+			mode: "single",
 			target: "src/gen/endpoints",
-			schemas: "src/gen/models",
 			mock: true,
 			clean: true,
+			biome: false,
 			override: {
 				mutator: {
 					path: "./src/api/customInstance.ts",
@@ -31,14 +32,15 @@ export default defineConfig({
 	},
 	mcpZod: {
 		input: {
-			target: "./src/api/index.yml",
+			target: "./td/modules/td_server/openapi_server/openapi/openapi.yaml",
 		},
 		output: {
-			mode: "split",
+			mode: "single",
 			client: "zod",
 			target: "src/gen/mcp",
 			fileExtension: ".zod.ts",
 			clean: true,
+			biome: false,
 		},
 	},
 });

@@ -1,9 +1,0 @@
-import { z } from "zod";
-import { createMATSchema } from "./utils.js";
-
-const out = createMATSchema({
-	label: z.string().optional().describe("Label"),
-	connectorder: z.number().optional().describe("Connect Order"),
-});
-
-export { out };

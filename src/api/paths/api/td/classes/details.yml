@@ -1,0 +1,33 @@
+get:
+  summary: Get details of a specific Python class or module
+  operationId: get_td_python_class_details
+  description: Returns detailed information about a specific Python class, module, or function including methods, properties, and documentation
+  parameters:
+    - name: className
+      in: path
+      description: Name of the class or module. e.g., "textTOP"
+      required: true
+      schema:
+        type: string
+  responses:
+    '200':
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                type: boolean
+                description: Whether the operation was successful
+              data:
+                nullable: true
+                $ref: ../../../../index.yml#/components/schemas/TdPythonClassDetails
+              error:
+                nullable: true
+                type: string
+                description: Error message if the operation was not successful

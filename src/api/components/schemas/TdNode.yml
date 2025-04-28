@@ -1,0 +1,21 @@
+type: object
+description: Information about a TouchDesigner node
+required:
+  - id
+  - opType
+  - name
+  - path
+  - properties
+properties:
+  id:
+    type: integer
+  opType:
+    type: string
+  name:
+    type: string
+  path:
+    type: string
+  properties:
+    type: object
+    additionalProperties: true
+
