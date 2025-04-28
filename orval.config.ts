@@ -18,7 +18,7 @@ export default defineConfig({
 			namingConvention: "PascalCase",
 			mode: "single",
 			target: "src/gen/endpoints",
-			mock: true,
+			mock: false,
 			clean: true,
 			biome: false,
 			override: {
