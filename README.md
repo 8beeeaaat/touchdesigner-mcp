@@ -8,8 +8,6 @@ This is an implementation of an MCP (Model Context Protocol) server for TouchDes
 
 [![demo clip](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/particle_on_youtube.png)](https://youtu.be/V2znaqGU7f4?si=6HDFbcBHCFPdttkM&t=635)
 
-![demo](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/nodes_list.png)
-
 TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebServer DAT, enabling AI agents to:
 - Create, modify, and delete nodes
 - Query node properties and project structure
@@ -61,6 +59,8 @@ With TouchDesigner running, configure your AI agent (Claude Desktop, Cursor, VSC
 If the MCP server is recognized, setup is complete.
 If you see an error at startup, try launching the agent again after starting TouchDesigner.
 If the API server is running in TouchDesigner, the agent can use TouchDesigner via the provided tools.
+
+![demo](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/nodes_list.png)
 
 
 ## MCP Server Features
