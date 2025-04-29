@@ -17,8 +17,11 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 
 *Node.js がインストールされていることが前提となります*
 
+[![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial.png)](https://www.youtube.com/watch?v=jFaUP1fYum0)
+
 ### 1. touchdesigner-mcp-server パッケージのインストール
 
+`mkdir some && cd ./some` *（必要に応じて作成）*
 `npm install touchdesigner-mcp-server`
 
 ### 2. TouchDesignerとの接続
@@ -32,10 +35,9 @@ tox のimport により `td/import_modules.py` スクリプトが動作し、API
 
 ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
 
-#### APIサーバの動作確認
-`npm run test` を実行することでMCPサーバーコードのユニットテストと TouchDesigner への接続テストが実行されます。
-このテストでは `td/modules` ディレクトリ内のPythonモジュールが `mcp_webserver_base` コンポーネントからアクセス可能であることを確認します。
-TouchDesigner のメニューから Textportを起動すると通信のログを確認することができます。
+TouchDesigner のメニューから Textportを起動してサーバーの起動ログを確認することができます。
+
+![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
 ### 3. TouchDesigner MCP Server の設定
 TouchDesignerが起動した状態で、AIエージェント（Claude Desktop,Cursor, VSCode CopilotChatなど）をMCPサーバーに接続するように設定します。
