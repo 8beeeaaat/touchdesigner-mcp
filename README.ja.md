@@ -58,6 +58,8 @@ TouchDesignerが起動した状態で、AIエージェント（Claude Desktop,Cu
 }
 ```
 
+*Windows環境では C:\\ の様にドライブレターを含めてください [参考](https://github.com/modelcontextprotocol/servers/issues/40#issuecomment-2500235499)*
+
 MCPサーバーが認識されていればセットアップは完了です。
 起動時にエラーが表示される場合はTouchDesignerを先に起動してから再度エージェントを起動してください。
 TouchDesigner で APIサーバーが実行されていれば、エージェントは提供された TouchDesigner ツールを通じてTouchDesignerを使用できます。
@@ -169,6 +171,8 @@ TouchDesignerが起動した状態で、AIエージェント（Cursor, Claude De
   }
 }
 ```
+
+*Windows環境では C:\\ の様にドライブレターを含めてください [参考](https://github.com/modelcontextprotocol/servers/issues/40#issuecomment-2500235499)*
 
 ### セットアップ後のプロジェクト構造概要
 
