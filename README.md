@@ -17,8 +17,11 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
 
 *Requires Node.js to be installed*
 
+[![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial.png)](https://www.youtube.com/watch?v=jFaUP1fYum0)
+
 ### 1. Install the touchdesigner-mcp-server package
 
+`mkdir some && cd ./some` *(If you need)*
 `npm install touchdesigner-mcp-server`
 
 ### 2. Connect to TouchDesigner
@@ -32,10 +35,9 @@ Importing the tox will trigger the `td/import_modules.py` script, which loads mo
 
 ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
 
-#### Verify API server operation
-Run `npm run test` to execute unit tests for the MCP server code and connection tests to TouchDesigner.
-This test ensures that the Python modules in the `td/modules` directory are accessible from the `mcp_webserver_base` component.
-You can check communication logs by opening the Textport from the TouchDesigner menu.
+You can check boot logs by opening the Textport from the TouchDesigner menu.
+
+![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
 ### 3. Configure the TouchDesigner MCP Server
 With TouchDesigner running, configure your AI agent (Claude Desktop, Cursor, VSCode CopilotChat, etc.) to connect to the MCP server.
