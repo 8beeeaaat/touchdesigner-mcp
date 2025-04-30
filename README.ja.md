@@ -48,7 +48,7 @@ TouchDesignerが起動した状態で、AIエージェント（Claude Desktop,Cu
   "mcpServers": {
     "touchdesigner": {
       "args": [
-        "/path/to/your/touchdesigner-mcp-server/dist/index.js", // <-- touchdesigner-mcp-server/dist/index.js への絶対パスに置き換えてください
+        "/path/to/your/node_modules/touchdesigner-mcp-server/dist/index.js", // <-- node_modules/touchdesigner-mcp-server/dist/index.js への絶対パスに置き換えてください
         "--stdio"
       ],
       "command": "node",
@@ -58,9 +58,10 @@ TouchDesignerが起動した状態で、AIエージェント（Claude Desktop,Cu
 }
 ```
 
-*Windows環境では C:\\ の様にドライブレターを含めてください [参考](https://github.com/modelcontextprotocol/servers/issues/40#issuecomment-2500235499)*
+*Windows環境では C:\\ の様にドライブレターを含めてください。 例. `C:\\path\\to\\your\\node_modules\\touchdesigner-mcp-server\\dist\\index.js`*
 
 MCPサーバーが認識されていればセットアップは完了です。
+認識されない場合はAIエージェントを再起動するなどしてください。
 起動時にエラーが表示される場合はTouchDesignerを先に起動してから再度エージェントを起動してください。
 TouchDesigner で APIサーバーが実行されていれば、エージェントは提供された TouchDesigner ツールを通じてTouchDesignerを使用できます。
 
@@ -172,7 +173,7 @@ TouchDesignerが起動した状態で、AIエージェント（Cursor, Claude De
 }
 ```
 
-*Windows環境では C:\\ の様にドライブレターを含めてください [参考](https://github.com/modelcontextprotocol/servers/issues/40#issuecomment-2500235499)*
+*Windows環境では C:\\ の様にドライブレターを含めてください。 例. `C:\\path\\to\\your\\touchdesigner-mcp\\dist\\index.js`*
 
 ### セットアップ後のプロジェクト構造概要
 

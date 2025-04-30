@@ -48,7 +48,7 @@ With TouchDesigner running, configure your AI agent (Claude Desktop, Cursor, VSC
   "mcpServers": {
     "touchdesigner": {
       "args": [
-        "/path/to/your/touchdesigner-mcp-server/dist/index.js", // <-- Replace with the absolute path to touchdesigner-mcp-server/dist/index.js
+        "/path/to/your/node_modules/touchdesigner-mcp-server/dist/index.js", // <-- Replace with the absolute path to node_modules/touchdesigner-mcp-server/dist/index.js
         "--stdio"
       ],
       "command": "node",
@@ -58,9 +58,10 @@ With TouchDesigner running, configure your AI agent (Claude Desktop, Cursor, VSC
 }
 ```
 
-*On Windows system, please include the drive letter such as C: [Reference](https://github.com/modelcontextprotocol/servers/issues/40#issuecomment-2500235499)*.
+*On Windows system, please include the drive letter such as C: e.g. `C:\\path\\to\\your\\node_modules\\touchdesigner-mcp-server\\dist\\index.js`*
 
 If the MCP server is recognized, setup is complete.
+Restart the agent, if not recognized.
 If you see an error at startup, try launching the agent again after starting TouchDesigner.
 If the API server is running in TouchDesigner, the agent can use TouchDesigner via the provided tools.
 
@@ -173,7 +174,7 @@ With TouchDesigner running, configure your AI agent (Cursor, Claude Desktop, VSC
 }
 ```
 
-*On Windows system, please include the drive letter such as C: [Reference](https://github.com/modelcontextprotocol/servers/issues/40#issuecomment-2500235499)*.
+*On Windows system, please include the drive letter such as C: e.g. `C:\\path\\to\\your\\touchdesigner-mcp\\dist\\index.js`*
 
 ### Project Structure After Setup
 
