@@ -15,20 +15,15 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
 
 ## Usage
 
-*Requires Node.js to be installed*
+*Requires Docker or Node.js to be installed*
 
 [![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial.png)](https://www.youtube.com/watch?v=jFaUP1fYum0)
 
-### 1. Install the touchdesigner-mcp-server package
-
-`mkdir some && cd ./some` *(If you need)*
-`npm install touchdesigner-mcp-server`
-
-### 2. Connect to TouchDesigner
+### 1. Install the API Server in Your TouchDesigner Project
 
 #### Place mcp_webserver_base.tox in TouchDesigner
 
-Start TouchDesigner and import the `td/mcp_webserver_base.tox` component directly under your TouchDesigner project.
+Start TouchDesigner and import the `td/mcp_webserver_base.tox` component directly under the TouchDesigner project you want to control.
 Example: Place it as `/project1/mcp_webserver_base`
 
 Importing the tox will trigger the `td/import_modules.py` script, which loads modules such as API server controllers.
@@ -39,10 +34,58 @@ You can check boot logs by opening the Textport from the TouchDesigner menu.
 
 ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-### 3. Configure the TouchDesigner MCP Server
-With TouchDesigner running, configure your AI agent (Claude Desktop, Cursor, VSCode CopilotChat, etc.) to connect to the MCP server.
+### 2. Configure the TouchDesigner MCP Server
 
-*Example: Claude Desktop*
+With your .tox component loaded in TouchDesigner, configure your AI agent (Claude Desktop, Cursor, VSCode CopilotChat, etc.) to connect to the MCP server. Choose one of the following methods:
+
+#### Method 1: Using Docker Image (Recommended)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
+cd touchdesigner-mcp
+```
+
+2. Set up the environment file and build:
+Copy the template file and adjust the TD_WEB_SERVER_URL as needed before building the Docker image.
+
+```bash
+cp dotenv .env
+docker-compose build
+```
+
+3. Configure your AI agent to use the Docker container:
+
+*Example for Claude Desktop*
+```json
+{
+  "mcpServers": {
+    "touchdesigner": {
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "touchdesigner-mcp-server"
+      ],
+      "command": "docker"
+    }
+  }
+}
+```
+
+#### Method 2: Using the NPM Package
+
+To use the pre-built JS directly from Node.js:
+
+1. Install the package
+```bash
+mkdir some && cd ./some  # If you need a new directory
+npm install touchdesigner-mcp-server
+```
+
+2. Configure your AI agent:
+
+*Example for Claude Desktop*
 ```json
 {
   "mcpServers": {
@@ -51,19 +94,20 @@ With TouchDesigner running, configure your AI agent (Claude Desktop, Cursor, VSC
         "/path/to/your/node_modules/touchdesigner-mcp-server/dist/index.js", // <-- Replace with the absolute path to node_modules/touchdesigner-mcp-server/dist/index.js
         "--stdio"
       ],
-      "command": "node",
-      "transportType": "stdio"
+      "command": "node"
     }
   }
 }
 ```
 
-*On Windows system, please include the drive letter such as C: e.g. `C:\\path\\to\\your\\node_modules\\touchdesigner-mcp-server\\dist\\index.js`*
+*On Windows systems, include the drive letter like C: e.g. `C:\\path\\to\\your\\node_modules\\touchdesigner-mcp-server\\dist\\index.js`*
+
+### 3. Verify Connection
 
 If the MCP server is recognized, setup is complete.
-Restart the agent, if not recognized.
-If you see an error at startup, try launching the agent again after starting TouchDesigner.
-If the API server is running in TouchDesigner, the agent can use TouchDesigner via the provided tools.
+If it's not recognized, try restarting your AI agent.
+If you see an error at startup, try launching the agent again after starting TouchDesigner first.
+When the API server is running properly in TouchDesigner, the agent can use the provided tools to operate TouchDesigner.
 
 ![demo](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/nodes_list.png)
 
@@ -106,77 +150,23 @@ Not implemented
 
 ## For Developers
 
-### Building the MCP Server Code
+### Generating Client and API Server Code
 
-1. Clone the repository
-```bash
-git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
-```
+1. `cp dotenv .env`
+2. Adjust `TD_WEB_SERVER_URL` in the `.env` file to match your development environment
+3. Run `docker-compose build` or `npm run build` to regenerate the code
 
-2. Install dependencies
-```bash
-cd touchdesigner-mcp
-npm install
-```
-3. Set up environment file and build
-```
-# Copy the template and adjust TD_WEB_SERVER_URL as needed
-cp dotenv .env
+When you need to reflect the built code, please restart both the MCP server and TouchDesigner.
 
-# Build the project (generates API client/server schemas and compiles MCP resources)
-# Make sure the Docker daemon is running before executing this command
-npm run build
-```
-
-### TouchDesigner Setup
-
-#### 1. **Code Generation:**
-Run `npm run build` to generate the following code:
-- MCP server code
-- API server code for TouchDesigner WebServer DAT
-
-#### 2. **Import the WebServer for MCP server into TouchDesigner:**
-Start TouchDesigner and import the `td/mcp_webserver_base.tox` component directly under your project.
-Importing the tox will trigger the `td/import_modules.py` script, which loads modules such as API server controllers.
-
-#### 3. **Verify API server operation:**
-Ensure that the Python modules in the `td/modules` directory are accessible from the `mcp_webserver_base` component.
-Run `npm run test` to execute unit and integration tests for the MCP server code and TouchDesigner connection.
+### Verifying the API Server
+- `npm run test`
+Run unit tests for the MCP server code and integration tests with TouchDesigner.
 You can check communication logs by opening the Textport from the TouchDesigner menu.
 
-You can debug with @modelcontextprotocol/inspector using `npm run dev`.
+- `npm run dev`
+Launch @modelcontextprotocol/inspector to debug various features.
 
-*TIPS*
-`mcp_webserver_base.tox` includes a WebServer DAT configured to link the MCP server and TouchDesigner.
-Ensure this DAT is active and running on the port specified by `TD_WEB_SERVER_URL` in your `.env` file (default: `9981`).
-To change the port:
-1. Change `TD_WEB_SERVER_PORT` in `.env`
-2. Re-run `npm run build`
-3. Change the port in mcp_webserver_base (WebServer DAT) and restart the DAT
-
-### Connecting with MCP-compatible AI Agents
-
-With TouchDesigner running, configure your AI agent (Cursor, Claude Desktop, VSCode CopilotChat, etc.) to connect to the MCP server.
-
-#### Example: Claude Desktop
-```json
-{
-  "mcpServers": {
-    "dev_touchdesigner": {
-      "args": [
-        "/path/to/your/touchdesigner-mcp/dist/index.js", // <-- Replace with the absolute path to /dist/index.js after build
-        "--stdio"
-      ],
-      "command": "node",
-      "transportType": "stdio"
-    }
-  }
-}
-```
-
-*On Windows system, please include the drive letter such as C: e.g. `C:\\path\\to\\your\\touchdesigner-mcp\\dist\\index.js`*
-
-### Project Structure After Setup
+### Project Structure Overview
 
 ```
 ├── src/                       # MCP server source code
@@ -209,7 +199,6 @@ With TouchDesigner running, configure your AI agent (Cursor, Claude Desktop, VSC
 ├── dotenv                      # Template for .env
 └── orval.config.ts             # Orval config (TS client generation)
 ```
-
 
 ### API Code Generation Workflow
 
