@@ -1,0 +1,18 @@
+services:
+  touchdesigner-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Configuration to connect to TouchDesigner WebServer on the host machine
+        # This will read TD_WEB_SERVER_URL from the .env file
+        - TD_WEB_SERVER_URL=${TD_WEB_SERVER_URL:-http://host.docker.internal:9981}
+    image: touchdesigner-mcp-server
+    volumes:
+      # Mount directories to easily reflect changes (for development)
+      - ./src:/app/src
+      - ./td:/app/td
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    stdin_open: true
+    tty: true
