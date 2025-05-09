@@ -1,15 +1,1 @@
-# This file is used to set environment variables for the application.
-# It is recommended to use a .env file for local development.
-
-# The following environment variables are used in the application:
-
-# TD_WEB_SERVER_URL: The URL of the TD WebServer DAT
-# This should be set to the URL of the TD WebServer DAT you are using.
-# You can use localhost for local development or the IP address of the server for production.
-# Uncomment the line that is appropriate for your setup.
-
-# for local development with Node.js
-# TD_WEB_SERVER_URL="http://localhost:9981"
-
-# for using docker
-TD_WEB_SERVER_URL="http://host.docker.internal:9981"
+TD_WEB_SERVER_URL="http://localhost:9981"

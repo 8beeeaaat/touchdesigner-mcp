@@ -11,11 +11,9 @@ export default defineConfig({
 		output: {
 			baseUrl: {
 				getBaseUrlFromSpecification: true,
-				variables: process.env.TD_WEB_SERVER_URL
-					? {
-							baseUrl: process.env.TD_WEB_SERVER_URL,
-						}
-					: {},
+				variables: {
+					baseUrl: process.env.TD_WEB_SERVER_URL || "http://localhost:9981",
+				},
 			},
 			namingConvention: "PascalCase",
 			mode: "single",
