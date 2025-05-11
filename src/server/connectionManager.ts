@@ -29,7 +29,9 @@ export class ConnectionManager {
 		this.transport = transport;
 		try {
 			await this.server.connect(transport);
-			this.logger.log("Server connected and ready to process requests");
+			this.logger.log(
+				`Server connected and ready to process requests: ${process.env.TD_WEB_SERVER_HOST}:${process.env.TD_WEB_SERVER_PORT}`,
+			);
 
 			const connectionResult = await this.checkTDConnection();
 			if (!connectionResult.success) {

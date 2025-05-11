@@ -18,5 +18,6 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Expose stdio for MCP communication
-CMD ["node", "dist/index.js", "--stdio"]
+# Use a command that keeps the container running but doesn't start the MCP server
+# This allows us to use `docker-compose exec` to start the server on demand
+CMD ["tail", "-f", "/dev/null"]

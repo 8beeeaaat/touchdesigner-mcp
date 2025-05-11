@@ -1,6 +1,6 @@
 import Axios, { type AxiosError, type AxiosRequestConfig } from "axios";
 
-const API_BASE_URL = process.env.TD_WEB_SERVER_URL;
+const API_BASE_URL = `${process.env.TD_WEB_SERVER_HOST}:${process.env.TD_WEB_SERVER_PORT}`;
 export const AXIOS_INSTANCE = Axios.create(
 	API_BASE_URL ? { baseURL: API_BASE_URL } : {},
 );

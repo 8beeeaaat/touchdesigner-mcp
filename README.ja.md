@@ -25,15 +25,21 @@ git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
 cd touchdesigner-mcp
 ```
 
-##### 2. 環境設定ファイルの設置とビルド
-.envのテンプレートファイルをコピーし、必要に応じて TD_WEB_SERVER_URL を調整してから Dockerイメージをビルドしてください。
+##### 2. 環境設定ファイルの設置とコードのビルド
+.envのテンプレートファイルをコピーし、必要に応じて TD_WEB_SERVER_HOST / TD_WEB_SERVER_PORT を調整してから Dockerイメージをビルドしてください。
 
 ```bash
 cp dotenv .env
-docker-compose build
+make build
 ```
 
-##### 3. TouchDesigner プロジェクトにMCP連携用のAPIサーバーを設置
+#### 3. MCPサーバーのコンテナを起動
+
+```bash
+docker-compose up -d
+```
+
+##### 4. TouchDesigner プロジェクトにMCP連携用のAPIサーバーを設置
 
 TouchDesignerを起動し、`td/mcp_webserver_base.tox` コンポーネントを操作したいTouchDesignerプロジェクト直下にimportします。
 例: `/project1/mcp_webserver_base` となるように配置
@@ -46,24 +52,32 @@ TouchDesigner のメニューから Textportを起動してサーバーの起動
 
 ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-##### 4. AIエージェントがDockerコンテナを使用するように設定して起動：
+##### 5. AIエージェントがDockerコンテナを使用するように設定して起動：
 
 *例 Claude Desktop*
 ```json
 {
   "mcpServers": {
     "touchdesigner": {
+      "command": "docker",
       "args": [
-        "run",
-        "--rm",
+        "compose",
+        "-f",
+        "/path/to/your/touchdesigner-mcp/docker-compose.yml",
+        "exec",
         "-i",
         "touchdesigner-mcp-server",
-      ],
-      "command": "docker"
+        "node",
+        "dist/index.js",
+        "--stdio"
+      ]
     }
   }
 }
 ```
+
+*Windows環境では C:\\ の様にドライブレターを含めてください。 例. `C:\\path\\to\\your\\touchdesigner-mcp\\docker-compose.yml`*
+
 
 #### 方法2: NPMパッケージ を利用する
 
@@ -159,8 +173,8 @@ TouchDesigner で APIサーバーが実行されていれば、エージェン�
 ### クライアント・APIサーバーコードのビルド
 
 1. `cp dotenv .env`
-2. `.env` ファイルの `TD_WEB_SERVER_URL` を開発環境に合わせて変更
-3. `docker-compose build` もしくは `npm run build` を実行してコードを再生成する
+2. `.env` ファイルの `TD_WEB_SERVER_HOST`, `TD_WEB_SERVER_PORT` を開発環境に合わせて変更
+3. `make build` もしくは `npm run build` を実行してコードを再生成する
 
 ビルドしたコードを再反映する場合は MCPサーバーと TouchDesigner を再起動してください
 

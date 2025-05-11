@@ -26,14 +26,20 @@ cd touchdesigner-mcp
 ```
 
 ##### 2. Set up the environment file and build:
-Copy the template file and adjust the TD_WEB_SERVER_URL as needed before building the Docker image.
+Copy the template file and adjust the TD_WEB_SERVER_HOST and TD_WEB_SERVER_PORT as needed before building the Docker image.
 
 ```bash
 cp dotenv .env
-docker-compose build
+make build
 ```
 
-##### 3. Install the API Server in Your TouchDesigner Project:
+##### 3. Start the MCP server container
+
+```bash
+docker-compose up -d
+```
+
+##### 4. Install the API Server in Your TouchDesigner Project:
 
 Start TouchDesigner and import the `td/mcp_webserver_base.tox` component directly under the TouchDesigner project you want to control.
 Example: Place it as `/project1/mcp_webserver_base`
@@ -46,24 +52,31 @@ You can check boot logs by opening the Textport from the TouchDesigner menu.
 
 ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-##### 4. Configure your AI agent to use the Docker container:
+##### 5. Configure your AI agent to use the Docker container:
 
 *Example for Claude Desktop*
 ```json
 {
   "mcpServers": {
     "touchdesigner": {
+      "command": "docker",
       "args": [
-        "run",
-        "--rm",
+        "compose",
+        "-f",
+        "/path/to/your/touchdesigner-mcp/docker-compose.yml",
+        "exec",
         "-i",
-        "touchdesigner-mcp-server"
-      ],
-      "command": "docker"
+        "touchdesigner-mcp-server",
+        "node",
+        "dist/index.js",
+        "--stdio"
+      ]
     }
   }
 }
 ```
+
+*On Windows systems, include the drive letter like C: e.g. `C:\\path\\to\\your\\touchdesigner-mcp\\docker-compose.yml`*
 
 #### Method 2: Using the NPM Package
 
@@ -160,8 +173,8 @@ Not implemented
 ### Building Client and API Server Code
 
 1. `cp dotenv .env`
-2. Adjust `TD_WEB_SERVER_URL` in the `.env` file to match your development environment
-3. Run `docker-compose build` or `npm run build` to regenerate the code
+2. Adjust `TD_WEB_SERVER_HOST` and `TD_WEB_SERVER_PORT` in the `.env` file to match your  development environment
+3. Run `make build` or `npm run build` to regenerate the code
 
 When you need to reflect the built code, please restart both the MCP server and TouchDesigner.
 
@@ -172,14 +185,6 @@ You can check communication logs by opening the Textport from the TouchDesigner 
 
 - `npm run dev`
 Launch @modelcontextprotocol/inspector to debug various features.
-
-*TIPS*
-`mcp_webserver_base.tox` includes a WebServer DAT configured to link the MCP server and TouchDesigner.
-Ensure this DAT is active and running on the port specified by `TD_WEB_SERVER_URL` in your `.env` file (default: `9981`).
-To change the port:
-1. Change `TD_WEB_SERVER_PORT` in `.env`
-2. Run `docker-compose build` or `npm run build` to regenerate client code
-3. Change the port in mcp_webserver_base (WebServer DAT) and restart the DAT
 
 ### Project Structure Overview
 
