@@ -19,6 +19,8 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
 
 #### Method 1: Using Docker Image (Recommended)
 
+[![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial_docker.png)](https://www.youtube.com/watch?v=BRWoIEVb0TU)
+
 ##### 1. Clone the repository:
 ```bash
 git clone https://github.com/8beeeaaat/touchdesigner-mcp.git

@@ -19,6 +19,8 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 
 #### 方法1: Dockerイメージを利用（推奨）
 
+[![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial_docker.png)](https://www.youtube.com/watch?v=BRWoIEVb0TU)
+
 ##### 1. リポジトリをクローン：
 ```bash
 git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
