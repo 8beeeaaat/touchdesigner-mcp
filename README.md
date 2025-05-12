@@ -33,13 +33,7 @@ cp dotenv .env
 make build
 ```
 
-##### 3. Start the MCP server container
-
-```bash
-docker-compose up -d
-```
-
-##### 4. Install the API Server in Your TouchDesigner Project:
+##### 3. Install the API Server in Your TouchDesigner Project:
 
 Start TouchDesigner and import the `td/mcp_webserver_base.tox` component directly under the TouchDesigner project you want to control.
 Example: Place it as `/project1/mcp_webserver_base`
@@ -51,6 +45,12 @@ Importing the tox will trigger the `td/import_modules.py` script, which loads mo
 You can check boot logs by opening the Textport from the TouchDesigner menu.
 
 ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
+
+##### 4. Start the MCP server container
+
+```bash
+docker-compose up -d
+```
 
 ##### 5. Configure your AI agent to use the Docker container:
 

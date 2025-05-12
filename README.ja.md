@@ -33,13 +33,7 @@ cp dotenv .env
 make build
 ```
 
-#### 3. MCPサーバーのコンテナを起動
-
-```bash
-docker-compose up -d
-```
-
-##### 4. TouchDesigner プロジェクトにMCP連携用のAPIサーバーを設置
+##### 3. TouchDesigner プロジェクトにMCP連携用のAPIサーバーを設置
 
 TouchDesignerを起動し、`td/mcp_webserver_base.tox` コンポーネントを操作したいTouchDesignerプロジェクト直下にimportします。
 例: `/project1/mcp_webserver_base` となるように配置
@@ -51,6 +45,12 @@ tox のimport により `td/import_modules.py` スクリプトが動作し、API
 TouchDesigner のメニューから Textportを起動してサーバーの起動ログを確認することができます。
 
 ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
+
+#### 4. MCPサーバーのコンテナを起動
+
+```bash
+docker-compose up -d
+```
 
 ##### 5. AIエージェントがDockerコンテナを使用するように設定して起動：
 
