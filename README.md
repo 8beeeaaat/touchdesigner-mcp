@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/8beeeaaat-touchdesigner-mcp-badge.png)](https://mseep.ai/app/8beeeaaat-touchdesigner-mcp)
+
 # TouchDesigner MCP
 
 This is an implementation of an MCP (Model Context Protocol) server for TouchDesigner. The goal is to enable AI agents to control and operate TouchDesigner projects.
