@@ -17,112 +17,116 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
 
 *Requires Docker or Node.js to be installed*
 
-#### Method 1: Using Docker Image (Recommended)
+<details>
+  <summary>Method 1: Using Docker Image (Recommended)</summary>
 
-[![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial_docker.png)](https://www.youtube.com/watch?v=BRWoIEVb0TU)
+  [![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial_docker.png)](https://www.youtube.com/watch?v=BRWoIEVb0TU)
 
-##### 1. Clone the repository:
-```bash
-git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
-cd touchdesigner-mcp
-```
+  #### 1. Clone the repository:
+  ```bash
+  git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
+  cd touchdesigner-mcp
+  ```
 
-##### 2. Set up the environment file and build:
-Copy the template file and adjust the TD_WEB_SERVER_HOST and TD_WEB_SERVER_PORT as needed before building the Docker image.
+  #### 2. Set up the environment file and build:
+  Copy the template file and adjust the TD_WEB_SERVER_HOST and TD_WEB_SERVER_PORT as needed before building the Docker image.
 
-```bash
-cp dotenv .env
-make build
-```
+  ```bash
+  cp dotenv .env
+  make build
+  ```
 
-##### 3. Install the API Server in Your TouchDesigner Project:
+  #### 3. Install the API Server in Your TouchDesigner Project:
 
-Start TouchDesigner and import the `td/mcp_webserver_base.tox` component directly under the TouchDesigner project you want to control.
-Example: Place it as `/project1/mcp_webserver_base`
+  Start TouchDesigner and import the `td/mcp_webserver_base.tox` component directly under the TouchDesigner project you want to control.
+  Example: Place it as `/project1/mcp_webserver_base`
 
-Importing the tox will trigger the `td/import_modules.py` script, which loads modules such as API server controllers.
+  Importing the tox will trigger the `td/import_modules.py` script, which loads modules such as API server controllers.
 
-![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
+  ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
 
-You can check boot logs by opening the Textport from the TouchDesigner menu.
+  You can check boot logs by opening the Textport from the TouchDesigner menu.
 
-![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
+  ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-##### 4. Start the MCP server container
+  #### 4. Start the MCP server container
 
-```bash
-docker-compose up -d
-```
+  ```bash
+  docker-compose up -d
+  ```
 
-##### 5. Configure your AI agent to use the Docker container:
+  #### 5. Configure your AI agent to use the Docker container:
 
-*Example for Claude Desktop*
-```json
-{
-  "mcpServers": {
-    "touchdesigner": {
-      "command": "docker",
-      "args": [
-        "compose",
-        "-f",
-        "/path/to/your/touchdesigner-mcp/docker-compose.yml",
-        "exec",
-        "-i",
-        "touchdesigner-mcp-server",
-        "node",
-        "dist/index.js",
-        "--stdio"
-      ]
+  *Example for Claude Desktop*
+  ```json
+  {
+    "mcpServers": {
+      "touchdesigner": {
+        "command": "docker",
+        "args": [
+          "compose",
+          "-f",
+          "/path/to/your/touchdesigner-mcp/docker-compose.yml",
+          "exec",
+          "-i",
+          "touchdesigner-mcp-server",
+          "node",
+          "dist/index.js",
+          "--stdio"
+        ]
+      }
     }
   }
-}
-```
+  ```
 
-*On Windows systems, include the drive letter like C: e.g. `C:\\path\\to\\your\\touchdesigner-mcp\\docker-compose.yml`*
+  *On Windows systems, include the drive letter like C: e.g. `C:\\path\\to\\your\\touchdesigner-mcp\\docker-compose.yml`*
+</details>
 
-#### Method 2: Using the NPM Package
+<details>
+  <summary>Method 2: Using the NPM Package</summary>
 
-To use the pre-built JS directly from Node.js:
+  To use the pre-built JS directly from Node.js:
 
-[![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial.png)](https://www.youtube.com/watch?v=jFaUP1fYum0)
+  [![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial.png)](https://www.youtube.com/watch?v=jFaUP1fYum0)
 
-##### 1. Install the package
-```bash
-mkdir some && cd ./some  # If you need a new directory
-npm install touchdesigner-mcp-server
-```
+  #### 1. Install the package
+  ```bash
+  mkdir some && cd ./some  # If you need a new directory
+  npm install touchdesigner-mcp-server
+  ```
 
-##### 2. Install the API Server in Your TouchDesigner Project:
+  #### 2. Install the API Server in Your TouchDesigner Project:
 
-Start TouchDesigner and import the `some/node_modules/touchdesigner-mcp-server/td/mcp_webserver_base.tox` component directly under the TouchDesigner project you want to control.
-Example: Place it as `/project1/mcp_webserver_base`
+  Start TouchDesigner and import the `some/node_modules/touchdesigner-mcp-server/td/mcp_webserver_base.tox` component directly under the TouchDesigner project you want to control.
+  Example: Place it as `/project1/mcp_webserver_base`
 
-Importing the tox will trigger the `some/node_modules/touchdesigner-mcp-server/td/import_modules.py` script, which loads modules such as API server controllers.
+  Importing the tox will trigger the `some/node_modules/touchdesigner-mcp-server/td/import_modules.py` script, which loads modules such as API server controllers.
 
-![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
+  ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
 
-You can check boot logs by opening the Textport from the TouchDesigner menu.
+  You can check boot logs by opening the Textport from the TouchDesigner menu.
 
-![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
+  ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-##### 3. Configure your AI agent:
+  #### 3. Configure your AI agent:
 
-*Example for Claude Desktop*
-```json
-{
-  "mcpServers": {
-    "touchdesigner": {
-      "args": [
-        "/path/to/your/node_modules/touchdesigner-mcp-server/dist/index.js", // <-- Replace with the absolute path to node_modules/touchdesigner-mcp-server/dist/index.js
-        "--stdio"
-      ],
-      "command": "node"
+  *Example for Claude Desktop*
+  ```json
+  {
+    "mcpServers": {
+      "touchdesigner": {
+        "args": [
+          "/path/to/your/node_modules/touchdesigner-mcp-server/dist/index.js", // <-- Replace with the absolute path to node_modules/touchdesigner-mcp-server/dist/index.js
+          "--stdio"
+        ],
+        "command": "node"
+      }
     }
   }
-}
-```
+  ```
 
-*On Windows systems, include the drive letter like C: e.g. `C:\\path\\to\\your\\node_modules\\touchdesigner-mcp-server\\dist\\index.js`*
+  *On Windows systems, include the drive letter like C: e.g. `C:\\path\\to\\your\\node_modules\\touchdesigner-mcp-server\\dist\\index.js`*
+</details>
 
 ### 3. Verify Connection
 

@@ -1,6 +1,6 @@
 {
 	"name": "touchdesigner-mcp-server",
-	"version": "0.2.10",
+	"version": "0.2.11",
 	"description": "MCP server for TouchDesigner",
 	"repository": {
 		"type": "git",
@@ -43,7 +43,7 @@
 	"type": "module",
 	"main": "src/index.ts",
 	"bin": {
-		"mcp-server": "dist/index.js"
+		"touchdesigner-mcp-server": "dist/index.js"
 	},
 	"scripts": {
 		"build": "run-s build:*",
