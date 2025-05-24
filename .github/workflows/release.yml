@@ -31,7 +31,7 @@ jobs:
       - run: npm ci
       - run: npm run gen
       - run: npm run test:unit
-      - run: npm run build
+      - run: TD_WEB_SERVER_HOST=http://localhost npm run build
       - name: nodejs project information
         id: projectinfo
         uses: gregoranders/nodejs-project-info@master
