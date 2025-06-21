@@ -132,12 +132,13 @@ class TouchDesignerApiService(IApiService):
         node_info = self._get_node_summary(node)
         return success_result(node_info)
 
-    def get_nodes(self, parent_path: str, pattern: Optional[str] = None) -> Result:
+    def get_nodes(self, parent_path: str, pattern: Optional[str] = None, include_properties: bool = False) -> Result:
         """Get nodes under the specified parent path, optionally filtered by pattern
 
         Args:
             parent_path: Path to the parent node
             pattern: Pattern to filter nodes by name (e.g. "text*" for all nodes starting with "text")
+            include_properties: Whether to include full node properties (default False for better performance)
 
         Returns:
             Result: Success with list of nodes or error
@@ -157,7 +158,10 @@ class TouchDesignerApiService(IApiService):
             log_message("Calling parent_node.findChildren(depth=1)", LogLevel.DEBUG)
             nodes = parent_node.findChildren(depth=1)
 
-        node_summaries = [self._get_node_summary(node) for node in nodes]
+        if include_properties:
+            node_summaries = [self._get_node_summary(node) for node in nodes]
+        else:
+            node_summaries = [self._get_node_summary_light(node) for node in nodes]
 
         return success_result({"nodes": node_summaries})
 
@@ -357,8 +361,6 @@ class TouchDesignerApiService(IApiService):
         if node is None or not node.valid:
             raise error_result(f"Node not found at path: {node_path}")
 
-        node_detail = self.get_node_detail(node_path)
-        current_properties = node_detail.get("data", {})
         updated_properties = []
         failed_properties = []
 
@@ -436,6 +438,24 @@ class TouchDesignerApiService(IApiService):
                 params_dict[par.name] = f"<Error: {str(e)}>"
 
         return params_dict
+
+    def _get_node_summary_light(self, node) -> Dict:
+        """Get lightweight information about a node (without properties for better performance)"""
+        try:
+            node_info = {
+                "id": node.id,
+                "name": node.name,
+                "path": node.path,
+                "opType": node.OPType,
+                "properties": {},  # Empty properties for lightweight response
+            }
+
+            return node_info
+        except Exception as e:
+            log_message(
+                f"Error collecting node information: {str(e)}", LogLevel.WARNING
+            )
+            return {"name": node.name if hasattr(node, "name") else "unknown"}
 
     def _get_node_summary(self, node) -> Dict:
         """Get detailed information about a node"""

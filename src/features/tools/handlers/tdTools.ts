@@ -134,7 +134,7 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.GET_TD_NODES,
-		"Get all nodes in the parent path",
+		"Get all nodes in the parent path (lightweight by default for better performance)",
 		getNodesQueryParams.strict().shape,
 		async (params) => {
 			try {
@@ -142,11 +142,18 @@ export function registerTdTools(
 				if (!result.success) {
 					throw result.error;
 				}
+
+				const nodeCount = result.data?.nodes?.length || 0;
+				const isLightweight = !params.includeProperties;
+				const performanceNote = isLightweight
+					? " (lightweight mode - set includeProperties=true for full node details)"
+					: " (full mode with properties)";
+
 				return {
 					content: [
 						{
 							type: "text" as const,
-							text: `Project nodes retrieved: ${JSON.stringify(result, null, 2)}`,
+							text: `Project nodes retrieved (${nodeCount} nodes)${performanceNote}: ${JSON.stringify(result, null, 2)}`,
 						},
 					],
 				};

@@ -55,7 +55,7 @@ class ApiServiceProtocol(Protocol):
 
     def get_td_info(self) -> Result: ...
 
-    def get_nodes(self, parent_path: str, pattern: Optional[str] = None) -> Result: ...
+    def get_nodes(self, parent_path: str, pattern: Optional[str] = None, include_properties: bool = False) -> Result: ...
 
     def create_node(
         self,
@@ -417,6 +417,7 @@ class APIControllerOpenAPI(IController):
         self,
         parentPath: str,
         pattern: Optional[str] = None,
+        includeProperties: Optional[bool] = None,
         body: Optional[str] = None,
         **kwargs,
     ) -> Result:
@@ -426,11 +427,15 @@ class APIControllerOpenAPI(IController):
         Args:
             parentPath: Path of the parent node to get children from
             pattern: Optional pattern to filter nodes by
+            includeProperties: Whether to include full node properties (default: False)
 
         Returns:
             List of nodes under the specified parent path
         """
-        service_result = self._service.get_nodes(parentPath, pattern)
+        # Convert camelCase to snake_case and provide default value
+        include_properties = includeProperties if includeProperties is not None else False
+
+        service_result = self._service.get_nodes(parentPath, pattern, include_properties)
         response_data = GetNodes200Response().from_dict(service_result)
         return response_data.to_dict()
 
