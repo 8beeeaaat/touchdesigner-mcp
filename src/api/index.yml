@@ -1,12 +1,12 @@
 info:
   description: OpenAPI schema for generating TouchDesigner API client code
   title: TouchDesigner API
-  version: 0.2.13
+  version: 0.3.0
 
 openapi: 3.0.0
 
 servers:
-  - url: '{baseUrl}'
+  - url: "{baseUrl}"
     variables:
       baseUrl:
         default: http://localhost:9981
