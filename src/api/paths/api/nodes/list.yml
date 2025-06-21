@@ -17,6 +17,14 @@ get:
         type: string
         description: e.g., "null*"
         default: "*"
+    - name: includeProperties
+      description: Whether to include full node properties in the response (default false for better performance)
+      in: query
+      required: false
+      schema:
+        type: boolean
+        description: Include node properties in response
+        default: false
   responses:
     '200':
       description: List of nodes matching the specified criteria
