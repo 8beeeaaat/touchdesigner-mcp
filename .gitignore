@@ -146,3 +146,7 @@ src/gen
 .github/copilot-instructions.md
 .venv
 td/modules/td_server
+
+# coding agents
+.claude
+CLAUDE.md
