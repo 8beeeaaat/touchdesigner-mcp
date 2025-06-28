@@ -1,6 +1,6 @@
 {
 	"name": "touchdesigner-mcp-server",
-	"version": "0.3.0",
+	"version": "0.3.1-test.1",
 	"description": "MCP server for TouchDesigner",
 	"repository": {
 		"type": "git",
