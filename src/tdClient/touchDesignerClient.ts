@@ -1,12 +1,5 @@
 import type { ILogger } from "../core/logger.js";
 import {
-	type CreateNodeRequest,
-	type DeleteNodeParams,
-	type ExecNodeMethodRequest,
-	type ExecPythonScriptRequest,
-	type GetNodeDetailParams,
-	type GetNodesParams,
-	type UpdateNodeRequest,
 	createNode as apiCreateNode,
 	deleteNode as apiDeleteNode,
 	execNodeMethod as apiExecNodeMethod,
@@ -17,6 +10,13 @@ import {
 	getTdPythonClassDetails as apiGetTdPythonClassDetails,
 	getTdPythonClasses as apiGetTdPythonClasses,
 	updateNode as apiUpdateNode,
+	type CreateNodeRequest,
+	type DeleteNodeParams,
+	type ExecNodeMethodRequest,
+	type ExecPythonScriptRequest,
+	type GetNodeDetailParams,
+	type GetNodesParams,
+	type UpdateNodeRequest,
 } from "../gen/endpoints/TouchDesignerAPI.js";
 
 /**

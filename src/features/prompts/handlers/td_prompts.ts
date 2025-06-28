@@ -121,9 +121,7 @@ function handleSearchNodePrompt(params: {
 	];
 }
 
-function handleCheckNodeErrorsPrompt(params: {
-	nodePath: string;
-}) {
+function handleCheckNodeErrorsPrompt(params: { nodePath: string }) {
 	return [
 		{
 			role: "user",
