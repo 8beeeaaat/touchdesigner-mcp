@@ -31,3 +31,14 @@ jobs:
       - run: npm run gen
       - run: npm run lint
       - run: npm run test:unit
+      - name: Test DXT package build
+        run: |
+          # Install DXT CLI tool
+          npm install -g @anthropic-ai/dxt
+          
+          # Build DXT package to ensure it works
+          npm run build:dist
+          npm run build:dxt
+          
+          echo "DXT package build test completed!"
+          ls -la *.dxt

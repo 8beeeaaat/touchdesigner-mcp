@@ -1,0 +1,7 @@
+**/*.test.*
+*.log
+.claude/
+.github/
+td/
+tests/
+node_modules/

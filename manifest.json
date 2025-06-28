@@ -1,0 +1,115 @@
+{
+  "dxt_version": "0.1",
+  "name": "touchdesigner-mcp",
+  "version": "0.1.0",
+  "display_name": "TouchDesigner MCP Server",
+  "description": "AI assistant for TouchDesigner - control nodes, execute Python scripts, and create interactive visual content",
+  "long_description": "# TouchDesigner MCP Server\n\nBridge between AI assistants and TouchDesigner for creative coding and visual programming. Features include:\n\n- **Node Operations**: Create, delete, and modify TouchDesigner nodes\n- **Python Execution**: Run Python scripts directly in TouchDesigner environment\n- **Parameter Control**: Update node parameters and connections\n- **Real-time Monitoring**: Get TouchDesigner server information and node details\n- **Creative Assistance**: AI-powered workflow optimization and debugging\n\nPerfect for visual artists, creative coders, and interactive media developers who want to leverage AI for TouchDesigner projects.",
+  "author": {
+    "name": "8beeeaaat",
+    "url": "https://github.com/8beeeaaat/touchdesigner-mcp"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "dist/cli.js",
+    "mcp_config": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "touchdesigner-mcp-server@prerelease",
+        "--stdio",
+        "--port=${user_config.TD_WEB_SERVER_PORT}"
+      ],
+      "capabilities": {
+        "prompts": {},
+        "tools": {}
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "create_td_node",
+      "description": "Create new nodes in TouchDesigner with specified family and parameters"
+    },
+    {
+      "name": "delete_td_node",
+      "description": "Delete existing nodes from TouchDesigner by path"
+    },
+    {
+      "name": "execute_python_script",
+      "description": "Execute Python scripts directly in TouchDesigner environment with full API access"
+    },
+    {
+      "name": "exec_node_method",
+      "description": "Execute methods on TouchDesigner nodes (cook, pulse, reset, etc.)"
+    },
+    {
+      "name": "get_td_info",
+      "description": "Get TouchDesigner server information and connection status"
+    },
+    {
+      "name": "get_td_class_details",
+      "description": "Get detailed documentation for TouchDesigner Python classes"
+    },
+    {
+      "name": "get_td_classes",
+      "description": "List available TouchDesigner Python classes and modules"
+    },
+    {
+      "name": "get_td_node_parameters",
+      "description": "Retrieve parameters and current values for TouchDesigner nodes"
+    },
+    {
+      "name": "get_td_nodes",
+      "description": "List nodes in TouchDesigner with filtering options"
+    },
+    {
+      "name": "update_td_node_parameters",
+      "description": "Update parameter values for TouchDesigner nodes"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "Search node",
+      "description": "Find TouchDesigner nodes by various criteria",
+      "text": "Search for TouchDesigner nodes using filters like name, family type, or parent path."
+    },
+    {
+      "name": "Check node errors",
+      "description": "Analyze and diagnose TouchDesigner node errors",
+      "text": "Analyze the current TouchDesigner project for node errors and provide debugging suggestions."
+    },
+    {
+      "name": "Node connection",
+      "description": "Guide for connecting TouchDesigner nodes properly",
+      "text": "Provide guidance on how to properly connect TouchDesigner nodes for optimal data flow."
+    }
+  ],
+  "user_config": {
+    "TD_WEB_SERVER_PORT": {
+      "title": "TouchDesigner Port",
+      "description": "Port number for TouchDesigner WebServer",
+      "type": "number",
+      "default": 9981,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "win32",
+      "darwin",
+      "linux"
+    ],
+    "node_version": ">=18.0.0"
+  },
+  "keywords": [
+    "touchdesigner",
+    "creative-coding",
+    "visual-programming",
+    "python",
+    "real-time",
+    "interactive-media"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/8beeeaaat/touchdesigner-mcp"
+}

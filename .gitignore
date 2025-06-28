@@ -146,6 +146,8 @@ src/gen
 .github/copilot-instructions.md
 .venv
 .actrc
+*.dxt
+*.pem
 td/modules/td_server
 
 # coding agents

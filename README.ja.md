@@ -16,20 +16,38 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 ## 利用方法
 
 <details>
-  <summary>方法1: npx を利用する（クイックスタート）</summary>
+  <summary>方法1: Claude Desktop + Desktop Extensions（推奨）</summary>
+
+##### 1. ファイルをダウンロード：
+[リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases)から以下をダウンロード：
+- **TouchDesigner Components**: `touchdesigner-mcp-td.zip`
+- **Desktop Extensions (.dxt)**: `touchdesigner-mcp.dxt`
+
+##### 2. TouchDesignerコンポーネントを設置：
+1. `touchdesigner-mcp-td.zip`を展開
+2. 展開したフォルダから`mcp_webserver_base.tox`を操作したいTouchDesignerプロジェクト直下にインポート
+   例: `/project1/mcp_webserver_base`となるように配置
+
+##### 3. Desktop Extensionをインストール：
+`touchdesigner-mcp.dxt`ファイルをダブルクリックしてClaude Desktopに拡張機能をインストール
+
+##### 4. 拡張機能が自動的にTouchDesignerサーバー接続を処理
+
+**⚠️ 重要:** TouchDesignerコンポーネントのディレクトリ構造は展開した状態を正確に保持してください。`mcp_webserver_base.tox`コンポーネントは`modules/`ディレクトリやその他のファイルへの相対パスを参照しています。
+
+</details>
+
+<details>
+  <summary>方法2: npxを利用する</summary>
 
 *Node.jsがインストールされていることが前提となります*
 
-##### 1. TouchDesigner プロジェクトにMCP連携用のAPIサーバーを設置
+##### 1. TouchDesignerコンポーネントを設置：
+1. [リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases)から`touchdesigner-mcp-td.zip`をダウンロード
+2. zipファイルを展開し、`mcp_webserver_base.tox`を操作したいTouchDesignerプロジェクト直下にインポート
+   例: `/project1/mcp_webserver_base`となるように配置
 
-npxを使用する場合、TouchDesignerコンポーネントを別途ダウンロードする必要があります：
-1. [リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases)から `touchdesigner-mcp-td.zip` をダウンロード
-2. zipファイルを展開したフォルダから `mcp_webserver_base.tox` を操作したいTouchDesignerプロジェクト直下にimportします。
-例: `/project1/mcp_webserver_base` となるように配置
-
-**⚠️ 重要:** ディレクトリの構造は展開した状態を正確に保持する必要があります。`mcp_webserver_base.tox` コンポーネントは `modules/` ディレクトリやその他のファイルへの相対パスを参照しています。展開したディレクトリ内のファイルを移動したり再編成したりしないでください。
-
-##### 2. AIエージェントの設定：
+##### 2. MCPサーバー設定：
 
 *例 Claude Desktop*
 ```json
@@ -37,17 +55,13 @@ npxを使用する場合、TouchDesignerコンポーネントを別途ダウン�
   "mcpServers": {
     "touchdesigner": {
       "command": "npx",
-      "args": [
-        "-y",
-        "touchdesigner-mcp-server@prerelease",
-        "--stdio"
-      ]
+      "args": ["-y", "touchdesigner-mcp-server@prerelease", "--stdio"]
     }
   }
 }
 ```
 
-**TIPS：** `--host`と`--port`引数を追加することで、TouchDesignerサーバー接続をカスタマイズできます：
+**カスタマイズ：** `--host`と`--port`引数を追加してTouchDesignerサーバー接続をカスタマイズできます：
 ```json
 "args": [
   "-y",
@@ -60,7 +74,7 @@ npxを使用する場合、TouchDesignerコンポーネントを別途ダウン�
 </details>
 
 <details>
-  <summary>方法2: Dockerイメージを利用</summary>
+  <summary>方法3: Dockerイメージを利用</summary>
 
 [![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial_docker.png)](https://www.youtube.com/watch?v=BRWoIEVb0TU)
 
@@ -77,26 +91,26 @@ cd touchdesigner-mcp
 make build
 ```
 
-##### 3. TouchDesigner プロジェクトにMCP連携用のAPIサーバーを設置
+##### 3. TouchDesignerプロジェクトにMCP連携用のAPIサーバーを設置
 
-TouchDesignerを起動し、`td/mcp_webserver_base.tox` コンポーネントを操作したいTouchDesignerプロジェクト直下にimportします。
-例: `/project1/mcp_webserver_base` となるように配置
+TouchDesignerを起動し、`td/mcp_webserver_base.tox`コンポーネントを操作したいTouchDesignerプロジェクト直下にインポートします。  
+例: `/project1/mcp_webserver_base`となるように配置
 
-tox のimport により `td/import_modules.py` スクリプトが動作し、APIサーバのコントローラなどのモジュールがロードされます。
+toxファイルのインポートにより`td/import_modules.py`スクリプトが実行され、APIサーバーのコントローラなどのモジュールがロードされます。
 
 ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
 
-TouchDesigner のメニューから Textportを起動してサーバーの起動ログを確認することができます。
+TouchDesignerのメニューからTextportを起動してサーバーの起動ログを確認できます。
 
 ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-#### 4. MCPサーバーのコンテナを起動
+##### 4. MCPサーバーのコンテナを起動
 
 ```bash
 docker-compose up -d
 ```
 
-##### 5. AIエージェントがDockerコンテナを使用するように設定して起動：
+##### 5. AIエージェントがDockerコンテナを使用するように設定：
 
 *例 Claude Desktop*
 ```json
@@ -123,7 +137,7 @@ docker-compose up -d
 
 *Windows システムでは、ドライブレターを含めてください。例：`C:\\path\\to\\your\\touchdesigner-mcp\\docker-compose.yml`*
 
-**TIPS：** `--port`引数を追加することで、TouchDesignerサーバー接続をカスタマイズできます：
+**カスタマイズ：** `--port`引数を追加してTouchDesignerサーバー接続をカスタマイズできます：
   ```json
 "args": [
   ...,
@@ -137,10 +151,10 @@ docker-compose up -d
 
 ## 接続確認
 
-MCPサーバーが認識されていればセットアップは完了です。
-認識されない場合はAIエージェントを再起動するなどしてください。
-起動時にエラーが表示される場合はTouchDesignerを先に起動してから再度エージェントを起動してください。
-TouchDesigner で APIサーバーが実行されていれば、エージェントは提供された ツール等を通じてTouchDesignerを使用できます。
+MCPサーバーが認識されていればセットアップは完了です。  
+認識されない場合は、AIエージェントを再起動してください。  
+起動時にエラーが表示される場合は、TouchDesignerを先に起動してからAIエージェントを再度起動してください。  
+TouchDesignerでAPIサーバーが実行されていれば、エージェントは提供されたツール等を通じてTouchDesignerを使用できます。
 
 ### ディレクトリ構造要件
 
@@ -172,7 +186,7 @@ td/
 | :-------------------------- | :--------------------------------------------- |
 | `create_td_node`            | 新しいノードを作成します。                     |
 | `delete_td_node`            | 既存のノードを削除します。                     |
-| `exec_node_method`| ノードに対しPythonメソッドを呼び出します。       |
+| `exec_node_method`          | ノードに対してPythonメソッドを呼び出します。   |
 | `execute_python_script`     | TD内で任意のPythonスクリプトを実行します。     |
 | `get_td_class_details`      | TD Pythonクラス/モジュールの詳細情報を取得します。 |
 | `get_td_classes`            | TouchDesigner Pythonクラスのリストを取得します。 |
@@ -217,7 +231,7 @@ td/
 
 3. **利用可能なコマンド:**
    ```bash
-   npm run test      # ユニットテストと結合テストを実行
+   npm run test      # ユニットテストと統合テストを実行
    npm run dev       # デバッグ用MCPインスペクターを起動
    ```
 
@@ -226,9 +240,9 @@ td/
 ### プロジェクト構造の概要
 
 ```
-├── src/                       # MCPサーバー ソースコード
+├── src/                       # MCPサーバーソースコード
 │   ├── api/                  # TD WebServerに対するOpenAPI仕様
-│   ├── core/                 # コアユーティリティ (ロガー, エラーハンドリング)
+│   ├── core/                 # コアユーティリティ（ロガー、エラーハンドリング）
 │   ├── features/             # MCP機能実装
 │   │   ├── prompts/         # プロンプトハンドラ
 │   │   ├── resources/       # リソースハンドラ
