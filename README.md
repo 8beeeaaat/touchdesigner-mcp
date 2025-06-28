@@ -18,22 +18,28 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
 <details>
   <summary>Method 1: Using Claude Desktop and Desktop Extensions (Recommended)</summary>
 
-#### 1. Download Files
+### 1. Download Files
 Download the following from the [releases page](https://github.com/8beeeaaat/touchdesigner-mcp/releases):
 - **TouchDesigner Components**: `touchdesigner-mcp-td.zip`
 - **Desktop Extension (.dxt)**: `touchdesigner-mcp.dxt`
 
-#### 2. Set up TouchDesigner Components
+### 2. Set up TouchDesigner Components
 1. Extract the TouchDesigner components from `touchdesigner-mcp-td.zip`.
 2. Import `mcp_webserver_base.tox` into your TouchDesigner project.
 3. Place it at `/project1/mcp_webserver_base`.
 
-#### 3. Install the Desktop Extension
+https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
+
+  You can check the startup logs by opening the Textport from the TouchDesigner menu.
+
+  ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
+
+### 3. Install the Desktop Extension
 Double-click the `touchdesigner-mcp.dxt` file to install the extension in Claude Desktop.
 
 https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854
 
-#### 4. Connect to the Server
+### 4. Connect to the Server
 The extension will automatically handle the connection to the TouchDesigner server.
 
 **⚠️ Important:** The directory structure must be preserved exactly as extracted. The `mcp_webserver_base.tox` component references relative paths to the `modules/` directory and other files.
@@ -45,12 +51,18 @@ The extension will automatically handle the connection to the TouchDesigner serv
 
 *Requires Node.js to be installed.*
 
-#### 1. Set up TouchDesigner Components
+### 1. Set up TouchDesigner Components
 1. Download and extract the TouchDesigner components from `touchdesigner-mcp-td.zip` ([releases page](https://github.com/8beeeaaat/touchdesigner-mcp/releases)).
 2. Import `mcp_webserver_base.tox` into your TouchDesigner project.
 3. Place it at `/project1/mcp_webserver_base`.
 
-#### 2. Set up the MCP Server Configuration
+https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
+
+  You can check the startup logs by opening the Textport from the TouchDesigner menu.
+
+  ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
+
+### 2. Set up the MCP Server Configuration
 
 *Example for Claude Desktop:*
 ```json
@@ -81,37 +93,37 @@ The extension will automatically handle the connection to the TouchDesigner serv
 
   [![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial_docker.png)](https://www.youtube.com/watch?v=BRWoIEVb0TU)
 
-  #### 1. Clone the repository
+  ### 1. Clone the repository
   ```bash
   git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
   cd touchdesigner-mcp
   ```
 
-  #### 2. Build the Docker image
+  ### 2. Build the Docker image
   ```bash
   make build
   ```
 
-  #### 3. Install the API Server in Your TouchDesigner Project
+  ### 3. Install the API Server in Your TouchDesigner Project
 
   Start TouchDesigner and import the `td/mcp_webserver_base.tox` component into the project you want to control.
   Example: Place it at `/project1/mcp_webserver_base`.
 
   Importing the `.tox` file will trigger the `td/import_modules.py` script, which loads the necessary modules for the API server.
 
-  ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
+https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
 
   You can check the startup logs by opening the Textport from the TouchDesigner menu.
 
   ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-  #### 4. Start the MCP server container
+  ### 4. Start the MCP server container
 
   ```bash
   docker-compose up -d
   ```
 
-  #### 5. Configure your AI agent to use the Docker container
+  ### 5. Configure your AI agent to use the Docker container
 
   *Example for Claude Desktop:*
   ```json
