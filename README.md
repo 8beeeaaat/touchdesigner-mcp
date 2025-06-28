@@ -47,6 +47,17 @@ Example: Place it as `/project1/mcp_webserver_base`
   }
 }
 ```
+
+**Note:** You can customize the TouchDesigner server connection by adding `--host` and `--port` arguments:
+```json
+"args": [
+  "-y",
+  "touchdesigner-mcp-server@prerelease",
+  "--stdio",
+  "--host=http://custom_host",
+  "--port=9982"
+]
+```
 </details>
 
 <details>
@@ -60,11 +71,10 @@ Example: Place it as `/project1/mcp_webserver_base`
   cd touchdesigner-mcp
   ```
 
-  #### 2. Set up the environment file and build:
-  Copy the template file and adjust the TD_WEB_SERVER_HOST and TD_WEB_SERVER_PORT as needed before building the Docker image.
-
+  #### 2. Build the Docker image:
   ```bash
-  cp dotenv .env
+  git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
+  cd touchdesigner-mcp
   make build
   ```
 
@@ -81,7 +91,7 @@ Example: Place it as `/project1/mcp_webserver_base`
 
   ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-  #### 4. Start the MCP server container
+  #### 4. Start the MCP server container with your TouchDesigner configuration
 
   ```bash
   docker-compose up -d
@@ -104,7 +114,8 @@ Example: Place it as `/project1/mcp_webserver_base`
           "touchdesigner-mcp-server",
           "node",
           "dist/cli.js",
-          "--stdio"
+          "--stdio",
+          "--host=http://host.docker.internal"
         ]
       }
     }
@@ -112,6 +123,16 @@ Example: Place it as `/project1/mcp_webserver_base`
   ```
 
   *On Windows systems, include the drive letter like C: e.g. `C:\\path\\to\\your\\touchdesigner-mcp\\docker-compose.yml`*
+
+**Note:** You can customize the TouchDesigner server connection by adding `--host` and `--port` arguments:
+  ```json
+"args": [
+  ...,
+  "--stdio",
+  "--host=http://host.docker.internal",
+  "--port=9982"
+]
+  ```
 </details>
 
 
@@ -183,8 +204,10 @@ Not implemented
 
 1. **Setup environment:**
    ```bash
-   cp dotenv .env
-   # Adjust TD_WEB_SERVER_HOST and TD_WEB_SERVER_PORT in .env file
+   # Clone and install dependencies
+   git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
+   cd touchdesigner-mcp
+   npm install
    ```
 
 2. **Build the project:**
@@ -231,8 +254,6 @@ Not implemented
 ├── tests/                      # Test code
 │   ├── integration/
 │   └── unit/
-├── .env                        # Local environment variables (git ignored)
-├── dotenv                      # Template for .env
 └── orval.config.ts             # Orval config (TS client generation)
 ```
 

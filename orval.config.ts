@@ -1,7 +1,4 @@
-import dotenv from "dotenv";
 import { defineConfig } from "orval";
-
-dotenv.config();
 
 export default defineConfig({
 	api: {
@@ -11,11 +8,6 @@ export default defineConfig({
 		output: {
 			baseUrl: {
 				getBaseUrlFromSpecification: true,
-				variables: process.env.TD_WEB_SERVER_HOST
-					? {
-							baseUrl: `${process.env.TD_WEB_SERVER_HOST}:${process.env.TD_WEB_SERVER_PORT}`,
-						}
-					: {},
 			},
 			namingConvention: "PascalCase",
 			mode: "single",
