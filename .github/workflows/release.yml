@@ -9,10 +9,14 @@ permissions:
 on:
   push:
     branches: ["main"]
+    tags:
+      - "v*"  # v で始まるタグにも対応
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      is_prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
 
     steps:
       - uses: actions/checkout@v4.1.1
@@ -27,6 +31,17 @@ jobs:
       - name: nodejs project information
         id: projectinfo
         uses: gregoranders/nodejs-project-info@master
+      - name: Determine if prerelease
+        id: prerelease
+        run: |
+          VERSION="${{ steps.projectinfo.outputs.version }}"
+          if [[ "$VERSION" == *"-"* ]] || [[ "$VERSION" == *"beta"* ]] || [[ "$VERSION" == *"alpha"* ]] || [[ "$VERSION" == *"rc"* ]] || [[ "$VERSION" == *"test"* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "::notice::Detected prerelease version: $VERSION"
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "::notice::Detected production version: $VERSION"
+          fi
       - run: |
           echo "v${{ steps.projectinfo.outputs.version }}" > TAG_NAME
           git tag $(cat TAG_NAME)
@@ -71,7 +86,7 @@ jobs:
           files: |
             touchdesigner-mcp-td.zip
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease == 'true' }}
 
   publish-npm:
     needs: build
