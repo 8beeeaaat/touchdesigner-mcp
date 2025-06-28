@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0-alpha.1] - 2025-06-28
+
+### Fixed
+- Fixed npx execution issue where `index.js` was being called instead of `cli.js`
+- Corrected `package.json` configuration to ensure proper CLI entry point resolution
+- Updated `main` field to `dist/index.js` for library usage while maintaining `bin` field for CLI execution
+- Enhanced `exports` field with separate paths for library (`"."`) and CLI (`"./cli"`) usage
+
+### Technical
+- Optimized package structure for both npx CLI usage and library imports
+- Added comprehensive testing for npx execution flow
+- Verified proper shebang handling in published packages
+
 ## [0.4.0-alpha.0] - 2025-06-28
 
 ### Added
