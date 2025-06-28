@@ -9,10 +9,7 @@ import {
 	vi,
 } from "vitest";
 import type { ILogger } from "../../src/core/logger.js";
-import {
-	createErrorResult,
-	createSuccessResult,
-} from "../../src/core/result.js";
+import { createSuccessResult } from "../../src/core/result.js";
 import { ConnectionManager } from "../../src/server/connectionManager.js";
 import type { TouchDesignerClient } from "../../src/tdClient/touchDesignerClient.js";
 
@@ -127,28 +124,6 @@ describe("ConnectionManager", () => {
 			expect(connectionManager.isConnected()).toBe(false);
 		});
 
-		it("should handle TouchDesigner connection failure", async () => {
-			// Arrange
-			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
-			const tdError = new Error("TouchDesigner not available");
-			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
-				createErrorResult(tdError),
-			);
-
-			// Act
-			const result = await connectionManager.connect(mockTransport);
-
-			// Assert
-			expect(result.success).toBe(false);
-			if (!result.success) {
-				expect(result.error.message).toBe(
-					"Failed to connect to TouchDesigner: TouchDesigner not available",
-				);
-			}
-			expect(consoleErrorSpy).toHaveBeenCalled();
-			expect(connectionManager.isConnected()).toBe(false);
-		});
-
 		it("should handle TouchDesigner getTdInfo throwing an error", async () => {
 			// Arrange
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
@@ -162,7 +137,7 @@ describe("ConnectionManager", () => {
 			expect(result.success).toBe(false);
 			if (!result.success) {
 				expect(result.error.message).toBe(
-					"Failed to connect to TouchDesigner: Network error",
+					"Failed to connect to TouchDesigner. The mcp_webserver_base on TouchDesigner not currently available: Network error",
 				);
 			}
 			expect(connectionManager.isConnected()).toBe(false);

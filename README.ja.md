@@ -46,6 +46,17 @@ npxを使用する場合、TouchDesignerコンポーネントを別途ダウン�
   }
 }
 ```
+
+**TIPS：** `--host`と`--port`引数を追加することで、TouchDesignerサーバー接続をカスタマイズできます：
+```json
+"args": [
+  "-y",
+  "touchdesigner-mcp-server@prerelease",
+  "--stdio",
+  "--host=http://custom_host",
+  "--port=9982"
+]
+```
 </details>
 
 <details>
@@ -59,11 +70,10 @@ git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
 cd touchdesigner-mcp
 ```
 
-##### 2. 環境設定ファイルの設置とコードのビルド
-.envのテンプレートファイルをコピーし、必要に応じて TD_WEB_SERVER_HOST / TD_WEB_SERVER_PORT を調整してから Dockerイメージをビルドしてください。
-
+##### 2. Dockerイメージのビルド
 ```bash
-cp dotenv .env
+git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
+cd touchdesigner-mcp
 make build
 ```
 
@@ -103,14 +113,25 @@ docker-compose up -d
         "touchdesigner-mcp-server",
         "node",
         "dist/cli.js",
-        "--stdio"
+        "--stdio",
+        "--host=http://host.docker.internal"
       ]
     }
   }
 }
 ```
 
-*Windows環境では C:\\ の様にドライブレターを含めてください。 例. `C:\\path\\to\\your\\touchdesigner-mcp\\docker-compose.yml`*
+*Windows システムでは、ドライブレターを含めてください。例：`C:\\path\\to\\your\\touchdesigner-mcp\\docker-compose.yml`*
+
+**TIPS：** `--port`引数を追加することで、TouchDesignerサーバー接続をカスタマイズできます：
+  ```json
+"args": [
+  ...,
+  "--stdio",
+  "--host=http://host.docker.internal",
+  "--port=9982"
+]
+  ```
 </details>
 
 
@@ -181,8 +202,10 @@ td/
 
 1. **環境設定:**
    ```bash
-   cp dotenv .env
-   # .env ファイルの TD_WEB_SERVER_HOST, TD_WEB_SERVER_PORT を開発環境に合わせて変更
+   # リポジトリをクローンして依存関係をインストール
+   git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
+   cd touchdesigner-mcp
+   npm install
    ```
 
 2. **プロジェクトをビルド:**
@@ -229,8 +252,6 @@ td/
 ├── tests/                      # テストコード
 │   ├── integration/
 │   └── unit/
-├── .env                        # ローカル環境変数 (git無視)
-├── dotenv                      # .env用テンプレート
 └── orval.config.ts             # Orval 設定 (TSクライアント生成)
 ```
 
