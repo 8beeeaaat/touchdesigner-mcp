@@ -71,7 +71,7 @@ Add or merge the following entry into the `"mcpServers"` section of your setting
         "-i",
         "touchdesigner-mcp-server",
         "node",
-        "dist/cli.js",
+        "dist/index.js",
         "--stdio"
       ],
       "autoApprove": [],
