@@ -24,11 +24,11 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
 
 Since you're using npx, you'll need to download the TouchDesigner components separately:
 1. Download `touchdesigner-mcp-td.zip` from the [releases page](https://github.com/8beeeaaat/touchdesigner-mcp/releases)
-2. Extract the zip file to get the `td` directory
+2. Extract the zip file to get the directory
 3. Import `mcp_webserver_base.tox` from the extracted files directly under the TouchDesigner project you want to control.
 Example: Place it as `/project1/mcp_webserver_base`
 
-**⚠️ Important:** The `td` directory structure must be preserved exactly as extracted. The `mcp_webserver_base.tox` component references relative paths to the `modules/` directory and other files. Do not move or reorganize files within the extracted `td` directory.
+**⚠️ Important:** The directory structure must be preserved exactly as extracted. The `mcp_webserver_base.tox` component references relative paths to the `modules/` directory and other files. Do not move or reorganize files within the extracted directory.
 
 #### 2. Configure your AI agent:
 
@@ -39,7 +39,7 @@ Example: Place it as `/project1/mcp_webserver_base`
     "touchdesigner": {
       "command": "npx",
       "args": [
-        "touchdesigner-mcp-server",
+        "touchdesigner-mcp-server@prerelease",
         "--stdio"
       ]
     }

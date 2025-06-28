@@ -24,11 +24,10 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 
 npxを使用する場合、TouchDesignerコンポーネントを別途ダウンロードする必要があります：
 1. [リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases)から `touchdesigner-mcp-td.zip` をダウンロード
-2. zipファイルを展開して `td` ディレクトリを取得
-3. 展開したファイルから `mcp_webserver_base.tox` を操作したいTouchDesignerプロジェクト直下にimportします。
+2. zipファイルを展開したフォルダから `mcp_webserver_base.tox` を操作したいTouchDesignerプロジェクト直下にimportします。
 例: `/project1/mcp_webserver_base` となるように配置
 
-**⚠️ 重要:** `td` ディレクトリの構造は展開した状態を正確に保持する必要があります。`mcp_webserver_base.tox` コンポーネントは `modules/` ディレクトリやその他のファイルへの相対パスを参照しています。展開した `td` ディレクトリ内のファイルを移動したり再編成したりしないでください。
+**⚠️ 重要:** ディレクトリの構造は展開した状態を正確に保持する必要があります。`mcp_webserver_base.tox` コンポーネントは `modules/` ディレクトリやその他のファイルへの相対パスを参照しています。展開したディレクトリ内のファイルを移動したり再編成したりしないでください。
 
 ##### 2. AIエージェントの設定：
 
@@ -39,7 +38,7 @@ npxを使用する場合、TouchDesignerコンポーネントを別途ダウン�
     "touchdesigner": {
       "command": "npx",
       "args": [
-        "touchdesigner-mcp-server",
+        "touchdesigner-mcp-server@prerelease",
         "--stdio"
       ]
     }
