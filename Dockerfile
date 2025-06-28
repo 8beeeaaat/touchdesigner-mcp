@@ -2,8 +2,6 @@ FROM node:24-slim AS build
 
 WORKDIR /app
 
-ARG TD_WEB_SERVER_URL=${TD_WEB_SERVER_URL}
-
 # Install Java runtime (required for OpenAPI Generator)
 RUN apt-get update && \
   apt-get install -y --no-install-recommends default-jre-headless && \

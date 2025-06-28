@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { resolve } from "node:path";
+import path, { resolve } from "node:path";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { config } from "dotenv";
 import { TouchDesignerServer } from "./server/touchDesignerServer.js";
@@ -36,7 +36,13 @@ export async function startServer(): Promise<void> {
 	}
 }
 
-if (process.argv[1]) {
+// Start server if this file is executed directly
+import { fileURLToPath } from "node:url";
+
+const currentFilePath = path.normalize(fileURLToPath(import.meta.url));
+const argvFilePath = path.normalize(process.argv[1]);
+
+if (currentFilePath === argvFilePath) {
 	startServer().catch((error) => {
 		console.error("Failed to start server:", error);
 		process.exit(1);
