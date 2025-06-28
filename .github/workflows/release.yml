@@ -40,7 +40,7 @@ jobs:
           docker cp temp-mcp:/app/td/modules td/
           docker cp temp-mcp:/app/dist ./
           docker rm temp-mcp
-          
+
           # Create selective td directory package
           echo "Creating selective td directory package..."
           mkdir -p temp_td
@@ -124,6 +124,14 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - run: npm ci
       - run: npm run build
-      - run: npm publish --access public
+      - name: Publish to npm
+        run: |
+          if [[ "${{ needs.build.outputs.is_prerelease }}" == "true" ]]; then
+            echo "Publishing prerelease version with prerelease tag..."
+            npm publish --access public --tag prerelease
+          else
+            echo "Publishing production version with latest tag..."
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
