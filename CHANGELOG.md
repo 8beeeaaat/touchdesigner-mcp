@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0-alpha.0] - 2025-06-28
+
+### Added
+- Prerelease/test release support in GitHub Actions workflow
+- Conditional npm publishing (skips prerelease versions)
+- Comprehensive unit tests for ConnectionManager
+- Release process documentation in README files
+- Tag-based release triggers for testing
+
+### Changed
+- **BREAKING**: Recommended usage changed from `npm install -g` to `npx touchdesigner-mcp-server` ([#69](https://github.com/8beeeaaat/touchdesigner-mcp/pull/69))
+- **BREAKING**: Docker entry point changed from `dist/index.js` to `dist/cli.js`
+- Updated installation instructions across all documentation (README.md, README.ja.md, llms-install.md)
+- Enhanced error messages in ConnectionManager with setup instructions
+- Improved GitHub Actions workflow to support both production and test releases
+- Updated Japanese README to match English documentation structure
+
+### Fixed
+- ConnectionManager error handling with proper type safety
+- Logger safety improvements to prevent errors when not connected
+- Docker configuration to use correct entry point
+
+### Technical
+- Added comprehensive test coverage for server connection management
+- Improved mock handling in unit tests with proper TypeScript types
+- Enhanced CI/CD pipeline with prerelease detection
+- Updated build processes to align with npx usage patterns
+
 ## [0.3.0] - 2025-06-21
 
 ### Added
