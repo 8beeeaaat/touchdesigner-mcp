@@ -39,6 +39,7 @@ Example: Place it as `/project1/mcp_webserver_base`
     "touchdesigner": {
       "command": "npx",
       "args": [
+        "-y",
         "touchdesigner-mcp-server@prerelease",
         "--stdio"
       ]

@@ -79,7 +79,7 @@ jobs:
           body: |
             ## Downloads
             - **TouchDesigner Components (Complete)**: [touchdesigner-mcp-td.zip](https://github.com/${{ github.repository }}/releases/download/v${{ steps.projectinfo.outputs.version }}/touchdesigner-mcp-td.zip)
-            - **npm package**: `npx touchdesigner-mcp-server --stdio`
+            - **npm package**: `npx -y touchdesigner-mcp-server@prerelease --stdio`
 
             ## Usage
 
@@ -88,7 +88,7 @@ jobs:
             2. Import `mcp_webserver_base.tox` into your TouchDesigner project
             3. Run the MCP server:
             ```bash
-            npx touchdesigner-mcp-server --stdio
+            npx -y touchdesigner-mcp-server@prerelease --stdio
             ```
 
             ### Claude Desktop Configuration
@@ -97,7 +97,7 @@ jobs:
               "mcpServers": {
                 "touchdesigner": {
                   "command": "npx",
-                  "args": ["touchdesigner-mcp-server@prerelease", "--stdio"]
+                  "args": ["-y", "touchdesigner-mcp-server@prerelease", "--stdio"]
                 }
               }
             }

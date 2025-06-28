@@ -38,6 +38,7 @@ npxを使用する場合、TouchDesignerコンポーネントを別途ダウン�
     "touchdesigner": {
       "command": "npx",
       "args": [
+        "-y",
         "touchdesigner-mcp-server@prerelease",
         "--stdio"
       ]
