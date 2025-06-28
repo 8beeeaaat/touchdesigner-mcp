@@ -31,6 +31,8 @@ Download the following from the [releases page](https://github.com/8beeeaaat/tou
 #### 3. Install the Desktop Extension
 Double-click the `touchdesigner-mcp.dxt` file to install the extension in Claude Desktop.
 
+https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854
+
 #### 4. Connect to the Server
 The extension will automatically handle the connection to the TouchDesigner server.
 
