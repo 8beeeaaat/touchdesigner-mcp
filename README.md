@@ -15,41 +15,10 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
 
 ## Usage
 
-<details>
-  <summary>Method 1: Using npx (Quick Start)</summary>
-
-*Requires Node.js to be installed*
-
-#### 1. Install the API Server in Your TouchDesigner Project:
-
-Since you're using npx, you'll need to download the TouchDesigner components separately:
-1. Download `touchdesigner-mcp-td.zip` from the [releases page](https://github.com/8beeeaaat/touchdesigner-mcp/releases)
-2. Extract the zip file to get the `td` directory
-3. Import `mcp_webserver_base.tox` from the extracted files directly under the TouchDesigner project you want to control.
-Example: Place it as `/project1/mcp_webserver_base`
-
-**⚠️ Important:** The `td` directory structure must be preserved exactly as extracted. The `mcp_webserver_base.tox` component references relative paths to the `modules/` directory and other files. Do not move or reorganize files within the extracted `td` directory.
-
-#### 2. Configure your AI agent:
-
-*Example for Claude Desktop*
-```json
-{
-  "mcpServers": {
-    "touchdesigner": {
-      "command": "npx",
-      "args": [
-        "touchdesigner-mcp-server",
-        "--stdio"
-      ]
-    }
-  }
-}
-```
-</details>
+*Requires Docker or Node.js to be installed*
 
 <details>
-  <summary>Method 2: Using Docker Image</summary>
+  <summary>Method 1: Using Docker Image (Recommended)</summary>
 
   [![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial_docker.png)](https://www.youtube.com/watch?v=BRWoIEVb0TU)
 
@@ -102,7 +71,7 @@ Example: Place it as `/project1/mcp_webserver_base`
           "-i",
           "touchdesigner-mcp-server",
           "node",
-          "dist/cli.js",
+          "dist/index.js",
           "--stdio"
         ]
       }
@@ -113,29 +82,58 @@ Example: Place it as `/project1/mcp_webserver_base`
   *On Windows systems, include the drive letter like C: e.g. `C:\\path\\to\\your\\touchdesigner-mcp\\docker-compose.yml`*
 </details>
 
+<details>
+  <summary>Method 2: Using the NPM Package</summary>
 
-## Verify Connection
+  To use the pre-built JS directly from Node.js:
+
+  [![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial.png)](https://www.youtube.com/watch?v=jFaUP1fYum0)
+
+  #### 1. Install the package
+  ```bash
+  mkdir some && cd ./some  # If you need a new directory
+  npm install touchdesigner-mcp-server
+  ```
+
+  #### 2. Install the API Server in Your TouchDesigner Project:
+
+  Start TouchDesigner and import the `some/node_modules/touchdesigner-mcp-server/td/mcp_webserver_base.tox` component directly under the TouchDesigner project you want to control.
+  Example: Place it as `/project1/mcp_webserver_base`
+
+  Importing the tox will trigger the `some/node_modules/touchdesigner-mcp-server/td/import_modules.py` script, which loads modules such as API server controllers.
+
+  ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
+
+  You can check boot logs by opening the Textport from the TouchDesigner menu.
+
+  ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
+
+  #### 3. Configure your AI agent:
+
+  *Example for Claude Desktop*
+  ```json
+  {
+    "mcpServers": {
+      "touchdesigner": {
+        "args": [
+          "/path/to/your/node_modules/touchdesigner-mcp-server/dist/index.js", // <-- Replace with the absolute path to node_modules/touchdesigner-mcp-server/dist/index.js
+          "--stdio"
+        ],
+        "command": "node"
+      }
+    }
+  }
+  ```
+
+  *On Windows systems, include the drive letter like C: e.g. `C:\\path\\to\\your\\node_modules\\touchdesigner-mcp-server\\dist\\index.js`*
+</details>
+
+### 3. Verify Connection
 
 If the MCP server is recognized, setup is complete.
 If it's not recognized, try restarting your AI agent.
 If you see an error at startup, try launching the agent again after starting TouchDesigner first.
 When the API server is running properly in TouchDesigner, the agent can use the provided tools to operate TouchDesigner.
-
-### Directory Structure Requirements
-
-**Critical:** When using any method (Docker, npx), maintain the exact directory structure:
-
-```
-td/
-├── import_modules.py          # Module loader script
-├── mcp_webserver_base.tox     # Main TouchDesigner component
-└── modules/                   # Python modules directory
-    ├── mcp/                   # MCP core logic
-    ├── utils/                 # Shared utilities
-    └── td_server/             # Generated API server code
-```
-
-The `mcp_webserver_base.tox` component uses relative paths to locate Python modules. Moving or reorganizing these files will cause import errors in TouchDesigner.
 
 ![demo](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/nodes_list.png)
 
@@ -178,28 +176,21 @@ Not implemented
 
 ## For Developers
 
-### Quick Start for Development
+### Building Client and API Server Code
 
-1. **Setup environment:**
-   ```bash
-   cp dotenv .env
-   # Adjust TD_WEB_SERVER_HOST and TD_WEB_SERVER_PORT in .env file
-   ```
+1. `cp dotenv .env`
+2. Adjust `TD_WEB_SERVER_HOST` and `TD_WEB_SERVER_PORT` in the `.env` file to match your  development environment
+3. Run `make build` or `npm run build` to regenerate the code
 
-2. **Build the project:**
-   ```bash
-   make build        # Docker-based build (recommended)
-   # OR
-   npm run build     # Node.js-based build
-   ```
+When you need to reflect the built code, please restart both the MCP server and TouchDesigner.
 
-3. **Available commands:**
-   ```bash
-   npm run test      # Run unit and integration tests
-   npm run dev       # Launch MCP inspector for debugging
-   ```
+### Verifying the API Server
+- `npm run test`
+Run unit tests for the MCP server code and integration tests with TouchDesigner.
+You can check communication logs by opening the Textport from the TouchDesigner menu.
 
-**Note:** When you update the code, restart both the MCP server and TouchDesigner to reflect changes.
+- `npm run dev`
+Launch @modelcontextprotocol/inspector to debug various features.
 
 ### Project Structure Overview
 
