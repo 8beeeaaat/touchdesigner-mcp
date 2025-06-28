@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0-alpha.6] - 2025-06-29
+
+### Added
+- **Desktop Extension (.dxt) Support**: Added full Desktop Extension (DXT) package support for Claude Desktop ([#82](https://github.com/8beeeaaat/touchdesigner-mcp/pull/82))
+- New `manifest.json` file defining DXT package configuration with tools, prompts, and user configuration options
+- User-configurable TouchDesigner port setting via DXT user interface
+- Comprehensive tool definitions and descriptions in DXT manifest
+- New `.dxtignore` file to exclude unnecessary files from DXT package
+
+### Changed
+- **GitHub Actions Workflow**: Enhanced release workflow to build and publish DXT packages automatically
+  - Added DXT CLI tool installation and package building steps
+  - Updated release body to include video demonstration links for setup instructions
+- **README Updates**: Added visual demonstration links and improved installation instructions
+  - Added GitHub user-attachments video links for TouchDesigner setup and DXT installation
+  - Enhanced documentation for all installation methods (DXT, npx, Docker)
+  - Updated both English and Japanese README files with video guides
+- **gitignore**: Added DXT-related ignore patterns
+
+### Documentation
+- Enhanced installation documentation with visual guides and video demonstrations
+- Improved DXT package distribution documentation
+- Added comprehensive tool and prompt descriptions in DXT manifest
+
+### Technical
+- Version bumped to 0.4.0-alpha.6 across all relevant files
+- DXT package workflow integrated into CI/CD pipeline
+- Maintained backward compatibility with existing installation methods
+
 ## [0.4.0-alpha.5] - 2025-06-29
 
 ### Changed

@@ -1,4 +1,5 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# This workflow builds the project, creates packages, and publishes a release.
+# It triggers on pushes to the main branch and on tags that start with 'v'.
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
 
 name: Release CI
@@ -10,7 +11,7 @@ on:
   push:
     branches: ["main"]
     tags:
-      - "v*"  # v で始まるタグにも対応
+      - "v*"  # Also triggered by tags starting with 'v'
 
 jobs:
   build:
@@ -41,8 +42,8 @@ jobs:
           docker cp temp-mcp:/app/dist ./
           docker rm temp-mcp
 
-          # Create selective td directory package
-          echo "Creating selective td directory package..."
+          # Create a package for the td directory
+          echo "Creating td directory package..."
           mkdir -p temp_td
           cp td/import_modules.py temp_td/
           cp td/mcp_webserver_base.tox temp_td/
@@ -50,7 +51,17 @@ jobs:
           cd temp_td && zip -r ../touchdesigner-mcp-td.zip .
           rm -rf temp_td
           echo "Build artifacts extracted and package created!"
-      - name: nodejs project information
+      - name: Build DXT package
+        run: |
+          # Install DXT CLI tool
+          npm install -g @anthropic-ai/dxt
+
+          # Build DXT package
+          npx @anthropic-ai/dxt pack
+
+          echo "DXT package created successfully!"
+          ls -la *.dxt
+      - name: Get Node.js project information
         id: projectinfo
         uses: gregoranders/nodejs-project-info@master
       - name: Determine if prerelease
@@ -78,20 +89,29 @@ jobs:
           name: ${{ steps.projectinfo.outputs.name }} - ${{ steps.projectinfo.outputs.version }} Release
           body: |
             ## Downloads
-            - **TouchDesigner Components (Complete)**: [touchdesigner-mcp-td.zip](https://github.com/${{ github.repository }}/releases/download/v${{ steps.projectinfo.outputs.version }}/touchdesigner-mcp-td.zip)
-            - **npm package**: `npx -y touchdesigner-mcp-server@prerelease --stdio`
+            - **TouchDesigner Components**: [touchdesigner-mcp-td.zip](https://github.com/${{ github.repository }}/releases/download/v${{ steps.projectinfo.outputs.version }}/touchdesigner-mcp-td.zip)
+            - **Desktop Extension (.dxt)**: [touchdesigner-mcp.dxt](https://github.com/${{ github.repository }}/releases/download/v${{ steps.projectinfo.outputs.version }}/touchdesigner-mcp.dxt)
 
             ## Usage
 
-            ### Quick Start with npx
-            1. Download and extract the TouchDesigner components from `touchdesigner-mcp-td.zip`
-            2. Import `mcp_webserver_base.tox` into your TouchDesigner project
-            3. Run the MCP server:
-            ```bash
-            npx -y touchdesigner-mcp-server@prerelease --stdio
-            ```
+            ### Quick Start with Claude Desktop and Desktop Extension (Recommended)
+            1. Download `TouchDesigner Components` and the `Desktop Extension`.
+            2. Extract the TouchDesigner components from `touchdesigner-mcp-td.zip`.
+            3. Import `mcp_webserver_base.tox` into your TouchDesigner project.
 
-            ### Claude Desktop Configuration
+            https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
+
+            4. Install the extension in Claude Desktop by double-clicking the `touchdesigner-mcp.dxt` file.
+
+            https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854
+
+            5. The extension will automatically handle the TouchDesigner server connection.
+
+            ### Set up with npx
+            1. Download and extract the TouchDesigner components from `touchdesigner-mcp-td.zip`.
+            2. Import `mcp_webserver_base.tox` into your TouchDesigner project.
+            3. Set up the MCP Server configuration:
+
             ```json
             {
               "mcpServers": {
@@ -104,8 +124,9 @@ jobs:
             ```
 
             ## Changes
-            See the full changelog at https://github.com/${{ github.repository }}/releases
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for a detailed history of changes.
           files: |
+            touchdesigner-mcp.dxt
             touchdesigner-mcp-td.zip
           draft: false
           prerelease: ${{ steps.prerelease.outputs.is_prerelease == 'true' }}
@@ -127,10 +148,10 @@ jobs:
       - name: Publish to npm
         run: |
           if [[ "${{ needs.build.outputs.is_prerelease }}" == "true" ]]; then
-            echo "Publishing prerelease version with prerelease tag..."
+            echo "Publishing prerelease version with 'prerelease' tag..."
             npm publish --access public --tag prerelease
           else
-            echo "Publishing production version with latest tag..."
+            echo "Publishing production version with 'latest' tag..."
             npm publish --access public
           fi
         env:
