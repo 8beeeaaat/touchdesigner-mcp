@@ -145,6 +145,7 @@ src/gen
 **/generated_handlers.py
 .github/copilot-instructions.md
 .venv
+.actrc
 td/modules/td_server
 
 # coding agents

@@ -15,9 +15,41 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 
 ## 利用方法
 
-*Docker または Node.js がインストールされていることが前提となります*
+<details>
+  <summary>方法1: npx を利用する（クイックスタート）</summary>
 
-#### 方法1: Dockerイメージを利用（推奨）
+*Node.jsがインストールされていることが前提となります*
+
+##### 1. TouchDesigner プロジェクトにMCP連携用のAPIサーバーを設置
+
+npxを使用する場合、TouchDesignerコンポーネントを別途ダウンロードする必要があります：
+1. [リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases)から `touchdesigner-mcp-td.zip` をダウンロード
+2. zipファイルを展開して `td` ディレクトリを取得
+3. 展開したファイルから `mcp_webserver_base.tox` を操作したいTouchDesignerプロジェクト直下にimportします。
+例: `/project1/mcp_webserver_base` となるように配置
+
+**⚠️ 重要:** `td` ディレクトリの構造は展開した状態を正確に保持する必要があります。`mcp_webserver_base.tox` コンポーネントは `modules/` ディレクトリやその他のファイルへの相対パスを参照しています。展開した `td` ディレクトリ内のファイルを移動したり再編成したりしないでください。
+
+##### 2. AIエージェントの設定：
+
+*例 Claude Desktop*
+```json
+{
+  "mcpServers": {
+    "touchdesigner": {
+      "command": "npx",
+      "args": [
+        "touchdesigner-mcp-server",
+        "--stdio"
+      ]
+    }
+  }
+}
+```
+</details>
+
+<details>
+  <summary>方法2: Dockerイメージを利用</summary>
 
 [![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial_docker.png)](https://www.youtube.com/watch?v=BRWoIEVb0TU)
 
@@ -70,7 +102,7 @@ docker-compose up -d
         "-i",
         "touchdesigner-mcp-server",
         "node",
-        "dist/index.js",
+        "dist/cli.js",
         "--stdio"
       ]
     }
@@ -79,58 +111,31 @@ docker-compose up -d
 ```
 
 *Windows環境では C:\\ の様にドライブレターを含めてください。 例. `C:\\path\\to\\your\\touchdesigner-mcp\\docker-compose.yml`*
+</details>
 
 
-#### 方法2: NPMパッケージ を利用する
-
-Node.jsから直接ビルド済みのjsを利用する場合は、以下の手順に従います：
-
-[![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial.png)](https://www.youtube.com/watch?v=jFaUP1fYum0)
-
-##### 1. パッケージのインストール
-```bash
-mkdir some && cd ./some  # 必要に応じて任意のディレクトリを作成
-npm install touchdesigner-mcp-server
-```
-
-##### 2. TouchDesigner プロジェクトにMCP連携用のAPIサーバーを設置
-
-TouchDesignerを起動し、`some/node_modules/touchdesigner-mcp-server/td/mcp_webserver_base.tox` コンポーネントを操作したいTouchDesignerプロジェクト直下にimportします。
-例: `/project1/mcp_webserver_base` となるように配置
-
-tox のimport により `some/node_modules/touchdesigner-mcp-server/td/import_modules.py` スクリプトが動作し、APIサーバのコントローラなどのモジュールがロードされます。
-
-![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
-
-TouchDesigner のメニューから Textportを起動してサーバーの起動ログを確認することができます。
-
-![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
-
-##### 3. AIエージェントの設定：
-
-*例 Claude Desktop*
-```json
-{
-  "mcpServers": {
-    "touchdesigner": {
-      "args": [
-        "/path/to/your/node_modules/touchdesigner-mcp-server/dist/index.js", // <-- node_modules/touchdesigner-mcp-server/dist/index.js への絶対パスに置き換えてください
-        "--stdio"
-      ],
-      "command": "node"
-    }
-  }
-}
-```
-
-*Windows環境では C:\\ の様にドライブレターを含めてください。 例. `C:\\path\\to\\your\\node_modules\\touchdesigner-mcp-server\\dist\\index.js`*
-
-### 3. 接続確認
+## 接続確認
 
 MCPサーバーが認識されていればセットアップは完了です。
 認識されない場合はAIエージェントを再起動するなどしてください。
 起動時にエラーが表示される場合はTouchDesignerを先に起動してから再度エージェントを起動してください。
 TouchDesigner で APIサーバーが実行されていれば、エージェントは提供された ツール等を通じてTouchDesignerを使用できます。
+
+### ディレクトリ構造要件
+
+**重要:** どの方法（Docker、npx）を使用する場合でも、正確なディレクトリ構造を維持してください：
+
+```
+td/
+├── import_modules.py          # モジュールローダースクリプト
+├── mcp_webserver_base.tox     # メインTouchDesignerコンポーネント
+└── modules/                   # Pythonモジュールディレクトリ
+    ├── mcp/                   # MCPコアロジック
+    ├── utils/                 # 共有ユーティリティ
+    └── td_server/             # 生成されたAPIサーバーコード
+```
+
+`mcp_webserver_base.tox` コンポーネントは相対パスを使用してPythonモジュールを検索します。これらのファイルを移動したり再編成したりすると、TouchDesignerでインポートエラーが発生します。
 
 ![demo](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/nodes_list.png)
 
@@ -172,21 +177,28 @@ TouchDesigner で APIサーバーが実行されていれば、エージェン�
 
 ## 開発者向け
 
-### クライアント・APIサーバーコードのビルド
+### 開発のクイックスタート
 
-1. `cp dotenv .env`
-2. `.env` ファイルの `TD_WEB_SERVER_HOST`, `TD_WEB_SERVER_PORT` を開発環境に合わせて変更
-3. `make build` もしくは `npm run build` を実行してコードを再生成する
+1. **環境設定:**
+   ```bash
+   cp dotenv .env
+   # .env ファイルの TD_WEB_SERVER_HOST, TD_WEB_SERVER_PORT を開発環境に合わせて変更
+   ```
 
-ビルドしたコードを再反映する場合は MCPサーバーと TouchDesigner を再起動してください
+2. **プロジェクトをビルド:**
+   ```bash
+   make build        # Docker-based build（推奨）
+   # または
+   npm run build     # Node.js-based build
+   ```
 
-### APIサーバの動作確認
-- `npm run test`
-MCPサーバーコードのユニットテストと TouchDesigner への結合テストが実行されます。
-TouchDesigner のメニューから Textportを起動すると通信のログを確認することができます。
+3. **利用可能なコマンド:**
+   ```bash
+   npm run test      # ユニットテストと結合テストを実行
+   npm run dev       # デバッグ用MCPインスペクターを起動
+   ```
 
-- `npm run dev`
-@modelcontextprotocol/inspector が起動し、各種機能をデバッグすることができます。
+**注意:** コードを更新した場合は、MCPサーバーとTouchDesignerの両方を再起動して変更を反映してください。
 
 ### プロジェクト構造の概要
 

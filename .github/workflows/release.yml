@@ -14,24 +14,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: ["24.x"]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
     steps:
       - uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
-      - name: Use Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
-        uses: actions/setup-node@v4.0.0
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
-      - run: npm ci
-      - run: npm run gen
-      - run: npm run test:unit
-      - run: TD_WEB_SERVER_HOST=http://localhost npm run build
+      - name: Set up Docker environment
+        run: |
+          echo "TD_WEB_SERVER_HOST=http://localhost" >> $GITHUB_ENV
+          echo "TD_WEB_SERVER_PORT=9981" >> $GITHUB_ENV
+      - name: Run complete CI build pipeline with Docker
+        run: make ci-build
       - name: nodejs project information
         id: projectinfo
         uses: gregoranders/nodejs-project-info@master
@@ -40,13 +32,46 @@ jobs:
           git tag $(cat TAG_NAME)
           git push origin $(cat TAG_NAME)
       - name: Create Release
-        uses: gregoranders/nodejs-create-release@master
+        id: create_release
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag: v${{ steps.projectinfo.outputs.version }}
+          tag_name: v${{ steps.projectinfo.outputs.version }}
           name: ${{ steps.projectinfo.outputs.name }} - ${{ steps.projectinfo.outputs.version }} Release
-          target: ${{ github.ref }}
+          body: |
+            ## Downloads
+            - **TouchDesigner Components (Complete)**: [touchdesigner-mcp-td.zip](https://github.com/${{ github.repository }}/releases/download/v${{ steps.projectinfo.outputs.version }}/touchdesigner-mcp-td.zip)
+            - **npm package**: `npx touchdesigner-mcp-server --stdio`
+
+            ## Usage
+
+            ### Quick Start with npx
+            1. Download and extract the TouchDesigner components from `touchdesigner-mcp-td.zip`
+            2. Import `mcp_webserver_base.tox` into your TouchDesigner project
+            3. Run the MCP server:
+            ```bash
+            npx touchdesigner-mcp-server --stdio
+            ```
+
+            ### Claude Desktop Configuration
+            ```json
+            {
+              "mcpServers": {
+                "touchdesigner": {
+                  "command": "npx",
+                  "args": ["touchdesigner-mcp-server", "--stdio"]
+                }
+              }
+            }
+            ```
+
+            ## Changes
+            See the full changelog at https://github.com/${{ github.repository }}/releases
+          files: |
+            touchdesigner-mcp-td.zip
+          draft: false
+          prerelease: false
 
   publish-npm:
     needs: build
