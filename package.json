@@ -51,6 +51,10 @@
 		".": {
 			"import": "./dist/index.js",
 			"types": "./dist/index.d.ts"
+		},
+		"./cli": {
+			"import": "./dist/cli.js",
+			"types": "./dist/cli.d.ts"
 		}
 	},
 	"scripts": {
