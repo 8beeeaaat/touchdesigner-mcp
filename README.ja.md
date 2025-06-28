@@ -28,6 +28,12 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 2. 展開したフォルダから`mcp_webserver_base.tox`を操作したいTouchDesignerプロジェクト直下にインポート
    例: `/project1/mcp_webserver_base`となるように配置
 
+https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
+
+  TouchDesignerのメニューからTextportを起動してサーバーの起動ログを確認できます。
+
+  ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
+
 ##### 3. Desktop Extensionをインストール：
 `touchdesigner-mcp.dxt`ファイルをダブルクリックしてClaude Desktopに拡張機能をインストール
 
@@ -48,6 +54,12 @@ https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854
 1. [リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases)から`touchdesigner-mcp-td.zip`をダウンロード
 2. zipファイルを展開し、`mcp_webserver_base.tox`を操作したいTouchDesignerプロジェクト直下にインポート
    例: `/project1/mcp_webserver_base`となるように配置
+
+https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
+
+  TouchDesignerのメニューからTextportを起動してサーバーの起動ログを確認できます。
+
+  ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
 ##### 2. MCPサーバー設定：
 
@@ -100,7 +112,7 @@ TouchDesignerを起動し、`td/mcp_webserver_base.tox`コンポーネントを�
 
 toxファイルのインポートにより`td/import_modules.py`スクリプトが実行され、APIサーバーのコントローラなどのモジュールがロードされます。
 
-![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/import.png)
+https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
 
 TouchDesignerのメニューからTextportを起動してサーバーの起動ログを確認できます。
 
