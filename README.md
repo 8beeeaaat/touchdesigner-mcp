@@ -288,7 +288,7 @@ Not implemented.
 
 This project uses OpenAPI-based code generation tools (Orval and openapi-generator-cli).
 
-**API Definition:** The API contract between the Node.s MCP server and the Python server running inside TouchDesigner is defined in `src/api/index.yml`.
+**API Definition:** The API contract between the Node.js MCP server and the Python server running inside TouchDesigner is defined in `src/api/index.yml`.
 
 1.  **Python server generation (`npm run gen:webserver`):**
     *   Uses `openapi-generator-cli` via Docker.
