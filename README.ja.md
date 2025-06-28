@@ -31,6 +31,8 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 ##### 3. Desktop Extensionをインストール：
 `touchdesigner-mcp.dxt`ファイルをダブルクリックしてClaude Desktopに拡張機能をインストール
 
+https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854
+
 ##### 4. 拡張機能が自動的にTouchDesignerサーバー接続を処理
 
 **⚠️ 重要:** TouchDesignerコンポーネントのディレクトリ構造は展開した状態を正確に保持してください。`mcp_webserver_base.tox`コンポーネントは`modules/`ディレクトリやその他のファイルへの相対パスを参照しています。
