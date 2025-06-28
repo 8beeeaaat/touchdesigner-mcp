@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0-alpha.2] - 2025-06-28
+
+### Changed
+- Updated `package.json` structure for better separation of CLI and library usage
+  - Moved `main`, `types`, and `bin` fields to proper order for clarity
+  - Updated `exports` field with separate entry points for library (`"."`) and CLI (`"./cli"`)
+- Updated build process to use `shx chmod +x dist/*.js` for cross-platform executable permissions
+- Changed development script from `dist/index.js` to `dist/cli.js` for consistency
+- Modified GitHub Actions workflow to use prerelease versions with `-y` flag for auto-installation
+- Updated documentation (README.md, README.ja.md) to reference prerelease versions for testing
+
+### Technical
+- Added `shx` package for cross-platform shell commands
+- Version bumped to 0.4.0-alpha.2 across all files (package.json, src/api/index.yml, src/server/touchDesignerServer.ts)
+- Simplified `files` field in package.json to include only necessary distribution files
+- Enhanced build pipeline with executable permissions handling
+
 ## [0.4.0-alpha.1] - 2025-06-28
 
 ### Fixed
