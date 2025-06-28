@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0-alpha.5] - 2025-06-29
+
+### Changed
+- **BREAKING**: Removed dotenv dependency and .env file usage for configuration ([#80](https://github.com/8beeeaaat/touchdesigner-mcp/pull/80))
+- **BREAKING**: Configuration now uses CLI arguments instead of environment variables
+  - Use `--host` and `--port` flags to customize TouchDesigner server connection
+  - Example: `npx touchdesigner-mcp-server --host 192.168.1.100 --port 8080`
+- Enhanced CLI argument parsing with `parseArgs` and `isStdioMode` functions in `src/cli.ts`
+- Updated error handling for server initialization with better user guidance
+- Improved Docker configuration to use environment variables for build-time settings
+- Enhanced Makefile to support flexible environment variable configuration
+
+### Removed
+- Removed dotenv package dependency
+- Deleted `.env` configuration file
+- Removed `llms-install.md` file (no longer relevant with simplified configuration)
+- Cleaned up dotenv-related code from `orval.config.ts` and `src/api/customInstance.ts`
+
+### Documentation
+- Updated README.md and README.ja.md to reflect new CLI-based configuration
+- Added examples for customizing server connections using command-line arguments
+- Removed references to .env file configuration
+
+### Technical
+- Version bumped to 0.4.0-alpha.5 across all files
+- Simplified configuration approach reduces setup complexity for users
+- Maintained backward compatibility through sensible defaults
+
 ## [0.4.0-alpha.4] - 2025-06-28
 
 ### Changed
