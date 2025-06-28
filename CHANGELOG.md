@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-06-29
+
+### Added
+- **Desktop Extension (.dxt) Support**: Full Desktop Extension package support for Claude Desktop with automatic installation and configuration
+- **Enhanced GitHub Actions Workflow**: Automated DXT package building and publishing in release pipeline
+- **Comprehensive Unit Testing**: Added extensive test coverage for ConnectionManager and CLI functionality
+- **Cross-platform Build Support**: Enhanced build system with better executable permissions handling
+- **User Configuration Interface**: DXT package provides user-configurable TouchDesigner port settings
+
+### Changed
+- **BREAKING**: Recommended installation method changed from global npm install to npx for easier distribution
+- **BREAKING**: Removed dotenv dependency - configuration now uses CLI arguments (`--host`, `--port`)
+- **BREAKING**: Docker entry point changed from `dist/index.js` to `dist/cli.js`
+- **Package Structure**: Improved separation of CLI and library usage with proper export field configuration
+- **Documentation**: Completely restructured README files with visual installation guides and video demonstrations
+- **Dependency Updates**: Updated all major dependencies to latest stable versions for improved security and performance
+
+### Removed
+- **Configuration Files**: Removed `.env` file and dotenv dependency in favor of CLI arguments
+- **Legacy Documentation**: Removed `llms-install.md` file (superseded by improved README documentation)
+- **Unused Dependencies**: Cleaned up package dependencies for leaner installation
+
+### Fixed
+- **npx Execution**: Resolved CLI entry point detection issues for better compatibility across execution environments
+- **Connection Management**: Enhanced error handling and connection reliability
+- **Build Process**: Fixed cross-platform executable permissions and build consistency
+
+### Technical Improvements
+- **Code Generation**: Enhanced OpenAPI-based code generation workflow
+- **Testing Infrastructure**: Comprehensive unit tests with proper TypeScript types and mock handling
+- **CI/CD Pipeline**: Improved release automation with prerelease detection and conditional publishing
+- **Development Workflow**: Enhanced development experience with better tooling and documentation
+
+### Migration Guide
+For users upgrading from 0.3.x:
+1. **Configuration**: Replace `.env` file usage with CLI arguments (e.g., `--host`, `--port`)
+2. **Installation**: Switch from `npm install -g` to `npx touchdesigner-mcp-server`
+3. **Docker**: Update Docker configurations to use new `dist/cli.js` entry point
+
 ## [0.4.0-alpha.6] - 2025-06-29
 
 ### Added
