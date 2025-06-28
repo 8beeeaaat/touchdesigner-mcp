@@ -3,16 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        # Configuration to connect to TouchDesigner WebServer on the host machine
-        # This will read values from the .env file
-        - TD_WEB_SERVER_HOST=${TD_WEB_SERVER_HOST}
-        - TD_WEB_SERVER_PORT=${TD_WEB_SERVER_PORT}
     image: touchdesigner-mcp-server
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "${TD_WEB_SERVER_PORT}:${TD_WEB_SERVER_PORT}" # WebServerDAT
       - "6274:6274" # MCP inspector
       - "6277:6277" # MCP inspector proxy
     stdin_open: true

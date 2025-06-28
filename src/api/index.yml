@@ -1,15 +1,13 @@
 info:
   description: OpenAPI schema for generating TouchDesigner API client code
   title: TouchDesigner API
-  version: 0.4.0-alpha.4
+  version: 0.4.0-alpha.5
 
 openapi: 3.0.0
 
 servers:
-  - url: "{baseUrl}"
-    variables:
-      baseUrl:
-        default: http://localhost:9981
+  - url: ${process.env.TD_WEB_SERVER_HOST}:${process.env.TD_WEB_SERVER_PORT}
+    description: TouchDesigner Web Server
 
 paths:
   /api/td/server/td:

@@ -33,12 +33,14 @@ export class ConnectionManager {
 				`Server connected and ready to process requests: ${process.env.TD_WEB_SERVER_HOST}:${process.env.TD_WEB_SERVER_PORT}`,
 			);
 
+			// Connection will be checked when tools are actually used
 			const connectionResult = await this.checkTDConnection();
 			if (!connectionResult.success) {
 				throw new Error(
-					`Failed to connect to TouchDesigner: ${connectionResult.error.message}`,
+					`Failed to connect to TouchDesigner. The mcp_webserver_base on TouchDesigner not currently available: ${connectionResult.error.message}`,
 				);
 			}
+			this.logger.log("TouchDesigner connection verified");
 			return createSuccessResult(undefined);
 		} catch (error) {
 			this.transport = null;
