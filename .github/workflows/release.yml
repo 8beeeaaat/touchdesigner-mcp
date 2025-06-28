@@ -26,8 +26,30 @@ jobs:
         run: |
           echo "TD_WEB_SERVER_HOST=http://localhost" >> $GITHUB_ENV
           echo "TD_WEB_SERVER_PORT=9981" >> $GITHUB_ENV
-      - name: Run complete CI build pipeline with Docker
-        run: make ci-build
+      - name: Docker Compose Action
+        uses: hoverkraft-tech/compose-action@v2.2.0
+        with:
+          compose-file: "./docker-compose.yml"
+          down-flags: "--volumes"
+          services: |
+            touchdesigner-mcp-server
+      - name: Extract build artifacts and create package
+        run: |
+          # Create a temporary container to extract build artifacts
+          docker create --name temp-mcp touchdesigner-mcp-server
+          docker cp temp-mcp:/app/td/modules td/
+          docker cp temp-mcp:/app/dist ./
+          docker rm temp-mcp
+          
+          # Create selective td directory package
+          echo "Creating selective td directory package..."
+          mkdir -p temp_td
+          cp td/import_modules.py temp_td/
+          cp td/mcp_webserver_base.tox temp_td/
+          cp -r td/modules temp_td/
+          cd temp_td && zip -r ../touchdesigner-mcp-td.zip .
+          rm -rf temp_td
+          echo "Build artifacts extracted and package created!"
       - name: nodejs project information
         id: projectinfo
         uses: gregoranders/nodejs-project-info@master
