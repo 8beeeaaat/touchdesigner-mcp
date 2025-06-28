@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0-alpha.3] - 2025-06-28
+
+### Fixed
+- Fixed MCP server startup issue with npx execution by reverting to simpler CLI entry point detection logic
+- Restored v0.3.0-style `process.argv[1]` check for better compatibility with npx and various execution environments
+
 ## [0.4.0-alpha.2] - 2025-06-28
 
 ### Changed
