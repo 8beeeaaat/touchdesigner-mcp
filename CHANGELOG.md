@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0-alpha.4] - 2025-06-28
+
+### Changed
+- Updated dependencies to latest versions for improved stability and security
+  - Updated @modelcontextprotocol/sdk from ^1.11.1 to ^1.13.2
+  - Updated axios from ^1.9.0 to ^1.10.0
+  - Updated dotenv from ^16.5.0 to ^17.0.0
+  - Updated zod from ^3.24.4 to ^3.25.67
+  - Updated @biomejs/biome from 1.9.4 to 2.0.6
+  - Updated @types/node from ^22.15.17 to ^24.0.7
+  - Updated vitest from ^3.1.3 to ^3.2.4
+  - Updated other development dependencies
+
+### Technical
+- Version bumped to 0.4.0-alpha.4 across all files
+- Updated package-lock.json with latest dependency versions
+- Maintained compatibility with existing functionality
+
 ## [0.4.0-alpha.3] - 2025-06-28
 
 ### Fixed

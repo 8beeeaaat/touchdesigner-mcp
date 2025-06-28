@@ -1,11 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import {
-	type MockInstance,
 	beforeEach,
 	describe,
 	expect,
 	it,
+	type MockInstance,
 	vi,
 } from "vitest";
 import type { ILogger } from "../../src/core/logger.js";

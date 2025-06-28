@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { ILogger } from "../../src/core/logger";
 import * as touchDesignerAPI from "../../src/gen/endpoints/TouchDesignerAPI";
 
-import { TouchDesignerClient } from "../../src/tdClient/touchDesignerClient";
+import {
+	type ITouchDesignerApi,
+	TouchDesignerClient,
+} from "../../src/tdClient/touchDesignerClient";
 
 vi.mock("../../src/gen/endpoints/TouchDesignerAPI", async () => {
 	return {
@@ -179,8 +182,7 @@ describe("TouchDesignerClient with mocks", () => {
 
 		const client = new TouchDesignerClient({
 			logger: nullLogger,
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-			httpClient: mockHttpClient as any,
+			httpClient: mockHttpClient as unknown as ITouchDesignerApi,
 		});
 
 		const result = await client.getTdInfo();

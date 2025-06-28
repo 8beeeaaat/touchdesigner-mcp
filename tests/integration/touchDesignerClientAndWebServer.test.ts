@@ -22,7 +22,7 @@ async function verifyNodeExists(params: {
 			kwargs: {},
 		});
 		return response.success ? response.data.result.length > 0 : false;
-	} catch (err) {
+	} catch (_err) {
 		return false;
 	}
 }
