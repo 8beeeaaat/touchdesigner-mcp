@@ -69,7 +69,7 @@ https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
   "mcpServers": {
     "touchdesigner": {
       "command": "npx",
-      "args": ["-y", "touchdesigner-mcp-server@prerelease", "--stdio"]
+      "args": ["-y", "touchdesigner-mcp-server", "--stdio"]
     }
   }
 }
@@ -79,7 +79,7 @@ https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
 ```json
 "args": [
   "-y",
-  "touchdesigner-mcp-server@prerelease",
+  "touchdesigner-mcp-server",
   "--stdio",
   "--host=http://custom_host",
   "--port=9982"
@@ -107,7 +107,7 @@ make build
 
 ##### 3. TouchDesignerプロジェクトにMCP連携用のAPIサーバーを設置
 
-TouchDesignerを起動し、`td/mcp_webserver_base.tox`コンポーネントを操作したいTouchDesignerプロジェクト直下にインポートします。  
+TouchDesignerを起動し、`td/mcp_webserver_base.tox`コンポーネントを操作したいTouchDesignerプロジェクト直下にインポートします。
 例: `/project1/mcp_webserver_base`となるように配置
 
 toxファイルのインポートにより`td/import_modules.py`スクリプトが実行され、APIサーバーのコントローラなどのモジュールがロードされます。
@@ -165,9 +165,9 @@ docker-compose up -d
 
 ## 接続確認
 
-MCPサーバーが認識されていればセットアップは完了です。  
-認識されない場合は、AIエージェントを再起動してください。  
-起動時にエラーが表示される場合は、TouchDesignerを先に起動してからAIエージェントを再度起動してください。  
+MCPサーバーが認識されていればセットアップは完了です。
+認識されない場合は、AIエージェントを再起動してください。
+起動時にエラーが表示される場合は、TouchDesignerを先に起動してからAIエージェントを再度起動してください。
 TouchDesignerでAPIサーバーが実行されていれば、エージェントは提供されたツール等を通じてTouchDesignerを使用できます。
 
 ### ディレクトリ構造要件
