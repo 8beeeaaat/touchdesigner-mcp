@@ -16,7 +16,6 @@ jobs:
     strategy:
       matrix:
         node-version: ["24.x"]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
       - uses: actions/checkout@v4.1.1
@@ -35,10 +34,10 @@ jobs:
         run: |
           # Install DXT CLI tool
           npm install -g @anthropic-ai/dxt
-          
+
           # Build DXT package to ensure it works
           npm run build:dist
           npm run build:dxt
-          
+
           echo "DXT package build test completed!"
           ls -la *.dxt
