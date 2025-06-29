@@ -2,6 +2,10 @@
 *.log
 .claude/
 .github/
+assets/
+dist/
+public/
+src/
 td/
 tests/
 node_modules/
