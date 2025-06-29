@@ -19,7 +19,7 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
   <summary>方法1: Claude Desktop + Desktop Extensions（推奨）</summary>
 
 ##### 1. ファイルをダウンロード：
-[リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases)から以下をダウンロード：
+[リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest)から以下をダウンロード：
 - **TouchDesigner Components**: `touchdesigner-mcp-td.zip`
 - **Desktop Extensions (.dxt)**: `touchdesigner-mcp.dxt`
 
@@ -51,7 +51,7 @@ https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854
 *Node.jsがインストールされていることが前提となります*
 
 ##### 1. TouchDesignerコンポーネントを設置：
-1. [リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases)から`touchdesigner-mcp-td.zip`をダウンロード
+1. [リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest)から`touchdesigner-mcp-td.zip`をダウンロード
 2. zipファイルを展開し、`mcp_webserver_base.tox`を操作したいTouchDesignerプロジェクト直下にインポート
    例: `/project1/mcp_webserver_base`となるように配置
 

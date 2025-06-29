@@ -19,7 +19,7 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
   <summary>Method 1: Using Claude Desktop and Desktop Extensions (Recommended)</summary>
 
 ### 1. Download Files
-Download the following from the [releases page](https://github.com/8beeeaaat/touchdesigner-mcp/releases):
+Download the following from the [releases page](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest):
 - **TouchDesigner Components**: `touchdesigner-mcp-td.zip`
 - **Desktop Extension (.dxt)**: `touchdesigner-mcp.dxt`
 
@@ -52,7 +52,7 @@ The extension will automatically handle the connection to the TouchDesigner serv
 *Requires Node.js to be installed.*
 
 ### 1. Set up TouchDesigner Components
-1. Download and extract the TouchDesigner components from `touchdesigner-mcp-td.zip` ([releases page](https://github.com/8beeeaaat/touchdesigner-mcp/releases)).
+1. Download and extract the TouchDesigner components from `touchdesigner-mcp-td.zip` ([releases page](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest)).
 2. Import `mcp_webserver_base.tox` into your TouchDesigner project.
 3. Place it at `/project1/mcp_webserver_base`.
 
