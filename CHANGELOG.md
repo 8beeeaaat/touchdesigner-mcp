@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - 2025-06-29
+
+### Changed
+- **DXT Package Structure**: Restructured DXT package organization ([#87](https://github.com/8beeeaaat/touchdesigner-mcp/pull/87))
+  - Moved `manifest.json` to dedicated `dxt/` directory for better organization
+  - Removed `.dxtignore` file as it's no longer needed with new structure
+  - Updated build script to use explicit source and output paths: `npx @anthropic-ai/dxt pack dxt/ touchdesigner-mcp.dxt`
+  - Simplified package scripts by removing redundant `package:dxt` script
+
+### Technical
+- Version bumped to 0.4.3 across all relevant files (package.json, src/api/index.yml, src/server/touchDesignerServer.ts)
+- Improved DXT build process with cleaner directory structure and explicit path specification
+
 ## [0.4.2] - 2025-06-29
 
 ### Changed
