@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2025-06-29
+
+### Changed
+- **DXT Package Configuration**: Enhanced .dxtignore to exclude more unnecessary files from DXT package
+  - Added exclusions for `assets/`, `dist/`, `public/`, and `src/` directories
+  - DXT package now only includes manifest.json for smaller, cleaner distribution
+- **DXT Package Version**: Updated manifest.json version to 0.1.1 for better package tracking
+
+### Technical
+- Version bumped to 0.4.2 across all relevant files (package.json, src/api/index.yml, src/server/touchDesignerServer.ts)
+- Optimized DXT package size by excluding development and build artifacts
+
 ## [0.4.1] - 2025-06-29
 
 ### Changed
