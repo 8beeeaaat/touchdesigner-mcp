@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2025-06-29
+
+### Changed
+- **Documentation**: Updated release links in README files to point to the latest version instead of releases index page
+  - Changed links from `/releases` to `/releases/latest` for better user experience
+  - Updated both English and Japanese README files
+- **Development Workflow**: Minor improvements to development.yml workflow for DXT package testing
+
+### Technical
+- Version bumped to 0.4.1 across all relevant files (package.json, src/api/index.yml, src/server/touchDesignerServer.ts)
+- Improved user experience by directing users to the most recent release automatically
+
 ## [0.4.0] - 2025-06-29
 
 ### Added
