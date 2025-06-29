@@ -61,7 +61,7 @@
 		"build": "run-s build:*",
 		"build:gen": "npm run gen",
 		"build:dist": "tsc && shx chmod +x dist/*.js",
-		"build:dxt": "npx @anthropic-ai/dxt pack",
+		"build:dxt": "npx @anthropic-ai/dxt pack dxt/ touchdesigner-mcp.dxt",
 		"lint": "run-p lint:*",
 		"lint:biome": "biome check",
 		"lint:tsc": "tsc --noEmit",
@@ -74,8 +74,7 @@
 		"gen": "run-s gen:*",
 		"gen:webserver": "openapi-generator-cli generate -i ./src/api/index.yml -g python-flask -o ./td/modules/td_server",
 		"gen:handlers": "node td/genHandlers.js",
-		"gen:mcp": "orval --config ./orval.config.ts",
-		"package:dxt": "run-s build build:dxt"
+		"gen:mcp": "orval --config ./orval.config.ts"
 	},
 	"files": [
 		"dist/**/*"
