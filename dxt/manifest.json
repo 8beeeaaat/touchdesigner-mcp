@@ -19,11 +19,7 @@
         "touchdesigner-mcp-server",
         "--stdio",
         "--port=${user_config.TD_WEB_SERVER_PORT}"
-      ],
-      "capabilities": {
-        "prompts": {},
-        "tools": {}
-      }
+      ]
     }
   },
   "tools": [
