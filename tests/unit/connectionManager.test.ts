@@ -45,7 +45,7 @@ describe("ConnectionManager", () => {
 		consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
 		// Setup environment variables
-		process.env.TD_WEB_SERVER_HOST = "http://localhost";
+		process.env.TD_WEB_SERVER_HOST = "http://127.0.0.1";
 		process.env.TD_WEB_SERVER_PORT = "9981";
 
 		connectionManager = new ConnectionManager(
@@ -75,7 +75,7 @@ describe("ConnectionManager", () => {
 			expect(result.success).toBe(true);
 			expect(mockServer.connect).toHaveBeenCalledWith(mockTransport);
 			expect(mockLogger.log).toHaveBeenCalledWith(
-				"Server connected and ready to process requests: http://localhost:9981",
+				"Server connected and ready to process requests: http://127.0.0.1:9981",
 			);
 			expect(mockTdClient.getTdInfo).toHaveBeenCalled();
 			expect(connectionManager.isConnected()).toBe(true);

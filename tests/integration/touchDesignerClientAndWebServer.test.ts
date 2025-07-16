@@ -31,7 +31,7 @@ const tdClient = new TouchDesignerClient();
 
 describe("TouchDesigner Client E2E Tests", () => {
 	beforeAll(async () => {
-		process.env.TD_WEB_SERVER_HOST = "http://localhost";
+		process.env.TD_WEB_SERVER_HOST = "http://127.0.0.1";
 		process.env.TD_WEB_SERVER_PORT = "9981";
 		await tdClient.createNode({
 			parentPath: PROJECT_PATH,
