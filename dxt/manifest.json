@@ -1,7 +1,7 @@
 {
   "dxt_version": "0.1",
   "name": "touchdesigner-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "display_name": "TouchDesigner MCP Server",
   "description": "AI assistant for TouchDesigner - control nodes, execute Python scripts, and create interactive visual content",
   "long_description": "# TouchDesigner MCP Server\n\nBridge between AI assistants and TouchDesigner for creative coding and visual programming. Features include:\n\n- **Node Operations**: Create, delete, and modify TouchDesigner nodes\n- **Python Execution**: Run Python scripts directly in TouchDesigner environment\n- **Parameter Control**: Update node parameters and connections\n- **Real-time Monitoring**: Get TouchDesigner server information and node details\n- **Creative Assistance**: AI-powered workflow optimization and debugging\n\nPerfect for visual artists, creative coders, and interactive media developers who want to leverage AI for TouchDesigner projects.",
