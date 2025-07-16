@@ -5,14 +5,17 @@ import { TouchDesignerServer } from "./server/touchDesignerServer.js";
 
 // Note: Environment variables should be set by the Desktop Extensions runtime or CLI arguments
 
+const DEFAULT_HOST = "http://127.0.0.1";
+const DEFAULT_PORT = 9981;
+
 /**
  * Parse command line arguments
  */
 export function parseArgs(args?: string[]) {
 	const argsToProcess = args || process.argv.slice(2);
 	const parsed = {
-		host: "http://127.0.0.1",
-		port: 9981,
+		host: DEFAULT_HOST,
+		port: DEFAULT_PORT,
 	};
 
 	for (let i = 0; i < argsToProcess.length; i++) {
