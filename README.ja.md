@@ -69,7 +69,7 @@ https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
   "mcpServers": {
     "touchdesigner": {
       "command": "npx",
-      "args": ["-y", "touchdesigner-mcp-server", "--stdio"]
+      "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
     }
   }
 }
@@ -79,7 +79,7 @@ https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
 ```json
 "args": [
   "-y",
-  "touchdesigner-mcp-server",
+  "touchdesigner-mcp-server@latest",
   "--stdio",
   "--host=http://custom_host",
   "--port=9982"

@@ -114,7 +114,7 @@ jobs:
               "mcpServers": {
                 "touchdesigner": {
                   "command": "npx",
-                  "args": ["-y", "touchdesigner-mcp-server", "--stdio"]
+                  "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
                 }
               }
             }

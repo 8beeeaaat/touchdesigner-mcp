@@ -5,7 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.4]
+## [0.4.5] - 2025-07-17
+
+### Changed
+- **Version Updates**: Updated version numbers across all components to 0.4.5 ([#94](https://github.com/8beeeaaat/touchdesigner-mcp/pull/94))
+  - Updated package.json from 0.4.4 to 0.4.5
+  - Updated src/api/index.yml API schema version to 0.4.5
+  - Updated src/server/touchDesignerServer.ts MCP server version to 0.4.5
+  - Updated dxt/manifest.json DXT package version to 0.1.3
+  - Updated README files to reference latest version
+  - Updated GitHub Actions workflow to use touchdesigner-mcp-server@latest
+
+### Technical
+- **Package Distribution**: Enhanced package referencing to use @latest tag for improved distribution
+- **Release Process**: Consolidated version bumping across all configuration files
+- **Documentation**: Updated installation instructions to use latest stable version
+
+## [0.4.4] - 2025-07-17
 
 ### Fixed
 - **macOS Connection Issue**: Fixed IPv6/IPv4 mismatch causing connection failures on macOS ([#92](https://github.com/8beeeaaat/touchdesigner-mcp/pull/92))
