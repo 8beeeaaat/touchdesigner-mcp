@@ -25,7 +25,7 @@ describe("CLI", () => {
 
 		it("should parse port argument correctly", () => {
 			expect(parseArgs(["--port=8080"])).toEqual({
-				host: "http://localhost",
+				host: "http://127.0.0.1",
 				port: 8080,
 			});
 		});
@@ -39,7 +39,7 @@ describe("CLI", () => {
 
 		it("should ignore malformed arguments", () => {
 			expect(parseArgs(["--host", "--port"])).toEqual({
-				host: "http://localhost",
+				host: "http://127.0.0.1",
 				port: 9981,
 			});
 		});

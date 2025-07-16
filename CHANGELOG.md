@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4]
+
+### Fixed
+- **macOS Connection Issue**: Fixed IPv6/IPv4 mismatch causing connection failures on macOS ([#92](https://github.com/8beeeaaat/touchdesigner-mcp/pull/92))
+  - Changed default host from `localhost` to `127.0.0.1` to ensure IPv4 connection
+  - TouchDesigner WebServer only binds to IPv4, but `localhost` was resolving to IPv6 (`::1`) on some systems
+  - Updated CLI default configuration, test files, and CI/CD pipeline
+  - Resolves `connect ECONNREFUSED ::1:9981` error on macOS systems
+
+### Changed
+- **DXT Manifest Cleanup**: Removed unused `capabilities` section from DXT manifest configuration ([#93](https://github.com/8beeeaaat/touchdesigner-mcp/pull/93))
+  - Streamlined DXT package configuration for better compatibility
+  - Removed deprecated capabilities fields that were not utilized
+
 ## [0.4.3] - 2025-06-29
 
 ### Changed
