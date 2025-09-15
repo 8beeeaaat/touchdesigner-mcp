@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.7] - 2025-09-15
+
+### Changed
+
+- **Dependency Updates**: Updated multiple runtime and development dependencies to latest versions for improved security and performance
+  - Updated @modelcontextprotocol/sdk from ^1.17.3 to ^1.18.0 for latest MCP protocol features and bug fixes
+  - Updated axios from ^1.11.0 to ^1.12.2 for enhanced HTTP client functionality and security improvements
+  - Updated @biomejs/biome from 2.2.0 to 2.2.4 for improved code formatting and linting capabilities
+  - Updated @openapitools/openapi-generator-cli from ^2.22.0 to ^2.23.1 for better API code generation
+  - Updated @types/node from ^24.3.0 to ^24.4.0 for latest Node.js type definitions
+  - Updated msw (Mock Service Worker) from ^2.10.5 to ^2.11.2 for enhanced testing capabilities
+
+### Technical
+
+- **Dependency Management**: Added axios override to ensure version consistency across all packages
+- **Security**: Updated all dependencies to address potential security vulnerabilities. <https://github.com/8beeeaaat/touchdesigner-mcp/security/dependabot/9>
+
 ## [0.4.6] - 2025-08-16
 
 ### Changed

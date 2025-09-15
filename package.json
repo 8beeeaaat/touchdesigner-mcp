@@ -1,6 +1,6 @@
 {
 	"name": "touchdesigner-mcp-server",
-	"version": "0.4.6",
+	"version": "0.4.7",
 	"description": "MCP server for TouchDesigner",
 	"repository": {
 		"type": "git",
@@ -22,22 +22,22 @@
 		"touchdesigner-mcp-server": "dist/cli.js"
 	},
 	"dependencies": {
-		"@modelcontextprotocol/sdk": "^1.17.3",
+		"@modelcontextprotocol/sdk": "^1.18.0",
 		"@mozilla/readability": "^0.6.0",
 		"@types/axios": "^0.14.4",
 		"@types/ws": "^8.18.1",
 		"@types/yargs": "^17.0.33",
-		"axios": "^1.11.0",
+		"axios": "^1.12.2",
 		"zod": "3.25.76"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.2.0",
-		"@openapitools/openapi-generator-cli": "^2.22.0",
+		"@biomejs/biome": "2.2.4",
+		"@openapitools/openapi-generator-cli": "^2.23.1",
 		"@types/jsdom": "^21.1.7",
-		"@types/node": "^24.3.0",
+		"@types/node": "^24.4.0",
 		"@vitest/coverage-v8": "^3.2.4",
 		"archiver": "^7.0.1",
-		"msw": "^2.10.5",
+		"msw": "^2.11.2",
 		"mustache": "^4.2.0",
 		"npm-run-all": "^4.1.5",
 		"orval": "^7.11.2",
@@ -83,5 +83,8 @@
 		"workerDirectory": [
 			"public"
 		]
+	},
+	"overrides": {
+		"axios": "^1.12.2"
 	}
 }
