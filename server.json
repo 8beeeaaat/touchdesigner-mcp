@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.8beeeaaat/touchdesigner-mcp-server",
+  "description": "MCP server for TouchDesigner - Control and operate TouchDesigner projects through AI agents",
+  "version": "1.0.0",
+  "status": "active",
+  "repository": {
+    "url": "https://github.com/8beeeaaat/touchdesigner-mcp.git",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registry_type": "npm",
+      "identifier": "touchdesigner-mcp-server",
+      "version": "1.0.0",
+      "runtime_hint": "npx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

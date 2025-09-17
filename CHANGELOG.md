@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2025-09-18
+
+### Added
+
+- **MCP Registry Integration**: Added support for Model Context Protocol (MCP) Registry registration
+  - Added `server.json` configuration file for MCP Registry with package validation metadata
+  - Added `mcpName` field to package.json for NPM package validation
+  - Added stdio transport configuration for MCP client compatibility
+
+### Technical
+
+- **Registry Configuration**: Added MCP Registry authentication tokens to .gitignore for security
+- **Packaging**: Enhanced package metadata for MCP Registry compliance and discoverability
+
 ## [0.4.7] - 2025-09-15
 
 ### Changed
