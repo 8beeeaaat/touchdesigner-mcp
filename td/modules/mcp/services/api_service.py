@@ -204,6 +204,9 @@ class TouchDesignerApiService(IApiService):
                         LogLevel.WARNING,
                     )
 
+        # Arrange nodes in the parent container after creation
+        parent_node.arrangeNode()
+
         node_info = self._get_node_summary(new_node)
         return success_result({"result": node_info})
 
