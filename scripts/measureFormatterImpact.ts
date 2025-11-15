@@ -4,8 +4,8 @@ import {
 	formatNodeDetails,
 	formatNodeList,
 	formatScriptResult,
-} from "../src/features/tools/utils/formatters/index.js";
-import type { PresenterFormat } from "../src/features/tools/utils/presenter.js";
+} from "../src/features/tools/presenter/index.js";
+import type { PresenterFormat } from "../src/features/tools/presenter/presenter.js";
 import { TouchDesignerClient } from "../src/tdClient/touchDesignerClient.js";
 
 type Measurement = {
@@ -91,7 +91,7 @@ async function main() {
 		JSON.stringify(nodesBasic, null, 2),
 		(format) =>
 			formatNodeList(nodesBasic.data, {
-				mode: "summary",
+				detailLevel: "summary",
 				responseFormat: format,
 			}),
 		measurements,
@@ -100,7 +100,10 @@ async function main() {
 		"GET_TD_NODES detailed",
 		JSON.stringify(nodesBasic, null, 2),
 		(responseFormat) =>
-			formatNodeList(nodesBasic.data, { mode: "detailed", responseFormat }),
+			formatNodeList(nodesBasic.data, {
+				detailLevel: "detailed",
+				responseFormat,
+			}),
 		measurements,
 	);
 
@@ -114,7 +117,7 @@ async function main() {
 		JSON.stringify(nodesWithProps, null, 2),
 		(format) =>
 			formatNodeList(nodesWithProps.data, {
-				mode: "summary",
+				detailLevel: "summary",
 				responseFormat: format,
 			}),
 		measurements,
@@ -123,7 +126,10 @@ async function main() {
 		"GET_TD_NODES (includeProperties=true) detailed",
 		JSON.stringify(nodesWithProps, null, 2),
 		(responseFormat) =>
-			formatNodeList(nodesWithProps.data, { mode: "detailed", responseFormat }),
+			formatNodeList(nodesWithProps.data, {
+				detailLevel: "detailed",
+				responseFormat,
+			}),
 		measurements,
 	);
 
@@ -137,7 +143,7 @@ async function main() {
 		JSON.stringify(nodeDetails, null, 2),
 		(format) =>
 			formatNodeDetails(nodeDetails.data, {
-				mode: "summary",
+				detailLevel: "summary",
 				limit: 10,
 				responseFormat: format,
 			}),
@@ -147,7 +153,10 @@ async function main() {
 		"GET_TD_NODE_PARAMETERS detailed",
 		JSON.stringify(nodeDetails, null, 2),
 		(responseFormat) =>
-			formatNodeDetails(nodeDetails.data, { mode: "detailed", responseFormat }),
+			formatNodeDetails(nodeDetails.data, {
+				detailLevel: "detailed",
+				responseFormat,
+			}),
 		measurements,
 	);
 
@@ -158,7 +167,7 @@ async function main() {
 		JSON.stringify(classList, null, 2),
 		(format) =>
 			formatClassList(classList.data, {
-				mode: "summary",
+				detailLevel: "summary",
 				limit: 50,
 				responseFormat: format,
 			}),
@@ -168,7 +177,10 @@ async function main() {
 		"GET_TD_CLASSES detailed",
 		JSON.stringify(classList, null, 2),
 		(responseFormat) =>
-			formatClassList(classList.data, { mode: "detailed", responseFormat }),
+			formatClassList(classList.data, {
+				detailLevel: "detailed",
+				responseFormat,
+			}),
 		measurements,
 	);
 
@@ -179,7 +191,7 @@ async function main() {
 		JSON.stringify(classDetails, null, 2),
 		(format) =>
 			formatClassDetails(classDetails.data, {
-				mode: "summary",
+				detailLevel: "summary",
 				limit: 20,
 				responseFormat: format,
 			}),
@@ -190,7 +202,7 @@ async function main() {
 		JSON.stringify(classDetails, null, 2),
 		(responseFormat) =>
 			formatClassDetails(classDetails.data, {
-				mode: "detailed",
+				detailLevel: "detailed",
 				responseFormat,
 			}),
 		measurements,
@@ -209,7 +221,7 @@ async function main() {
 		JSON.stringify(scriptResult, null, 2),
 		(format) =>
 			formatScriptResult(scriptResult, "op('/project1').children", {
-				mode: "summary",
+				detailLevel: "summary",
 				responseFormat: format,
 			}),
 		measurements,
@@ -219,7 +231,7 @@ async function main() {
 		JSON.stringify(scriptResult, null, 2),
 		(responseFormat) =>
 			formatScriptResult(scriptResult, "op('/project1').children", {
-				mode: "detailed",
+				detailLevel: "detailed",
 				responseFormat,
 			}),
 		measurements,
