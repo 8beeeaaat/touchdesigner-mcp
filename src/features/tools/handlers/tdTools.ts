@@ -517,7 +517,9 @@ function matchesMetadataFilter(entry: ToolMetadata, keyword: string): boolean {
 		entry.notes ?? "",
 	];
 
-	if (haystacks.some((value) => value.toLowerCase().includes(normalizedKeyword))) {
+	if (
+		haystacks.some((value) => value.toLowerCase().includes(normalizedKeyword))
+	) {
 		return true;
 	}
 

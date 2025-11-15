@@ -1,12 +1,7 @@
 import { TOOL_NAMES } from "../../../core/constants.js";
 import type { ToolNames } from "../index.js";
 
-export type ToolCategory =
-	| "system"
-	| "python"
-	| "nodes"
-	| "classes"
-	| "state";
+export type ToolCategory = "system" | "python" | "nodes" | "classes" | "state";
 
 export interface ToolParameterMetadata {
 	name: string;
@@ -50,7 +45,8 @@ export const TOUCH_DESIGNER_TOOL_METADATA: ToolMetadata[] = [
 				description: "Overrides the formatter output format for automation.",
 			},
 		],
-		returns: "TouchDesigner build metadata (server, version, operating system).",
+		returns:
+			"TouchDesigner build metadata (server, version, operating system).",
 		example: `import { getTdInfo } from './servers/touchdesigner/getTdInfo';
 
 const info = await getTdInfo();
@@ -390,7 +386,8 @@ console.log(renderStatus.result);`,
 				description: "Return the catalog as JSON when writing caches.",
 			},
 		],
-		returns: "Python class catalogue with names, types, and optional summaries.",
+		returns:
+			"Python class catalogue with names, types, and optional summaries.",
 		example: `import { getTdClasses } from './servers/touchdesigner/getTdClasses';
 
 const classes = await getTdClasses({ limit: 20 });

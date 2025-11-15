@@ -1,8 +1,8 @@
 import type { ToolMetadata } from "../metadata/touchDesignerToolMetadata.js";
 import {
+	type FormatterOptions,
 	finalizeFormattedText,
 	mergeFormatterOptions,
-	type FormatterOptions,
 } from "./responseFormatter.js";
 
 interface ToolMetadataFormatterOptions extends Partial<FormatterOptions> {
@@ -160,7 +160,11 @@ function findCommonDirectorySegments(segmentsList: string[][]): string[] {
 	for (let i = 1; i < directories.length; i += 1) {
 		const current = directories[i];
 		let j = 0;
-		while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
+		while (
+			j < prefix.length &&
+			j < current.length &&
+			prefix[j] === current[j]
+		) {
 			j += 1;
 		}
 		prefix = prefix.slice(0, j);
