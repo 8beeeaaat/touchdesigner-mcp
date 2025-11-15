@@ -5,6 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-11-15
+
+### Added
+
+- **Token-Optimized Response Formatters**: Implemented specialized formatters to reduce token consumption in AI agent interactions
+  - `classListFormatter`: Formats TouchDesigner Python class listings with configurable detail levels (minimal, summary, detailed)
+  - `nodeDetailsFormatter`: Provides structured node information with parameter details
+  - `nodeListFormatter`: Optimized formatting for node listings with token-efficient output
+  - `scriptResultFormatter`: Enhanced script execution result formatting with better readability
+  - `operationFormatter`: Standardized formatting for TouchDesigner operations
+  - `responseFormatter`: Central response formatting system with markdown rendering support
+- **Markdown Templates**: Added reusable Mustache templates for consistent response formatting
+  - `classDetailsSummary.md`, `classListSummary.md`, `nodeDetailsSummary.md`, `nodeListSummary.md`, `scriptSummary.md`
+  - Templates provide consistent structure across all tool responses
+- **Tool Metadata System**: Comprehensive metadata descriptions for all TouchDesigner MCP tools
+  - Detailed tool descriptions, parameter explanations, and usage examples
+  - Helps AI agents understand tool capabilities and usage patterns
+- **Development Scripts**: Added utility scripts for measuring formatter impact and previewing formats
+  - `scripts/formatPreview.ts`: Preview formatted output before deployment
+  - `scripts/measureFormatterImpact.ts`: Analyze token reduction impact (up to 70% reduction achieved)
+  - `scripts/showDetailedNodes.ts`: Debug tool for inspecting node details
+- **Comprehensive Testing**: Added extensive test coverage for formatter implementations
+  - Unit tests for `nodeListFormatter`, `responseFormatter`, `scriptResultFormatter`
+  - Integration tests for MCP tool responses to verify token optimization
+
+### Changed
+
+- **Tool Response Format**: All TouchDesigner tools now return optimized text responses instead of raw JSON
+  - Replaced direct JSON serialization with intelligent formatters
+  - Responses adapt based on `detailLevel` parameter (minimal, summary, detailed)
+  - Improved readability and reduced token consumption for AI agents
+- **README Documentation**: Updated with detailed information about response formatting system
+  - Added "Response Formatting" section explaining detail levels and token optimization
+  - Included examples of formatter usage and configuration
+  - Updated both English and Japanese README files
+- **Python Logging**: Enhanced logging in TouchDesigner modules with better error context
+  - Improved traceback formatting for debugging
+  - Added conditional traceback output based on log level
+
+### Technical
+
+- **Response Optimization**: Achieved up to 70% token reduction through intelligent formatting
+  - Minimal mode: Returns only essential information for quick operations
+  - Summary mode: Provides balanced information for most use cases
+  - Detailed mode: Includes comprehensive data when needed
+- **Type Safety**: Added TypeScript type definitions for formatter options and configurations
+- **Code Organization**: Structured formatter code in dedicated `src/features/tools/presenter/` directory
+- **Build Process**: Updated build configuration to copy markdown templates to distribution directory
+- **Version Bumping**: Updated version across all components (package.json, API schema, server, DXT manifest)
+
+### Performance
+
+- **Token Efficiency**: Significant reduction in token usage for common operations
+  - Node listings: ~70% reduction in typical cases
+  - Script results: ~50-60% reduction through smart formatting
+  - Class information: Configurable detail levels prevent information overload
+- **Response Quality**: Maintained or improved response quality while reducing token count
+  - Markdown formatting improves readability for AI agents
+  - Structured output helps agents parse and understand results
+
 ## [1.0.0] - 2025-09-18
 
 ### Added
