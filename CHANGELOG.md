@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2025-11-16
+
+### Fixed
+
+- **Token-Optimized Response Formatters**: Re-introduced token-optimized response formatters after fixing critical issues ([#104 revert](https://github.com/8beeeaaat/touchdesigner-mcp/pull/104))
+  - Reverted the temporary removal in v1.1.1
+  - All formatter features from v1.1.0 are now fully restored and functional
+  - Includes classListFormatter, nodeDetailsFormatter, nodeListFormatter, scriptResultFormatter, operationFormatter, and responseFormatter
+  - Markdown templates and tool metadata system fully re-enabled
+
+### Changed
+
+- **Dependency Updates**: Updated and reorganized package dependencies for better compatibility
+  - Updated mustache package to latest version with proper TypeScript type definitions
+  - Moved `yaml` package from devDependencies to dependencies for production use
+  - Ensures proper runtime availability of YAML parsing functionality
+
+## [1.1.1] - 2025-11-16
+
+### Changed
+
+- **Temporary Rollback**: Temporarily reverted token-optimized response formatters to v1.0.0 baseline due to critical issues
+  - Removed all formatter implementations, markdown templates, and tool metadata
+  - Restored original JSON-based response format for stability
+  - Note: This was a temporary measure - all features were restored in v1.1.2
+
 ## [1.1.0] - 2025-11-15
 
 ### Added
