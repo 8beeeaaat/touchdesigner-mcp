@@ -9,45 +9,9 @@ This is an implementation of an MCP (Model Context Protocol) server for TouchDes
 [![demo clip](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/particle_on_youtube.png)](https://youtu.be/V2znaqGU7f4?si=6HDFbcBHCFPdttkM&t=635)
 
 TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebServer DAT, enabling AI agents to:
-
 - Create, modify, and delete nodes
 - Query node properties and project structure
 - Programmatically control TouchDesigner via Python scripts
-
-## Architecture
-
-```mermaid
-flowchart LR
-    A["🤖<br/>MCP client<br/>(Claude / Codex / ...)"]
-
-    subgraph S [Node.js MCP server]
-      B1["🧰<br/>Tools & prompts<br/>(src/features/tools)"]
-      B2["🖌️<br/>Presenters & formatters<br/>(markdown output)"]
-      B3["🌐<br/>OpenAPI HTTP client<br/>(src/tdClient)"]
-    end
-
-    subgraph T [TouchDesigner project]
-      C1["🧩<br/>WebServer DAT<br/>(mcp_webserver_base.tox)"]
-      C2["🐍<br/>Python controllers / services<br/>(td/modules/mcp)"]
-      C3["🎛️<br/>Project nodes & parameters<br/>(/project1/...)"]
-    end
-
-    A --> B1
-    B1 --> B2
-    B1 --> B3
-    B2 --> A
-    B3 <--> C1
-    C1 <--> C2
-    C2 <--> C3
-
-    %% Higher-contrast colors for readability
-    classDef client fill:#d8e8ff,stroke:#1f6feb,stroke-width:2px,color:#111,font-weight:bold
-    classDef server fill:#efe1ff,stroke:#8250df,stroke-width:2px,color:#111,font-weight:bold
-    classDef td fill:#d7f5e3,stroke:#2f9e44,stroke-width:2px,color:#111,font-weight:bold
-    class A client;
-    class B1,B2,B3 server;
-    class C1,C2,C3 td;
-```
 
 ## Usage
 
@@ -55,32 +19,27 @@ flowchart LR
   <summary>Method 1: Using Claude Desktop and Desktop Extensions (Recommended)</summary>
 
 ### 1. Download Files
-
 Download the following from the [releases page](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest):
-
 - **TouchDesigner Components**: `touchdesigner-mcp-td.zip`
 - **Desktop Extension (.dxt)**: `touchdesigner-mcp.dxt`
 
 ### 2. Set up TouchDesigner Components
-
 1. Extract the TouchDesigner components from `touchdesigner-mcp-td.zip`.
 2. Import `mcp_webserver_base.tox` into your TouchDesigner project.
 3. Place it at `/project1/mcp_webserver_base`.
 
-<https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
+https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
 
   You can check the startup logs by opening the Textport from the TouchDesigner menu.
 
   ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
 ### 3. Install the Desktop Extension
-
 Double-click the `touchdesigner-mcp.dxt` file to install the extension in Claude Desktop.
 
-<https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854>
+https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854
 
 ### 4. Connect to the Server
-
 The extension will automatically handle the connection to the TouchDesigner server.
 
 **⚠️ Important:** The directory structure must be preserved exactly as extracted. The `mcp_webserver_base.tox` component references relative paths to the `modules/` directory and other files.
@@ -93,12 +52,11 @@ The extension will automatically handle the connection to the TouchDesigner serv
 *Requires Node.js to be installed.*
 
 ### 1. Set up TouchDesigner Components
-
 1. Download and extract the TouchDesigner components from `touchdesigner-mcp-td.zip` ([releases page](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest)).
 2. Import `mcp_webserver_base.tox` into your TouchDesigner project.
 3. Place it at `/project1/mcp_webserver_base`.
 
-<https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
+https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
 
   You can check the startup logs by opening the Textport from the TouchDesigner menu.
 
@@ -107,7 +65,6 @@ The extension will automatically handle the connection to the TouchDesigner serv
 ### 2. Set up the MCP Server Configuration
 
 *Example for Claude Desktop:*
-
 ```json
 {
   "mcpServers": {
@@ -120,7 +77,6 @@ The extension will automatically handle the connection to the TouchDesigner serv
 ```
 
 **Customization:** You can customize the TouchDesigner server connection by adding `--host` and `--port` arguments:
-
 ```json
 "args": [
   "-y",
@@ -130,7 +86,6 @@ The extension will automatically handle the connection to the TouchDesigner serv
   "--port=9982"
 ]
 ```
-
 </details>
 
 <details>
@@ -138,42 +93,39 @@ The extension will automatically handle the connection to the TouchDesigner serv
 
   [![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial_docker.png)](https://www.youtube.com/watch?v=BRWoIEVb0TU)
 
-### 1. Clone the repository
-
+  ### 1. Clone the repository
   ```bash
   git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
   cd touchdesigner-mcp
   ```
 
-### 2. Build the Docker image
-
+  ### 2. Build the Docker image
   ```bash
   make build
   ```
 
-### 3. Install the API Server in Your TouchDesigner Project
+  ### 3. Install the API Server in Your TouchDesigner Project
 
   Start TouchDesigner and import the `td/mcp_webserver_base.tox` component into the project you want to control.
   Example: Place it at `/project1/mcp_webserver_base`.
 
   Importing the `.tox` file will trigger the `td/import_modules.py` script, which loads the necessary modules for the API server.
 
-<https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
+https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
 
   You can check the startup logs by opening the Textport from the TouchDesigner menu.
 
   ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-### 4. Start the MCP server container
+  ### 4. Start the MCP server container
 
   ```bash
   docker-compose up -d
   ```
 
-### 5. Configure your AI agent to use the Docker container
+  ### 5. Configure your AI agent to use the Docker container
 
   *Example for Claude Desktop:*
-
   ```json
   {
     "mcpServers": {
@@ -199,7 +151,6 @@ The extension will automatically handle the connection to the TouchDesigner serv
   *On Windows systems, include the drive letter, e.g., `C:\path\to\your\touchdesigner-mcp\docker-compose.yml`.*
 
 **Note:** You can customize the TouchDesigner server connection by adding `--host` and `--port` arguments:
-
   ```json
 "args": [
   ...,
@@ -208,8 +159,8 @@ The extension will automatically handle the connection to the TouchDesigner serv
   "--port=9982"
 ]
   ```
-
 </details>
+
 
 ## Verify Connection
 
@@ -235,6 +186,7 @@ td/
 The `mcp_webserver_base.tox` component uses relative paths to locate Python modules. Moving or reorganizing these files will cause import errors in TouchDesigner.
 
 ![demo](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/nodes_list.png)
+
 
 ## MCP Server Features
 
@@ -271,12 +223,12 @@ Prompts provide instructions for AI agents to perform specific actions in TouchD
 
 Not implemented.
 
+
 ## For Developers
 
 ### Quick Start for Development
 
 1. **Set up your environment:**
-
    ```bash
    # Clone and install dependencies
    git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
@@ -285,7 +237,6 @@ Not implemented.
    ```
 
 2. **Build the project:**
-
    ```bash
    make build        # Docker-based build (recommended)
    # OR
@@ -293,7 +244,6 @@ Not implemented.
    ```
 
 3. **Available commands:**
-
    ```bash
    npm run test      # Run unit and integration tests
    npm run dev       # Launch the MCP inspector for debugging
@@ -333,24 +283,25 @@ Not implemented.
 └── orval.config.ts             # Orval config (TypeScript client generation)
 ```
 
+
 ### API Code Generation Workflow
 
 This project uses OpenAPI-based code generation tools (Orval and openapi-generator-cli).
 
 **API Definition:** The API contract between the Node.js MCP server and the Python server running inside TouchDesigner is defined in `src/api/index.yml`.
 
-1. **Python server generation (`npm run gen:webserver`):**
-    - Uses `openapi-generator-cli` via Docker.
-    - Reads `src/api/index.yml`.
-    - Generates a Python server skeleton (`td/modules/td_server/`) based on the API definition. This code runs inside TouchDesigner's WebServer DAT.
-    - **Requires Docker to be installed and running.**
-2. **Python handler generation (`npm run gen:handlers`):**
-    - Uses a custom Node.js script (`td/genHandlers.js`) and Mustache templates (`td/templates/`).
-    - Reads the generated Python server code or OpenAPI spec.
-    - Generates handler implementations (`td/modules/mcp/controllers/generated_handlers.py`) that connect to the business logic in `td/modules/mcp/services/api_service.py`.
-3. **TypeScript client generation (`npm run gen:mcp`):**
-    - Uses `Orval` to generate an API client and Zod schemas for tool validation from the schema YAML, which is bundled by `openapi-generator-cli`.
-    - Generates a typed TypeScript client (`src/tdClient/`) used by the Node.js server to make requests to the WebServer DAT.
+1.  **Python server generation (`npm run gen:webserver`):**
+    *   Uses `openapi-generator-cli` via Docker.
+    *   Reads `src/api/index.yml`.
+    *   Generates a Python server skeleton (`td/modules/td_server/`) based on the API definition. This code runs inside TouchDesigner's WebServer DAT.
+    *   **Requires Docker to be installed and running.**
+2.  **Python handler generation (`npm run gen:handlers`):**
+    *   Uses a custom Node.js script (`td/genHandlers.js`) and Mustache templates (`td/templates/`).
+    *   Reads the generated Python server code or OpenAPI spec.
+    *   Generates handler implementations (`td/modules/mcp/controllers/generated_handlers.py`) that connect to the business logic in `td/modules/mcp/services/api_service.py`.
+3.  **TypeScript client generation (`npm run gen:mcp`):**
+    *   Uses `Orval` to generate an API client and Zod schemas for tool validation from the schema YAML, which is bundled by `openapi-generator-cli`.
+    *   Generates a typed TypeScript client (`src/tdClient/`) used by the Node.js server to make requests to the WebServer DAT.
 
 The build process (`npm run build`) runs all necessary generation steps (`npm run gen`), followed by TypeScript compilation (`tsc`).
 

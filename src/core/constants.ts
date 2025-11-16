@@ -10,7 +10,6 @@ export const TD_PYTHON_CLASS_REFERENCE_INDEX_URL = `${TD_PYTHON_CLASS_REFERENCE_
 export const TOOL_NAMES = {
 	CREATE_TD_NODE: "create_td_node",
 	DELETE_TD_NODE: "delete_td_node",
-	DESCRIBE_TD_TOOLS: "describe_td_tools",
 	EXECUTE_PYTHON_SCRIPT: "execute_python_script",
 	EXECUTE_NODE_METHOD: "exec_node_method",
 	GET_TD_INFO: "get_td_info",
