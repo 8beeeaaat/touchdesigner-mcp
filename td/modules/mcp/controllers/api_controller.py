@@ -73,9 +73,9 @@ class ApiServiceProtocol(Protocol):
 
     def exec_script(self, script: str) -> Result: ...
 
-    def get_python_classes(self) -> Result: ...
+    def get_td_python_classes(self) -> Result: ...
 
-    def get_python_class_details(self, class_name: str) -> Result: ...
+    def get_td_python_class_details(self, class_name: str) -> Result: ...
 
     def call_node_method(
         self,
@@ -617,7 +617,7 @@ class APIControllerOpenAPI(IController):
         Returns:
             List of Python classes available in TouchDesigner
         """
-        return self._service.get_python_classes()
+        return self._service.get_td_python_classes()
 
     def _handle_get_td_python_class_details(
         self, className: str, body: Optional[str] = None, **kwargs
@@ -631,7 +631,7 @@ class APIControllerOpenAPI(IController):
         Returns:
             Details of the specified Python class
         """
-        return self._service.get_python_class_details(className)
+        return self._service.get_td_python_class_details(className)
 
 
 api_controller_openapi = APIControllerOpenAPI()
