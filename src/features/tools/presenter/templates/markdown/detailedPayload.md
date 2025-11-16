@@ -1,5 +1,0 @@
-## {{title}}
-
-```{{payloadFormat}}
-{{{payload}}}
-```

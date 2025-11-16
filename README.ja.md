@@ -9,75 +9,35 @@ TouchDesignerのためのMCP(Model Context Protocol) サーバー実装です。
 [![demo clip](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/particle_on_youtube.png)](https://youtu.be/V2znaqGU7f4?si=6HDFbcBHCFPdttkM&t=635)
 
 TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッジとして機能し、AIエージェントが以下のことが可能になります
-
 - ノードの作成、変更、削除
 - ノードプロパティやプロジェクト構造の照会
 - PythonスクリプトによるTouchDesignerのプログラム的制御
-
-## アーキテクチャ
-
-```mermaid
-flowchart LR
-    A["🤖<br/>MCP client<br/>(Claude / Codex / ...)"]
-
-    subgraph S [Node.js MCP server]
-      B1["🧰<br/>Tools & prompts<br/>(src/features/tools)"]
-      B2["🖌️<br/>Presenters & formatters<br/>(markdown output)"]
-      B3["🌐<br/>OpenAPI HTTP client<br/>(src/tdClient)"]
-    end
-
-    subgraph T [TouchDesigner project]
-      C1["🧩<br/>WebServer DAT<br/>(mcp_webserver_base.tox)"]
-      C2["🐍<br/>Python controllers / services<br/>(td/modules/mcp)"]
-      C3["🎛️<br/>Project nodes & parameters<br/>(/project1/...)"]
-    end
-
-    A --> B1
-    B1 --> B2
-    B1 --> B3
-    B2 --> A
-    B3 <--> C1
-    C1 <--> C2
-    C2 <--> C3
-
-    %% Higher-contrast colors for readability
-    classDef client fill:#d8e8ff,stroke:#1f6feb,stroke-width:2px,color:#111,font-weight:bold
-    classDef server fill:#efe1ff,stroke:#8250df,stroke-width:2px,color:#111,font-weight:bold
-    classDef td fill:#d7f5e3,stroke:#2f9e44,stroke-width:2px,color:#111,font-weight:bold
-    class A client;
-    class B1,B2,B3 server;
-    class C1,C2,C3 td;
-```
 
 ## 利用方法
 
 <details>
   <summary>方法1: Claude Desktop + Desktop Extensions（推奨）</summary>
 
-##### 1. ファイルをダウンロード
-
+##### 1. ファイルをダウンロード：
 [リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest)から以下をダウンロード：
-
 - **TouchDesigner Components**: `touchdesigner-mcp-td.zip`
 - **Desktop Extensions (.dxt)**: `touchdesigner-mcp.dxt`
 
-##### 2. TouchDesignerコンポーネントを設置
-
+##### 2. TouchDesignerコンポーネントを設置：
 1. `touchdesigner-mcp-td.zip`を展開
 2. 展開したフォルダから`mcp_webserver_base.tox`を操作したいTouchDesignerプロジェクト直下にインポート
    例: `/project1/mcp_webserver_base`となるように配置
 
-<https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
+https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
 
   TouchDesignerのメニューからTextportを起動してサーバーの起動ログを確認できます。
 
   ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-##### 3. Desktop Extensionをインストール
-
+##### 3. Desktop Extensionをインストール：
 `touchdesigner-mcp.dxt`ファイルをダブルクリックしてClaude Desktopに拡張機能をインストール
 
-<https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854>
+https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854
 
 ##### 4. 拡張機能が自動的にTouchDesignerサーバー接続を処理
 
@@ -90,22 +50,20 @@ flowchart LR
 
 *Node.jsがインストールされていることが前提となります*
 
-##### 1. TouchDesignerコンポーネントを設置
-
+##### 1. TouchDesignerコンポーネントを設置：
 1. [リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest)から`touchdesigner-mcp-td.zip`をダウンロード
 2. zipファイルを展開し、`mcp_webserver_base.tox`を操作したいTouchDesignerプロジェクト直下にインポート
    例: `/project1/mcp_webserver_base`となるように配置
 
-<https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
+https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
 
   TouchDesignerのメニューからTextportを起動してサーバーの起動ログを確認できます。
 
   ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-##### 2. MCPサーバー設定
+##### 2. MCPサーバー設定：
 
 *例 Claude Desktop*
-
 ```json
 {
   "mcpServers": {
@@ -118,7 +76,6 @@ flowchart LR
 ```
 
 **カスタマイズ：** `--host`と`--port`引数を追加してTouchDesignerサーバー接続をカスタマイズできます：
-
 ```json
 "args": [
   "-y",
@@ -128,7 +85,6 @@ flowchart LR
   "--port=9982"
 ]
 ```
-
 </details>
 
 <details>
@@ -136,15 +92,13 @@ flowchart LR
 
 [![tutorial](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/tutorial_docker.png)](https://www.youtube.com/watch?v=BRWoIEVb0TU)
 
-##### 1. リポジトリをクローン
-
+##### 1. リポジトリをクローン：
 ```bash
 git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
 cd touchdesigner-mcp
 ```
 
 ##### 2. Dockerイメージのビルド
-
 ```bash
 git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
 cd touchdesigner-mcp
@@ -158,7 +112,7 @@ TouchDesignerを起動し、`td/mcp_webserver_base.tox`コンポーネントを�
 
 toxファイルのインポートにより`td/import_modules.py`スクリプトが実行され、APIサーバーのコントローラなどのモジュールがロードされます。
 
-<https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
+https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
 
 TouchDesignerのメニューからTextportを起動してサーバーの起動ログを確認できます。
 
@@ -170,10 +124,9 @@ TouchDesignerのメニューからTextportを起動してサーバーの起動�
 docker-compose up -d
 ```
 
-##### 5. AIエージェントがDockerコンテナを使用するように設定
+##### 5. AIエージェントがDockerコンテナを使用するように設定：
 
 *例 Claude Desktop*
-
 ```json
 {
   "mcpServers": {
@@ -199,7 +152,6 @@ docker-compose up -d
 *Windows システムでは、ドライブレターを含めてください。例：`C:\\path\\to\\your\\touchdesigner-mcp\\docker-compose.yml`*
 
 **カスタマイズ：** `--port`引数を追加してTouchDesignerサーバー接続をカスタマイズできます：
-
   ```json
 "args": [
   ...,
@@ -208,8 +160,8 @@ docker-compose up -d
   "--port=9982"
 ]
   ```
-
 </details>
+
 
 ## 接続確認
 
@@ -271,12 +223,12 @@ td/
 
 未実装
 
+
 ## 開発者向け
 
 ### 開発のクイックスタート
 
 1. **環境設定:**
-
    ```bash
    # リポジトリをクローンして依存関係をインストール
    git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
@@ -285,7 +237,6 @@ td/
    ```
 
 2. **プロジェクトをビルド:**
-
    ```bash
    make build        # Docker-based build（推奨）
    # または
@@ -293,7 +244,6 @@ td/
    ```
 
 3. **利用可能なコマンド:**
-
    ```bash
    npm run test      # ユニットテストと統合テストを実行
    npm run dev       # デバッグ用MCPインスペクターを起動
@@ -333,24 +283,25 @@ td/
 └── orval.config.ts             # Orval 設定 (TSクライアント生成)
 ```
 
+
 ### APIコード生成ワークフロー
 
 このプロジェクトでは、OpenAPIによるコード生成ツール ( Orval / openapi-generator-cli )を使用しています：
 
 **API定義:** Node.js MCPサーバーとTouchDesigner内で実行されるPythonサーバー間のAPI規約は `src/api/index.yml` で定義されます。
 
-1. **Pythonサーバー生成 (`npm run gen:webserver`):**
-    - Docker経由で `openapi-generator-cli` を使用します。
-    - `src/api/index.yml` を読み取ります。
-    - API定義に基づいてPythonサーバーのスケルトン (`td/modules/td_server/`) を生成します。このコードはWebServer DATを介してTouchDesigner内で実行されます。
-    - **Dockerがインストールされ、実行されている必要があります。**
-2. **Pythonハンドラ生成 (`npm run gen:handlers`):**
-    - カスタムNode.jsスクリプト (`td/genHandlers.js`) とMustacheテンプレート (`td/templates/`) を使用します。
-    - 生成されたPythonサーバーコードまたはOpenAPI仕様を読み取ります。
-    - `td/modules/mcp/services/api_service.py` にあるビジネスロジックに接続するハンドラ実装 (`td/modules/mcp/controllers/generated_handlers.py`) を生成します。
-3. **TypeScriptクライアント生成 (`npm run gen:mcp`):**
-    - `Orval` を使用し `openapi-generator-cli` がバンドルしたスキーマYAMLからAPIクライアントコードとToolの検証に用いるZodスキーマを生成します。
-    - Node.jsサーバーが WebServerDAT にリクエストを行うために使用する、型付けされたTypeScriptクライアント (`src/tdClient/`) を生成します。
+1.  **Pythonサーバー生成 (`npm run gen:webserver`):**
+    *   Docker経由で `openapi-generator-cli` を使用します。
+    *   `src/api/index.yml` を読み取ります。
+    *   API定義に基づいてPythonサーバーのスケルトン (`td/modules/td_server/`) を生成します。このコードはWebServer DATを介してTouchDesigner内で実行されます。
+    *   **Dockerがインストールされ、実行されている必要があります。**
+2.  **Pythonハンドラ生成 (`npm run gen:handlers`):**
+    *   カスタムNode.jsスクリプト (`td/genHandlers.js`) とMustacheテンプレート (`td/templates/`) を使用します。
+    *   生成されたPythonサーバーコードまたはOpenAPI仕様を読み取ります。
+    *   `td/modules/mcp/services/api_service.py` にあるビジネスロジックに接続するハンドラ実装 (`td/modules/mcp/controllers/generated_handlers.py`) を生成します。
+3.  **TypeScriptクライアント生成 (`npm run gen:mcp`):**
+    *   `Orval` を使用し `openapi-generator-cli` がバンドルしたスキーマYAMLからAPIクライアントコードとToolの検証に用いるZodスキーマを生成します。
+    *   Node.jsサーバーが WebServerDAT にリクエストを行うために使用する、型付けされたTypeScriptクライアント (`src/tdClient/`) を生成します。
 
 ビルドプロセス (`npm run build`) は、必要なすべての生成ステップ (`npm run gen`) を実行し、その後にTypeScriptコンパイル (`tsc`) を行います。
 

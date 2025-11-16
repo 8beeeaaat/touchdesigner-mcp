@@ -1,6 +1,6 @@
 {
 	"name": "touchdesigner-mcp-server",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"description": "MCP server for TouchDesigner",
 	"repository": {
 		"type": "git",
@@ -29,18 +29,17 @@
 		"@types/ws": "^8.18.1",
 		"@types/yargs": "^17.0.33",
 		"axios": "^1.12.2",
-		"mustache": "^4.2.0",
 		"zod": "3.25.76"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.2.4",
 		"@openapitools/openapi-generator-cli": "^2.23.1",
 		"@types/jsdom": "^21.1.7",
-		"@types/mustache": "^4.2.6",
 		"@types/node": "^24.4.0",
 		"@vitest/coverage-v8": "^3.2.4",
 		"archiver": "^7.0.1",
 		"msw": "^2.11.2",
+		"mustache": "^4.2.0",
 		"npm-run-all": "^4.1.5",
 		"orval": "^7.11.2",
 		"shx": "^0.4.0",
@@ -62,7 +61,7 @@
 	"scripts": {
 		"build": "run-s build:*",
 		"build:gen": "npm run gen",
-		"build:dist": "tsc && shx chmod +x dist/*.js && shx cp -r src/features/tools/presenter/templates dist/features/tools/presenter/",
+		"build:dist": "tsc && shx chmod +x dist/*.js",
 		"build:dxt": "npx @anthropic-ai/dxt pack dxt/ touchdesigner-mcp.dxt",
 		"lint": "run-p lint:*",
 		"lint:biome": "biome check",
