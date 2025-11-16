@@ -30,6 +30,7 @@
 		"@types/yargs": "^17.0.33",
 		"axios": "^1.12.2",
 		"mustache": "^4.2.0",
+		"yaml": "^2.8.1",
 		"zod": "3.25.76"
 	},
 	"devDependencies": {
@@ -45,8 +46,7 @@
 		"orval": "^7.11.2",
 		"shx": "^0.4.0",
 		"typescript": "^5.9.2",
-		"vitest": "^3.2.4",
-		"yaml": "^2.8.1"
+		"vitest": "^3.2.4"
 	},
 	"type": "module",
 	"exports": {
