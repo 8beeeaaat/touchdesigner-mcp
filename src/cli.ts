@@ -3,7 +3,7 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { TouchDesignerServer } from "./server/touchDesignerServer.js";
 
-// Note: Environment variables should be set by the Desktop Extensions runtime or CLI arguments
+// Note: Environment variables should be set by the MCP Bundle runtime or CLI arguments
 
 const DEFAULT_HOST = "http://127.0.0.1";
 const DEFAULT_PORT = 9981;

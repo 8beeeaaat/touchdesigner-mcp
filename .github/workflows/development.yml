@@ -30,14 +30,14 @@ jobs:
       - run: npm run gen
       - run: npm run lint
       - run: npm run test:unit
-      - name: Test DXT package build
+      - name: Test MCPB package build
         run: |
-          # Install DXT CLI tool
-          npm install -g @anthropic-ai/dxt
+          # Install MCPB CLI tool
+          npm install -g @anthropic-ai/mcpb
 
-          # Build DXT package to ensure it works
+          # Build MCPB package to ensure it works
           npm run build:dist
-          npm run build:dxt
+          npm run build:mcpb
 
-          echo "DXT package build test completed!"
-          ls -la *.dxt
+          echo "MCPB package build test completed!"
+          ls -la *.mcpb

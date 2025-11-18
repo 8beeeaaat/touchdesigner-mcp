@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-11-18
+
+### Changed
+
+- **DXT to MCPB Migration**: Migrated from Desktop Extensions (DXT) to [MCP Bundles](https://github.com/modelcontextprotocol/mcpb) (MCPB)
+  - Updated manifest from `dxt_version: "0.1"` to `manifest_version: "0.3"`
+  - Renamed `.dxt` extension to `.mcpb`
+  - Updated build scripts and workflows to use `@anthropic-ai/mcpb` CLI
+  - Enhanced manifest.json with new MCPB features (repository structure)
+  - Updated all documentation to reflect MCPB terminology
+  - Changed build script from `build:dxt` to `build:mcpb`
+  - Updated GitHub Actions workflows for MCPB package creation
+  - Updated README.md and README.ja.md with new installation instructions
+
+### Migration Notes
+
+For users upgrading from previous versions:
+
+- Uninstall the old `.dxt` extension from Claude Desktop
+- Download and install the new `.mcpb` bundle from the latest release
+- No changes required to TouchDesigner components
+- All existing functionality remains unchanged
+
 ## [1.1.2] - 2025-11-16
 
 ### Fixed

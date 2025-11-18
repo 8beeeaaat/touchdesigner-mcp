@@ -52,14 +52,14 @@ flowchart LR
 ## 利用方法
 
 <details>
-  <summary>方法1: Claude Desktop + Desktop Extensions（推奨）</summary>
+  <summary>方法1: Claude Desktop + MCP Bundle（推奨）</summary>
 
 ##### 1. ファイルをダウンロード
 
 [リリースページ](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest)から以下をダウンロード：
 
 - **TouchDesigner Components**: `touchdesigner-mcp-td.zip`
-- **Desktop Extensions (.dxt)**: `touchdesigner-mcp.dxt`
+- **[MCP Bundle](https://github.com/modelcontextprotocol/mcpb) (.mcpb)**: `touchdesigner-mcp.mcpb`
 
 ##### 2. TouchDesignerコンポーネントを設置
 
@@ -73,13 +73,13 @@ flowchart LR
 
   ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-##### 3. Desktop Extensionをインストール
+##### 3. MCP Bundleをインストール
 
-`touchdesigner-mcp.dxt`ファイルをダブルクリックしてClaude Desktopに拡張機能をインストール
+`touchdesigner-mcp.mcpb`ファイルをダブルクリックしてClaude DesktopにMCP Bundleをインストール
 
 <https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854>
 
-##### 4. 拡張機能が自動的にTouchDesignerサーバー接続を処理
+##### 4. MCP Bundleが自動的にTouchDesignerサーバー接続を処理
 
 **⚠️ 重要:** TouchDesignerコンポーネントのディレクトリ構造は展開した状態を正確に保持してください。`mcp_webserver_base.tox`コンポーネントは`modules/`ディレクトリやその他のファイルへの相対パスを参照しています。
 

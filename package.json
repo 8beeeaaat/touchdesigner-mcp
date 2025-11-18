@@ -1,6 +1,6 @@
 {
 	"name": "touchdesigner-mcp-server",
-	"version": "1.1.2",
+	"version": "1.2.0",
 	"description": "MCP server for TouchDesigner",
 	"repository": {
 		"type": "git",
@@ -63,7 +63,7 @@
 		"build": "run-s build:*",
 		"build:gen": "npm run gen",
 		"build:dist": "tsc && shx chmod +x dist/*.js && shx cp -r src/features/tools/presenter/templates dist/features/tools/presenter/",
-		"build:dxt": "npx @anthropic-ai/dxt pack dxt/ touchdesigner-mcp.dxt",
+		"build:mcpb": "npx @anthropic-ai/mcpb pack mcpb/ touchdesigner-mcp.mcpb",
 		"lint": "run-p lint:*",
 		"lint:biome": "biome check",
 		"lint:tsc": "tsc --noEmit",
