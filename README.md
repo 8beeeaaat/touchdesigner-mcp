@@ -52,14 +52,14 @@ flowchart LR
 ## Usage
 
 <details>
-  <summary>Method 1: Using Claude Desktop and Desktop Extensions (Recommended)</summary>
+  <summary>Method 1: Using Claude Desktop and MCP Bundle (Recommended)</summary>
 
 ### 1. Download Files
 
 Download the following from the [releases page](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest):
 
 - **TouchDesigner Components**: `touchdesigner-mcp-td.zip`
-- **Desktop Extension (.dxt)**: `touchdesigner-mcp.dxt`
+- **[MCP Bundle](https://github.com/modelcontextprotocol/mcpb) (.mcpb)**: `touchdesigner-mcp.mcpb`
 
 ### 2. Set up TouchDesigner Components
 
@@ -73,15 +73,15 @@ Download the following from the [releases page](https://github.com/8beeeaaat/tou
 
   ![import](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-### 3. Install the Desktop Extension
+### 3. Install the MCP Bundle
 
-Double-click the `touchdesigner-mcp.dxt` file to install the extension in Claude Desktop.
+Double-click the `touchdesigner-mcp.mcpb` file to install the bundle in Claude Desktop.
 
 <https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854>
 
 ### 4. Connect to the Server
 
-The extension will automatically handle the connection to the TouchDesigner server.
+The MCP bundle will automatically handle the connection to the TouchDesigner server.
 
 **⚠️ Important:** The directory structure must be preserved exactly as extracted. The `mcp_webserver_base.tox` component references relative paths to the `modules/` directory and other files.
 

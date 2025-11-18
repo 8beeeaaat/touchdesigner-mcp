@@ -147,6 +147,7 @@ src/gen
 .venv
 .actrc
 *.dxt
+*.mcpb
 *.pem
 td/modules/td_server
 

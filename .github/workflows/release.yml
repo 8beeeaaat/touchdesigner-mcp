@@ -51,13 +51,13 @@ jobs:
           cd temp_td && zip -r ../touchdesigner-mcp-td.zip .
           rm -rf temp_td
           echo "Build artifacts extracted and package created!"
-      - name: Build DXT package
+      - name: Build MCPB package
         run: |
-          # Build DXT package
-          npm run build:dxt
+          # Build MCPB package
+          npm run build:mcpb
 
-          echo "DXT package created successfully!"
-          ls -la *.dxt
+          echo "MCPB package created successfully!"
+          ls -la *.mcpb
       - name: Get Node.js project information
         id: projectinfo
         uses: gregoranders/nodejs-project-info@master
@@ -87,18 +87,18 @@ jobs:
           body: |
             ## Downloads
             - **TouchDesigner Components**: [touchdesigner-mcp-td.zip](https://github.com/${{ github.repository }}/releases/download/v${{ steps.projectinfo.outputs.version }}/touchdesigner-mcp-td.zip)
-            - **Desktop Extension (.dxt)**: [touchdesigner-mcp.dxt](https://github.com/${{ github.repository }}/releases/download/v${{ steps.projectinfo.outputs.version }}/touchdesigner-mcp.dxt)
+            - **MCP Bundle (.mcpb)**: [touchdesigner-mcp.mcpb](https://github.com/${{ github.repository }}/releases/download/v${{ steps.projectinfo.outputs.version }}/touchdesigner-mcp.mcpb)
 
             ## Usage
 
-            ### Quick Start with Claude Desktop and Desktop Extension (Recommended)
-            1. Download `TouchDesigner Components` and the `Desktop Extension`.
+            ### Quick Start with Claude Desktop and MCP Bundle (Recommended)
+            1. Download `TouchDesigner Components` and the `MCP Bundle`.
             2. Extract the TouchDesigner components from `touchdesigner-mcp-td.zip`.
             3. Import `mcp_webserver_base.tox` into your TouchDesigner project.
 
             https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4
 
-            4. Install the extension in Claude Desktop by double-clicking the `touchdesigner-mcp.dxt` file.
+            4. Install the bundle in Claude Desktop by double-clicking the `touchdesigner-mcp.mcpb` file.
 
             https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854
 
@@ -123,7 +123,7 @@ jobs:
             ## Changes
             See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for a detailed history of changes.
           files: |
-            touchdesigner-mcp.dxt
+            touchdesigner-mcp.mcpb
             touchdesigner-mcp-td.zip
           draft: false
           prerelease: ${{ steps.prerelease.outputs.is_prerelease == 'true' }}
