@@ -33,6 +33,9 @@ get:
                   version:
                     type: string
                     description: TouchDesigner version number
+                  apiVersion:
+                    type: string
+                    description: MCP API version (server-side implementation version)
                   osName:
                     type: string
                     description: Operating system name

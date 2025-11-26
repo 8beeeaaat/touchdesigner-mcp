@@ -15,6 +15,12 @@ from utils.types import LogLevel, Result
 
 import td
 
+try:
+    from mcp.__version__ import __version__ as API_VERSION
+except ImportError:
+    # Fallback for development or when version file is not generated
+    API_VERSION = "unknown"
+
 
 class IApiService(Protocol):
     """API service interface"""
@@ -45,6 +51,7 @@ class TouchDesignerApiService(IApiService):
         server_info = {
             "server": f"TouchDesigner {version}.{build}",
             "version": f"{version}.{build}",
+            "apiVersion": API_VERSION,
             "osName": td.app.osName,
             "osVersion": td.app.osVersion,
         }

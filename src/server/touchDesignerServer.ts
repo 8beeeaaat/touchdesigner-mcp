@@ -3,6 +3,10 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { ILogger } from "../core/logger.js";
 import { McpLogger } from "../core/logger.js";
 import type { Result } from "../core/result.js";
+import {
+	checkVersionCompatibility,
+	formatVersionWarning,
+} from "../core/versionCheck.js";
 import { registerPrompts } from "../features/prompts/index.js";
 import { registerTools } from "../features/tools/index.js";
 import { createTouchDesignerClient } from "../tdClient/index.js";
@@ -46,6 +50,13 @@ export class TouchDesignerServer {
 		);
 
 		this.registerAllFeatures();
+
+		// Perform version check asynchronously (non-blocking)
+		// This warns users if their TouchDesigner component is outdated
+		this.performVersionCheck().catch((err) => {
+			// Log error but don't block initialization
+			this.logger.warn(`Version check failed: ${err.message}`);
+		});
 	}
 
 	/**
@@ -76,5 +87,41 @@ export class TouchDesignerServer {
 	private registerAllFeatures(): void {
 		registerPrompts(this.server, this.logger);
 		registerTools(this.server, this.logger, this.tdClient);
+	}
+
+	/**
+	 * Check API version compatibility with TouchDesigner server
+	 *
+	 * This is called asynchronously during initialization to verify
+	 * that the Python server component matches the expected API version.
+	 * Logs warnings if versions are incompatible.
+	 */
+	private async performVersionCheck(): Promise<void> {
+		try {
+			const info = await this.tdClient.getTdInfo();
+
+			if (!info.success) {
+				// Server not reachable - will be caught by other error handling
+				return;
+			}
+
+			const serverApiVersion = info.data.apiVersion;
+			const checkResult = checkVersionCompatibility(serverApiVersion);
+
+			if (!checkResult.compatible) {
+				const warning = formatVersionWarning(checkResult);
+				this.logger.warn(warning);
+			} else {
+				this.logger.debug(
+					`API version check passed: client=${checkResult.clientVersion}, server=${checkResult.serverVersion}`,
+				);
+			}
+		} catch (err) {
+			// Network errors are logged but don't block initialization
+			// Users will get more specific errors when they try to use tools
+			throw new Error(
+				`Failed to connect to TouchDesigner: ${err instanceof Error ? err.message : String(err)}`,
+			);
+		}
 	}
 }
