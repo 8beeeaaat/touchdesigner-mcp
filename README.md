@@ -218,6 +218,16 @@ If it's not recognized, try restarting your AI agent.
 If you see an error at startup, try launching the agent again after starting TouchDesigner.
 When the API server is running properly in TouchDesigner, the agent can use the provided tools to operate it.
 
+## Version Compatibility
+
+The MCP server validates that the TouchDesigner component matches the client API version:
+
+- `package.json` tracks `compatibility.minimumServerVersion`, which defines the minimum TD API version that the Node.js client accepts.
+- During build, `npm run gen:inject-version` runs `td/script/injectVersion.js` to copy the npm package version into `td/modules/mcp/__version__.py`.
+- When the MCP server starts, it requests `apiVersion` from TouchDesigner and warns (or blocks) when the component is missing, outdated, or reports an unparsable version.
+
+If you update the npm package version or change the TouchDesigner modules, re-run the generation scripts (see [API Code Generation Workflow](#api-code-generation-workflow)) so both sides stay aligned.
+
 ### Directory Structure Requirements
 
 **Critical:** When using any method, you must maintain the original directory structure:
@@ -226,10 +236,11 @@ When the API server is running properly in TouchDesigner, the agent can use the 
 td/
 ├── import_modules.py          # Module loader script
 ├── mcp_webserver_base.tox     # Main TouchDesigner component
-└── modules/                   # Python modules directory
-    ├── mcp/                   # MCP core logic
-    ├── utils/                 # Shared utilities
-    └── td_server/             # Generated API server code
+├── modules/                   # Python modules directory
+│   ├── mcp/                   # MCP core logic
+│   ├── utils/                 # Shared utilities
+│   └── td_server/             # Generated API server code
+└── script/                    # TD helper scripts (genHandlers.js, injectVersion.js)
 ```
 
 The `mcp_webserver_base.tox` component uses relative paths to locate Python modules. Moving or reorganizing these files will cause import errors in TouchDesigner.
@@ -256,6 +267,11 @@ Tools allow AI agents to perform actions in TouchDesigner.
 | `get_td_node_parameters`| Gets the parameters of a specific node.                            |
 | `get_td_nodes`          | Gets nodes under a parent path, with optional filtering.           |
 | `update_td_node_parameters` | Updates the parameters of a specific node.                     |
+| `check_node_errors`     | Recursively scans a node and all its children for current error states. **Note:** Container nodes(like baseCOMP, containerCOMP) may require `cook()` before detecting errors in dynamically created children. |
+| `get_module_help`       | Returns Python `help()` output for any TouchDesigner class/module (e.g., `textTOP`, `td.OP`). |
+| `describe_td_tools`     | Produces a searchable manifest of every MCP tool, useful for inspectors or scripted discovery. |
+
+The `get_module_help` tool uses TouchDesigner's native `help()` output and token-aware formatting so that agents can explore Python APIs without leaving MCP. `describe_td_tools` mirrors the data shown in MCP inspectors, allowing you to filter by node name, module path, or parameter keywords directly through a tool call.
 
 ### Prompts
 
@@ -265,7 +281,7 @@ Prompts provide instructions for AI agents to perform specific actions in TouchD
 | :------------------| :-------------------------------------------------------------------------- |
 | `Search node`      | Fuzzy searches for nodes and retrieves information based on name, family, or type. |
 | `Node connection`  | Provides instructions to connect nodes within TouchDesigner.                |
-| `Check node errors`| Checks for errors on a specified node, and recursively for its children.    |
+| `Check node errors`| Recursively checks for errors on a specified node and all its children.    |
 
 ### Resources
 
@@ -323,8 +339,10 @@ Not implemented.
 │   │   │   └── services/    # Business logic (api_service.py)
 │   │   ├── td_server/        # Python model code generated from the OpenAPI schema
 │   │   └── utils/            # Shared Python utilities
-│   ├── templates/             # Mustache templates for Python code generation
-│   ├── genHandlers.js         # Node.js script for generating generated_handlers.py
+│   ├── script/               # Helper scripts for TouchDesigner modules
+│   │   ├── genHandlers.js    # Generates controllers from OpenAPI metadata
+│   │   └── injectVersion.js  # Injects npm version into td/modules/mcp/__version__.py
+│   ├── templates/             # Mustache templates (e.g., api_controller_handlers.mustache)
 │   ├── import_modules.py      # Helper script to import API server modules into TouchDesigner
 │   └── mcp_webserver_base.tox # Main TouchDesigner component
 ├── tests/                      # Test code
@@ -345,9 +363,10 @@ This project uses OpenAPI-based code generation tools (Orval and openapi-generat
     - Generates a Python server skeleton (`td/modules/td_server/`) based on the API definition. This code runs inside TouchDesigner's WebServer DAT.
     - **Requires Docker to be installed and running.**
 2. **Python handler generation (`npm run gen:handlers`):**
-    - Uses a custom Node.js script (`td/genHandlers.js`) and Mustache templates (`td/templates/`).
+    - Uses a custom Node.js script (`td/script/genHandlers.js`) and Mustache templates (`td/templates/`).
     - Reads the generated Python server code or OpenAPI spec.
     - Generates handler implementations (`td/modules/mcp/controllers/generated_handlers.py`) that connect to the business logic in `td/modules/mcp/services/api_service.py`.
+    - The `td/templates/mcp/api_controller_handlers.mustache` template automatically merges JSON bodies, converts camelCase parameters to snake_case, and routes operations to the correct service method.
 3. **TypeScript client generation (`npm run gen:mcp`):**
     - Uses `Orval` to generate an API client and Zod schemas for tool validation from the schema YAML, which is bundled by `openapi-generator-cli`.
     - Generates a typed TypeScript client (`src/tdClient/`) used by the Node.js server to make requests to the WebServer DAT.

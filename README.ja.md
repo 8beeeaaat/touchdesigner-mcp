@@ -218,6 +218,16 @@ MCPサーバーが認識されていればセットアップは完了です。
 起動時にエラーが表示される場合は、TouchDesignerを先に起動してからAIエージェントを再度起動してください。
 TouchDesignerでAPIサーバーが実行されていれば、エージェントは提供されたツール等を通じてTouchDesignerを使用できます。
 
+## バージョン互換性
+
+MCPサーバーは起動時にTouchDesigner側コンポーネントのAPIバージョンを検証します。
+
+- `package.json` の `compatibility.minimumServerVersion` で許容される最小APIバージョンを定義します。
+- `npm run gen:inject-version` で `td/script/injectVersion.js` が npm パッケージのバージョンを `td/modules/mcp/__version__.py` に書き込みます。
+- MCPサーバー起動時に TouchDesigner から `apiVersion` を取得し、欠落／下限未満／解析不能な場合は警告して最新の `.tox` を案内します。
+
+TouchDesignerモジュールや npm バージョンを更新した際は、生成スクリプトを再実行して両方のコードを同期させてください。
+
 ### ディレクトリ構造要件
 
 **重要:** どの方法（Docker、npx）を使用する場合でも、正確なディレクトリ構造を維持してください：
@@ -226,10 +236,11 @@ TouchDesignerでAPIサーバーが実行されていれば、エージェント�
 td/
 ├── import_modules.py          # モジュールローダースクリプト
 ├── mcp_webserver_base.tox     # メインTouchDesignerコンポーネント
-└── modules/                   # Pythonモジュールディレクトリ
-    ├── mcp/                   # MCPコアロジック
-    ├── utils/                 # 共有ユーティリティ
-    └── td_server/             # 生成されたAPIサーバーコード
+├── modules/                   # Pythonモジュールディレクトリ
+│   ├── mcp/                   # MCPコアロジック
+│   ├── utils/                 # 共有ユーティリティ
+│   └── td_server/             # 生成されたAPIサーバーコード
+└── script/                    # TDモジュール関連スクリプト (genHandlers.js / injectVersion.js など)
 ```
 
 `mcp_webserver_base.tox` コンポーネントは相対パスを使用してPythonモジュールを検索します。これらのファイルを移動したり再編成したりすると、TouchDesignerでインポートエラーが発生します。
@@ -256,6 +267,11 @@ td/
 | `get_td_node_parameters`    | 特定ノードのパラメータを取得します。           |
 | `get_td_nodes`              | 親パス内のノードを取得します（オプションでフィルタリング）。 |
 | `update_td_node_parameters` | 特定ノードのパラメータを更新します。           |
+| `check_node_errors`         | 指定ノードとすべての子孫ノードに発生中のエラーを再帰的に検出します。**注意:** baseCOMP, containerCOMPなどのコンテナノードでは、動的に生成された子のエラーを検出するために `cook()` が必要な場合があります。 |
+| `get_module_help`           | 任意の TouchDesigner クラス/モジュール（`textTOP`, `td.OP` など）の Python `help()` 出力を返します。 |
+| `describe_td_tools`         | 登録済み TouchDesigner MCP ツールの一覧をフィルタ付きで取得できます。 |
+
+`get_module_help` は TouchDesigner 内の `help()` 出力をそのまま取得し、トークン効率の良い形式で返すため、外部ドキュメントを開かずに Python API を参照できます。`describe_td_tools` は MCP Inspector と同様のメタデータを返し、ツール名・モジュールパス・パラメータのキーワードで絞り込みが可能です。
 
 ### プロンプト (Prompts)
 
@@ -265,7 +281,7 @@ td/
 | :-------------------------- | :--------------------------------------------- |
 | `Search node`               | ノードをファジー検索し、指定されたノード名、ファミリー、タイプに基づいて情報を取得します。 |
 | `Node connection`          | TouchDesigner内でノード同士を接続するための指示を提供します。 |
-| `Check node errors`               | 指定されたノードのエラーをチェックします。子ノードがあれば再帰的にチェックします。           |
+| `Check node errors`               | 指定されたノードとすべての子ノードのエラーを再帰的にチェックします。           |
 
 ### リソース (Resources)
 
@@ -323,8 +339,10 @@ td/
 │   │   │   └── services/    # ビジネスロジック (api_service.py)
 │   │   ├── td_server/        # OpenAPIスキーマから生成されたPythonモデルコード
 │   │   └── utils/            # 共有Pythonユーティリティ
+│   ├── script/               # TouchDesignerモジュール用ヘルパースクリプト
+│   │   ├── genHandlers.js    # OpenAPIメタデータからコントローラを生成
+│   │   └── injectVersion.js  # npmバージョンをtd/modules/mcp/__version__.pyへ注入
 │   ├── templates/             # Pythonコード生成用Mustacheテンプレート
-│   ├── genHandlers.js         # generated_handlers.py 生成用のNode.jsスクリプト
 │   ├── import_modules.py      # TDへ APIサーバ関連モジュールをインポートするヘルパースクリプト
 │   └── mcp_webserver_base.tox # メインTouchDesignerコンポーネント
 ├── tests/                      # テストコード
@@ -345,9 +363,10 @@ td/
     - API定義に基づいてPythonサーバーのスケルトン (`td/modules/td_server/`) を生成します。このコードはWebServer DATを介してTouchDesigner内で実行されます。
     - **Dockerがインストールされ、実行されている必要があります。**
 2. **Pythonハンドラ生成 (`npm run gen:handlers`):**
-    - カスタムNode.jsスクリプト (`td/genHandlers.js`) とMustacheテンプレート (`td/templates/`) を使用します。
+    - カスタムNode.jsスクリプト (`td/script/genHandlers.js`) とMustacheテンプレート (`td/templates/`) を使用します。
     - 生成されたPythonサーバーコードまたはOpenAPI仕様を読み取ります。
     - `td/modules/mcp/services/api_service.py` にあるビジネスロジックに接続するハンドラ実装 (`td/modules/mcp/controllers/generated_handlers.py`) を生成します。
+    - `td/templates/mcp/api_controller_handlers.mustache` がJSONボディのマージ、camelCase→snake_case変換、適切なサービスメソッド呼び出しを自動で処理します。
 3. **TypeScriptクライアント生成 (`npm run gen:mcp`):**
     - `Orval` を使用し `openapi-generator-cli` がバンドルしたスキーマYAMLからAPIクライアントコードとToolの検証に用いるZodスキーマを生成します。
     - Node.jsサーバーが WebServerDAT にリクエストを行うために使用する、型付けされたTypeScriptクライアント (`src/tdClient/`) を生成します。

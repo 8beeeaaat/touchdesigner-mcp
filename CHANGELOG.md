@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-11-27
+
+### Added
+
+- **Version Compatibility Guardrails**: Client now checks TouchDesigner API versions using SemVer
+  - Added `compatibility.minimumServerVersion` in `package.json` as the single source of truth
+  - Introduced `src/core/versionCheck.ts` with strict semver comparison and user-friendly guidance
+  - New unit/integration tests ensure warnings fire only when the server is missing/older than the minimum version
+- **Python Module Version Sync**: TouchDesigner side now reports the MCP API version it runs
+  - Added `td/script/injectVersion.js` to inject npm package version into `td/modules/mcp/__version__.py`
+  - TouchDesigner API service returns `apiVersion`, enabling the client-side compatibility check
+  - Updated build scripts (`gen:inject-version`, `gen:handlers`) to keep JS/TD components aligned
+- **Module Help Tool**: New `get_module_help` tool provides Python `help()` documentation for TouchDesigner modules and classes
+  - Retrieve comprehensive documentation for any TouchDesigner class (e.g., `noiseCHOP`, `textTOP`)
+  - Support for multiple module name formats: `"noiseCHOP"`, `"td.noiseCHOP"`, `"tdu"`
+  - Token-optimized response formatting with three detail levels (minimal, summary, detailed)
+  - Helps AI agents understand TouchDesigner API usage and module capabilities without external documentation
+  - Added `moduleHelpFormatter` with intelligent section extraction and preview generation
+  - Comprehensive integration tests covering common use cases and error scenarios
+- **Node Error Checking Tool**: New `check_node_errors` tool enables error detection in TouchDesigner nodes
+  - Check for errors in specific nodes via `nodePath` parameter
+  - Automatically checks all child nodes recursively using `node.errors(recurse=True)`
+  - Returns a flat list of all error messages from the node and its descendants
+  - Helps AI agents diagnose and troubleshoot TouchDesigner network issues
+  - Added specialized formatter for error results with clear error categorization
+  - **Note:** Container nodes (like baseCOMP, containerCOMP) may require `cook()` or UI interaction before dynamically created child errors are detected
+
+### Changed
+
+- **Code Architecture**: Simplified handler registration system by removing redundant manual overrides
+  - Removed unused OpenAPI response model imports from `api_controller.py`
+  - Streamlined auto-registration pattern for generated handlers
+  - Maintained special handling only for operations requiring custom processing
+  - Improved code maintainability and reduced complexity
+- **Build Process**: Enhanced Makefile with MCPB_PATH configuration for flexible build targeting
+  - Added configurable output path for MCP Bundle packages
+  - Improved build process to properly copy TouchDesigner modules
+- **Python Utilities**: Refined serialization, logging, and shared type definitions in TouchDesigner modules
+  - `safe_serialize` now normalizes common TD-specific objects more consistently and is easier to read
+  - Logging helpers gained clearer severity handling and error categorization
+  - Updated Result/Log type definitions reduce duplication across controllers and services
+
+### Fixed
+
+- **Module Help Implementation**: Corrected Python `sys` module usage in TouchDesigner environment
+  - Fixed `td.sys` reference error by using standard `sys` module
+  - Changed error handling from `raise` to `return` for proper Result type handling
+  - Ensures reliable help text capture across all TouchDesigner versions
+
+### Technical
+
+- **Test Coverage**: Added 4 new integration tests for module help functionality
+  - Tests for common TouchDesigner classes, td. prefix format, utility modules, and error handling
+  - Improved test coverage from 76 to 94 total tests (all passing)
+  - Enhanced type safety with proper Result type narrowing in test assertions
+- **API Endpoints**: Added `/api/td/modules/help` and `/api/td/nodes/check_errors` endpoints
+  - Full OpenAPI schema definitions with request/response models
+  - Auto-generated TypeScript client methods and Zod validation schemas
+  - Comprehensive error handling with proper status codes and categories
+- **Formatting & Tooling**: Added Prettier configuration/ignore files plus dedicated npm scripts for YAML formatting
+  - `prettier` is now a dev dependency alongside the existing Biome workflow
+  - Added `lint:python`, `lint:yaml`, and `format:*` script split along with `pyproject.toml` metadata for Python modules
+  - Ensures YAML schemas and TouchDesigner Python code share automated formatting + packaging defaults
+
 ## [1.2.0] - 2025-11-18
 
 ### Changed
