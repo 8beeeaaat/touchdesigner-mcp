@@ -9,6 +9,7 @@ import {
 	deleteNodeQueryParams,
 	execNodeMethodBody,
 	execPythonScriptBody,
+	getModuleHelpBody,
 	getNodeDetailQueryParams,
 	getNodesQueryParams,
 	getTdPythonClassDetailsParams,
@@ -24,6 +25,7 @@ import {
 	formatCreateNodeResult,
 	formatDeleteNodeResult,
 	formatExecNodeMethodResult,
+	formatModuleHelp,
 	formatNodeDetails,
 	formatNodeList,
 	formatScriptResult,
@@ -98,6 +100,11 @@ const checkNodeErrorsToolSchema = checkNodeErrorsBody.extend(
 	detailOnlyFormattingSchema.shape,
 );
 type CheckNodeErrorsToolParams = z.input<typeof checkNodeErrorsToolSchema>;
+
+const getModuleHelpToolSchema = getModuleHelpBody.extend(
+	detailOnlyFormattingSchema.shape,
+);
+type GetModuleHelpToolParams = z.input<typeof getModuleHelpToolSchema>;
 
 export function registerTdTools(
 	server: McpServer,
@@ -548,6 +555,44 @@ export function registerTdTools(
 					error,
 					logger,
 					TOOL_NAMES.CHECK_NODE_ERRORS,
+					REFERENCE_COMMENT,
+				);
+			}
+		},
+	);
+
+	server.tool(
+		TOOL_NAMES.GET_MODULE_HELP,
+		"Get help documentation for a TouchDesigner module or class",
+		getModuleHelpToolSchema.strict().shape,
+		async (params: GetModuleHelpToolParams) => {
+			try {
+				const { detailLevel, responseFormat, ...helpParams } = params;
+				logger.debug(`Getting help for module: ${helpParams.moduleName}`);
+
+				const result = await tdClient.getModuleHelp(helpParams);
+				if (!result.success) {
+					throw result.error;
+				}
+
+				const formattedText = formatModuleHelp(result.data, {
+					detailLevel: detailLevel ?? "summary",
+					responseFormat,
+				});
+
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: formattedText,
+						},
+					],
+				};
+			} catch (error) {
+				return handleToolError(
+					error,
+					logger,
+					TOOL_NAMES.GET_MODULE_HELP,
 					REFERENCE_COMMENT,
 				);
 			}

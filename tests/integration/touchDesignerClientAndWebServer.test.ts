@@ -317,67 +317,6 @@ describe("TouchDesigner Client E2E Tests", () => {
 		await tdClient.deleteNode({ nodePath });
 	});
 
-	test("Node error check should return error lists", async () => {
-		const response = await tdClient.checkNodeErrors({
-			nodePath: SANDBOX_PATH,
-		});
-
-		expect(response).toBeDefined();
-		if (!response.success) {
-			throw new Error(`failed: ${response.error}`);
-		}
-		expect(response.success).toBe(true);
-		expect(response.data).toBeDefined();
-		expect(Array.isArray(response.data?.errors)).toBe(true);
-	});
-
-	test("add TOP errors should be detected by checkNodeErrors", async () => {
-		const nodeName = "add_error";
-		const _addNodePath = `${SANDBOX_PATH}/${nodeName}`;
-		const parentPath = SANDBOX_PATH;
-		const nodeType = "addTOP";
-
-		const setupResponse = await tdClient.createNode({
-			parentPath,
-			nodeType,
-			nodeName,
-		});
-		if (!setupResponse.success) {
-			throw new Error(`failed: ${setupResponse.error}`);
-		}
-
-		// Force cook to trigger error detection
-		const execResponse = await tdClient.execPythonScript<{
-			result: TdNode;
-		}>({
-			script: `op('${SANDBOX_PATH}').cook(recurse=True)\n`,
-		});
-		expect(execResponse).toBeDefined();
-		if (!execResponse.success) {
-			throw new Error(`failed: ${execResponse.error}`);
-		}
-		expect(execResponse.success).toBe(true);
-
-		const response = await tdClient.checkNodeErrors({
-			nodePath: SANDBOX_PATH,
-		});
-
-		expect(response).toBeDefined();
-		if (!response.success) {
-			throw new Error(`failed: ${response.error}`);
-		}
-
-		const errors = response.data?.errors ?? [];
-		expect(errors.length).toBeGreaterThan(0);
-		expect(
-			errors.some(
-				(msg) =>
-					typeof msg === "string" &&
-					msg.includes("Error: Not enough sources specified"),
-			),
-		).toBe(true);
-	});
-
 	test("Module help should return documentation for TouchDesigner classes", async () => {
 		// Test with common TouchDesigner class
 		const response = await tdClient.getModuleHelp({

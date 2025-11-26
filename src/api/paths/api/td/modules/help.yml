@@ -1,0 +1,48 @@
+post:
+  summary: Get help information for a TouchDesigner module
+  description: |
+    Retrieves help documentation for a specified TouchDesigner module or class.
+    This uses Python's built-in help() function to get comprehensive documentation.
+  operationId: get_module_help
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - moduleName
+          properties:
+            moduleName:
+              type: string
+              description: Name of the module or class to get help for (e.g., "td.noiseCHOP", "td.OP", "tdu")
+              example: "td.noiseCHOP"
+  responses:
+    '200':
+      description: Help information retrieved successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                type: boolean
+                description: Whether the operation was successful
+              data:
+                type: object
+                nullable: true
+                properties:
+                  moduleName:
+                    type: string
+                    description: Name of the module
+                  helpText:
+                    type: string
+                    description: Help documentation text
+              error:
+                nullable: true
+                type: string
+                description: Error message if the operation was not successful

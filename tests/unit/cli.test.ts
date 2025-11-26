@@ -10,11 +10,12 @@ const {
 } = vi.hoisted(() => {
 	const connectMock = vi.fn();
 
-	const defaultTouchDesignerServerImpl = function MockTouchDesignerServer(this: {
-		connect: typeof connectMock;
-	}) {
-		this.connect = connectMock;
-	};
+	const defaultTouchDesignerServerImpl =
+		function MockTouchDesignerServer(this: {
+			connect: typeof connectMock;
+		}) {
+			this.connect = connectMock;
+		};
 	const TouchDesignerServerMock = vi.fn(defaultTouchDesignerServerImpl);
 
 	const defaultStdioTransportImpl = function MockStdioServerTransport() {};
@@ -95,7 +96,9 @@ describe("CLI", () => {
 			connectMock.mockResolvedValue({ success: true });
 
 			TouchDesignerServerMock.mockReset();
-			TouchDesignerServerMock.mockImplementation(defaultTouchDesignerServerImpl);
+			TouchDesignerServerMock.mockImplementation(
+				defaultTouchDesignerServerImpl,
+			);
 
 			StdioServerTransportMock.mockReset();
 			StdioServerTransportMock.mockImplementation(defaultStdioTransportImpl);

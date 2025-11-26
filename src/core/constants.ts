@@ -14,6 +14,7 @@ export const TOOL_NAMES = {
 	DESCRIBE_TD_TOOLS: "describe_td_tools",
 	EXECUTE_PYTHON_SCRIPT: "execute_python_script",
 	EXECUTE_NODE_METHOD: "exec_node_method",
+	GET_MODULE_HELP: "get_module_help",
 	GET_TD_INFO: "get_td_info",
 	GET_TD_CLASS_DETAILS: "get_td_class_details",
 	GET_TD_CLASSES: "get_td_classes",

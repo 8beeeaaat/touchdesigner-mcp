@@ -26,6 +26,8 @@ paths:
     $ref: ./paths/api/td/nodes/exec.yml
   /api/td/nodes/check_errors:
     $ref: ./paths/api/td/nodes/check_errors.yml
+  /api/td/modules/help:
+    $ref: ./paths/api/td/modules/help.yml
 
 components:
   schemas:

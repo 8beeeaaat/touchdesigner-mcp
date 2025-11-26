@@ -5,6 +5,7 @@ import {
 	deleteNode as apiDeleteNode,
 	execNodeMethod as apiExecNodeMethod,
 	execPythonScript as apiExecPythonScript,
+	getModuleHelp as apiGetModuleHelp,
 	getNodeDetail as apiGetNodeDetail,
 	getNodes as apiGetNodes,
 	getTdInfo as apiGetTdInfo,
@@ -16,6 +17,7 @@ import {
 	type DeleteNodeParams,
 	type ExecNodeMethodRequest,
 	type ExecPythonScriptRequest,
+	type GetModuleHelpRequest,
 	type GetNodeDetailParams,
 	type GetNodesParams,
 	type UpdateNodeRequest,
@@ -39,6 +41,7 @@ export interface ITouchDesignerApi {
 	checkNodeErrors: typeof apiCheckNodeErrors;
 	execNodeMethod: typeof apiExecNodeMethod;
 	execPythonScript: typeof apiExecPythonScript;
+	getModuleHelp: typeof apiGetModuleHelp;
 	getTdInfo: typeof apiGetTdInfo;
 	getNodes: typeof apiGetNodes;
 	getNodeDetail: typeof apiGetNodeDetail;
@@ -56,6 +59,7 @@ const defaultApiClient: ITouchDesignerApi = {
 	checkNodeErrors: apiCheckNodeErrors,
 	execNodeMethod: apiExecNodeMethod,
 	execPythonScript: apiExecPythonScript,
+	getModuleHelp: apiGetModuleHelp,
 	getTdInfo: apiGetTdInfo,
 	getNodes: apiGetNodes,
 	getNodeDetail: apiGetNodeDetail,
@@ -239,6 +243,15 @@ export class TouchDesignerClient {
 	async getClassDetails(className: string) {
 		this.logger.debug(`Getting class details for: ${className}`);
 		const result = await this.api.getTdPythonClassDetails(className);
+		return handleApiResponse<(typeof result)["data"]>(result);
+	}
+
+	/**
+	 * Get help documentation for a module
+	 */
+	async getModuleHelp(params: GetModuleHelpRequest) {
+		this.logger.debug(`Getting help for module: ${params.moduleName}`);
+		const result = await this.api.getModuleHelp(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
 

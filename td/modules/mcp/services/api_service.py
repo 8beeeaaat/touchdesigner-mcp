@@ -22,6 +22,7 @@ class IApiService(Protocol):
     def get_td_info(self) -> Result: ...
     def get_td_python_classes(self) -> Result: ...
     def get_td_python_class_details(self, class_name: str) -> Result: ...
+    def get_module_help(self, module_name: str) -> Result: ...
     def get_node_detail(self, node_path: str) -> Result: ...
     def update_node(self, node_path: str, properties: Dict[str, Any]) -> Result: ...
     def exec_node_method(
@@ -119,6 +120,64 @@ class TouchDesignerApiService(IApiService):
         }
 
         return success_result(class_details)
+
+    def get_module_help(self, module_name: str) -> Result:
+        """Get help information for a TouchDesigner module or class
+
+        Args:
+            module_name: Name of the module or class (e.g., "td.noiseCHOP", "td.OP", "tdu")
+
+        Returns:
+            Result: Success with help text or error
+        """
+        try:
+            import sys
+
+            # Capture help() output
+            old_stdout = sys.stdout
+            help_buffer = io.StringIO()
+            sys.stdout = help_buffer
+
+            try:
+                # Try to get the object and call help() on it
+                if module_name.startswith("td."):
+                    # Handle td.ClassName format
+                    class_name = module_name[3:]  # Remove "td." prefix
+                    if hasattr(td, class_name):
+                        obj = getattr(td, class_name)
+                        help(obj)
+                    else:
+                        return error_result(f"Module not found: {module_name}")
+                else:
+                    # Try to evaluate the module name directly
+                    try:
+                        obj = eval(module_name)
+                        help(obj)
+                    except Exception:
+                        # If evaluation fails, try as td attribute
+                        if hasattr(td, module_name):
+                            obj = getattr(td, module_name)
+                            help(obj)
+                        else:
+                            return error_result(f"Module not found: {module_name}")
+
+                # Get the captured help text
+                help_text = help_buffer.getvalue()
+
+            finally:
+                # Restore stdout
+                sys.stdout = old_stdout
+
+            log_message(f"Retrieved help for {module_name}", LogLevel.DEBUG)
+
+            return success_result({
+                "moduleName": module_name,
+                "helpText": help_text
+            })
+
+        except Exception as e:
+            log_message(f"Error getting help for {module_name}: {str(e)}", LogLevel.ERROR)
+            return error_result(f"Failed to get help for {module_name}: {str(e)}")
 
     def get_node(self, node_path: str) -> Result:
         """Alias for get_node_detail for backwards compatibility"""
