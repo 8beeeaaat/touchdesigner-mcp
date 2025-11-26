@@ -1,4 +1,5 @@
 import type {
+	CheckNodeErrors200ResponseData,
 	CreateNode200ResponseData,
 	DeleteNode200ResponseData,
 	ExecNodeMethod200ResponseData,
@@ -142,6 +143,56 @@ export function formatExecNodeMethodResult(
 	});
 }
 
+export function formatCheckNodeErrorsResult(
+	data: CheckNodeErrors200ResponseData,
+	nodePath: string,
+	options?: FormatterOpts,
+): string {
+	const opts = mergeFormatterOptions(options);
+
+	const nodeErrors = data?.errors ?? [];
+	const hasNodeErrors = nodeErrors.length > 0;
+
+	// Warning note about container node limitations
+	const containerNote =
+		opts.detailLevel !== "minimal"
+			? "\n\nNote: Container nodes (like baseCOMP, containerCOMP, etc.) may require calling cook() or opening the container before errors in dynamically created children are detected."
+			: "";
+
+	if (!hasNodeErrors) {
+		const text =
+			opts.detailLevel === "minimal"
+				? "✓ No errors"
+				: `✓ No errors found in node '${nodePath}'${containerNote}`;
+		return finalizeFormattedText(text, opts, {
+			context: { title: "Check Node Errors", nodePath, errorCount: 0 },
+			structured: data,
+		});
+	}
+
+	let text = "";
+	if (hasNodeErrors) {
+		const errorList =
+			opts.detailLevel === "minimal"
+				? `${nodeErrors.length} error(s)`
+				: nodeErrors.map((err, i) => `${i + 1}. ${err}`).join("\n");
+		text =
+			opts.detailLevel === "minimal"
+				? `⚠️ ${errorList} in '${nodePath}'`
+				: `⚠️ Errors in '${nodePath}':\n${errorList}${containerNote}`;
+	}
+
+	return finalizeFormattedText(text, opts, {
+		template: opts.detailLevel === "detailed" ? "detailedPayload" : "default",
+		context: {
+			title: "Check Node Errors",
+			nodePath,
+			errorCount: nodeErrors.length,
+		},
+		structured: data,
+	});
+}
+
 function buildCallSignature(params: {
 	nodePath: string;
 	method: string;
@@ -151,8 +202,8 @@ function buildCallSignature(params: {
 	const argPart = params.args ?? [];
 	const kwPart = params.kwargs
 		? Object.entries(params.kwargs).map(
-				([key, value]) => `${key}=${JSON.stringify(value)}`,
-			)
+			([key, value]) => `${key}=${JSON.stringify(value)}`,
+		)
 		: [];
 	const joinedArgs = [...argPart.map(stringifyValue), ...kwPart].join(", ");
 	return `op('${params.nodePath}').${params.method}(${joinedArgs})`;

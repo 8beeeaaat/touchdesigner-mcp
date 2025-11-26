@@ -8,6 +8,7 @@ export const TD_PYTHON_CLASS_REFERENCE_INDEX_URL = `${TD_PYTHON_CLASS_REFERENCE_
  * Reference Tool Names for TouchDesigner MCP
  */
 export const TOOL_NAMES = {
+	CHECK_NODE_ERRORS: "check_node_errors",
 	CREATE_TD_NODE: "create_td_node",
 	DELETE_TD_NODE: "delete_td_node",
 	DESCRIBE_TD_TOOLS: "describe_td_tools",

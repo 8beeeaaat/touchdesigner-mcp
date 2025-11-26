@@ -11,6 +11,7 @@ export { formatNodeDetails } from "./nodeDetailsFormatter.js";
 export type { NodeListData } from "./nodeListFormatter.js";
 export { formatNodeList } from "./nodeListFormatter.js";
 export {
+	formatCheckNodeErrorsResult,
 	formatCreateNodeResult,
 	formatDeleteNodeResult,
 	formatExecNodeMethodResult,

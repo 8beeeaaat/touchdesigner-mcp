@@ -4,6 +4,7 @@ import { REFERENCE_COMMENT, TOOL_NAMES } from "../../../core/constants.js";
 import { handleToolError } from "../../../core/errorHandling.js";
 import type { ILogger } from "../../../core/logger.js";
 import {
+	checkNodeErrorsBody,
 	createNodeBody,
 	deleteNodeQueryParams,
 	execNodeMethodBody,
@@ -17,6 +18,7 @@ import type { TouchDesignerClient } from "../../../tdClient/touchDesignerClient.
 import type { ToolMetadata } from "../metadata/touchDesignerToolMetadata.js";
 import { getTouchDesignerToolMetadata } from "../metadata/touchDesignerToolMetadata.js";
 import {
+	formatCheckNodeErrorsResult,
 	formatClassDetails,
 	formatClassList,
 	formatCreateNodeResult,
@@ -91,6 +93,11 @@ const describeToolsSchema = detailOnlyFormattingSchema.extend({
 		.optional(),
 });
 type DescribeToolsParams = z.input<typeof describeToolsSchema>;
+
+const checkNodeErrorsToolSchema = checkNodeErrorsBody.extend(
+	detailOnlyFormattingSchema.shape,
+);
+type CheckNodeErrorsToolParams = z.input<typeof checkNodeErrorsToolSchema>;
 
 export function registerTdTools(
 	server: McpServer,
@@ -499,6 +506,48 @@ export function registerTdTools(
 					error,
 					logger,
 					TOOL_NAMES.GET_TD_CLASS_DETAILS,
+					REFERENCE_COMMENT,
+				);
+			}
+		},
+	);
+
+	server.tool(
+		TOOL_NAMES.CHECK_NODE_ERRORS,
+		"Check for errors in a TouchDesigner node (detailLevel=minimal|summary|detailed, responseFormat=json|yaml|markdown)",
+		checkNodeErrorsToolSchema.strict().shape,
+		async (params: CheckNodeErrorsToolParams) => {
+			try {
+				const { detailLevel, responseFormat, ...checkParams } = params;
+				logger.debug(`Checking errors for node: ${checkParams.nodePath}`);
+
+				const result = await tdClient.checkNodeErrors(checkParams);
+				if (!result.success) {
+					throw result.error;
+				}
+
+				const formattedText = formatCheckNodeErrorsResult(
+					result.data,
+					checkParams.nodePath,
+					{
+						detailLevel: detailLevel ?? "summary",
+						responseFormat,
+					},
+				);
+
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: formattedText,
+						},
+					],
+				};
+			} catch (error) {
+				return handleToolError(
+					error,
+					logger,
+					TOOL_NAMES.CHECK_NODE_ERRORS,
 					REFERENCE_COMMENT,
 				);
 			}

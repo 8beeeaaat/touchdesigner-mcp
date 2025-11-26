@@ -36,6 +36,10 @@
       "description": "Create new nodes in TouchDesigner with specified family and parameters"
     },
     {
+      "name": "check_node_errors",
+      "description": "Check for errors in a TouchDesigner node"
+    },
+    {
       "name": "delete_td_node",
       "description": "Delete existing nodes from TouchDesigner by path"
     },

@@ -42,6 +42,9 @@ try:
     from td_server.openapi_server.models.update_node200_response import (
         UpdateNode200Response,
     )
+    from td_server.openapi_server.models.check_node_errors200_response import (
+        CheckNodeErrors200Response,
+    )
 
     log_message("OpenAPI response models imported successfully", LogLevel.DEBUG)
 except ImportError as e:
@@ -402,6 +405,11 @@ class APIControllerOpenAPI(IController):
             else:
                 log_message(f"Handler for {operation_id} not found.", LogLevel.WARNING)
 
+        # Override with controller-specific implementation where necessary
+        self.router.register_handler(
+            "check_node_errors", self._handle_check_node_errors
+        )
+
     def _handle_get_td_info(self, body: Optional[str] = None, **kwargs) -> Result:
         """
         Handle get_td_info operation
@@ -632,6 +640,49 @@ class APIControllerOpenAPI(IController):
             Details of the specified Python class
         """
         return self._service.get_td_python_class_details(className)
+
+    def _handle_check_node_errors(self, body: str, **kwargs) -> Result:
+        """
+        Handle check_node_errors operation
+
+        Args:
+            body: Request body containing nodePath and optional checkChildren flag
+
+        Returns:
+            Result of the error check operation
+        """
+        if not body:
+            return error_result("Request body is required")
+
+        try:
+            request_data = json.loads(body)
+        except json.JSONDecodeError as e:
+            return error_result(f"Invalid JSON in request body: {str(e)}")
+
+        node_path = request_data.get("nodePath")
+        if not node_path:
+            return error_result("nodePath is required")
+
+        check_children_raw = request_data.get("checkChildren", False)
+        if isinstance(check_children_raw, str):
+            check_children = check_children_raw.strip().lower() in (
+                "true",
+                "1",
+                "yes",
+                "on",
+            )
+        else:
+            check_children = bool(check_children_raw)
+
+        service_result = self._service.check_node_errors(
+            node_path, check_children=check_children
+        )
+
+        try:
+            response_data = CheckNodeErrors200Response().from_dict(service_result)
+            return response_data.to_dict()
+        except Exception:
+            return service_result
 
 
 api_controller_openapi = APIControllerOpenAPI()

@@ -27,6 +27,9 @@ class IApiService(Protocol):
     def exec_node_method(
         self, node_path: str, method: str, args: List, kwargs: Dict
     ) -> Result: ...
+    def check_node_errors(
+        self, node_path: str, check_children: bool = False
+    ) -> Result: ...
 
 
 class TouchDesignerApiService(IApiService):
@@ -422,6 +425,46 @@ class TouchDesignerApiService(IApiService):
                 raise error_result("Failed to update any properties")
             else:
                 raise error_result("No matching properties to update")
+
+    def check_node_errors(self, node_path: str) -> Result:
+        """Check for errors in the node at the specified path and its children
+
+        Args:
+            node_path: Path to the node to check for errors
+
+        Returns:
+            Result: Success with error list or error result with message
+        """
+        node = td.op(node_path)
+
+        if node is None or not node.valid:
+            return error_result(f"Node not found at path: {node_path}")
+
+        # Get errors from the node and all children recursively
+        all_errors = []
+        if hasattr(node, 'errors') and callable(node.errors):
+            try:
+                errors = node.errors(recurse=True)
+                if errors:
+                    # errors() returns a string with newline-separated error messages
+                    error_lines = errors.strip().split('\n')
+                    all_errors = [line.strip() for line in error_lines if line.strip()]
+            except Exception as e:
+                log_message(
+                    f"Error getting errors from node {node_path}: {str(e)}",
+                    LogLevel.WARNING
+                )
+
+        result_data = {
+            "errors": all_errors
+        }
+
+        log_message(
+            f"Checked errors for node {node_path} and children: {len(all_errors)} errors found",
+            LogLevel.DEBUG
+        )
+
+        return success_result(result_data)
 
     def _get_node_properties(self, node):
         params_dict = {}

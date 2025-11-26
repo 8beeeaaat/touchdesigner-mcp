@@ -9,6 +9,7 @@ import {
 
 vi.mock("../../src/gen/endpoints/TouchDesignerAPI", async () => {
 	return {
+		checkNodeErrors: vi.fn(),
 		getTdInfo: vi.fn(),
 		getTdPythonClasses: vi.fn(),
 		getTdPythonClassDetails: vi.fn(),

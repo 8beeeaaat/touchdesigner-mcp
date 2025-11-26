@@ -1,5 +1,6 @@
 import type { ILogger } from "../core/logger.js";
 import {
+	checkNodeErrors as apiCheckNodeErrors,
 	createNode as apiCreateNode,
 	deleteNode as apiDeleteNode,
 	execNodeMethod as apiExecNodeMethod,
@@ -10,6 +11,7 @@ import {
 	getTdPythonClassDetails as apiGetTdPythonClassDetails,
 	getTdPythonClasses as apiGetTdPythonClasses,
 	updateNode as apiUpdateNode,
+	type CheckNodeErrorsRequest,
 	type CreateNodeRequest,
 	type DeleteNodeParams,
 	type ExecNodeMethodRequest,
@@ -34,6 +36,7 @@ export interface TdInfo {
  * Interface for TouchDesignerClient HTTP operations
  */
 export interface ITouchDesignerApi {
+	checkNodeErrors: typeof apiCheckNodeErrors;
 	execNodeMethod: typeof apiExecNodeMethod;
 	execPythonScript: typeof apiExecPythonScript;
 	getTdInfo: typeof apiGetTdInfo;
@@ -50,6 +53,7 @@ export interface ITouchDesignerApi {
  * Default implementation of ITouchDesignerApi using generated API clients
  */
 const defaultApiClient: ITouchDesignerApi = {
+	checkNodeErrors: apiCheckNodeErrors,
 	execNodeMethod: apiExecNodeMethod,
 	execPythonScript: apiExecPythonScript,
 	getTdInfo: apiGetTdInfo,
@@ -235,6 +239,15 @@ export class TouchDesignerClient {
 	async getClassDetails(className: string) {
 		this.logger.debug(`Getting class details for: ${className}`);
 		const result = await this.api.getTdPythonClassDetails(className);
+		return handleApiResponse<(typeof result)["data"]>(result);
+	}
+
+	/**
+	 * Check errors in a node
+	 */
+	async checkNodeErrors(params: CheckNodeErrorsRequest) {
+		this.logger.debug(`Checking errors for node: ${params.nodePath}`);
+		const result = await this.api.checkNodeErrors(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
 }

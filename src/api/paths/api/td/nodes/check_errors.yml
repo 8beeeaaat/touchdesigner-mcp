@@ -1,0 +1,54 @@
+post:
+  summary: Check errors in the specified node and its children
+  description: |
+    Check for errors in the node at the specified path and recursively check all child nodes.
+    This is equivalent to calling `op('nodePath').errors(recurse=True)` in TouchDesigner's Python API.
+    Returns a list of all error messages from the node and its children, or an empty list if no errors exist.
+
+    **Important Note:** Due to TouchDesigner's limitations, when checking container nodes (baseCOMP, containerCOMP, etc.)
+    that can contain children, errors in dynamically created child nodes may not be detected until the container is cooked
+    or opened. If you suspect errors are not being reported, try calling `cook()` on the container or opening it in the
+    TouchDesigner UI before running this tool.
+  operationId: check_node_errors
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - nodePath
+          properties:
+            nodePath:
+              type: string
+              description: Path to the node to check for errors (e.g., /project1/null1)
+  responses:
+    '200':
+      description: Error check successful
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                type: boolean
+                description: Whether the operation was successful
+              data:
+                nullable: true
+                type: object
+                required:
+                  - errors
+                properties:
+                  errors:
+                    type: array
+                    description: List of all error messages from the node and its children
+                    items:
+                      type: string
+              error:
+                nullable: true
+                type: string
+                description: Error message if the operation was not successful
