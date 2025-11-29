@@ -119,10 +119,10 @@ jobs:
               "mcpServers": {
                 "touchdesigner": {
                   "command": "npx",
-                    "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
-                  }
+                  "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
                 }
               }
+            }
             ```
             4. If the MCP client reports incompatible server versions, remove the old `mcp_webserver_base` component, restart TouchDesigner, and import the newest `.tox` file from this release.
                You may see warnings such as:
