@@ -23,7 +23,7 @@ post:
               type: string
               description: Path to the node to check for errors (e.g., /project1/null1)
   responses:
-    '200':
+    "200":
       description: Error check successful
       content:
         application/json:

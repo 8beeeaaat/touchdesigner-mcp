@@ -73,9 +73,9 @@ export function formatModuleHelp(
 
 	const ctx = context as unknown as Record<string, unknown> | undefined;
 	return finalizeFormattedText(formattedText, opts, {
-		template: "moduleHelp",
 		context: ctx,
 		structured: ctx,
+		template: "moduleHelp",
 	});
 }
 
@@ -110,13 +110,13 @@ function formatSummary(
 	}
 
 	return {
-		text: formatted,
 		context: {
-			moduleName,
-			helpPreview: preview,
 			fullLength: helpText.length,
+			helpPreview: preview,
+			moduleName,
 			sections,
 		},
+		text: formatted,
 	};
 }
 
@@ -139,18 +139,18 @@ function formatDetailed(
 
 	return presentStructuredData(
 		{
-			text: formatted,
+			context: {
+				payloadFormat,
+				title,
+			},
 			detailLevel: "detailed",
 			structured: {
-				moduleName,
 				helpText,
 				length: helpText.length,
-			},
-			context: {
-				title,
-				payloadFormat,
+				moduleName,
 			},
 			template: "moduleHelpDetailed",
+			text: formatted,
 		},
 		payloadFormat,
 	);
@@ -164,9 +164,9 @@ function buildHelpContext(
 	helpText: string,
 ): ModuleHelpContext {
 	return {
-		moduleName,
-		helpPreview: extractHelpPreview(helpText, 200),
 		fullLength: helpText.length,
+		helpPreview: extractHelpPreview(helpText, 200),
+		moduleName,
 		sections: extractHelpSections(helpText),
 	};
 }

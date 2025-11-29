@@ -45,11 +45,8 @@ export function checkVersionCompatibility(
 	// Case 1: Server doesn't provide apiVersion (old server)
 	if (!serverApiVersion || serverApiVersion === "unknown") {
 		return {
-			compatible: false,
 			clientVersion: CLIENT_VERSION,
-			serverVersion: serverApiVersion,
-			warning:
-				"⚠️  Server API version unknown - TouchDesigner component update required",
+			compatible: false,
 			guidance: [
 				"Your TouchDesigner component didn't report an API version.",
 				"This usually means you're using an older MCP component that cannot verify compatibility.",
@@ -62,6 +59,9 @@ export function checkVersionCompatibility(
 				`Minimum supported API version: ${MIN_SUPPORTED_SERVER_VERSION}`,
 				`Current client API version: ${CLIENT_VERSION}`,
 			].join("\n"),
+			serverVersion: serverApiVersion,
+			warning:
+				"⚠️  Server API version unknown - TouchDesigner component update required",
 		};
 	}
 
@@ -71,11 +71,8 @@ export function checkVersionCompatibility(
 
 	if (!serverSemver || !clientSemver || !minimumSemver) {
 		return {
-			compatible: false,
 			clientVersion: CLIENT_VERSION,
-			serverVersion: serverApiVersion,
-			warning:
-				"⚠️  Server API version could not be parsed - TouchDesigner component update required",
+			compatible: false,
 			guidance: [
 				"Server reported an API version string that couldn't be parsed.",
 				"Please update the TouchDesigner component to a supported build.",
@@ -88,17 +85,17 @@ export function checkVersionCompatibility(
 				`Minimum supported API version: ${MIN_SUPPORTED_SERVER_VERSION}`,
 				`Current client API version: ${CLIENT_VERSION}`,
 			].join("\n"),
+			serverVersion: serverApiVersion,
+			warning:
+				"⚠️  Server API version could not be parsed - TouchDesigner component update required",
 		};
 	}
 
 	// Case 2: Major version mismatch = incompatible (breaking changes)
 	if (serverSemver.major !== clientSemver.major) {
 		return {
-			compatible: false,
 			clientVersion: CLIENT_VERSION,
-			serverVersion: serverApiVersion,
-			warning:
-				"⚠️  API version mismatch detected - Major versions differ (update required)",
+			compatible: false,
 			guidance: [
 				"Major version differences may cause compatibility issues.",
 				`  Client API: v${CLIENT_VERSION}`,
@@ -111,17 +108,17 @@ export function checkVersionCompatibility(
 				"",
 				"Note: Major version changes may include breaking API changes.",
 			].join("\n"),
+			serverVersion: serverApiVersion,
+			warning:
+				"⚠️  API version mismatch detected - Major versions differ (update required)",
 		};
 	}
 
 	// Case 3: Server version falls below the supported minimum
 	if (semver.lt(serverSemver, minimumSemver)) {
 		return {
-			compatible: false,
 			clientVersion: CLIENT_VERSION,
-			serverVersion: serverApiVersion,
-			warning:
-				"⚠️  Server API version is below minimum compatibility - Update required",
+			compatible: false,
 			guidance: [
 				"Server version detected is below the minimum supported API version.",
 				`  Minimum supported API: v${MIN_SUPPORTED_SERVER_VERSION}`,
@@ -134,13 +131,16 @@ export function checkVersionCompatibility(
 				"",
 				`Current client API version: v${CLIENT_VERSION}`,
 			].join("\n"),
+			serverVersion: serverApiVersion,
+			warning:
+				"⚠️  Server API version is below minimum compatibility - Update required",
 		};
 	}
 
 	// Case 4: Compatible versions
 	return {
-		compatible: true,
 		clientVersion: CLIENT_VERSION,
+		compatible: true,
 		serverVersion: serverSemver.version,
 	};
 }

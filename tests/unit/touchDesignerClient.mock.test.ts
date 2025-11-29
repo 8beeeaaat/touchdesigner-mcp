@@ -10,25 +10,25 @@ import {
 vi.mock("../../src/gen/endpoints/TouchDesignerAPI", async () => {
 	return {
 		checkNodeErrors: vi.fn(),
-		getTdInfo: vi.fn(),
-		getTdPythonClasses: vi.fn(),
-		getTdPythonClassDetails: vi.fn(),
+		createNode: vi.fn(),
+		deleteNode: vi.fn(),
 		execNodeMethod: vi.fn(),
 		execPythonScript: vi.fn(),
 		getModuleHelp: vi.fn(),
-		createNode: vi.fn(),
-		updateNode: vi.fn(),
-		deleteNode: vi.fn(),
-		getNodes: vi.fn(),
 		getNodeDetail: vi.fn(),
+		getNodes: vi.fn(),
+		getTdInfo: vi.fn(),
+		getTdPythonClassDetails: vi.fn(),
+		getTdPythonClasses: vi.fn(),
+		updateNode: vi.fn(),
 	};
 });
 
 const nullLogger: ILogger = {
 	debug: () => {},
+	error: () => {},
 	log: () => {},
 	warn: () => {},
-	error: () => {},
 };
 
 describe("TouchDesignerClient with mocks", () => {
@@ -38,14 +38,14 @@ describe("TouchDesignerClient with mocks", () => {
 
 	test("getTdInfo should handle successful response", async () => {
 		const mockResponse = {
-			success: true,
 			data: {
-				server: "TouchDesigner",
-				version: "2023.11050",
 				osName: "macOS",
 				osVersion: "12.6.1",
+				server: "TouchDesigner",
+				version: "2023.11050",
 			},
 			error: null,
+			success: true,
 		};
 
 		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(mockResponse);
@@ -66,9 +66,9 @@ describe("TouchDesignerClient with mocks", () => {
 
 	test("getTdInfo should handle error response", async () => {
 		const mockResponse = {
-			success: false,
 			data: null,
 			error: "Failed to connect to server",
+			success: false,
 		};
 
 		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(mockResponse);
@@ -85,26 +85,26 @@ describe("TouchDesignerClient with mocks", () => {
 
 	test("createNode should handle successful creation", async () => {
 		const mockResponse = {
-			success: true,
 			data: {
 				result: {
 					id: 123,
 					name: "testNode",
-					path: "/project1/testNode",
 					opType: "nullCOMP",
+					path: "/project1/testNode",
 					properties: {},
 				},
 			},
 			error: null,
+			success: true,
 		};
 
 		vi.mocked(touchDesignerAPI.createNode).mockResolvedValue(mockResponse);
 
 		const client = new TouchDesignerClient({ logger: nullLogger });
 		const result = await client.createNode({
-			parentPath: "/project1",
-			nodeType: "nullCOMP",
 			nodeName: "testNode",
+			nodeType: "nullCOMP",
+			parentPath: "/project1",
 		});
 		if (!result.success) {
 			throw new Error("Expected success to be true");
@@ -116,11 +116,11 @@ describe("TouchDesignerClient with mocks", () => {
 
 	test("execPythonScript should handle successful execution", async () => {
 		const mockResponse = {
-			success: true,
 			data: {
 				result: { value: "Script executed successfully" }, // Adjusted structure
 			},
 			error: null,
+			success: true,
 		};
 
 		vi.mocked(touchDesignerAPI.execPythonScript).mockResolvedValue(
@@ -145,20 +145,20 @@ describe("TouchDesignerClient with mocks", () => {
 	test("TouchDesignerClient should accept custom logger", async () => {
 		const mockLogger: ILogger = {
 			debug: vi.fn(),
+			error: vi.fn(),
 			log: vi.fn(),
 			warn: vi.fn(),
-			error: vi.fn(),
 		};
 
 		const mockResponse = {
-			success: true,
 			data: {
-				server: "TouchDesigner",
-				version: "2023.11050",
 				osName: "macOS",
 				osVersion: "12.6.1",
+				server: "TouchDesigner",
+				version: "2023.11050",
 			},
 			error: null,
+			success: true,
 		};
 
 		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(mockResponse);
@@ -173,18 +173,18 @@ describe("TouchDesignerClient with mocks", () => {
 	test("TouchDesignerClient should accept custom httpClient", async () => {
 		const mockHttpClient = {
 			getTdInfo: vi.fn().mockResolvedValue({
-				success: true,
 				data: {
 					server: "CustomServer",
-					version: "CustomVersion",
 					status: "CustomStatus",
+					version: "CustomVersion",
 				},
+				success: true,
 			}),
 		};
 
 		const client = new TouchDesignerClient({
-			logger: nullLogger,
 			httpClient: mockHttpClient as unknown as ITouchDesignerApi,
+			logger: nullLogger,
 		});
 
 		const result = await client.getTdInfo();

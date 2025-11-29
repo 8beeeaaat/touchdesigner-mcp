@@ -1,0 +1,15 @@
+{
+	"$schema": "https://json.schemastore.org/prettierrc",
+	"overrides": [
+		{
+			"files": ["*.yml", "*.yaml"],
+			"options": {
+				"tabWidth": 2,
+				"useTabs": false,
+				"printWidth": 80,
+				"singleQuote": false,
+				"proseWrap": "preserve"
+			}
+		}
+	]
+}

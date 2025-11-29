@@ -5,10 +5,10 @@ import type { ILogger } from "../../src/core/logger.js";
 describe("errorHandling", () => {
 	describe("handleToolError", () => {
 		const mockLogger: ILogger = {
-			log: vi.fn(),
 			debug: vi.fn(),
-			warn: vi.fn(),
 			error: vi.fn(),
+			log: vi.fn(),
+			warn: vi.fn(),
 		};
 
 		it("should handle Error instance correctly", () => {
@@ -17,13 +17,13 @@ describe("errorHandling", () => {
 
 			expect(mockLogger.error).toHaveBeenCalledWith("Operation failed", error);
 			expect(result).toEqual({
-				isError: true,
 				content: [
 					{
-						type: "text",
 						text: "Operation failed: Error: Test error",
+						type: "text",
 					},
 				],
+				isError: true,
 			});
 		});
 

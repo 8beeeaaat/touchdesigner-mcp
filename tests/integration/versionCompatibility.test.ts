@@ -68,8 +68,8 @@ describe("TouchDesignerServer version compatibility (integration)", () => {
 
 	test("logs warning when server API version is below the minimum", async () => {
 		mockGetTdInfo.mockResolvedValueOnce({
-			success: true,
 			data: { apiVersion: "1.0.0" },
+			success: true,
 		});
 
 		new TouchDesignerServer();
@@ -84,8 +84,8 @@ describe("TouchDesignerServer version compatibility (integration)", () => {
 
 	test("does not log warning when server API version meets requirements", async () => {
 		mockGetTdInfo.mockResolvedValueOnce({
-			success: true,
 			data: { apiVersion: "1.5.2" },
+			success: true,
 		});
 
 		new TouchDesignerServer();
@@ -98,8 +98,8 @@ describe("TouchDesignerServer version compatibility (integration)", () => {
 
 	test("logs warning when server API version is missing", async () => {
 		mockGetTdInfo.mockResolvedValueOnce({
-			success: true,
 			data: {},
+			success: true,
 		});
 
 		new TouchDesignerServer();

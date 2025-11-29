@@ -55,8 +55,8 @@ export interface FormatterOptions {
  */
 export const DEFAULT_FORMATTER_OPTIONS = {
 	detailLevel: "summary",
-	limit: undefined as number | undefined,
 	includeHints: true,
+	limit: undefined as number | undefined,
 	responseFormat: undefined as PresenterFormat | undefined,
 } satisfies FormatterOptions;
 
@@ -76,8 +76,8 @@ export function mergeFormatterOptions(options?: FormatterOptions): {
 		DEFAULT_FORMATTER_OPTIONS.detailLevel;
 	return {
 		detailLevel,
-		limit: merged.limit,
 		includeHints: merged.includeHints ?? true,
+		limit: merged.limit,
 		responseFormat: merged.responseFormat,
 	};
 }
@@ -102,11 +102,11 @@ export function finalizeFormattedText(
 
 	return presentStructuredData(
 		{
-			text,
+			context: metadata?.context,
 			detailLevel: opts.detailLevel,
 			structured: metadata?.structured,
-			context: metadata?.context,
 			template: metadata?.template,
+			text,
 		},
 		chosenFormat,
 	);

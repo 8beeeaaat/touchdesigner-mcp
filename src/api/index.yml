@@ -1,19 +1,26 @@
+openapi: 3.0.0
 info:
   description: OpenAPI schema for generating TouchDesigner API client code
   title: TouchDesigner API
   version: 1.3.0
-
-openapi: 3.0.0
-
 servers:
-  - url: ${process.env.TD_WEB_SERVER_HOST}:${process.env.TD_WEB_SERVER_PORT}
-    description: TouchDesigner Web Server
-
+  - description: TouchDesigner Web Server
+    url: ${process.env.TD_WEB_SERVER_HOST}:${process.env.TD_WEB_SERVER_PORT}
+components:
+  schemas:
+    TdNode:
+      $ref: ./components/schemas/TdNode.yml
+    TdNodeFamilyType:
+      $ref: ./components/schemas/TdNodeFamilyType.yml
+    TdPythonClassDetails:
+      $ref: ./components/schemas/TdPythonClassDetails.yml
+    TdPythonClassInfo:
+      $ref: ./components/schemas/TdPythonClassInfo.yml
+    TdPythonMethodInfo:
+      $ref: ./components/schemas/TdPythonMethodInfo.yml
+    TdPythonPropertyInfo:
+      $ref: ./components/schemas/TdPythonPropertyInfo.yml
 paths:
-  /api/td/server/td:
-    $ref: ./paths/api/td/server/td.yml
-  /api/td/server/exec:
-    $ref: ./paths/api/td/server/exec.yml
   /api/nodes:
     $ref: ./paths/api/nodes/list.yml
   /api/nodes/detail:
@@ -22,24 +29,13 @@ paths:
     $ref: ./paths/api/td/classes/list.yml
   /api/td/classes/{className}:
     $ref: ./paths/api/td/classes/details.yml
-  /api/td/nodes/exec:
-    $ref: ./paths/api/td/nodes/exec.yml
-  /api/td/nodes/check_errors:
-    $ref: ./paths/api/td/nodes/check_errors.yml
   /api/td/modules/help:
     $ref: ./paths/api/td/modules/help.yml
-
-components:
-  schemas:
-    TdNode:
-      $ref: ./components/schemas/TdNode.yml
-    TdNodeFamilyType:
-      $ref: ./components/schemas/TdNodeFamilyType.yml
-    TdPythonClassInfo:
-      $ref: ./components/schemas/TdPythonClassInfo.yml
-    TdPythonMethodInfo:
-      $ref: ./components/schemas/TdPythonMethodInfo.yml
-    TdPythonPropertyInfo:
-      $ref: ./components/schemas/TdPythonPropertyInfo.yml
-    TdPythonClassDetails:
-      $ref: ./components/schemas/TdPythonClassDetails.yml
+  /api/td/nodes/check_errors:
+    $ref: ./paths/api/td/nodes/check_errors.yml
+  /api/td/nodes/exec:
+    $ref: ./paths/api/td/nodes/exec.yml
+  /api/td/server/exec:
+    $ref: ./paths/api/td/server/exec.yml
+  /api/td/server/td:
+    $ref: ./paths/api/td/server/td.yml

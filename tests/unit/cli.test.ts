@@ -23,10 +23,10 @@ const {
 
 	return {
 		connectMock,
-		defaultTouchDesignerServerImpl,
 		defaultStdioTransportImpl,
-		TouchDesignerServerMock,
+		defaultTouchDesignerServerImpl,
 		StdioServerTransportMock,
+		TouchDesignerServerMock,
 	};
 });
 
@@ -110,8 +110,8 @@ describe("CLI", () => {
 
 		it("should set environment variables from parsed arguments", async () => {
 			await startServer({
-				nodeEnv: "cli",
 				argv: ["node", "cli.js", "--stdio", "--host=127.0.0.1", "--port=8080"],
+				nodeEnv: "cli",
 			});
 
 			expect(process.env.TD_WEB_SERVER_HOST).toBe("127.0.0.1");
@@ -120,8 +120,8 @@ describe("CLI", () => {
 
 		it("should create TouchDesigner server and connect in stdio mode", async () => {
 			await startServer({
-				nodeEnv: "cli",
 				argv: ["node", "cli.js", "--stdio", "--host=127.0.0.1", "--port=8080"],
+				nodeEnv: "cli",
 			});
 
 			expect(TouchDesignerServerMock).toHaveBeenCalled();
@@ -131,13 +131,12 @@ describe("CLI", () => {
 
 		it("should handle connection failure gracefully", async () => {
 			connectMock.mockResolvedValue({
-				success: false,
 				error: { message: "Connection failed" },
+				success: false,
 			});
 
 			await expect(
 				startServer({
-					nodeEnv: "cli",
 					argv: [
 						"node",
 						"cli.js",
@@ -145,6 +144,7 @@ describe("CLI", () => {
 						"--host=127.0.0.1",
 						"--port=8080",
 					],
+					nodeEnv: "cli",
 				}),
 			).rejects.toThrow(
 				"Failed to initialize server: Failed to connect: Connection failed",
@@ -158,7 +158,6 @@ describe("CLI", () => {
 
 			await expect(
 				startServer({
-					nodeEnv: "cli",
 					argv: [
 						"node",
 						"cli.js",
@@ -166,6 +165,7 @@ describe("CLI", () => {
 						"--host=127.0.0.1",
 						"--port=8080",
 					],
+					nodeEnv: "cli",
 				}),
 			).rejects.toThrow("Failed to initialize server: Unexpected error");
 		});
@@ -177,7 +177,6 @@ describe("CLI", () => {
 
 			await expect(
 				startServer({
-					nodeEnv: "cli",
 					argv: [
 						"node",
 						"cli.js",
@@ -185,6 +184,7 @@ describe("CLI", () => {
 						"--host=127.0.0.1",
 						"--port=8080",
 					],
+					nodeEnv: "cli",
 				}),
 			).rejects.toThrow("Failed to initialize server: String error");
 		});
@@ -192,8 +192,8 @@ describe("CLI", () => {
 		it("should throw error for non-stdio mode", async () => {
 			await expect(
 				startServer({
-					nodeEnv: "test",
 					argv: ["node", "cli.js", "arg1", "arg2", "arg3"],
+					nodeEnv: "test",
 				}),
 			).rejects.toThrow(
 				"Failed to initialize server: Sorry, this server is not yet available in the browser. Please use the CLI mode.",
