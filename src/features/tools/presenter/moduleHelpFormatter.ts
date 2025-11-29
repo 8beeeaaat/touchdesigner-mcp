@@ -20,12 +20,14 @@ import {
  * Module help result structure
  */
 export interface ModuleHelpData {
-	success?: boolean;
-	data?: {
-		moduleName?: string;
-		helpText?: string;
-	};
+	moduleName?: string;
+	helpText?: string;
 	[key: string]: unknown;
+}
+
+interface ModuleHelpMembers {
+	methods: string[];
+	properties: string[];
 }
 
 interface ModuleHelpContext {
@@ -33,6 +35,8 @@ interface ModuleHelpContext {
 	helpPreview: string;
 	fullLength: number;
 	sections: string[];
+	members: ModuleHelpMembers;
+	classInfo?: ClassSummary;
 }
 
 /**
@@ -44,32 +48,36 @@ export function formatModuleHelp(
 ): string {
 	const opts = mergeFormatterOptions(options);
 
-	if (!data || !data.data?.helpText) {
+	if (!data?.helpText) {
 		return "No help information available.";
 	}
 
-	const moduleName = data.data.moduleName ?? "Unknown";
-	const helpText = data.data.helpText;
+	const moduleName = data.moduleName ?? "Unknown";
+	const helpText = data.helpText;
+	const members = extractModuleMembers(helpText);
+	const classInfo = extractClassSummary(helpText);
 
 	if (opts.detailLevel === "detailed") {
 		return formatDetailed(moduleName, helpText, opts.responseFormat);
 	}
 
 	let formattedText = "";
-	let context: ModuleHelpContext | undefined;
+		let context: ModuleHelpContext | undefined;
 
-	switch (opts.detailLevel) {
-		case "minimal":
-			formattedText = formatMinimal(moduleName, helpText);
-			context = buildHelpContext(moduleName, helpText);
-			break;
-		case "summary": {
-			const summary = formatSummary(moduleName, helpText);
-			formattedText = summary.text;
-			context = summary.context;
-			break;
+		switch (opts.detailLevel) {
+			case "minimal":
+			case "summary": {
+				const summary = formatSummary(
+					moduleName,
+					helpText,
+					members,
+					classInfo,
+				);
+				formattedText = summary.text;
+				context = summary.context;
+				break;
+			}
 		}
-	}
 
 	const ctx = context as unknown as Record<string, unknown> | undefined;
 	return finalizeFormattedText(formattedText, opts, {
@@ -80,43 +88,63 @@ export function formatModuleHelp(
 }
 
 /**
- * Minimal mode: Module name and brief excerpt
- */
-function formatMinimal(moduleName: string, helpText: string): string {
-	const preview = extractHelpPreview(helpText, 200);
-	return `✓ Help for ${moduleName}:\n\n${preview}`;
-}
-
-/**
  * Summary mode: Module name with key sections
  */
 function formatSummary(
 	moduleName: string,
 	helpText: string,
+	members: ModuleHelpMembers,
+	classInfo?: ClassSummary,
 ): { text: string; context: ModuleHelpContext } {
 	const sections = extractHelpSections(helpText);
 	const preview = extractHelpPreview(helpText, 500);
+	const memberSummary = formatMemberSummary(members);
 
-	let formatted = `✓ Help information for ${moduleName}\n\n`;
+	const lines = [`✓ Help information for ${moduleName}`];
 
-	if (sections.length > 0) {
-		formatted += `Sections: ${sections.join(", ")}\n\n`;
+	if (classInfo?.definition) {
+		lines.push(`Class: ${classInfo.definition}`);
 	}
 
-	formatted += `${preview}`;
+	if (classInfo?.description) {
+		lines.push(classInfo.description);
+	}
+
+	if (classInfo?.methodResolutionOrder?.length) {
+		lines.push(
+			`MRO: ${classInfo.methodResolutionOrder.join(" → ")}`,
+		);
+	}
+
+	lines.push("");
+
+	if (sections.length > 0) {
+		lines.push(`Sections: ${sections.join(", ")}`, "");
+	}
+
+	lines.push(preview);
+
+	if (memberSummary) {
+		lines.push("", memberSummary);
+	}
 
 	if (helpText.length > 500) {
-		formatted += `\n\n💡 Use detailLevel='detailed' to see full documentation (${helpText.length} chars total).`;
+		lines.push(
+			"",
+			`💡 Use detailLevel='detailed' to see full documentation (${helpText.length} chars total).`,
+		);
 	}
 
 	return {
 		context: {
 			fullLength: helpText.length,
 			helpPreview: preview,
+			members,
+			classInfo,
 			moduleName,
 			sections,
 		},
-		text: formatted,
+		text: lines.join("\n"),
 	};
 }
 
@@ -162,10 +190,14 @@ function formatDetailed(
 function buildHelpContext(
 	moduleName: string,
 	helpText: string,
+	members: ModuleHelpMembers,
+	classInfo?: ClassSummary,
 ): ModuleHelpContext {
 	return {
 		fullLength: helpText.length,
 		helpPreview: extractHelpPreview(helpText, 200),
+		classInfo,
+		members,
 		moduleName,
 		sections: extractHelpSections(helpText),
 	};
@@ -231,4 +263,179 @@ function extractHelpSections(helpText: string): string[] {
 	}
 
 	return sections;
+}
+
+function extractModuleMembers(helpText: string): ModuleHelpMembers {
+	const methods: string[] = [];
+	const properties: string[] = [];
+	const seenMethods = new Set<string>();
+	const seenProperties = new Set<string>();
+	const lines = helpText.split("\n");
+	let currentCategory: "method" | "property" | undefined;
+
+	for (const line of lines) {
+		const trimmed = line.trim();
+		if (!trimmed) continue;
+
+		const normalized = trimmed.replace(/^\|/, "").trim();
+		const headerMatch = normalized.match(/^(.*?):$/);
+		if (headerMatch) {
+			const newCategory = categorizeSection(headerMatch[1]);
+			if (newCategory) {
+				currentCategory = newCategory;
+			}
+			continue;
+		}
+
+		if (!currentCategory) continue;
+
+		const entryMatch = trimmed.match(/^\|\s{2,4}([A-Za-z_][\w]*)/);
+		if (!entryMatch) continue;
+		const name = entryMatch[1];
+		if (!name) continue;
+
+		if (currentCategory === "method") {
+			if (!seenMethods.has(name)) {
+				seenMethods.add(name);
+				methods.push(name);
+			}
+		} else if (currentCategory === "property") {
+			if (!seenProperties.has(name)) {
+				seenProperties.add(name);
+				properties.push(name);
+			}
+		}
+	}
+
+	return { methods, properties };
+}
+
+interface ClassSummary {
+	definition?: string;
+	description?: string;
+	methodResolutionOrder?: string[];
+}
+
+function extractClassSummary(helpText: string): ClassSummary | undefined {
+	const lines = helpText.split("\n");
+	let definition: string | undefined;
+	const descriptionLines: string[] = [];
+	const methodResolutionOrder: string[] = [];
+	let inDescription = false;
+	let inMro = false;
+
+	for (let i = 0; i < lines.length; i++) {
+		const raw = lines[i];
+		const trimmed = raw.trim();
+
+		if (!definition) {
+			const defMatch = trimmed.match(/^class\s+(.+)$/);
+			if (defMatch) {
+				definition = defMatch[1];
+				inDescription = true;
+				continue;
+			}
+		}
+
+		if (inDescription) {
+			if (!trimmed || trimmed.startsWith("|  Methods defined here:")) {
+				inDescription = false;
+			} else if (trimmed.startsWith("|")) {
+				const desc = trimmed.replace(/^\|\s*/, "");
+				if (desc) {
+					descriptionLines.push(desc);
+				}
+			}
+		}
+
+		if (
+			trimmed.startsWith("|  Method resolution order:")
+		) {
+			inMro = true;
+			continue;
+		}
+
+		if (inMro) {
+			if (!trimmed.startsWith("|")) {
+				inMro = false;
+				continue;
+			}
+			const entry = trimmed.replace(/^\|\s*/, "");
+			if (entry) {
+				methodResolutionOrder.push(entry.trim());
+			}
+		}
+
+		if (methodResolutionOrder.length > 0 && !inMro && !inDescription) {
+			break;
+		}
+	}
+
+	if (!definition && descriptionLines.length === 0 && methodResolutionOrder.length === 0) {
+		return undefined;
+	}
+
+	return {
+		definition,
+		description: descriptionLines.slice(0, 3).join(" "),
+		methodResolutionOrder: methodResolutionOrder.length
+			? methodResolutionOrder
+			: undefined,
+	};
+}
+
+function categorizeSection(sectionName: string): "method" | "property" | undefined {
+	const normalized = sectionName.toLowerCase();
+	if (normalized.includes("method")) {
+		return "method";
+	}
+	if (
+		normalized.includes("descriptor") ||
+		normalized.includes("attribute") ||
+		normalized.includes("property")
+	) {
+		return "property";
+	}
+	return undefined;
+}
+
+function formatMemberSummary(
+	members: ModuleHelpMembers,
+	limitPerGroup?: number,
+): string {
+	const segments: string[] = [];
+	const methodSummary = formatMemberGroup(
+		"Methods",
+		members.methods,
+		limitPerGroup,
+	);
+	if (methodSummary) {
+		segments.push(methodSummary);
+	}
+	const propertySummary = formatMemberGroup(
+		"Properties",
+		members.properties,
+		limitPerGroup,
+	);
+	if (propertySummary) {
+		segments.push(propertySummary);
+	}
+	return segments.join("\n\n");
+}
+
+function formatMemberGroup(
+	label: string,
+	items: string[],
+	limit?: number,
+): string | undefined {
+	if (items.length === 0) {
+		return undefined;
+	}
+	const effectiveLimit =
+		typeof limit === "number" && Number.isFinite(limit)
+			? Math.max(limit, 0)
+			: items.length;
+	const displayed = items.slice(0, effectiveLimit);
+	const suffix = items.length > effectiveLimit ? ", …" : "";
+	return `${label} (${items.length}): ${displayed.join(", ")}${suffix}`;
 }
