@@ -32,8 +32,8 @@ describe("Version Compatibility Check", () => {
 			expect(result.clientVersion).toBe("1.3.0");
 			expect(result.serverVersion).toBe("2.0.0");
 			expect(result.warning).toContain("version mismatch");
-			expect(result.guidance).toContain("Replace td/mcp_webserver_base.tox");
-			expect(result.guidance).toContain("Restart TouchDesigner");
+			expect(result.guidance).toContain("touchdesigner-mcp-td");
+			expect(result.guidance).toContain("restart TouchDesigner");
 		});
 
 		test("should be incompatible when server version is undefined", () => {
@@ -97,8 +97,8 @@ describe("Version Compatibility Check", () => {
 			expect(warning).toContain("Major versions differ");
 			expect(warning).toContain("Client API: v1.3.0");
 			expect(warning).toContain("Server API: v2.0.0");
-			expect(warning).toContain("Replace td/mcp_webserver_base.tox");
-			expect(warning).toContain("Restart TouchDesigner");
+			expect(warning).toContain("touchdesigner-mcp-td");
+			expect(warning).toContain("restart TouchDesigner");
 		});
 
 		test("should format warning for missing server version", () => {
