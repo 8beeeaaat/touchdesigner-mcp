@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Introduced `src/core/versionCheck.ts` with strict semver comparison and user-friendly guidance
   - New unit/integration tests ensure warnings fire only when the server is missing/older than the minimum version
 - **Python Module Version Sync**: TouchDesigner side now reports the MCP API version it runs
-  - Added `td/script/injectVersion.js` to inject npm package version into `td/modules/mcp/__version__.py`
+  - Added `td/script/injectVersion.ts` to inject npm package version into `td/modules/mcp/__version__.py`
   - TouchDesigner API service returns `apiVersion`, enabling the client-side compatibility check
   - Updated build scripts (`gen:inject-version`, `gen:handlers`) to keep JS/TD components aligned
 - **Module Help Tool**: New `get_module_help` tool provides Python `help()` documentation for TouchDesigner modules and classes

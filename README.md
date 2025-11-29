@@ -253,7 +253,7 @@ When the API server is running properly in TouchDesigner, the agent can use the 
 The MCP server validates that the TouchDesigner component matches the client API version:
 
 - `package.json` tracks `compatibility.minimumServerVersion`, which defines the minimum TD API version that the Node.js client accepts.
-- During build, `npm run gen:inject-version` runs `td/script/injectVersion.js` to copy the npm package version into `td/modules/mcp/__version__.py`.
+- During build, `npm run gen:inject-version` runs `td/script/injectVersion.ts` to copy the npm package version into `td/modules/mcp/__version__.py`.
 - When the MCP server starts, it requests `apiVersion` from TouchDesigner and warns (or blocks) when the component is missing, outdated, or reports an unparsable version.
 
 If you update the npm package version or change the TouchDesigner modules, re-run the generation scripts (see [API Code Generation Workflow](#api-code-generation-workflow)) so both sides stay aligned.
@@ -270,7 +270,7 @@ td/
 │   ├── mcp/                   # MCP core logic
 │   ├── utils/                 # Shared utilities
 │   └── td_server/             # Generated API server code
-└── script/                    # TD helper scripts (genHandlers.js, injectVersion.js)
+└── script/                    # TD helper scripts (genHandlers.js, injectVersion.ts)
 ```
 
 The `mcp_webserver_base.tox` component uses relative paths to locate Python modules. Moving or reorganizing these files will cause import errors in TouchDesigner.
@@ -371,7 +371,7 @@ Not implemented.
 │   │   └── utils/            # Shared Python utilities
 │   ├── script/               # Helper scripts for TouchDesigner modules
 │   │   ├── genHandlers.js    # Generates controllers from OpenAPI metadata
-│   │   └── injectVersion.js  # Injects npm version into td/modules/mcp/__version__.py
+│   │   └── injectVersion.ts  # Injects npm version into td/modules/mcp/__version__.py
 │   ├── templates/             # Mustache templates (e.g., api_controller_handlers.mustache)
 │   ├── import_modules.py      # Helper script to import API server modules into TouchDesigner
 │   └── mcp_webserver_base.tox # Main TouchDesigner component

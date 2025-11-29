@@ -85,7 +85,7 @@
 		"test:unit": "vitest run ./tests/unit",
 		"coverage": "vitest run --coverage",
 		"gen": "run-s gen:*",
-		"gen:inject-version": "node td/script/injectVersion.js",
+		"gen:inject-version": "node td/script/injectVersion.ts",
 		"gen:webserver": "openapi-generator-cli generate -i ./src/api/index.yml -g python-flask -o ./td/modules/td_server",
 		"gen:handlers": "node td/script/genHandlers.js",
 		"gen:mcp": "orval --config ./orval.config.ts"

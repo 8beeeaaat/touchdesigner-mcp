@@ -248,7 +248,7 @@ TouchDesignerでAPIサーバーが実行されていれば、エージェント�
 MCPサーバーは起動時にTouchDesigner側コンポーネントのAPIバージョンを検証します。
 
 - `package.json` の `compatibility.minimumServerVersion` で許容される最小APIバージョンを定義します。
-- `npm run gen:inject-version` で `td/script/injectVersion.js` が npm パッケージのバージョンを `td/modules/mcp/__version__.py` に書き込みます。
+- `npm run gen:inject-version` で `td/script/injectVersion.ts` が npm パッケージのバージョンを `td/modules/mcp/__version__.py` に書き込みます。
 - MCPサーバー起動時に TouchDesigner から `apiVersion` を取得し、欠落／下限未満／解析不能な場合は警告して最新の `.tox` を案内します。
 
 TouchDesignerモジュールや npm バージョンを更新した際は、生成スクリプトを再実行して両方のコードを同期させてください。
@@ -265,7 +265,7 @@ td/
 │   ├── mcp/                   # MCPコアロジック
 │   ├── utils/                 # 共有ユーティリティ
 │   └── td_server/             # 生成されたAPIサーバーコード
-└── script/                    # TDモジュール関連スクリプト (genHandlers.js / injectVersion.js など)
+└── script/                    # TDモジュール関連スクリプト (genHandlers.js / injectVersion.ts など)
 ```
 
 `mcp_webserver_base.tox` コンポーネントは相対パスを使用してPythonモジュールを検索します。これらのファイルを移動したり再編成したりすると、TouchDesignerでインポートエラーが発生します。
@@ -366,7 +366,7 @@ td/
 │   │   └── utils/            # 共有Pythonユーティリティ
 │   ├── script/               # TouchDesignerモジュール用ヘルパースクリプト
 │   │   ├── genHandlers.js    # OpenAPIメタデータからコントローラを生成
-│   │   └── injectVersion.js  # npmバージョンをtd/modules/mcp/__version__.pyへ注入
+│   │   └── injectVersion.ts  # npmバージョンをtd/modules/mcp/__version__.pyへ注入
 │   ├── templates/             # Pythonコード生成用Mustacheテンプレート
 │   ├── import_modules.py      # TDへ APIサーバ関連モジュールをインポートするヘルパースクリプト
 │   └── mcp_webserver_base.tox # メインTouchDesignerコンポーネント
