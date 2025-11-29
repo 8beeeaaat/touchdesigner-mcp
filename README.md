@@ -270,7 +270,7 @@ td/
 │   ├── mcp/                   # MCP core logic
 │   ├── utils/                 # Shared utilities
 │   └── td_server/             # Generated API server code
-└── script/                    # TD helper scripts (genHandlers.js, injectVersion.ts)
+└── script/                    # TD helper scripts (genHandlers.ts, injectVersion.ts)
 ```
 
 The `mcp_webserver_base.tox` component uses relative paths to locate Python modules. Moving or reorganizing these files will cause import errors in TouchDesigner.
@@ -370,7 +370,7 @@ Not implemented.
 │   │   ├── td_server/        # Python model code generated from the OpenAPI schema
 │   │   └── utils/            # Shared Python utilities
 │   ├── script/               # Helper scripts for TouchDesigner modules
-│   │   ├── genHandlers.js    # Generates controllers from OpenAPI metadata
+│   │   ├── genHandlers.ts    # Generates controllers from OpenAPI metadata
 │   │   └── injectVersion.ts  # Injects npm version into td/modules/mcp/__version__.py
 │   ├── templates/             # Mustache templates (e.g., api_controller_handlers.mustache)
 │   ├── import_modules.py      # Helper script to import API server modules into TouchDesigner
@@ -393,7 +393,7 @@ This project uses OpenAPI-based code generation tools (Orval and openapi-generat
     - Generates a Python server skeleton (`td/modules/td_server/`) based on the API definition. This code runs inside TouchDesigner's WebServer DAT.
     - **Requires Docker to be installed and running.**
 2. **Python handler generation (`npm run gen:handlers`):**
-    - Uses a custom Node.js script (`td/script/genHandlers.js`) and Mustache templates (`td/templates/`).
+    - Uses a custom Node.js script (`td/script/genHandlers.ts`) and Mustache templates (`td/templates/`).
     - Reads the generated Python server code or OpenAPI spec.
     - Generates handler implementations (`td/modules/mcp/controllers/generated_handlers.py`) that connect to the business logic in `td/modules/mcp/services/api_service.py`.
     - The `td/templates/mcp/api_controller_handlers.mustache` template automatically merges JSON bodies, converts camelCase parameters to snake_case, and routes operations to the correct service method.

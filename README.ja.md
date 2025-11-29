@@ -265,7 +265,7 @@ td/
 │   ├── mcp/                   # MCPコアロジック
 │   ├── utils/                 # 共有ユーティリティ
 │   └── td_server/             # 生成されたAPIサーバーコード
-└── script/                    # TDモジュール関連スクリプト (genHandlers.js / injectVersion.ts など)
+└── script/                    # TDモジュール関連スクリプト (genHandlers.ts / injectVersion.ts など)
 ```
 
 `mcp_webserver_base.tox` コンポーネントは相対パスを使用してPythonモジュールを検索します。これらのファイルを移動したり再編成したりすると、TouchDesignerでインポートエラーが発生します。
@@ -365,7 +365,7 @@ td/
 │   │   ├── td_server/        # OpenAPIスキーマから生成されたPythonモデルコード
 │   │   └── utils/            # 共有Pythonユーティリティ
 │   ├── script/               # TouchDesignerモジュール用ヘルパースクリプト
-│   │   ├── genHandlers.js    # OpenAPIメタデータからコントローラを生成
+│   │   ├── genHandlers.ts    # OpenAPIメタデータからコントローラを生成
 │   │   └── injectVersion.ts  # npmバージョンをtd/modules/mcp/__version__.pyへ注入
 │   ├── templates/             # Pythonコード生成用Mustacheテンプレート
 │   ├── import_modules.py      # TDへ APIサーバ関連モジュールをインポートするヘルパースクリプト
@@ -388,7 +388,7 @@ td/
     - API定義に基づいてPythonサーバーのスケルトン (`td/modules/td_server/`) を生成します。このコードはWebServer DATを介してTouchDesigner内で実行されます。
     - **Dockerがインストールされ、実行されている必要があります。**
 2. **Pythonハンドラ生成 (`npm run gen:handlers`):**
-    - カスタムNode.jsスクリプト (`td/script/genHandlers.js`) とMustacheテンプレート (`td/templates/`) を使用します。
+    - カスタムNode.jsスクリプト (`td/script/genHandlers.ts`) とMustacheテンプレート (`td/templates/`) を使用します。
     - 生成されたPythonサーバーコードまたはOpenAPI仕様を読み取ります。
     - `td/modules/mcp/services/api_service.py` にあるビジネスロジックに接続するハンドラ実装 (`td/modules/mcp/controllers/generated_handlers.py`) を生成します。
     - `td/templates/mcp/api_controller_handlers.mustache` がJSONボディのマージ、camelCase→snake_case変換、適切なサービスメソッド呼び出しを自動で処理します。
