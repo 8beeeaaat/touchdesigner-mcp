@@ -36,7 +36,7 @@ def safe_serialize(obj: Any) -> Any:
 			if hasattr(val, "path") and callable(getattr(val, "path", None)):
 				return val.path
 			return val
-		except:
+		except Exception:
 			return str(obj)
 
 	if hasattr(obj, "path") and callable(getattr(obj, "path", None)):
@@ -51,7 +51,7 @@ def safe_serialize(obj: Any) -> Any:
 			for k, v in obj.__dict__.items():
 				serialized_dict[k] = safe_serialize(v)
 			return serialized_dict
-		except:
+		except Exception:
 			return str(obj)
 
 	return str(obj)

@@ -84,7 +84,7 @@ class TouchDesignerApiService(IApiService):
 			log_message(f"Found {class_name} in td module", LogLevel.DEBUG)
 		else:
 			log_message(f"Class not found: {class_name}", LogLevel.WARNING)
-			raise error_result(f"Class or module not found: {class_name}")
+			return error_result(f"Class or module not found: {class_name}")
 
 		methods = []
 		properties = []
@@ -194,7 +194,7 @@ class TouchDesignerApiService(IApiService):
 		node = td.op(node_path)
 
 		if node is None or not node.valid:
-			raise error_result(f"Node not found at path: {node_path}")
+			return error_result(f"Node not found at path: {node_path}")
 
 		node_info = self._get_node_summary(node)
 		return success_result(node_info)
@@ -218,7 +218,7 @@ class TouchDesignerApiService(IApiService):
 
 		parent_node = td.op(parent_path)
 		if parent_node is None or not parent_node.valid:
-			raise error_result(f"Parent node not found at path: {parent_path}")
+			return error_result(f"Parent node not found at path: {parent_path}")
 
 		if pattern:
 			log_message(
@@ -305,14 +305,14 @@ class TouchDesignerApiService(IApiService):
 
 		node = td.op(node_path)
 		if node is None or not node.valid:
-			raise error_result(f"Node not found at path: {node_path}")
+			return error_result(f"Node not found at path: {node_path}")
 
 		if not hasattr(node, method):
-			raise error_result(f"Method {method} not found on node {node_path}")
+			return error_result(f"Method {method} not found on node {node_path}")
 
 		method = getattr(node, method)
 		if not callable(method):
-			raise error_result(f"{method} is not a callable method")
+			return error_result(f"{method} is not a callable method")
 
 		result = method(*args, **kwargs)
 
@@ -408,6 +408,7 @@ class TouchDesignerApiService(IApiService):
 									LogLevel.DEBUG,
 								)
 							except Exception:
+								# Evaluation failed, likely not a valid expression
 								pass
 
 				result = local_vars.get("result")
@@ -432,7 +433,7 @@ class TouchDesignerApiService(IApiService):
 		node = td.op(node_path)
 
 		if node is None or not node.valid:
-			raise error_result(f"Node not found at path: {node_path}")
+			return error_result(f"Node not found at path: {node_path}")
 
 		updated_properties = []
 		failed_properties = []
@@ -492,9 +493,9 @@ class TouchDesignerApiService(IApiService):
 				LogLevel.WARNING,
 			)
 			if failed_properties:
-				raise error_result("Failed to update any properties")
+				return error_result("Failed to update any properties")
 			else:
-				raise error_result("No matching properties to update")
+				return error_result("No matching properties to update")
 
 	def check_node_errors(self, node_path: str) -> Result:
 		"""Check for errors in the node at the specified path and its children
