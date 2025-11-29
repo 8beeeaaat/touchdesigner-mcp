@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.3.0] - 2025-11-27
 
+### ⚠️ Breaking
+
+- Starting with v1.3.0, the MCP server actively checks the TouchDesigner Python API server’s `apiVersion` before running tools. Older components that do not report the required version trigger warnings such as `⚠️  Server API version unknown - TouchDesigner component update required`.
+- To resolve any version warning:
+  1. Download the latest `touchdesigner-mcp-td.zip` from [releases/latest](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest).
+  2. Remove the existing `touchdesigner-mcp-td` folder and replace it with the newly extracted one.
+  3. Delete any existing `mcp_webserver_base` COMP from your TouchDesigner project and import the `.tox` from the fresh folder.
+  4. Restart TouchDesigner and the MCP-enabled AI agent before reconnecting.
+
 ### Added
 
 - **Version Compatibility Guardrails**: Client now checks TouchDesigner API versions using SemVer

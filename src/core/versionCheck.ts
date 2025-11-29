@@ -5,8 +5,14 @@
  * Ensures users are aware when they need to update the TouchDesigner component.
  */
 
+import { createRequire } from "node:module";
 import semver from "semver";
-import packageJson from "../../package.json";
+
+const require = createRequire(import.meta.url);
+const packageJson = require("../../package.json") as {
+	version: string;
+	compatibility: { minimumServerVersion?: string };
+};
 
 const CLIENT_VERSION = packageJson.version;
 export const MIN_SUPPORTED_SERVER_VERSION =
@@ -52,9 +58,10 @@ export function checkVersionCompatibility(
 				"This usually means you're using an older MCP component that cannot verify compatibility.",
 				"",
 				"To resolve this:",
-				"1. Replace td/mcp_webserver_base.tox with the latest version",
-				"2. Restart TouchDesigner",
-				"3. Verify the MCP server can connect",
+				"1. Download the latest touchdesigner-mcp-td.zip from https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest",
+				"2. Replace the existing touchdesigner-mcp-td folder with the newly extracted files",
+				"3. Remove the current mcp_webserver_base COMP, import the .tox from the updated folder, and restart TouchDesigner",
+				"4. Restart the MCP-enabled AI agent (e.g., Claude Desktop) before reconnecting",
 				"",
 				`Minimum supported API version: ${MIN_SUPPORTED_SERVER_VERSION}`,
 				`Current client API version: ${CLIENT_VERSION}`,
@@ -78,9 +85,10 @@ export function checkVersionCompatibility(
 				"Please update the TouchDesigner component to a supported build.",
 				"",
 				"To resolve this:",
-				"1. Replace td/mcp_webserver_base.tox with the latest version",
-				"2. Restart TouchDesigner",
-				"3. Verify all MCP tools are working correctly",
+				"1. Download the latest touchdesigner-mcp-td.zip from https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest",
+				"2. Replace the existing touchdesigner-mcp-td folder with the newly extracted files",
+				"3. Remove the current mcp_webserver_base COMP, import the .tox from the updated folder, and restart TouchDesigner",
+				"4. Restart the MCP-enabled AI agent (e.g., Claude Desktop) before reconnecting",
 				"",
 				`Minimum supported API version: ${MIN_SUPPORTED_SERVER_VERSION}`,
 				`Current client API version: ${CLIENT_VERSION}`,
@@ -102,9 +110,10 @@ export function checkVersionCompatibility(
 				`  Server API: v${serverApiVersion}`,
 				"",
 				"To resolve this:",
-				"1. Replace td/mcp_webserver_base.tox with the latest version",
-				"2. Restart TouchDesigner",
-				"3. Verify all MCP tools are working correctly",
+				"1. Download the latest touchdesigner-mcp-td.zip from https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest",
+				"2. Replace the existing touchdesigner-mcp-td folder with the newly extracted files",
+				"3. Remove the current mcp_webserver_base COMP, import the .tox from the updated folder, and restart TouchDesigner",
+				"4. Restart the MCP-enabled AI agent (e.g., Claude Desktop) before reconnecting",
 				"",
 				"Note: Major version changes may include breaking API changes.",
 			].join("\n"),
@@ -125,9 +134,10 @@ export function checkVersionCompatibility(
 				`  Server API: v${serverApiVersion}`,
 				"",
 				"To resolve this:",
-				"1. Replace td/mcp_webserver_base.tox with the latest version",
-				"2. Restart TouchDesigner",
-				"3. Verify all MCP tools are working correctly",
+				"1. Download the latest touchdesigner-mcp-td.zip from https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest",
+				"2. Replace the existing touchdesigner-mcp-td folder with the newly extracted files",
+				"3. Remove the current mcp_webserver_base COMP, import the .tox from the updated folder, and restart TouchDesigner",
+				"4. Restart the MCP-enabled AI agent (e.g., Claude Desktop) before reconnecting",
 				"",
 				`Current client API version: v${CLIENT_VERSION}`,
 			].join("\n"),

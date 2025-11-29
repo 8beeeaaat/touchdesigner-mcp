@@ -85,7 +85,12 @@ The MCP bundle will automatically handle the connection to the TouchDesigner ser
 
 **⚠️ Important:** The directory structure must be preserved exactly as extracted. The `mcp_webserver_base.tox` component references relative paths to the `modules/` directory and other files.
 
-If the MCP client reports that the TouchDesigner server version is incompatible, delete any existing `mcp_webserver_base` component from your project, restart TouchDesigner, and import the latest `.tox` file from the current release.
+If the MCP client reports that the TouchDesigner server version is incompatible, follow these steps:
+
+1. Download the latest `touchdesigner-mcp-td.zip` from the [releases page](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest).
+2. Delete the existing `touchdesigner-mcp-td` folder and replace it with the freshly extracted files.
+3. Remove the old `mcp_webserver_base` COMP from your TouchDesigner project, then import the `.tox` from the new folder.
+4. Restart TouchDesigner and restart any MCP-enabled AI agent before reconnecting.
 
 </details>
 
@@ -121,7 +126,12 @@ If the MCP client reports that the TouchDesigner server version is incompatible,
 }
 ```
 
-If you receive a version mismatch warning between the MCP client and the TouchDesigner server, remove the previously imported `mcp_webserver_base` component from your project, restart TouchDesigner, and import the newest `.tox` file before reconnecting.
+If you receive a version mismatch warning between the MCP client and the TouchDesigner server:
+
+1. Download the newest `touchdesigner-mcp-td.zip`.
+2. Remove the old `touchdesigner-mcp-td` folder and replace it with the new one.
+3. Delete the previously imported `mcp_webserver_base` and import the `.tox` from the fresh folder.
+4. Restart TouchDesigner and the MCP client (Claude Desktop, etc.) before reconnecting.
 
 **Customization:** You can customize the TouchDesigner server connection by adding `--host` and `--port` arguments:
 
@@ -148,10 +158,10 @@ When the MCP client detects an incompatible TouchDesigner component, it surfaces
 
 If any of these messages appear:
 
-1. Delete the existing `mcp_webserver_base` COMP from your TouchDesigner project.
-2. Restart TouchDesigner to clear any cached modules.
-3. Import the newest `.tox` file from the latest release (`touchdesigner-mcp-td.zip`).
-4. Reconnect the MCP client. The warning disappears once the TouchDesigner module reports the expected API version.
+1. Download the latest `touchdesigner-mcp-td.zip` from the releases page.
+2. Delete your existing `touchdesigner-mcp-td` folder and replace it with the newly extracted files.
+3. Remove the current `mcp_webserver_base` COMP, import the `.tox` from the new folder, and restart TouchDesigner.
+4. Restart the MCP-enabled AI agent so it reconnects using the refreshed TouchDesigner component.
 
 <details>
   <summary>Method 3: Using a Docker Image</summary>

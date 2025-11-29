@@ -103,7 +103,11 @@ jobs:
             https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854
 
             5. The extension will automatically handle the TouchDesigner server connection.
-            6. If you see a version mismatch warning, delete any existing `mcp_webserver_base` in your TouchDesigner project, restart TouchDesigner, and import the latest `.tox` file before reconnecting.
+            6. If you see a version mismatch warning, follow these steps before reconnecting:
+               1. Download the latest `touchdesigner-mcp-td.zip` from the releases page.
+               2. Delete the existing `touchdesigner-mcp-td` folder and replace it with the newly extracted contents.
+               3. Remove the old `mcp_webserver_base` component from your TouchDesigner project and import the `.tox` from the new folder.
+               4. Restart TouchDesigner and the AI agent running the MCP server (e.g., Claude Desktop).
                Typical warnings include:
                - `⚠️  Server API version unknown - TouchDesigner component update required`
                - `⚠️  API version mismatch detected - Major versions differ (update required)`
@@ -124,7 +128,11 @@ jobs:
               }
             }
             ```
-            4. If the MCP client reports incompatible server versions, remove the old `mcp_webserver_base` component, restart TouchDesigner, and import the newest `.tox` file from this release.
+            4. If the MCP client reports incompatible server versions, follow the same remediation steps:
+               1. Download the latest `touchdesigner-mcp-td.zip`.
+               2. Replace the old `touchdesigner-mcp-td` folder with the new one.
+               3. Remove the previously imported `mcp_webserver_base`, import the updated `.tox`, and restart TouchDesigner.
+               4. Restart the AI agent that runs the MCP client.
                You may see warnings such as:
                - `⚠️  Server API version could not be parsed - TouchDesigner component update required`
                - `⚠️  Server API version is below minimum compatibility - Update required`

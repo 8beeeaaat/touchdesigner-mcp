@@ -48,20 +48,32 @@ export class McpLogger implements ILogger {
 	): void {
 		for (const arg of args) {
 			try {
-				this.server.server.sendLoggingMessage({
+				const result = this.server.server.sendLoggingMessage({
 					data: arg,
 					level,
 				});
-			} catch (error) {
-				if (error instanceof Error && error.message === "Not connected") {
-					return;
-				}
 
-				console.error(
-					`Failed to send log to MCP server: ${error instanceof Error ? error.message : String(error)}`,
-				);
-				console[level === "warning" ? "warn" : level]?.(arg);
+				// Handle asynchronous errors as well
+				if (result && typeof result.catch === "function") {
+					result.catch((error) => {
+						this.handleLogError(error, level, arg);
+					});
+				}
+			} catch (error) {
+				this.handleLogError(error, level, arg);
 			}
 		}
+	}
+
+	// biome-ignore lint/suspicious/noExplicitAny: logging accepts any type
+	private handleLogError(error: unknown, level: "info" | "debug" | "warning" | "error", arg: any): void {
+		if (error instanceof Error && error.message === "Not connected") {
+			return;
+		}
+
+		console.error(
+			`Failed to send log to MCP server: ${error instanceof Error ? error.message : String(error)}`,
+		);
+		console[level === "warning" ? "warn" : level]?.(arg);
 	}
 }

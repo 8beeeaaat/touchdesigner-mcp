@@ -83,7 +83,12 @@ flowchart LR
 
 **⚠️ 重要:** TouchDesignerコンポーネントのディレクトリ構造は展開した状態を正確に保持してください。`mcp_webserver_base.tox`コンポーネントは`modules/`ディレクトリやその他のファイルへの相対パスを参照しています。
 
-TouchDesignerサーバーとのバージョン不一致が表示された場合は、プロジェクトから既存の `mcp_webserver_base` を削除し、TouchDesigner を再起動してからリリースに同梱された最新の `.tox` を再インポートしてください。
+TouchDesignerサーバーとのバージョン不一致が表示された場合は以下を実施してください。
+
+1. [最新リリース](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest) から `touchdesigner-mcp-td.zip` をダウンロード。
+2. 既存の `touchdesigner-mcp-td` フォルダを削除し、新しく展開したフォルダに置き換える。
+3. プロジェクトから古い `mcp_webserver_base` を削除し、新フォルダ内の `.tox` を再インポート。
+4. TouchDesigner と MCP サーバーをインストールしている AI エージェント（例: Claude Desktop）を再起動。
 
 </details>
 
@@ -131,7 +136,7 @@ TouchDesignerサーバーとのバージョン不一致が表示された場合�
 ]
 ```
 
-MCP クライアントと TouchDesigner サーバーのバージョンが一致しないと警告された場合は、以前にインポートした `mcp_webserver_base` を削除し、TouchDesigner を再起動したうえで最新の `.tox` を再インポートしてから接続してください。
+MCP クライアントと TouchDesigner サーバーのバージョンが一致しないと警告された場合は、上と同じ手順（最新 zip のダウンロード、`touchdesigner-mcp-td` フォルダの置き換え、`mcp_webserver_base` の再インポート、TouchDesigner と AI エージェントの再起動）を行ってください。
 
 </details>
 
@@ -146,10 +151,10 @@ MCP クライアントは TouchDesigner コンポーネントが古い場合、`
 
 上記いずれかが表示された場合は以下を行ってください。
 
-1. プロジェクトから既存の `mcp_webserver_base` COMP を削除します。
-2. TouchDesigner を再起動してモジュールのキャッシュをクリアします。
-3. 最新リリース (`touchdesigner-mcp-td.zip`) に含まれる `.tox` を再インポートします。
-4. MCP クライアントを再接続してください。TouchDesigner 側が期待する API バージョンを報告すれば警告は解消されます。
+1. [最新リリース](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest) から `touchdesigner-mcp-td.zip` をダウンロード。
+2. 既存の `touchdesigner-mcp-td` フォルダを削除し、新しく展開したフォルダに置き換える。
+3. 古い `mcp_webserver_base` COMP を削除し、新フォルダの `.tox` を再インポートした後に TouchDesigner を再起動。
+4. MCP クライアント（Claude Desktop 等）を再起動して接続し直してください。TouchDesigner が期待する API バージョンを報告すれば警告は解消されます。
 
 <details>
   <summary>方法3: Dockerイメージを利用</summary>

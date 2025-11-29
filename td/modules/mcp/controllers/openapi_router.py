@@ -13,6 +13,7 @@ import traceback
 from typing import Any, NamedTuple, Optional, Protocol
 
 from mcp import openapi_schema
+from mcp.__version__ import __version__ as API_VERSION
 from utils.error_handling import ErrorCategory, categorize_error, format_error
 from utils.logging import log_message
 from utils.result import error_result
@@ -42,7 +43,17 @@ def load_schema(schema_path: str = None) -> dict[str, Any]:
 	Load OpenAPI schema from preloaded global variable
 	"""
 	if openapi_schema:
-		log_message("Using preloaded OpenAPI schema", LogLevel.DEBUG)
+		schema_version = "unknown"
+		try:
+			if isinstance(openapi_schema, dict):
+				schema_version = openapi_schema.get("info", {}).get("version", schema_version)
+		except Exception:
+			schema_version = "unknown"
+
+		log_message(
+			f"Using preloaded OpenAPI schema (Python API version: {API_VERSION}, schema info version: {schema_version})",
+			LogLevel.INFO,
+		)
 		return openapi_schema
 	else:
 		log_message("OpenAPI schema not available", LogLevel.ERROR)
