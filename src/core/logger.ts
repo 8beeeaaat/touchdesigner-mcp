@@ -1,5 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
+type logLevel = "info" | "debug" | "warning" | "error";
+
 /**
  * Logger interface definition
  */
@@ -42,7 +44,7 @@ export class McpLogger implements ILogger {
 	}
 
 	private sendLog(
-		level: "info" | "debug" | "warning" | "error",
+		level: logLevel,
 		// biome-ignore lint/suspicious/noExplicitAny: logging accepts any type
 		args: any[],
 	): void {
@@ -67,7 +69,7 @@ export class McpLogger implements ILogger {
 
 	private handleLogError(
 		error: unknown,
-		level: "info" | "debug" | "warning" | "error",
+		level: logLevel,
 		// biome-ignore lint/suspicious/noExplicitAny: logging accepts any type
 		arg: any,
 	): void {
