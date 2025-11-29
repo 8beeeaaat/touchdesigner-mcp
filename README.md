@@ -85,6 +85,8 @@ The MCP bundle will automatically handle the connection to the TouchDesigner ser
 
 **⚠️ Important:** The directory structure must be preserved exactly as extracted. The `mcp_webserver_base.tox` component references relative paths to the `modules/` directory and other files.
 
+If the MCP client reports that the TouchDesigner server version is incompatible, delete any existing `mcp_webserver_base` component from your project, restart TouchDesigner, and import the latest `.tox` file from the current release.
+
 </details>
 
 <details>
@@ -119,6 +121,8 @@ The MCP bundle will automatically handle the connection to the TouchDesigner ser
 }
 ```
 
+If you receive a version mismatch warning between the MCP client and the TouchDesigner server, remove the previously imported `mcp_webserver_base` component from your project, restart TouchDesigner, and import the newest `.tox` file before reconnecting.
+
 **Customization:** You can customize the TouchDesigner server connection by adding `--host` and `--port` arguments:
 
 ```json
@@ -132,6 +136,22 @@ The MCP bundle will automatically handle the connection to the TouchDesigner ser
 ```
 
 </details>
+
+### Troubleshooting version compatibility
+
+When the MCP client detects an incompatible TouchDesigner component, it surfaces one of the following warnings from `checkVersionCompatibility()`:
+
+- `⚠️  Server API version unknown - TouchDesigner component update required`
+- `⚠️  Server API version could not be parsed - TouchDesigner component update required`
+- `⚠️  API version mismatch detected - Major versions differ (update required)`
+- `⚠️  Server API version is below minimum compatibility - Update required`
+
+If any of these messages appear:
+
+1. Delete the existing `mcp_webserver_base` COMP from your TouchDesigner project.
+2. Restart TouchDesigner to clear any cached modules.
+3. Import the newest `.tox` file from the latest release (`touchdesigner-mcp-td.zip`).
+4. Reconnect the MCP client. The warning disappears once the TouchDesigner module reports the expected API version.
 
 <details>
   <summary>Method 3: Using a Docker Image</summary>

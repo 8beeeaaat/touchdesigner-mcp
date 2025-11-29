@@ -83,6 +83,8 @@ flowchart LR
 
 **⚠️ 重要:** TouchDesignerコンポーネントのディレクトリ構造は展開した状態を正確に保持してください。`mcp_webserver_base.tox`コンポーネントは`modules/`ディレクトリやその他のファイルへの相対パスを参照しています。
 
+TouchDesignerサーバーとのバージョン不一致が表示された場合は、プロジェクトから既存の `mcp_webserver_base` を削除し、TouchDesigner を再起動してからリリースに同梱された最新の `.tox` を再インポートしてください。
+
 </details>
 
 <details>
@@ -129,7 +131,25 @@ flowchart LR
 ]
 ```
 
+MCP クライアントと TouchDesigner サーバーのバージョンが一致しないと警告された場合は、以前にインポートした `mcp_webserver_base` を削除し、TouchDesigner を再起動したうえで最新の `.tox` を再インポートしてから接続してください。
+
 </details>
+
+### バージョン互換性チェックのトラブルシューティング
+
+MCP クライアントは TouchDesigner コンポーネントが古い場合、`checkVersionCompatibility()` による次のような警告を表示します。
+
+- `⚠️  Server API version unknown - TouchDesigner component update required`
+- `⚠️  Server API version could not be parsed - TouchDesigner component update required`
+- `⚠️  API version mismatch detected - Major versions differ (update required)`
+- `⚠️  Server API version is below minimum compatibility - Update required`
+
+上記いずれかが表示された場合は以下を行ってください。
+
+1. プロジェクトから既存の `mcp_webserver_base` COMP を削除します。
+2. TouchDesigner を再起動してモジュールのキャッシュをクリアします。
+3. 最新リリース (`touchdesigner-mcp-td.zip`) に含まれる `.tox` を再インポートします。
+4. MCP クライアントを再接続してください。TouchDesigner 側が期待する API バージョンを報告すれば警告は解消されます。
 
 <details>
   <summary>方法3: Dockerイメージを利用</summary>
