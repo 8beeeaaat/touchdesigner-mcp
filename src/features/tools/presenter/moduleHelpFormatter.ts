@@ -62,22 +62,17 @@ export function formatModuleHelp(
 	}
 
 	let formattedText = "";
-		let context: ModuleHelpContext | undefined;
+	let context: ModuleHelpContext | undefined;
 
-		switch (opts.detailLevel) {
-			case "minimal":
-			case "summary": {
-				const summary = formatSummary(
-					moduleName,
-					helpText,
-					members,
-					classInfo,
-				);
-				formattedText = summary.text;
-				context = summary.context;
-				break;
-			}
+	switch (opts.detailLevel) {
+		case "minimal":
+		case "summary": {
+			const summary = formatSummary(moduleName, helpText, members, classInfo);
+			formattedText = summary.text;
+			context = summary.context;
+			break;
 		}
+	}
 
 	const ctx = context as unknown as Record<string, unknown> | undefined;
 	return finalizeFormattedText(formattedText, opts, {
@@ -111,9 +106,7 @@ function formatSummary(
 	}
 
 	if (classInfo?.methodResolutionOrder?.length) {
-		lines.push(
-			`MRO: ${classInfo.methodResolutionOrder.join(" → ")}`,
-		);
+		lines.push(`MRO: ${classInfo.methodResolutionOrder.join(" → ")}`);
 	}
 
 	lines.push("");
@@ -137,10 +130,10 @@ function formatSummary(
 
 	return {
 		context: {
+			classInfo,
 			fullLength: helpText.length,
 			helpPreview: preview,
 			members,
-			classInfo,
 			moduleName,
 			sections,
 		},
@@ -187,16 +180,16 @@ function formatDetailed(
 /**
  * Build help context
  */
-function buildHelpContext(
+function _buildHelpContext(
 	moduleName: string,
 	helpText: string,
 	members: ModuleHelpMembers,
 	classInfo?: ClassSummary,
 ): ModuleHelpContext {
 	return {
+		classInfo,
 		fullLength: helpText.length,
 		helpPreview: extractHelpPreview(helpText, 200),
-		classInfo,
 		members,
 		moduleName,
 		sections: extractHelpSections(helpText),
@@ -348,9 +341,7 @@ function extractClassSummary(helpText: string): ClassSummary | undefined {
 			}
 		}
 
-		if (
-			trimmed.startsWith("|  Method resolution order:")
-		) {
+		if (trimmed.startsWith("|  Method resolution order:")) {
 			inMro = true;
 			continue;
 		}
@@ -371,7 +362,11 @@ function extractClassSummary(helpText: string): ClassSummary | undefined {
 		}
 	}
 
-	if (!definition && descriptionLines.length === 0 && methodResolutionOrder.length === 0) {
+	if (
+		!definition &&
+		descriptionLines.length === 0 &&
+		methodResolutionOrder.length === 0
+	) {
 		return undefined;
 	}
 
@@ -384,7 +379,9 @@ function extractClassSummary(helpText: string): ClassSummary | undefined {
 	};
 }
 
-function categorizeSection(sectionName: string): "method" | "property" | undefined {
+function categorizeSection(
+	sectionName: string,
+): "method" | "property" | undefined {
 	const normalized = sectionName.toLowerCase();
 	if (normalized.includes("method")) {
 		return "method";

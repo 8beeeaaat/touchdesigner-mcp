@@ -46,7 +46,9 @@ def load_schema(schema_path: str = None) -> dict[str, Any]:
 		schema_version = "unknown"
 		try:
 			if isinstance(openapi_schema, dict):
-				schema_version = openapi_schema.get("info", {}).get("version", schema_version)
+				schema_version = openapi_schema.get("info", {}).get(
+					"version", schema_version
+				)
 		except Exception:
 			schema_version = "unknown"
 

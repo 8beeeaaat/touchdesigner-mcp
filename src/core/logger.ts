@@ -65,8 +65,12 @@ export class McpLogger implements ILogger {
 		}
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: logging accepts any type
-	private handleLogError(error: unknown, level: "info" | "debug" | "warning" | "error", arg: any): void {
+	private handleLogError(
+		error: unknown,
+		level: "info" | "debug" | "warning" | "error",
+		// biome-ignore lint/suspicious/noExplicitAny: logging accepts any type
+		arg: any,
+	): void {
 		if (error instanceof Error && error.message === "Not connected") {
 			return;
 		}
