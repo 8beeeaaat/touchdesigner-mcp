@@ -181,8 +181,13 @@ class OpenAPIRouter:
 		if load_schema:
 			self.routes = extract_routes()
 			log_message(
-				f"Router initialized with {len(self.routes)} routes", LogLevel.INFO
+				f"Router initialized with {len(self.routes)} routes:", LogLevel.INFO
 			)
+			for route in self.routes:
+				log_message(
+					f"  {route.method} {route.path_pattern} -> {route.operation_id}",
+					LogLevel.INFO,
+				)
 			self._routes_by_operation_id: dict[str, RouteDefinition] = {
 				r.operation_id: r for r in self.routes
 			}
