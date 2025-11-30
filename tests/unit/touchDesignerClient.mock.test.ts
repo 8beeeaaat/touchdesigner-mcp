@@ -24,12 +24,9 @@ vi.mock("../../src/gen/endpoints/TouchDesignerAPI", async () => {
 	};
 });
 
-const nullLogger: ILogger = {
-	debug: () => {},
-	error: () => {},
-	log: () => {},
-	warn: () => {},
-};
+const mockLogger = {
+	sendLog: vi.fn(),
+} as ILogger;
 
 describe("TouchDesignerClient with mocks", () => {
 	beforeEach(() => {
@@ -50,7 +47,7 @@ describe("TouchDesignerClient with mocks", () => {
 
 		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(mockResponse);
 
-		const client = new TouchDesignerClient({ logger: nullLogger });
+		const client = new TouchDesignerClient({ logger: mockLogger });
 		const result = await client.getTdInfo();
 
 		expect(result).toBeDefined();
@@ -73,7 +70,7 @@ describe("TouchDesignerClient with mocks", () => {
 
 		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(mockResponse);
 
-		const client = new TouchDesignerClient({ logger: nullLogger });
+		const client = new TouchDesignerClient({ logger: mockLogger });
 		const result = await client.getTdInfo();
 		if (result.success) {
 			throw new Error("Expected success to be false");
@@ -100,7 +97,7 @@ describe("TouchDesignerClient with mocks", () => {
 
 		vi.mocked(touchDesignerAPI.createNode).mockResolvedValue(mockResponse);
 
-		const client = new TouchDesignerClient({ logger: nullLogger });
+		const client = new TouchDesignerClient({ logger: mockLogger });
 		const result = await client.createNode({
 			nodeName: "testNode",
 			nodeType: "nullCOMP",
@@ -127,7 +124,7 @@ describe("TouchDesignerClient with mocks", () => {
 			mockResponse as unknown as touchDesignerAPI.ExecPythonScript200Response,
 		);
 
-		const client = new TouchDesignerClient({ logger: nullLogger });
+		const client = new TouchDesignerClient({ logger: mockLogger });
 		const result = await client.execPythonScript<{
 			result: { value: string };
 		}>({
@@ -143,13 +140,6 @@ describe("TouchDesignerClient with mocks", () => {
 	});
 
 	test("TouchDesignerClient should accept custom logger", async () => {
-		const mockLogger: ILogger = {
-			debug: vi.fn(),
-			error: vi.fn(),
-			log: vi.fn(),
-			warn: vi.fn(),
-		};
-
 		const mockResponse = {
 			data: {
 				osName: "macOS",
@@ -167,7 +157,6 @@ describe("TouchDesignerClient with mocks", () => {
 		const result = await client.getTdInfo();
 
 		expect(result.success).toBe(true);
-		expect(mockLogger.debug).toHaveBeenCalled();
 	});
 
 	test("TouchDesignerClient should accept custom httpClient", async () => {
@@ -184,7 +173,7 @@ describe("TouchDesignerClient with mocks", () => {
 
 		const client = new TouchDesignerClient({
 			httpClient: mockHttpClient as unknown as ITouchDesignerApi,
-			logger: nullLogger,
+			logger: mockLogger,
 		});
 
 		const result = await client.getTdInfo();

@@ -27,7 +27,10 @@ export function handleToolError(
 			? error
 			: new Error(error === null ? "Null error received" : String(error));
 
-	logger.error(toolName, formattedError);
+	logger.sendLog({
+		level: "error",
+		message: `${toolName}: ${formattedError.message}`,
+	});
 
 	const errorMessage = `${toolName}: ${formattedError}${referenceComment ? `. ${referenceComment}` : ""}`;
 

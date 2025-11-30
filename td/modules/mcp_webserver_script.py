@@ -18,11 +18,10 @@ except Exception as e:
 
 
 def onServerStart(webServerDAT):
-	print("HTTP server started")
 	"""Called when the web server starts"""
-	print("======================================================")
-	print("=========== HTTP SERVER STARTED ===========")
-	print("======================================================")
+	print("============================================================")
+	print("=========== TouchDesigner MCP API SERVER STARTED ===========")
+	print("============================================================")
 	return
 
 

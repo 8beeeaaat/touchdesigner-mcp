@@ -58,7 +58,7 @@ export function checkVersionCompatibility(
 				"This usually means you're using an older MCP component that cannot verify compatibility.",
 				"",
 				"To resolve this:",
-				"1. Download the latest touchdesigner-mcp-td.zip from https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest",
+				"1. Download the latest [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest)",
 				"2. Replace the existing touchdesigner-mcp-td folder with the newly extracted files",
 				"3. Remove the current mcp_webserver_base COMP, import the .tox from the updated folder, and restart TouchDesigner",
 				"4. Restart the MCP-enabled AI agent (e.g., Claude Desktop) before reconnecting",

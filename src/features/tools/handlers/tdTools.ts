@@ -197,7 +197,10 @@ export function registerTdTools(
 		async (params: ExecPythonScriptToolParams) => {
 			try {
 				const { detailLevel, responseFormat, ...scriptParams } = params;
-				logger.debug(`Executing script: ${scriptParams.script}`);
+				logger.sendLog({
+					level: "debug",
+					message: `Executing script: ${scriptParams.script}`,
+				});
 
 				const result = await tdClient.execPythonScript(scriptParams);
 				if (!result.success) {
@@ -433,7 +436,10 @@ export function registerTdTools(
 					],
 				};
 			} catch (error) {
-				logger.error(error);
+				logger.sendLog({
+					level: "error",
+					message: error instanceof Error ? error.message : String(error),
+				});
 				return handleToolError(
 					error,
 					logger,
@@ -526,7 +532,10 @@ export function registerTdTools(
 		async (params: CheckNodeErrorsToolParams) => {
 			try {
 				const { detailLevel, responseFormat, ...checkParams } = params;
-				logger.debug(`Checking errors for node: ${checkParams.nodePath}`);
+				logger.sendLog({
+					level: "debug",
+					message: `Checking errors for node: ${checkParams.nodePath}`,
+				});
 
 				const result = await tdClient.checkNodeErrors(checkParams);
 				if (!result.success) {
@@ -568,7 +577,10 @@ export function registerTdTools(
 		async (params: GetModuleHelpToolParams) => {
 			try {
 				const { detailLevel, responseFormat, ...helpParams } = params;
-				logger.debug(`Getting help for module: ${helpParams.moduleName}`);
+				logger.sendLog({
+					level: "debug",
+					message: `Getting help for module: ${helpParams.moduleName}`,
+				});
 
 				const result = await tdClient.getModuleHelp(helpParams);
 				if (!result.success) {

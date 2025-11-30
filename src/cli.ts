@@ -11,7 +11,7 @@ const DEFAULT_PORT = 9981;
 /**
  * Parse command line arguments
  */
-export function parseArgs(args?: string[]) {
+function parseArgs(args?: string[]) {
 	const argsToProcess = args || process.argv.slice(2);
 	const parsed = {
 		host: DEFAULT_HOST,
@@ -33,7 +33,7 @@ export function parseArgs(args?: string[]) {
 /**
  * Determine if the server should run in stdio mode
  */
-export function isStdioMode(nodeEnv?: string, argv?: string[]): boolean {
+function isStdioMode(nodeEnv?: string, argv?: string[]): boolean {
 	const env = nodeEnv ?? process.env.NODE_ENV;
 	const args = argv ?? process.argv;
 
@@ -65,7 +65,7 @@ export async function startServer(params?: {
 		const result = await server.connect(transport);
 
 		if (!result.success) {
-			throw new Error(`Failed to connect: ${result.error.message}`);
+			throw result.error;
 		}
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);

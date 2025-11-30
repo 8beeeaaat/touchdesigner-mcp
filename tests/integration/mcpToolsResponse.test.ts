@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { TOOL_NAMES } from "../../src/core/constants.js";
 import type { ILogger } from "../../src/core/logger.js";
 import { registerTools } from "../../src/features/tools/register.js";
@@ -25,12 +25,9 @@ class MockMcpServer {
 	}
 }
 
-const logger: ILogger = {
-	debug: () => {},
-	error: () => {},
-	log: () => {},
-	warn: () => {},
-};
+const mockLogger = {
+	sendLog: vi.fn(),
+} as ILogger;
 
 function createMockTdClient(): TouchDesignerClient {
 	const execNodeMethod: TouchDesignerClient["execNodeMethod"] = async <
@@ -134,7 +131,7 @@ describe("MCP tool responses", () => {
 	const server = new MockMcpServer();
 	registerTools(
 		server as unknown as import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
-		logger,
+		mockLogger,
 		createMockTdClient(),
 	);
 

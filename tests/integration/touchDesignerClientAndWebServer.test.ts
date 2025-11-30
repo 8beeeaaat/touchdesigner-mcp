@@ -1,6 +1,8 @@
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { TouchDesignerServer } from "../../src//server/touchDesignerServer.js";
 import type { TdNode } from "../../src/gen/endpoints/TouchDesignerAPI";
-import { TouchDesignerClient } from "../../src/tdClient/touchDesignerClient";
+import type { TouchDesignerClient } from "../../src/tdClient/touchDesignerClient";
 
 const PROJECT_PATH = "/project1";
 const SANDBOX_NAME = "test_base_comp";
@@ -27,12 +29,21 @@ async function verifyNodeExists(params: {
 	}
 }
 
-const tdClient = new TouchDesignerClient();
+let server: TouchDesignerServer;
+let tdClient: TouchDesignerClient;
 
 describe("TouchDesigner Client E2E Tests", () => {
 	beforeAll(async () => {
 		process.env.TD_WEB_SERVER_HOST = "http://127.0.0.1";
 		process.env.TD_WEB_SERVER_PORT = "9981";
+		try {
+			server = new TouchDesignerServer();
+			const transport = new StdioServerTransport();
+			await server.connect(transport);
+			tdClient = server.tdClient;
+		} catch (err) {
+			throw new Error(`failed: ${err}`);
+		}
 		await tdClient.createNode({
 			nodeName: SANDBOX_NAME,
 			nodeType: "baseCOMP",
@@ -42,6 +53,7 @@ describe("TouchDesigner Client E2E Tests", () => {
 
 	afterAll(async () => {
 		await tdClient.deleteNode({ nodePath: SANDBOX_PATH });
+		await server.disconnect();
 	});
 
 	test("TouchDesigner info endpoint should return server information", async () => {

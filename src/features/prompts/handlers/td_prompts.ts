@@ -57,7 +57,10 @@ export function registerTdPrompts(server: McpServer, logger: ILogger): void {
 
 	server.server.setRequestHandler(GetPromptRequestSchema, (request) => {
 		try {
-			logger.debug(`Handling GetPromptRequest: ${request.params.name}`);
+			logger.sendLog({
+				level: "debug",
+				message: `Handling GetPromptRequest: ${request.params.name}`,
+			});
 			const prompt = getPrompt(request.params.name);
 			if (!prompt) {
 				throw new Error("Prompt name is required");
@@ -97,7 +100,10 @@ export function registerTdPrompts(server: McpServer, logger: ILogger): void {
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
-			logger.error(`Error handling prompt request: ${errorMessage}`);
+			logger.sendLog({
+				level: "error",
+				message: `Error handling prompt request: ${errorMessage}`,
+			});
 			throw new Error(errorMessage);
 		}
 	});

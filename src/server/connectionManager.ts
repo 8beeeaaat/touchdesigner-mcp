@@ -3,6 +3,10 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { ILogger } from "../core/logger.js";
 import type { Result } from "../core/result.js";
 import { createErrorResult, createSuccessResult } from "../core/result.js";
+import {
+	checkVersionCompatibility,
+	formatVersionWarning,
+} from "../core/versionCheck.js";
 import type { TouchDesignerClient } from "../tdClient/touchDesignerClient.js";
 
 /**
@@ -22,33 +26,38 @@ export class ConnectionManager {
 	 */
 	async connect(transport: Transport): Promise<Result<void, Error>> {
 		if (this.isConnected()) {
-			this.logger.log("MCP server already connected");
+			this.logger.sendLog({
+				level: "warning",
+				message: "MCP server already connected",
+			});
 			return createSuccessResult(undefined);
 		}
 
 		this.transport = transport;
 		try {
 			await this.server.connect(transport);
-			this.logger.log(
-				`Server connected and ready to process requests: ${process.env.TD_WEB_SERVER_HOST}:${process.env.TD_WEB_SERVER_PORT}`,
-			);
+			this.logger.sendLog({
+				level: "debug",
+				message: `Server connected and ready to process requests: ${process.env.TD_WEB_SERVER_HOST}:${process.env.TD_WEB_SERVER_PORT}`,
+			});
 
 			// Connection will be checked when tools are actually used
 			const connectionResult = await this.checkTDConnection();
 			if (!connectionResult.success) {
-				throw new Error(
-					`Failed to connect to TouchDesigner. The mcp_webserver_base on TouchDesigner not currently available: ${connectionResult.error.message}`,
-				);
+				throw connectionResult.error;
 			}
-			this.logger.log("TouchDesigner connection verified");
+			this.logger.sendLog({
+				level: "info",
+				message: "TouchDesigner connection verified",
+			});
 			return createSuccessResult(undefined);
 		} catch (error) {
 			this.transport = null;
 			const err = error instanceof Error ? error : new Error(String(error));
-			console.error(
-				"Fatal error starting server! Check TouchDesigner setup and starting webserver. For detailed setup instructions, see https://github.com/8beeeaaat/touchdesigner-mcp",
-				err,
-			);
+			this.logger.sendLog({
+				level: "critical",
+				message: `Fatal error starting server! Check TouchDesigner setup and starting webserver. For detailed [setup instructions](https://github.com/8beeeaaat/touchdesigner-mcp). Details: ${err.message}`,
+			});
 			return createErrorResult(err);
 		}
 	}
@@ -58,18 +67,27 @@ export class ConnectionManager {
 	 */
 	async disconnect(): Promise<Result<void, Error>> {
 		if (!this.isConnected()) {
-			console.log("MCP server not connected");
+			this.logger.sendLog({
+				level: "debug",
+				message: "disconnect: MCP server not connected",
+			});
 			return createSuccessResult(undefined);
 		}
 
 		try {
 			await this.server.close();
-			console.log("MCP server disconnected from MCP");
+			this.logger.sendLog({
+				level: "debug",
+				message: "disconnect: MCP server disconnected from MCP",
+			});
 			this.transport = null;
 			return createSuccessResult(undefined);
 		} catch (error) {
 			const err = error instanceof Error ? error : new Error(String(error));
-			console.error("Error disconnecting from server", err);
+			this.logger.sendLog({
+				level: "error",
+				message: `disconnect: Error disconnecting from server: ${err.message}`,
+			});
 			return createErrorResult(err);
 		}
 	}
@@ -85,16 +103,51 @@ export class ConnectionManager {
 	 * Check connection to TouchDesigner
 	 */
 	private async checkTDConnection(): Promise<Result<unknown, Error>> {
-		this.logger.log("Testing connection to TouchDesigner server...");
+		this.logger.sendLog({
+			level: "debug",
+			message:
+				"checkTDConnection: Testing connection to TouchDesigner server...",
+		});
 		try {
-			const result = await this.tdClient.getTdInfo();
-			if (!result.success) {
-				throw result.error;
-			}
+			const result = await this.performVersionCheck();
 			return createSuccessResult(result.data);
 		} catch (error) {
 			const err = error instanceof Error ? error : new Error(String(error));
 			return createErrorResult(err);
+		}
+	}
+
+	/**
+	 * Check API version compatibility with TouchDesigner server
+	 *
+	 * This is called asynchronously during initialization to verify
+	 * that the Python server component matches the expected API version.
+	 * Logs warnings if versions are incompatible.
+	 */
+	private async performVersionCheck() {
+		try {
+			const info = await this.tdClient.getTdInfo();
+
+			if (!info.success) {
+				throw info.error;
+			}
+
+			const serverApiVersion = info.data.apiVersion;
+			const checkResult = checkVersionCompatibility(serverApiVersion);
+
+			if (checkResult.compatible) {
+				this.logger.sendLog({
+					level: "debug",
+					message: `API version check passed: client=${checkResult.clientVersion}, server=${checkResult.serverVersion}`,
+				});
+				return info;
+			}
+			const warning = formatVersionWarning(checkResult);
+			throw new Error(warning);
+		} catch (err) {
+			throw new Error(
+				`Could not perform API version check - ${err instanceof Error ? err.message : String(err)}`,
+			);
 		}
 	}
 }
