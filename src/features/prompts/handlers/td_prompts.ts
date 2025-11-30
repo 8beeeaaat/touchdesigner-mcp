@@ -131,7 +131,7 @@ function handleCheckNodeErrorsPrompt(params: { nodePath: string }) {
 	return [
 		{
 			content: {
-				text: `Use the "${TOOL_NAMES.EXECUTE_NODE_METHOD}" like "op('${params.nodePath}').errors()" tool to check node errors. If there are any errors, please check the node parameters and connections. If the node has children, please check the child nodes as well. Please check the node connections and parameters. If the node has children, please check the child nodes as well.`,
+				text: `Use the "${TOOL_NAMES.GET_TD_NODE_ERRORS}" tool to inspect "${params.nodePath}" (and optionally its children) for error messages. If errors are returned, examine the affected nodes' parameters and connections to resolve them.`,
 				type: "text",
 			},
 			role: "user",

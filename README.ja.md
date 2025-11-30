@@ -254,6 +254,7 @@ td/
 | `get_td_class_details`      | TD Pythonクラス/モジュールの詳細情報を取得します。 |
 | `get_td_classes`            | TouchDesigner Pythonクラスのリストを取得します。 |
 | `get_td_info`           | TDサーバー環境に関する情報を取得します。       |
+| `get_td_node_errors`        | 指定されたノードとその子ノードのエラーをチェックします。 |
 | `get_td_node_parameters`    | 特定ノードのパラメータを取得します。           |
 | `get_td_nodes`              | 親パス内のノードを取得します（オプションでフィルタリング）。 |
 | `update_td_node_parameters` | 特定ノードのパラメータを更新します。           |

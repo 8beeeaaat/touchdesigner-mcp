@@ -10,6 +10,7 @@ import {
 	execPythonScriptBody,
 	getModuleHelpQueryParams,
 	getNodeDetailQueryParams,
+	getNodeErrorsQueryParams,
 	getNodesQueryParams,
 	getTdPythonClassDetailsParams,
 	updateNodeBody,
@@ -25,6 +26,7 @@ import {
 	formatExecNodeMethodResult,
 	formatModuleHelp,
 	formatNodeDetails,
+	formatNodeErrors,
 	formatNodeList,
 	formatScriptResult,
 	formatTdInfo,
@@ -54,6 +56,11 @@ const getNodeDetailToolSchema = getNodeDetailQueryParams.extend(
 	formattingOptionsSchema.shape,
 );
 type GetNodeDetailToolParams = z.input<typeof getNodeDetailToolSchema>;
+
+const getNodeErrorsToolSchema = getNodeErrorsQueryParams.extend(
+	formattingOptionsSchema.shape,
+);
+type GetNodeErrorsToolParams = z.input<typeof getNodeErrorsToolSchema>;
 
 const createNodeToolSchema = createNodeBody.extend(
 	detailOnlyFormattingSchema.shape,
@@ -362,6 +369,43 @@ export function registerTdTools(
 					logger,
 
 					TOOL_NAMES.GET_TD_NODE_PARAMETERS,
+					REFERENCE_COMMENT,
+				);
+			}
+		},
+	);
+
+	server.tool(
+		TOOL_NAMES.GET_TD_NODE_ERRORS,
+		"Check node and descendant errors reported by TouchDesigner",
+		getNodeErrorsToolSchema.strict().shape,
+		async (params: GetNodeErrorsToolParams) => {
+			try {
+				const { detailLevel, limit, responseFormat, ...queryParams } = params;
+				const result = await tdClient.getNodeErrors(queryParams);
+				if (!result.success) {
+					throw result.error;
+				}
+
+				const formattedText = formatNodeErrors(result.data, {
+					detailLevel: detailLevel ?? "summary",
+					limit,
+					responseFormat,
+				});
+
+				return {
+					content: [
+						{
+							text: formattedText,
+							type: "text" as const,
+						},
+					],
+				};
+			} catch (error) {
+				return handleToolError(
+					error,
+					logger,
+					TOOL_NAMES.GET_TD_NODE_ERRORS,
 					REFERENCE_COMMENT,
 				);
 			}

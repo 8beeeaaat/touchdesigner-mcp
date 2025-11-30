@@ -1,0 +1,30 @@
+type: object
+description: Aggregated node error report
+required:
+  - nodePath
+  - nodeName
+  - opType
+  - errorCount
+  - hasErrors
+  - errors
+properties:
+  nodePath:
+    type: string
+    description: Path that was inspected for errors
+  nodeName:
+    type: string
+    description: Name of the inspected node
+  opType:
+    type: string
+    description: Operator type of the inspected node
+  errorCount:
+    type: integer
+    description: Number of errors that were discovered
+  hasErrors:
+    type: boolean
+    description: Convenience flag indicating if any errors were found
+  errors:
+    type: array
+    description: Collection of raw node errors
+    items:
+      $ref: ./TdNodeError.yml

@@ -106,6 +106,24 @@ DATA DESCRIPTORS
 			},
 			success: true,
 		}),
+		getNodeErrors: async (_params: unknown) => ({
+			data: {
+				errorCount: 1,
+				errors: [
+					{
+						message: "Mock error detected",
+						nodeName: "mockNode",
+						nodePath: "/project1/mockNode",
+						opType: "textTOP",
+					},
+				],
+				hasErrors: true,
+				nodeName: "mockNode",
+				nodePath: "/project1/mockNode",
+				opType: "textTOP",
+			},
+			success: true,
+		}),
 		getNodes: async (_params: unknown) => ({
 			data: {
 				nodes: [
@@ -182,6 +200,20 @@ describe("MCP tool responses", () => {
 		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
 		expect(text).toContain("webserverDAT");
 		expect(text).toContain("Properties shown");
+	});
+
+	it("returns formatted error details for GET_TD_NODE_ERRORS", async () => {
+		const handler = server.getTool(TOOL_NAMES.GET_TD_NODE_ERRORS);
+		const result = (await handler({
+			detailLevel: "summary",
+			nodePath: "/project1/mockNode",
+			responseFormat: "markdown",
+		})) as {
+			content?: Array<{ type: string; text?: string }>;
+		};
+		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+		expect(text).toContain("mockNode");
+		expect(text).toContain("Mock error detected");
 	});
 
 	it("returns formatted class list for GET_TD_CLASSES", async () => {

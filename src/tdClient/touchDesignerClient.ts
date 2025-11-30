@@ -8,6 +8,7 @@ import {
 	execPythonScript as apiExecPythonScript,
 	getModuleHelp as apiGetModuleHelp,
 	getNodeDetail as apiGetNodeDetail,
+	getNodeErrors as apiGetNodeErrors,
 	getNodes as apiGetNodes,
 	getTdInfo as apiGetTdInfo,
 	getTdPythonClassDetails as apiGetTdPythonClassDetails,
@@ -19,6 +20,7 @@ import {
 	type ExecPythonScriptRequest,
 	type GetModuleHelpParams,
 	type GetNodeDetailParams,
+	type GetNodeErrorsParams,
 	type GetNodesParams,
 	type UpdateNodeRequest,
 } from "../gen/endpoints/TouchDesignerAPI.js";
@@ -39,6 +41,7 @@ export interface ITouchDesignerApi {
 	getTdInfo: typeof apiGetTdInfo;
 	getNodes: typeof apiGetNodes;
 	getNodeDetail: typeof apiGetNodeDetail;
+	getNodeErrors: typeof apiGetNodeErrors;
 	createNode: typeof apiCreateNode;
 	updateNode: typeof apiUpdateNode;
 	deleteNode: typeof apiDeleteNode;
@@ -57,6 +60,7 @@ const defaultApiClient: ITouchDesignerApi = {
 	execPythonScript: apiExecPythonScript,
 	getModuleHelp: apiGetModuleHelp,
 	getNodeDetail: apiGetNodeDetail,
+	getNodeErrors: apiGetNodeErrors,
 	getNodes: apiGetNodes,
 	getTdInfo: apiGetTdInfo,
 	getTdPythonClassDetails: apiGetTdPythonClassDetails,
@@ -229,6 +233,19 @@ export class TouchDesignerClient {
 		await this.verifyCompatibility();
 
 		const result = await this.api.getNodeDetail(params);
+		return handleApiResponse<(typeof result)["data"]>(result);
+	}
+
+	/**
+	 * Get node error information
+	 */
+	async getNodeErrors(params: GetNodeErrorsParams) {
+		this.logDebug("Checking node errors", {
+			nodePath: params.nodePath,
+		});
+		await this.verifyCompatibility();
+
+		const result = await this.api.getNodeErrors(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
 

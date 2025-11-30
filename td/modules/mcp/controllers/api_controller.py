@@ -20,13 +20,12 @@ from utils.types import LogLevel, Result
 class ApiServiceProtocol(Protocol):
 	"""Protocol defining the API service interface"""
 
-	def get_td_info(self) -> Result: ...
-
-	def get_nodes(
+	def call_node_method(
 		self,
-		parent_path: str,
-		pattern: Optional[str] = None,
-		include_properties: bool = False,
+		node_path: str,
+		method_name: str,
+		args: list[Any] = None,
+		kwargs: dict[str, Any] = None,
 	) -> Result: ...
 
 	def create_node(
@@ -39,24 +38,28 @@ class ApiServiceProtocol(Protocol):
 
 	def delete_node(self, node_path: str) -> Result: ...
 
+	def exec_script(self, script: str) -> Result: ...
+
+	def get_td_info(self) -> Result: ...
+
+	def get_nodes(
+		self,
+		parent_path: str,
+		pattern: Optional[str] = None,
+		include_properties: bool = False,
+	) -> Result: ...
+
+	def get_module_help(self, module_name: str) -> Result: ...
+
 	def get_node_detail(self, node_path: str) -> Result: ...
 
-	def update_node(self, node_path: str, properties: dict[str, Any]) -> Result: ...
+	def get_node_errors(self, node_path: str) -> Result: ...
 
-	def exec_script(self, script: str) -> Result: ...
+	def get_td_python_class_details(self, class_name: str) -> Result: ...
 
 	def get_td_python_classes(self) -> Result: ...
 
-	def get_td_python_class_details(self, class_name: str) -> Result: ...
-	def get_module_help(self, module_name: str) -> Result: ...
-
-	def call_node_method(
-		self,
-		node_path: str,
-		method_name: str,
-		args: list[Any] = None,
-		kwargs: dict[str, Any] = None,
-	) -> Result: ...
+	def update_node(self, node_path: str, properties: dict[str, Any]) -> Result: ...
 
 
 class RequestProcessor:

@@ -254,6 +254,7 @@ Tools allow AI agents to perform actions in TouchDesigner.
 | `get_td_class_details`  | Gets details of a TouchDesigner Python class or module.            |
 | `get_td_classes`        | Gets a list of TouchDesigner Python classes.                       |
 | `get_td_info`           | Gets information about the TouchDesigner server environment.       |
+| `get_td_node_errors`    | Checks for errors on a specified node and its children. |
 | `get_td_node_parameters`| Gets the parameters of a specific node.                            |
 | `get_td_nodes`          | Gets nodes under a parent path, with optional filtering.           |
 | `update_td_node_parameters` | Updates the parameters of a specific node.                     |

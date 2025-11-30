@@ -26,6 +26,7 @@ class IApiService(Protocol):
 	def get_td_python_class_details(self, class_name: str) -> Result: ...
 	def get_module_help(self, module_name: str) -> Result: ...
 	def get_node_detail(self, node_path: str) -> Result: ...
+	def get_node_errors(self, node_path: str) -> Result: ...
 	def update_node(self, node_path: str, properties: dict[str, Any]) -> Result: ...
 	def exec_node_method(
 		self, node_path: str, method: str, args: list, kwargs: dict
@@ -162,6 +163,80 @@ class TouchDesignerApiService(IApiService):
 
 		node_info = self._get_node_summary(node)
 		return success_result(node_info)
+
+	def get_node_errors(self, node_path: str) -> Result:
+		"""Collect error messages for the specified node and its children"""
+
+		node = td.op(node_path)
+
+		if node is None or not node.valid:
+			return error_result(f"Node not found at path: {node_path}")
+
+		# Use TouchDesigner's built-in errors() method
+		all_errors = []
+		if hasattr(node, "errors") and callable(node.errors):
+			try:
+				# errors(recurse=True) returns a string with newline-separated error messages
+				error_output = node.errors(recurse=True)
+				if error_output:
+					# Parse the error output into structured data
+					error_lines = error_output.strip().split("\n")
+					for line in error_lines:
+						line = line.strip()
+						if line:
+							# Extract node path from error message if present
+							# Format: "Error message (node_path)"
+							if "(" in line and line.endswith(")"):
+								message_part, path_part = line.rsplit("(", 1)
+								error_node_path = path_part.rstrip(")")
+								message = message_part.strip()
+
+								# Try to get the actual node to extract more info
+								error_node = td.op(error_node_path)
+								if error_node and error_node.valid:
+									all_errors.append(
+										{
+											"nodePath": error_node.path,
+											"nodeName": error_node.name,
+											"opType": error_node.OPType,
+											"message": message,
+										}
+									)
+								else:
+									all_errors.append(
+										{
+											"nodePath": error_node_path,
+											"nodeName": "",
+											"opType": "",
+											"message": message,
+										}
+									)
+							else:
+								# Simple error message without node path
+								all_errors.append(
+									{
+										"nodePath": node.path,
+										"nodeName": node.name,
+										"opType": node.OPType,
+										"message": line,
+									}
+								)
+			except Exception as e:
+				log_message(
+					f"Error getting errors from node {node_path}: {str(e)}",
+					LogLevel.WARNING,
+				)
+
+		return success_result(
+			{
+				"nodePath": node.path,
+				"nodeName": node.name,
+				"opType": node.OPType,
+				"errorCount": len(all_errors),
+				"hasErrors": bool(all_errors),
+				"errors": all_errors,
+			}
+		)
 
 	def get_nodes(
 		self,
