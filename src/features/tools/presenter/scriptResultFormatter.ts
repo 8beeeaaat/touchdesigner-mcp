@@ -84,9 +84,9 @@ export function formatScriptResult(
 
 	const ctx = context as unknown as Record<string, unknown> | undefined;
 	return finalizeFormattedText(formattedText, opts, {
-		template: "scriptSummary",
 		context: ctx,
 		structured: ctx,
+		template: "scriptSummary",
 	});
 }
 
@@ -154,15 +154,15 @@ function formatSummary(
 		formatted += `\nOutput:\n${outputPreview}`;
 	}
 	return {
-		text: formatted,
 		context: {
-			snippet,
-			resultType: getValueType(result),
-			resultPreview,
 			hasOutput: Boolean(outputPreview),
-			outputType: getValueType(output),
 			outputPreview,
+			outputType: getValueType(output),
+			resultPreview,
+			resultType: getValueType(result),
+			snippet,
 		},
+		text: formatted,
 	};
 }
 
@@ -172,12 +172,12 @@ function buildScriptContext(
 	output?: string,
 ): ScriptSummaryContext {
 	return {
-		snippet: scriptSnippet ? truncateScript(scriptSnippet) : "",
-		resultType: getValueType(result),
-		resultPreview: formatResultValue(result ?? "", 200),
 		hasOutput: Boolean(output?.trim()),
-		outputType: getValueType(output),
 		outputPreview: output,
+		outputType: getValueType(output),
+		resultPreview: formatResultValue(result ?? "", 200),
+		resultType: getValueType(result),
+		snippet: scriptSnippet ? truncateScript(scriptSnippet) : "",
 	};
 }
 
@@ -192,14 +192,14 @@ function formatDetailed(
 	const payloadFormat = format ?? DEFAULT_PRESENTER_FORMAT;
 	return presentStructuredData(
 		{
-			text: title,
+			context: {
+				payloadFormat,
+				title,
+			},
 			detailLevel: "detailed",
 			structured: data,
-			context: {
-				title,
-				payloadFormat,
-			},
 			template: "detailedPayload",
+			text: title,
 		},
 		payloadFormat,
 	);

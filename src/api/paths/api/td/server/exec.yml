@@ -19,7 +19,7 @@ post:
               type: string
               description: e.g., "op('/project1/text_over_image').outputConnectors[0].connect(op('/project1/out1'))"
   responses:
-    '200':
+    "200":
       description: Script executed successfully
       content:
         application/json:

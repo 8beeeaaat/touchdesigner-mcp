@@ -16,8 +16,8 @@ describe("Logger", () => {
 			logger.log("test message");
 
 			expect(mockSendLoggingMessage).toHaveBeenCalledWith({
-				level: "info",
 				data: "test message",
+				level: "info",
 			});
 		});
 

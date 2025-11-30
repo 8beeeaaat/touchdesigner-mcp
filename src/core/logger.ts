@@ -49,8 +49,8 @@ export class McpLogger implements ILogger {
 		for (const arg of args) {
 			try {
 				this.server.server.sendLoggingMessage({
-					level,
 					data: arg,
+					level,
 				});
 			} catch (error) {
 				if (error instanceof Error && error.message === "Not connected") {

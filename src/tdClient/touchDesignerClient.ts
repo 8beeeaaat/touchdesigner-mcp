@@ -50,16 +50,16 @@ export interface ITouchDesignerApi {
  * Default implementation of ITouchDesignerApi using generated API clients
  */
 const defaultApiClient: ITouchDesignerApi = {
+	createNode: apiCreateNode,
+	deleteNode: apiDeleteNode,
 	execNodeMethod: apiExecNodeMethod,
 	execPythonScript: apiExecPythonScript,
-	getTdInfo: apiGetTdInfo,
-	getNodes: apiGetNodes,
 	getNodeDetail: apiGetNodeDetail,
-	createNode: apiCreateNode,
-	updateNode: apiUpdateNode,
-	deleteNode: apiDeleteNode,
-	getTdPythonClasses: apiGetTdPythonClasses,
+	getNodes: apiGetNodes,
+	getTdInfo: apiGetTdInfo,
 	getTdPythonClassDetails: apiGetTdPythonClassDetails,
+	getTdPythonClasses: apiGetTdPythonClasses,
+	updateNode: apiUpdateNode,
 };
 
 export type TdResponse<T> = {
@@ -78,9 +78,9 @@ export type Result<T, E = Error> = SuccessResult<T> | ErrorResult<E>;
  */
 const nullLogger: ILogger = {
 	debug: () => {},
+	error: () => {},
 	log: () => {},
 	warn: () => {},
-	error: () => {},
 };
 
 /**
@@ -91,9 +91,9 @@ const nullLogger: ILogger = {
 function handleError<T>(response: TdResponse<T>): ErrorResult {
 	if (response.error) {
 		const errorMessage = response.error;
-		return { success: false, error: new Error(errorMessage) };
+		return { error: new Error(errorMessage), success: false };
 	}
-	return { success: false, error: new Error("Unknown error occurred") };
+	return { error: new Error("Unknown error occurred"), success: false };
 }
 /**
  * Handle API response and return a structured result
@@ -106,12 +106,12 @@ function handleApiResponse<T>(response: TdResponse<T>): Result<T> {
 		return handleError(response);
 	}
 	if (data === null) {
-		return { success: false, error: new Error("No data received") };
+		return { error: new Error("No data received"), success: false };
 	}
 	if (data === undefined) {
-		return { success: false, error: new Error("No data received") };
+		return { error: new Error("No data received"), success: false };
 	}
-	return { success: true, data };
+	return { data, success: true };
 }
 
 /**

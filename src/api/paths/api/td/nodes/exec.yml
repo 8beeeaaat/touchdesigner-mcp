@@ -34,7 +34,7 @@ post:
               additionalProperties: true
               description: Keyword arguments for the method call
   responses:
-    '200':
+    "200":
       description: Method call successful
       content:
         application/json:

@@ -8,10 +8,10 @@ describe("scriptResultFormatter", () => {
 	describe("formatScriptResult", () => {
 		it("should format successful execution with simple result in minimal mode", () => {
 			const data: ScriptResultData = {
-				success: true,
 				data: {
 					result: 42,
 				},
+				success: true,
 			};
 
 			const result = formatScriptResult(data, undefined, {
@@ -24,10 +24,10 @@ describe("scriptResultFormatter", () => {
 
 		it("should format successful execution with no result in minimal mode", () => {
 			const data: ScriptResultData = {
-				success: true,
 				data: {
 					result: undefined,
 				},
+				success: true,
 			};
 
 			const result = formatScriptResult(data, undefined, {
@@ -39,10 +39,10 @@ describe("scriptResultFormatter", () => {
 
 		it("should format array result in minimal mode", () => {
 			const data: ScriptResultData = {
-				success: true,
 				data: {
 					result: [1, 2, 3, 4, 5],
 				},
+				success: true,
 			};
 
 			const result = formatScriptResult(data, undefined, {
@@ -55,10 +55,10 @@ describe("scriptResultFormatter", () => {
 
 		it("should format object result in minimal mode", () => {
 			const data: ScriptResultData = {
-				success: true,
 				data: {
-					result: { foo: "bar", baz: 123 },
+					result: { baz: 123, foo: "bar" },
 				},
+				success: true,
 			};
 
 			const result = formatScriptResult(data, undefined, {
@@ -71,11 +71,11 @@ describe("scriptResultFormatter", () => {
 
 		it("should format successful execution with result and output in summary mode", () => {
 			const data: ScriptResultData = {
-				success: true,
 				data: {
-					result: { value: 123 },
 					output: "Debug message",
+					result: { value: 123 },
 				},
+				success: true,
 			};
 
 			const script = "op('/project1').par.value";
@@ -93,10 +93,10 @@ describe("scriptResultFormatter", () => {
 
 		it("should truncate long script snippets in summary mode", () => {
 			const data: ScriptResultData = {
-				success: true,
 				data: {
 					result: "ok",
 				},
+				success: true,
 			};
 
 			const longScript = "a".repeat(150);
@@ -110,11 +110,11 @@ describe("scriptResultFormatter", () => {
 
 		it("should truncate long output in summary mode", () => {
 			const data: ScriptResultData = {
-				success: true,
 				data: {
-					result: "ok",
 					output: "x".repeat(250),
+					result: "ok",
 				},
+				success: true,
 			};
 
 			const result = formatScriptResult(data, "script", {
@@ -128,10 +128,10 @@ describe("scriptResultFormatter", () => {
 		it("should truncate large results in summary mode", () => {
 			const largeResult = { data: "y".repeat(600) };
 			const data: ScriptResultData = {
-				success: true,
 				data: {
 					result: largeResult,
 				},
+				success: true,
 			};
 
 			const result = formatScriptResult(data, undefined, {
@@ -144,10 +144,10 @@ describe("scriptResultFormatter", () => {
 
 		it("should format error result", () => {
 			const data: ScriptResultData = {
-				success: false,
 				data: {
 					error: "NameError: name 'foo' is not defined",
 				},
+				success: false,
 			};
 
 			const script = "print(foo)";
@@ -161,11 +161,11 @@ describe("scriptResultFormatter", () => {
 
 		it("should return full JSON in detailed mode", () => {
 			const data: ScriptResultData = {
-				success: true,
 				data: {
-					result: { complex: "data", nested: { value: 123 } },
 					output: "Some output",
+					result: { complex: "data", nested: { value: 123 } },
 				},
+				success: true,
 			};
 
 			const result = formatScriptResult(data, undefined, {
@@ -187,11 +187,11 @@ describe("scriptResultFormatter", () => {
 
 		it("should handle empty output string", () => {
 			const data: ScriptResultData = {
-				success: true,
 				data: {
-					result: "ok",
 					output: "",
+					result: "ok",
 				},
+				success: true,
 			};
 
 			const result = formatScriptResult(data, undefined, {
@@ -203,11 +203,11 @@ describe("scriptResultFormatter", () => {
 
 		it("should handle whitespace-only output", () => {
 			const data: ScriptResultData = {
-				success: true,
 				data: {
-					result: "ok",
 					output: "   \n\t  ",
+					result: "ok",
 				},
+				success: true,
 			};
 
 			const result = formatScriptResult(data, undefined, {

@@ -10,10 +10,6 @@ servers:
     description: TouchDesigner Web Server
 
 paths:
-  /api/td/server/td:
-    $ref: ./paths/api/td/server/td.yml
-  /api/td/server/exec:
-    $ref: ./paths/api/td/server/exec.yml
   /api/nodes:
     $ref: ./paths/api/nodes/list.yml
   /api/nodes/detail:
@@ -24,6 +20,10 @@ paths:
     $ref: ./paths/api/td/classes/details.yml
   /api/td/nodes/exec:
     $ref: ./paths/api/td/nodes/exec.yml
+  /api/td/server/exec:
+    $ref: ./paths/api/td/server/exec.yml
+  /api/td/server/td:
+    $ref: ./paths/api/td/server/td.yml
 
 components:
   schemas:
@@ -31,11 +31,11 @@ components:
       $ref: ./components/schemas/TdNode.yml
     TdNodeFamilyType:
       $ref: ./components/schemas/TdNodeFamilyType.yml
+    TdPythonClassDetails:
+      $ref: ./components/schemas/TdPythonClassDetails.yml
     TdPythonClassInfo:
       $ref: ./components/schemas/TdPythonClassInfo.yml
     TdPythonMethodInfo:
       $ref: ./components/schemas/TdPythonMethodInfo.yml
     TdPythonPropertyInfo:
       $ref: ./components/schemas/TdPythonPropertyInfo.yml
-    TdPythonClassDetails:
-      $ref: ./components/schemas/TdPythonClassDetails.yml

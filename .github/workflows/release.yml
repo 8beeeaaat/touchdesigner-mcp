@@ -11,7 +11,7 @@ on:
   push:
     branches: ["main"]
     tags:
-      - "v*"  # Also triggered by tags starting with 'v'
+      - "v*" # Also triggered by tags starting with 'v'
 
 jobs:
   build:

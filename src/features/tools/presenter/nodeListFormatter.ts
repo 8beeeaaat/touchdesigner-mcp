@@ -90,9 +90,9 @@ export function formatNodeList(
 		context.omittedCount = 0;
 	}
 	return finalizeFormattedText(output, opts, {
-		template: "nodeListSummary",
 		context,
 		structured: context,
+		template: "nodeListSummary",
 	});
 }
 
@@ -109,8 +109,8 @@ function formatMinimal(
 	const text = `Found ${nodes.length} nodes in ${parentPath}:
 ${paths.join("\n")}`;
 	return {
-		text,
 		context: buildNodeListContext(nodes, parentPath, totalCount, truncated),
+		text,
 	};
 }
 
@@ -133,14 +133,14 @@ function formatSummary(
 ${nodeLines.join("\n")}`;
 	});
 	return {
-		text: header + sections.join("\n\n"),
 		context: {
+			groups,
+			omittedCount: Math.max(totalCount - nodes.length, 0),
 			parentPath,
 			totalCount,
-			groups,
 			truncated,
-			omittedCount: Math.max(totalCount - nodes.length, 0),
 		},
+		text: header + sections.join("\n\n"),
 	};
 }
 
@@ -157,14 +157,14 @@ function formatDetailed(
 	const payloadFormat = format ?? DEFAULT_PRESENTER_FORMAT;
 	return presentStructuredData(
 		{
-			text: title,
+			context: {
+				payloadFormat,
+				title,
+			},
 			detailLevel: "detailed",
 			structured: { ...data, nodes },
-			context: {
-				title,
-				payloadFormat,
-			},
 			template: "detailedPayload",
+			text: title,
 		},
 		payloadFormat,
 	);
@@ -177,11 +177,11 @@ function buildNodeListContext(
 	truncated: boolean,
 ): NodeListContext {
 	return {
+		groups: buildGroups(nodes),
+		omittedCount: Math.max(totalCount - nodes.length, 0),
 		parentPath,
 		totalCount,
-		groups: buildGroups(nodes),
 		truncated,
-		omittedCount: Math.max(totalCount - nodes.length, 0),
 	};
 }
 
@@ -195,8 +195,8 @@ function buildGroups(nodes: TdNode[]) {
 		byType.get(type)?.push(node);
 	}
 	return Array.from(byType.entries()).map(([type, typeNodes]) => ({
-		type,
 		count: typeNodes.length,
 		nodes: typeNodes.map((n) => ({ name: n.name, path: n.path })),
+		type,
 	}));
 }

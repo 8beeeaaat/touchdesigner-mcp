@@ -8,40 +8,40 @@ import type { ILogger } from "../../../core/logger.js";
 
 const PROMPTS = [
 	{
-		name: PROMPT_NAMES.SEARCH_NODE,
-		description: "Fuzzy search for node",
 		arguments: [
 			{
-				name: "nodeName",
 				description: "Name of the node to check",
+				name: "nodeName",
 				required: true,
 			},
 			{
-				name: "nodeFamily",
 				description: "Family of the node to check",
+				name: "nodeFamily",
 				required: false,
 			},
 			{
-				name: "nodeType",
 				description: "Type of the node to check",
+				name: "nodeType",
 				required: false,
 			},
 		],
+		description: "Fuzzy search for node",
+		name: PROMPT_NAMES.SEARCH_NODE,
 	},
 	{
-		name: PROMPT_NAMES.CHECK_NODE_ERRORS,
-		description: "Fuzzy search for node and return errors in TouchDesigner.",
 		arguments: [
 			{
-				name: "nodePath",
 				description: "Path to the node to check",
+				name: "nodePath",
 				required: true,
 			},
 		],
+		description: "Fuzzy search for node and return errors in TouchDesigner.",
+		name: PROMPT_NAMES.CHECK_NODE_ERRORS,
 	},
 	{
-		name: PROMPT_NAMES.NODE_CONNECTION,
 		description: "Connect nodes between each other in TouchDesigner.",
+		name: PROMPT_NAMES.NODE_CONNECTION,
 	},
 ];
 
@@ -69,8 +69,8 @@ export function registerTdPrompts(server: McpServer, logger: ILogger): void {
 				}
 				const { nodeName, nodeFamily, nodeType } = request.params.arguments;
 				const messages = handleSearchNodePrompt({
-					nodeName,
 					nodeFamily,
+					nodeName,
 					nodeType,
 				});
 				return { messages };
@@ -110,13 +110,13 @@ function handleSearchNodePrompt(params: {
 }) {
 	return [
 		{
-			role: "user",
 			content: {
-				type: "text",
 				text: `Use the "${TOOL_NAMES.GET_TD_NODES}", "${TOOL_NAMES.GET_TD_NODE_PARAMETERS}" tools to search nodes what named "${params.nodeName}" in the TouchDesigner project.${
 					params.nodeType ? ` Node Type: ${params.nodeType}.` : ""
 				}${params.nodeFamily ? ` Node Family: ${params.nodeFamily}.` : ""}`,
+				type: "text",
 			},
+			role: "user",
 		},
 	];
 }
@@ -124,11 +124,11 @@ function handleSearchNodePrompt(params: {
 function handleCheckNodeErrorsPrompt(params: { nodePath: string }) {
 	return [
 		{
-			role: "user",
 			content: {
-				type: "text",
 				text: `Use the "${TOOL_NAMES.EXECUTE_NODE_METHOD}" like "op('${params.nodePath}').errors()" tool to check node errors. If there are any errors, please check the node parameters and connections. If the node has children, please check the child nodes as well. Please check the node connections and parameters. If the node has children, please check the child nodes as well.`,
+				type: "text",
 			},
+			role: "user",
 		},
 	];
 }
@@ -136,11 +136,11 @@ function handleCheckNodeErrorsPrompt(params: { nodePath: string }) {
 function handleNodeConnectionPrompt() {
 	return [
 		{
-			role: "user",
 			content: {
-				type: "text",
 				text: `Use the "${TOOL_NAMES.EXECUTE_PYTHON_SCRIPT}" tool e.g. op('/project1/text_over_image').outputConnectors[0].connect(op('/project1/out1'))`,
+				type: "text",
 			},
+			role: "user",
 		},
 	];
 }

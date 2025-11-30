@@ -31,7 +31,7 @@ vi.mock("../../src/tdClient/index.js", () => ({
 	createTouchDesignerClient: vi.fn().mockReturnValue({
 		getTdInfo: vi
 			.fn()
-			.mockResolvedValue({ success: true, data: { server: "info" } }),
+			.mockResolvedValue({ data: { server: "info" }, success: true }),
 	}),
 }));
 
