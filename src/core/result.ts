@@ -10,7 +10,7 @@ export type Result<T, E = Error> =
  * Creates a success result with the provided data
  */
 export function createSuccessResult<T>(data: T): { success: true; data: T } {
-	return { success: true, data };
+	return { data, success: true };
 }
 
 /**
@@ -19,5 +19,5 @@ export function createSuccessResult<T>(data: T): { success: true; data: T } {
 export function createErrorResult<E = Error>(
 	error: E,
 ): { success: false; error: E } {
-	return { success: false, error };
+	return { error, success: false };
 }

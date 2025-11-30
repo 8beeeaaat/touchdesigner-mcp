@@ -37,9 +37,9 @@ class MockMcpServer {
 
 const logger: ILogger = {
 	debug: () => {},
+	error: console.error,
 	log: () => {},
 	warn: console.warn,
-	error: console.error,
 };
 
 async function callTool(tool: ToolEntry, params?: Record<string, unknown>) {
@@ -68,23 +68,23 @@ async function main() {
 	const tool = server.getTool(TOOL_NAMES.GET_TD_NODES);
 
 	const yamlResponse = await callTool(tool, {
-		parentPath: "/project1",
-		includeProperties: true,
 		detailLevel: "detailed",
+		includeProperties: true,
+		parentPath: "/project1",
 		responseFormat: "yaml",
 	});
 
 	const jsonResponse = await callTool(tool, {
-		parentPath: "/project1",
-		includeProperties: true,
 		detailLevel: "detailed",
+		includeProperties: true,
+		parentPath: "/project1",
 		responseFormat: "json",
 	});
 
 	const markdownResponse = await callTool(tool, {
-		parentPath: "/project1",
-		includeProperties: true,
 		detailLevel: "summary",
+		includeProperties: true,
+		parentPath: "/project1",
 		responseFormat: "markdown",
 	});
 

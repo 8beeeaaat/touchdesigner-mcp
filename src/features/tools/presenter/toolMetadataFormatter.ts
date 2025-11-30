@@ -19,7 +19,7 @@ export function formatToolMetadata(
 			"No tools matched the requested criteria.",
 			{ detailLevel, responseFormat },
 			{
-				context: { totalTools: 0, filter: options?.filter },
+				context: { filter: options?.filter, totalTools: 0 },
 			},
 		);
 	}
@@ -29,14 +29,14 @@ export function formatToolMetadata(
 	);
 
 	const structured = sortedEntries.map((entry) => ({
-		tool: entry.tool,
-		modulePath: entry.modulePath,
-		functionName: entry.functionName,
-		description: entry.description,
 		category: entry.category,
+		description: entry.description,
+		functionName: entry.functionName,
+		modulePath: entry.modulePath,
+		notes: entry.notes,
 		parameters: entry.parameters,
 		returns: entry.returns,
-		notes: entry.notes,
+		tool: entry.tool,
 	}));
 
 	const text = buildText(sortedEntries, detailLevel);
@@ -45,11 +45,11 @@ export function formatToolMetadata(
 		text,
 		{ detailLevel, responseFormat },
 		{
-			structured,
 			context: {
-				totalTools: sortedEntries.length,
 				filter: options?.filter,
+				totalTools: sortedEntries.length,
 			},
+			structured,
 			template: detailLevel === "detailed" ? "detailedPayload" : undefined,
 		},
 	);

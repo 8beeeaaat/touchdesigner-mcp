@@ -68,9 +68,9 @@ export function formatClassList(
 
 	const ctx = context as Record<string, unknown>;
 	return finalizeFormattedText(text, opts, {
-		template: "classListSummary",
 		context: ctx,
 		structured: ctx,
+		template: "classListSummary",
 	});
 }
 
@@ -98,9 +98,9 @@ export function formatClassDetails(
 
 	const ctx = context as Record<string, unknown>;
 	return finalizeFormattedText(text, opts, {
-		template: "classDetailsSummary",
 		context: ctx,
 		structured: ctx,
+		template: "classDetailsSummary",
 	});
 }
 
@@ -123,8 +123,8 @@ function formatClassListMinimal(
 		text += `\nModules (${modules.length}): ${modules.join(", ")}`;
 	}
 	return {
-		text,
 		context: buildClassListContext(classes, modules),
+		text,
 	};
 }
 
@@ -140,8 +140,8 @@ function formatClassListSummary(
 		.map((m) => `- ${m}`)
 		.join("\n")}`;
 	return {
-		text,
 		context: buildClassListContext(classes, modules),
+		text,
 	};
 }
 
@@ -151,11 +151,11 @@ function buildClassListContext(
 ) {
 	return {
 		classCount: classes.length,
-		moduleCount: modules.length,
 		classes: classes.map((cls) => ({
-			name: cls.name,
 			description: cls.description,
+			name: cls.name,
 		})),
+		moduleCount: modules.length,
 		modules,
 	};
 }
@@ -163,19 +163,19 @@ function buildClassListContext(
 function formatClassDetailsMinimal(data: ClassDetailsData) {
 	const text = `Class: ${data.name}\nType: ${data.type}`;
 	return {
-		text,
 		context: {
-			name: data.name,
-			type: data.type,
 			description: data.description,
+			methods: [],
 			methodsShown: 0,
 			methodsTotal: data.methods?.length ?? 0,
-			methods: [],
+			name: data.name,
+			properties: [],
 			propertiesShown: 0,
 			propertiesTotal: data.properties?.length ?? 0,
-			properties: [],
 			truncated: false,
+			type: data.type,
 		},
+		text,
 	};
 }
 
@@ -226,25 +226,25 @@ function formatClassDetailsSummary(data: ClassDetailsData, limit?: number) {
 	}
 
 	return {
-		text,
 		context: {
-			name: data.name,
-			type: data.type,
 			description: data.description,
-			methodsShown: limitedMethods.length,
-			methodsTotal: methods.length,
 			methods: limitedMethods.map((method) => ({
 				signature: method.signature || `${method.name}()`,
 				summary: method.description?.split("\n")[0] ?? "",
 			})),
-			propertiesShown: limitedProps.length,
-			propertiesTotal: properties.length,
+			methodsShown: limitedMethods.length,
+			methodsTotal: methods.length,
+			name: data.name,
 			properties: limitedProps.map((prop) => ({
 				name: prop.name,
 				type: prop.type,
 			})),
+			propertiesShown: limitedProps.length,
+			propertiesTotal: properties.length,
 			truncated: methodsTruncated || propsTruncated,
+			type: data.type,
 		},
+		text,
 	};
 }
 
@@ -259,14 +259,14 @@ function formatDetailed(
 	const payloadFormat = format ?? DEFAULT_PRESENTER_FORMAT;
 	return presentStructuredData(
 		{
-			text: title,
+			context: {
+				payloadFormat,
+				title,
+			},
 			detailLevel: "detailed",
 			structured: data,
-			context: {
-				title,
-				payloadFormat,
-			},
 			template: "detailedPayload",
+			text: title,
 		},
 		payloadFormat,
 	);

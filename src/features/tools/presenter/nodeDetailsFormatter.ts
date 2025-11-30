@@ -74,9 +74,9 @@ export function formatNodeDetails(
 
 	const context = result.context as unknown as Record<string, unknown>;
 	return finalizeFormattedText(result.text, opts, {
-		template: "nodeDetailsSummary",
 		context,
 		structured: context,
+		template: "nodeDetailsSummary",
 	});
 }
 
@@ -96,18 +96,18 @@ function formatMinimal(
 	}
 
 	return {
-		text,
 		context: {
-			nodePath,
-			type: "",
+			displayed: items.length,
 			id: 0,
 			name: "",
-			total: propertyKeys.length,
-			displayed: items.length,
-			properties: items.map((name) => ({ name, value: "" })),
-			truncated,
+			nodePath,
 			omittedCount: Math.max(propertyKeys.length - items.length, 0),
+			properties: items.map((name) => ({ name, value: "" })),
+			total: propertyKeys.length,
+			truncated,
+			type: "",
 		},
+		text,
 	};
 }
 
@@ -140,18 +140,18 @@ function formatSummary(
 	}
 
 	return {
-		text,
 		context: {
-			nodePath,
-			type: data.opType,
+			displayed: items.length,
 			id: data.id,
 			name: data.name,
-			total: propertyEntries.length,
-			displayed: items.length,
-			properties: propsForContext,
-			truncated,
+			nodePath,
 			omittedCount: Math.max(propertyEntries.length - items.length, 0),
+			properties: propsForContext,
+			total: propertyEntries.length,
+			truncated,
+			type: data.opType,
 		},
+		text,
 	};
 }
 
@@ -166,14 +166,14 @@ function formatDetailed(
 	const payloadFormat = format ?? DEFAULT_PRESENTER_FORMAT;
 	return presentStructuredData(
 		{
-			text: title,
+			context: {
+				payloadFormat,
+				title,
+			},
 			detailLevel: "detailed",
 			structured: data,
-			context: {
-				title,
-				payloadFormat,
-			},
 			template: "detailedPayload",
+			text: title,
 		},
 		payloadFormat,
 	);

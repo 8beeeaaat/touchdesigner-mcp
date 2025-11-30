@@ -32,12 +32,12 @@ export function handleToolError(
 	const errorMessage = `${toolName}: ${formattedError}${referenceComment ? `. ${referenceComment}` : ""}`;
 
 	return {
-		isError: true,
 		content: [
 			{
-				type: "text" as const,
 				text: errorMessage,
+				type: "text" as const,
 			},
 		],
+		isError: true,
 	};
 }

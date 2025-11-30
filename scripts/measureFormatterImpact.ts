@@ -34,12 +34,12 @@ async function measureScenario(
 	const reduction = legacyChars <= 0 ? 0 : 1 - formattedChars / legacyChars;
 
 	return {
-		scenario,
-		legacyChars,
 		formattedChars,
-		legacyTokens,
 		formattedTokens,
+		legacyChars,
+		legacyTokens,
 		reductionPct: `${(reduction * 100).toFixed(1)}%`,
+		scenario,
 	};
 }
 
@@ -108,8 +108,8 @@ async function main() {
 	);
 
 	const nodesWithProps = await tdClient.getNodes({
-		parentPath: "/project1",
 		includeProperties: true,
+		parentPath: "/project1",
 	});
 	if (!nodesWithProps.success) throw nodesWithProps.error;
 	await addSummaryMeasurements(

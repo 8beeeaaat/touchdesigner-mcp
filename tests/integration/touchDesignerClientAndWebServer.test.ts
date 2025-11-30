@@ -16,10 +16,10 @@ async function verifyNodeExists(params: {
 		const response = await params.client.execNodeMethod<{
 			result: TdNode[];
 		}>({
-			nodePath: SANDBOX_PATH,
-			method: "ops",
 			args: [params.nodeName],
 			kwargs: {},
+			method: "ops",
+			nodePath: SANDBOX_PATH,
 		});
 		return response.success ? response.data.result.length > 0 : false;
 	} catch (_err) {
@@ -34,9 +34,9 @@ describe("TouchDesigner Client E2E Tests", () => {
 		process.env.TD_WEB_SERVER_HOST = "http://127.0.0.1";
 		process.env.TD_WEB_SERVER_PORT = "9981";
 		await tdClient.createNode({
-			parentPath: PROJECT_PATH,
-			nodeType: "baseCOMP",
 			nodeName: SANDBOX_NAME,
+			nodeType: "baseCOMP",
+			parentPath: PROJECT_PATH,
 		});
 	});
 
@@ -95,10 +95,10 @@ describe("TouchDesigner Client E2E Tests", () => {
 		const nodePath = `${parentPath}/${nodeName}`;
 
 		const response = await tdClient.execNodeMethod({
-			nodePath: parentPath,
-			method: "create",
 			args: [nodeType, nodeName],
 			kwargs: { initialize: true },
+			method: "create",
+			nodePath: parentPath,
 		});
 
 		expect(response).toBeDefined();
@@ -123,9 +123,9 @@ describe("TouchDesigner Client E2E Tests", () => {
 		const nodePath = `${parentPath}/${nodeName}`;
 
 		const createResponse = await tdClient.createNode({
-			parentPath,
-			nodeType,
 			nodeName,
+			nodeType,
+			parentPath,
 		});
 
 		expect(createResponse).toBeDefined();
@@ -142,8 +142,8 @@ describe("TouchDesigner Client E2E Tests", () => {
 		expect(initialProps).toBeDefined();
 
 		const updateProps = {
-			text: "Updated via API!",
 			fontsizex: 24,
+			text: "Updated via API!",
 		};
 
 		const updateResponse = await tdClient.updateNode({
@@ -179,15 +179,15 @@ describe("TouchDesigner Client E2E Tests", () => {
 		const parentPath = SANDBOX_PATH;
 
 		const testNodes = [
-			{ type: "textTOP", name: `test_filter_a_${Date.now()}` },
-			{ type: "textTOP", name: `test_filter_b_${Date.now() + 1}` },
+			{ name: `test_filter_a_${Date.now()}`, type: "textTOP" },
+			{ name: `test_filter_b_${Date.now() + 1}`, type: "textTOP" },
 		];
 
 		for (const node of testNodes) {
 			await tdClient.createNode({
-				parentPath,
-				nodeType: node.type,
 				nodeName: node.name,
+				nodeType: node.type,
+				parentPath,
 			});
 		}
 
@@ -234,9 +234,9 @@ describe("TouchDesigner Client E2E Tests", () => {
 		const nodePath = `${parentPath}/${nodeName}`;
 
 		const createResponse = await tdClient.createNode({
-			parentPath,
-			nodeType,
 			nodeName,
+			nodeType,
+			parentPath,
 		});
 
 		expect(createResponse).toBeDefined();

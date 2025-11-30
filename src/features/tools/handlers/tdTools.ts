@@ -120,8 +120,8 @@ export function registerTdTools(
 					return {
 						content: [
 							{
-								type: "text" as const,
 								text: message,
+								type: "text" as const,
 							},
 						],
 					};
@@ -129,15 +129,15 @@ export function registerTdTools(
 
 				const formattedText = formatToolMetadata(filteredEntries, {
 					detailLevel: detailLevel ?? (filter ? "summary" : "minimal"),
-					responseFormat,
 					filter: normalizedFilter,
+					responseFormat,
 				});
 
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -165,8 +165,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -199,8 +199,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -228,8 +228,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -262,8 +262,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -303,8 +303,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -341,8 +341,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -376,8 +376,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -407,14 +407,14 @@ export function registerTdTools(
 				}
 				const formattedText = formatExecNodeMethodResult(
 					result.data,
-					{ nodePath, method, args, kwargs },
+					{ args, kwargs, method, nodePath },
 					{ detailLevel: detailLevel ?? "summary", responseFormat },
 				);
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -451,8 +451,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -489,8 +489,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};

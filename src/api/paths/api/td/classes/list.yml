@@ -3,7 +3,7 @@ get:
   operationId: get_td_python_classes
   description: Returns a list of Python classes, modules, and functions available in TouchDesigner
   responses:
-    '200':
+    "200":
       description: Successful response
       content:
         application/json:

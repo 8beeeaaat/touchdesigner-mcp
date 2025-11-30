@@ -1,0 +1,91 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "touchdesigner-mcp"
+version = "1.2.0"
+description = "TouchDesigner MCP Server - Python modules"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [
+    { name = "8beeeaaat" },
+]
+keywords = ["touchdesigner", "mcp", "openapi"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "PyYAML>=6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/8beeeaaat/touchdesigner-mcp"
+Repository = "https://github.com/8beeeaaat/touchdesigner-mcp"
+Issues = "https://github.com/8beeeaaat/touchdesigner-mcp/issues"
+
+[tool.ruff]
+# Line length to match Biome's default (80) or customize as needed
+line-length = 88
+target-version = "py39"
+indent-width = 4
+
+# Exclude auto-generated and third-party code
+extend-exclude = [
+    "td/modules/td_server/openapi_server",
+    "*.egg-info",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+# Enable recommended rules + additional useful rules
+select = [
+    "E",   # pycodestyle errors
+    "F",   # Pyflakes
+    "I",   # isort (import sorting)
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+
+# Ignore specific rules
+ignore = [
+    "E101",  # Mixed spaces and tabs (TouchDesigner uses tabs in some places)
+    "E501",  # Line too long (will be handled by formatter)
+    "E722",  # Bare except (needed for TouchDesigner's unpredictable errors)
+    "N802",  # Function name should be lowercase (TouchDesigner callbacks use camelCase)
+    "N803",  # Argument name should be lowercase (TouchDesigner uses webServerDAT)
+    "N812",  # Lowercase imported as non-lowercase (API_VERSION is a constant)
+    "F403",  # Star imports (used in generated code)
+    "F821",  # Undefined name (TouchDesigner provides globals like `parent`)
+    "B904",  # raise from (not always needed in TouchDesigner context)
+]
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
+# Sort imports alphabetically
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-sort-within-sections = true
+known-first-party = ["mcp", "utils"]
+
+[tool.ruff.format]
+# Use double quotes for strings (to match Biome's JavaScript formatting)
+quote-style = "double"
+
+# Indent with tabs to match Biome
+indent-style = "tab"
+
+# Like Black, use double quotes for docstrings
+docstring-code-format = true

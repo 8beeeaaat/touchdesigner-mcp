@@ -26,7 +26,7 @@ get:
         description: Include node properties in response
         default: false
   responses:
-    '200':
+    "200":
       description: List of nodes matching the specified criteria
       content:
         application/json:
@@ -76,7 +76,7 @@ post:
               type: string
               description: Name of the new node (optional)
   responses:
-    '200':
+    "200":
       description: Node created successfully
       content:
         application/json:
@@ -113,7 +113,7 @@ delete:
         type: string
         description: e.g., "/project1/geo1"
   responses:
-    '200':
+    "200":
       description: Node deleted successfully
       content:
         application/json:

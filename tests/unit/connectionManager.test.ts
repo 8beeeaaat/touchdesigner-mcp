@@ -15,15 +15,15 @@ import type { TouchDesignerClient } from "../../src/tdClient/touchDesignerClient
 
 // Mock dependencies
 const mockServer = {
-	connect: vi.fn(),
 	close: vi.fn(),
+	connect: vi.fn(),
 } as unknown as McpServer;
 
 const mockLogger = {
-	log: vi.fn(),
 	debug: vi.fn(),
-	warn: vi.fn(),
 	error: vi.fn(),
+	log: vi.fn(),
+	warn: vi.fn(),
 } as ILogger;
 
 const mockTdClient = {
@@ -61,10 +61,10 @@ describe("ConnectionManager", () => {
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
 			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
 				createSuccessResult({
-					server: "TouchDesigner",
-					version: "2023.11340",
 					osName: "macOS",
 					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11340",
 				}),
 			);
 
@@ -86,10 +86,10 @@ describe("ConnectionManager", () => {
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
 			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
 				createSuccessResult({
-					server: "TouchDesigner",
-					version: "2023.11340",
 					osName: "macOS",
 					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11340",
 				}),
 			);
 			await connectionManager.connect(mockTransport);
@@ -165,10 +165,10 @@ describe("ConnectionManager", () => {
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
 			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
 				createSuccessResult({
-					server: "TouchDesigner",
-					version: "2023.11340",
 					osName: "macOS",
 					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11340",
 				}),
 			);
 			await connectionManager.connect(mockTransport);
@@ -201,10 +201,10 @@ describe("ConnectionManager", () => {
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
 			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
 				createSuccessResult({
-					server: "TouchDesigner",
-					version: "2023.11340",
 					osName: "macOS",
 					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11340",
 				}),
 			);
 			await connectionManager.connect(mockTransport);
@@ -231,10 +231,10 @@ describe("ConnectionManager", () => {
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
 			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
 				createSuccessResult({
-					server: "TouchDesigner",
-					version: "2023.11340",
 					osName: "macOS",
 					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11340",
 				}),
 			);
 			await connectionManager.connect(mockTransport);
@@ -262,10 +262,10 @@ describe("ConnectionManager", () => {
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
 			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
 				createSuccessResult({
-					server: "TouchDesigner",
-					version: "2023.11340",
 					osName: "macOS",
 					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11340",
 				}),
 			);
 
@@ -281,10 +281,10 @@ describe("ConnectionManager", () => {
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
 			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
 				createSuccessResult({
-					server: "TouchDesigner",
-					version: "2023.11340",
 					osName: "macOS",
 					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11340",
 				}),
 			);
 			await connectionManager.connect(mockTransport);

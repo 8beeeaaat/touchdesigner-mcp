@@ -29,8 +29,8 @@ export class TouchDesignerServer {
 			},
 			{
 				capabilities: {
-					prompts: {},
 					logging: {},
+					prompts: {},
 					tools: {},
 				},
 			},
