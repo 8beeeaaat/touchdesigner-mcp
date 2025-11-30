@@ -52,6 +52,10 @@
       "description": "Get TouchDesigner server information and connection status"
     },
     {
+      "name": "get_module_help",
+      "description": "Get Python help() documentation for TouchDesigner modules and classes"
+    },
+    {
       "name": "get_td_class_details",
       "description": "Get detailed documentation for TouchDesigner Python classes"
     },

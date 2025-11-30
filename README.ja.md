@@ -250,6 +250,7 @@ td/
 | `delete_td_node`            | 既存のノードを削除します。                     |
 | `exec_node_method`          | ノードに対してPythonメソッドを呼び出します。   |
 | `execute_python_script`     | TD内で任意のPythonスクリプトを実行します。     |
+| `get_module_help`           | TouchDesignerモジュール/クラスのPython help()ドキュメントを取得します。 |
 | `get_td_class_details`      | TD Pythonクラス/モジュールの詳細情報を取得します。 |
 | `get_td_classes`            | TouchDesigner Pythonクラスのリストを取得します。 |
 | `get_td_info`           | TDサーバー環境に関する情報を取得します。       |
