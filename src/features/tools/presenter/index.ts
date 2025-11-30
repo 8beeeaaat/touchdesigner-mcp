@@ -9,6 +9,8 @@ export { formatClassDetails, formatClassList } from "./classListFormatter.js";
 export { formatModuleHelp } from "./moduleHelpFormatter.js";
 export type { NodeDetailsData } from "./nodeDetailsFormatter.js";
 export { formatNodeDetails } from "./nodeDetailsFormatter.js";
+export type { NodeErrorReportData } from "./nodeErrorsFormatter.js";
+export { formatNodeErrors } from "./nodeErrorsFormatter.js";
 export type { NodeListData } from "./nodeListFormatter.js";
 export { formatNodeList } from "./nodeListFormatter.js";
 export {

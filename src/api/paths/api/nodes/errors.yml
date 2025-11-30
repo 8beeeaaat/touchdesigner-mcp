@@ -1,0 +1,39 @@
+get:
+  summary: Get node errors
+  description: Collects TouchDesigner error messages for a node (optionally traversing children)
+  operationId: get_node_errors
+  parameters:
+    - description: Absolute path to the node to inspect. e.g., "/project1/text1"
+      in: query
+      name: nodePath
+      required: true
+      schema:
+        type: string
+    - description: Whether to traverse child nodes to aggregate their errors
+      in: query
+      name: includeChildren
+      required: false
+      schema:
+        type: boolean
+        default: true
+  responses:
+    "200":
+      description: Node error report
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - data
+              - error
+            properties:
+              success:
+                type: boolean
+                description: Whether the operation was successful
+              data:
+                $ref: ../../../index.yml#/components/schemas/TdNodeErrorReport
+              error:
+                nullable: true
+                type: string
+                description: Error message if the operation was not successful

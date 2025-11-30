@@ -185,6 +185,57 @@ console.log(node.properties?.Text);`,
 	},
 	{
 		category: "nodes",
+		description:
+			"Collect errors emitted by a node (and optionally its children)",
+		example: `import { getTdNodeErrors } from './servers/touchdesigner/getTdNodeErrors';
+
+const report = await getTdNodeErrors({
+  nodePath: '/project1/text1',
+  includeChildren: true,
+});
+if (report.hasErrors) {
+  console.log(report.errors?.map(err => err.message));
+}`,
+		functionName: "getTdNodeErrors",
+		modulePath: `${MODULE_ROOT}/getTdNodeErrors.ts`,
+		parameters: [
+			{
+				description: "Absolute path to inspect (e.g. /project1/text1).",
+				name: "nodePath",
+				required: true,
+				type: "string",
+			},
+			{
+				description:
+					"Traverse child nodes when aggregating errors (default true).",
+				name: "includeChildren",
+				required: false,
+				type: "boolean",
+			},
+			{
+				description: "Formatter verbosity for the returned error list.",
+				name: "detailLevel",
+				required: false,
+				type: "'minimal' | 'summary' | 'detailed'",
+			},
+			{
+				description: "Optional limit on how many errors are displayed.",
+				name: "limit",
+				required: false,
+				type: "number",
+			},
+			{
+				description: "Structured output encoding (json/yaml/markdown).",
+				name: "responseFormat",
+				required: false,
+				type: "'json' | 'yaml' | 'markdown'",
+			},
+		],
+		returns: "Error report outlining offending nodes, messages, and counts.",
+		tool: TOOL_NAMES.GET_TD_NODE_ERRORS,
+	},
+	{
+		category: "nodes",
 		description: "Create an operator under a parent path",
 		example: `import { createTdNode } from './servers/touchdesigner/createTdNode';
 

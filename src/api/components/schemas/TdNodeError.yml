@@ -1,0 +1,20 @@
+type: object
+description: Single node error entry
+required:
+  - nodePath
+  - nodeName
+  - opType
+  - message
+properties:
+  nodePath:
+    type: string
+    description: Absolute operator path that reported the error
+  nodeName:
+    type: string
+    description: Name of the operator
+  opType:
+    type: string
+    description: TouchDesigner operator type
+  message:
+    type: string
+    description: Error message reported by TouchDesigner
