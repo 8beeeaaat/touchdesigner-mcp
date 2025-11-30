@@ -4,8 +4,10 @@ Provides API functionality related to TouchDesigner
 """
 
 import contextlib
+import importlib
 import inspect
 import io
+import pydoc
 from typing import Any, Optional, Protocol
 
 import td
@@ -22,6 +24,7 @@ class IApiService(Protocol):
 	def get_td_info(self) -> Result: ...
 	def get_td_python_classes(self) -> Result: ...
 	def get_td_python_class_details(self, class_name: str) -> Result: ...
+	def get_module_help(self, module_name: str) -> Result: ...
 	def get_node_detail(self, node_path: str) -> Result: ...
 	def update_node(self, node_path: str, properties: dict[str, Any]) -> Result: ...
 	def exec_node_method(
@@ -117,6 +120,33 @@ class TouchDesignerApiService(IApiService):
 		}
 
 		return success_result(class_details)
+
+	def get_module_help(self, module_name: str) -> Result:
+		"""Get Python help() output for a module or class"""
+
+		target = self._resolve_help_target(module_name)
+		if target is None:
+			log_message(f"Module not found: {module_name}", LogLevel.WARNING)
+			return error_result(f"Module not found: {module_name}")
+
+		try:
+			help_text = self._normalize_help_text(pydoc.render_doc(target))
+		except Exception as exc:  # noqa: BLE001
+			log_message(
+				f"Error generating help for {module_name}: {str(exc)}",
+				LogLevel.ERROR,
+			)
+			return error_result(
+				f"Failed to get help for {module_name}: {str(exc)}",
+			)
+
+		log_message(f"Retrieved help for {module_name}", LogLevel.DEBUG)
+		return success_result(
+			{
+				"moduleName": module_name,
+				"helpText": help_text,
+			}
+		)
 
 	def get_node(self, node_path: str) -> Result:
 		"""Alias for get_node_detail for backwards compatibility"""
@@ -481,6 +511,90 @@ class TouchDesignerApiService(IApiService):
 				f"Error collecting node information: {str(e)}", LogLevel.WARNING
 			)
 			return {"name": node.name if hasattr(node, "name") else "unknown"}
+
+	def _resolve_help_target(self, module_name: str) -> Optional[Any]:
+		"""Locate a module/class for help() lookup."""
+		if not module_name:
+			return None
+
+		target_name = module_name.strip()
+		if not target_name:
+			return None
+
+		# Handle dotted names like "td.noiseCHOP" or "td.tdu.SomeClass"
+		def resolve_dotted_name(name: str) -> Optional[Any]:
+			parts = name.split(".")
+			# Only allow access starting from td or tdu
+			if parts[0] == "td":
+				obj: Any = td
+			elif parts[0] == "tdu" and hasattr(td, "tdu"):
+				obj = td.tdu
+			else:
+				return None
+			for part in parts[1:]:
+				# Validate part is non-empty and a valid identifier
+				if not part or not part.isidentifier():
+					return None
+				if not hasattr(obj, part):
+					return None
+				obj = getattr(obj, part)
+			return obj
+
+		# Try resolving as a dotted name
+		if "." in target_name:
+			resolved = resolve_dotted_name(target_name)
+			if resolved is not None:
+				return resolved
+
+		# Try direct attribute of td
+		if hasattr(td, target_name):
+			return getattr(td, target_name)
+
+		# Try importing as a module
+		imported = self._import_module_safely(target_name)
+		if imported:
+			return imported
+
+		# Try importing with td. prefix
+		if not target_name.startswith("td."):
+			imported = self._import_module_safely(f"td.{target_name}")
+			if imported:
+				return imported
+
+		return None
+
+	def _import_module_safely(self, target: str) -> Optional[Any]:
+		try:
+			return importlib.import_module(target)
+		except (ImportError, ModuleNotFoundError) as e:
+			log_message(f"Failed to import module '{target}': {str(e)}", LogLevel.DEBUG)
+			return None
+		except Exception as e:
+			log_message(
+				f"Unexpected error importing module '{target}': {str(e)}",
+				LogLevel.WARNING,
+			)
+			return None
+
+	def _normalize_help_text(self, text: str) -> str:
+		"""Normalize help text by removing terminal control sequences.
+
+		The pydoc module uses backspace characters (\b) for text formatting
+		(e.g., bold text is written as "c\bc" to print 'c' over 'c').
+		This method removes those backspace sequences to produce clean text.
+		If a backspace is encountered at the start (empty buffer), it is safely
+		ignored as there is no character to remove.
+		"""
+		if not text:
+			return text
+		buffer: list[str] = []
+		for char in text:
+			if char == "\b":
+				if buffer:
+					buffer.pop()
+				continue
+			buffer.append(char)
+		return "".join(buffer)
 
 	def _process_method_result(self, result: Any) -> Any:
 		"""

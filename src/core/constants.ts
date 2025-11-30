@@ -16,6 +16,7 @@ export const TOOL_NAMES = {
 	GET_TD_CLASS_DETAILS: "get_td_class_details",
 	GET_TD_CLASSES: "get_td_classes",
 	GET_TD_INFO: "get_td_info",
+	GET_TD_MODULE_HELP: "get_td_module_help",
 	GET_TD_NODE_PARAMETERS: "get_td_node_parameters",
 	GET_TD_NODES: "get_td_nodes",
 	UPDATE_TD_NODE_PARAMETERS: "update_td_node_parameters",

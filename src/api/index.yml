@@ -1,7 +1,7 @@
 info:
   description: OpenAPI schema for generating TouchDesigner API client code
   title: TouchDesigner API
-  version: 1.1.2
+  version: 1.2.0
 
 openapi: 3.0.0
 
@@ -18,6 +18,8 @@ paths:
     $ref: ./paths/api/td/classes/list.yml
   /api/td/classes/{className}:
     $ref: ./paths/api/td/classes/details.yml
+  /api/td/modules/help:
+    $ref: ./paths/api/td/modules/help.yml
   /api/td/nodes/exec:
     $ref: ./paths/api/td/nodes/exec.yml
   /api/td/server/exec:
@@ -39,3 +41,5 @@ components:
       $ref: ./components/schemas/TdPythonMethodInfo.yml
     TdPythonPropertyInfo:
       $ref: ./components/schemas/TdPythonPropertyInfo.yml
+    ModuleHelp:
+      $ref: ./components/schemas/ModuleHelp.yml

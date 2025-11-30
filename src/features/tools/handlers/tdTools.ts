@@ -8,6 +8,7 @@ import {
 	deleteNodeQueryParams,
 	execNodeMethodBody,
 	execPythonScriptBody,
+	getModuleHelpQueryParams,
 	getNodeDetailQueryParams,
 	getNodesQueryParams,
 	getTdPythonClassDetailsParams,
@@ -22,6 +23,7 @@ import {
 	formatCreateNodeResult,
 	formatDeleteNodeResult,
 	formatExecNodeMethodResult,
+	formatModuleHelp,
 	formatNodeDetails,
 	formatNodeList,
 	formatScriptResult,
@@ -75,6 +77,11 @@ const classDetailToolSchema = getTdPythonClassDetailsParams.extend(
 	formattingOptionsSchema.shape,
 );
 type ClassDetailToolParams = z.input<typeof classDetailToolSchema>;
+
+const moduleHelpToolSchema = getModuleHelpQueryParams.extend(
+	detailOnlyFormattingSchema.shape,
+);
+type ModuleHelpToolParams = z.input<typeof moduleHelpToolSchema>;
 
 const execNodeMethodToolSchema = execNodeMethodBody.extend(
 	detailOnlyFormattingSchema.shape,
@@ -507,6 +514,35 @@ export function registerTdTools(
 					TOOL_NAMES.GET_TD_CLASS_DETAILS,
 					REFERENCE_COMMENT,
 				);
+			}
+		},
+	);
+
+	server.tool(
+		TOOL_NAMES.GET_TD_MODULE_HELP,
+		"Retrieve Python help() text for a TouchDesigner module or class",
+		moduleHelpToolSchema.strict().shape,
+		async (params: ModuleHelpToolParams) => {
+			try {
+				const { detailLevel, moduleName, responseFormat } = params;
+				const result = await tdClient.getModuleHelp({ moduleName });
+				if (!result.success) {
+					throw result.error;
+				}
+				const formattedText = formatModuleHelp(result.data, {
+					detailLevel: detailLevel ?? "summary",
+					responseFormat,
+				});
+				return {
+					content: [
+						{
+							text: formattedText,
+							type: "text" as const,
+						},
+					],
+				};
+			} catch (error) {
+				return handleToolError(error, logger, TOOL_NAMES.GET_TD_MODULE_HELP);
 			}
 		},
 	);

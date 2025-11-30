@@ -1,0 +1,13 @@
+title: ModuleHelp
+type: object
+description: Raw Python help() output for a TouchDesigner module or class
+required:
+  - moduleName
+  - helpText
+properties:
+  moduleName:
+    type: string
+    description: Normalized module/class name the help text was generated for
+  helpText:
+    type: string
+    description: Captured output from Python's help() function
