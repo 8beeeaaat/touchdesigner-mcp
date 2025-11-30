@@ -328,7 +328,9 @@ function extractClassSummary(helpText: string): ClassSummary | undefined {
 		if (inDescription) {
 			if (!trimmed || trimmed.startsWith("|  Methods defined here:")) {
 				inDescription = false;
-			} else if (trimmed.startsWith("|")) {
+				continue; // Skip further processing of this line
+			}
+			if (trimmed.startsWith("|")) {
 				const desc = trimmed.replace(/^\|\s*/, "");
 				if (desc) {
 					descriptionLines.push(desc);
@@ -344,11 +346,12 @@ function extractClassSummary(helpText: string): ClassSummary | undefined {
 		if (inMro) {
 			if (!trimmed.startsWith("|")) {
 				inMro = false;
-				continue;
-			}
-			const entry = trimmed.replace(/^\|\s*/, "");
-			if (entry) {
-				methodResolutionOrder.push(entry.trim());
+				// Allow early exit check below to be evaluated immediately
+			} else {
+				const entry = trimmed.replace(/^\|\s*/, "");
+				if (entry) {
+					methodResolutionOrder.push(entry.trim());
+				}
 			}
 		}
 
