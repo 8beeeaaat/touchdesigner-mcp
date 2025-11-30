@@ -185,13 +185,11 @@ console.log(node.properties?.Text);`,
 	},
 	{
 		category: "nodes",
-		description:
-			"Collect errors emitted by a node (and optionally its children)",
+		description: "Collect errors emitted by a node and its children",
 		example: `import { getTdNodeErrors } from './servers/touchdesigner/getTdNodeErrors';
 
 const report = await getTdNodeErrors({
   nodePath: '/project1/text1',
-  includeChildren: true,
 });
 if (report.hasErrors) {
   console.log(report.errors?.map(err => err.message));
@@ -204,13 +202,6 @@ if (report.hasErrors) {
 				name: "nodePath",
 				required: true,
 				type: "string",
-			},
-			{
-				description:
-					"Traverse child nodes when aggregating errors (default true).",
-				name: "includeChildren",
-				required: false,
-				type: "boolean",
 			},
 			{
 				description: "Formatter verbosity for the returned error list.",
