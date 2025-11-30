@@ -432,6 +432,40 @@ console.log(textTop.methods?.length);`,
 			"Deep description of a Python class including methods and properties.",
 		tool: TOOL_NAMES.GET_TD_CLASS_DETAILS,
 	},
+	{
+		category: "classes",
+		description:
+			"Run Python help() to inspect documentation for TouchDesigner modules or classes",
+		example: `import { getTdModuleHelp } from './servers/touchdesigner/getTdModuleHelp';
+
+const docs = await getTdModuleHelp({ moduleName: 'noiseCHOP' });
+console.log(docs.helpText?.slice(0, 200));`,
+		functionName: "getTdModuleHelp",
+		modulePath: `${MODULE_ROOT}/getTdModuleHelp.ts`,
+		parameters: [
+			{
+				description:
+					"Module or class name (e.g., 'noiseCHOP', 'td.noiseCHOP', 'tdu').",
+				name: "moduleName",
+				required: true,
+				type: "string",
+			},
+			{
+				description: "Controls how much of the help text is shown.",
+				name: "detailLevel",
+				required: false,
+				type: "'minimal' | 'summary' | 'detailed'",
+			},
+			{
+				description: "Select markdown/json/yaml output for automation.",
+				name: "responseFormat",
+				required: false,
+				type: "'json' | 'yaml' | 'markdown'",
+			},
+		],
+		returns: "Captured Python help() output with formatter context.",
+		tool: TOOL_NAMES.GET_TD_MODULE_HELP,
+	},
 ];
 
 export function getTouchDesignerToolMetadata(): ToolMetadata[] {

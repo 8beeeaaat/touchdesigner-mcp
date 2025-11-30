@@ -77,6 +77,25 @@ function createMockTdClient(): TouchDesignerClient {
 			},
 			success: true,
 		})) as TouchDesignerClient["getClasses"],
+		getModuleHelp: (async (_params: unknown) => ({
+			data: {
+				helpText: `Help on module noiseCHOP:
+
+NAME
+    noiseCHOP
+
+DESCRIPTION
+    Generates procedural noise for CHOP channels.
+
+METHODS
+    cook(frame)
+
+DATA DESCRIPTORS
+    sampleRate`,
+				moduleName: "noiseCHOP",
+			},
+			success: true,
+		})) as TouchDesignerClient["getModuleHelp"],
 		getNodeDetail: async (_params: unknown) => ({
 			data: {
 				id: 10,
@@ -206,5 +225,48 @@ describe("MCP tool responses", () => {
 		expect(text).toContain("getTdClasses");
 		expect(text).toContain("getTdClassDetails");
 		expect(text).toContain("servers/touchdesigner");
+	});
+
+	it("returns formatted module help preview for GET_TD_MODULE_HELP", async () => {
+		const handler = server.getTool(TOOL_NAMES.GET_TD_MODULE_HELP);
+		const result = (await handler({
+			detailLevel: "summary",
+			moduleName: "noiseCHOP",
+			responseFormat: "markdown",
+		})) as {
+			content?: Array<{ type: string; text?: string }>;
+		};
+
+		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+		expect(text).toContain("✓ Help information for noiseCHOP");
+		expect(text).toContain("Sections:");
+		expect(text).toContain("METHODS");
+	});
+
+	it("returns an error response when GET_TD_MODULE_HELP fails", async () => {
+		const failingServer = new MockMcpServer();
+		const failingClient = createMockTdClient();
+		failingClient.getModuleHelp = (async () => ({
+			error: new Error("Module missing"),
+			success: false,
+		})) as TouchDesignerClient["getModuleHelp"];
+
+		registerTools(
+			failingServer as unknown as import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
+			logger,
+			failingClient,
+		);
+
+		const handler = failingServer.getTool(TOOL_NAMES.GET_TD_MODULE_HELP);
+		const result = (await handler({
+			moduleName: "missing",
+		})) as {
+			content?: Array<{ type: string; text?: string }>;
+			isError?: boolean;
+		};
+
+		expect(result.isError).toBe(true);
+		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+		expect(text).toContain("Module missing");
 	});
 });

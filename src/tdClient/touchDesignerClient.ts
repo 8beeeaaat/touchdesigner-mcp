@@ -6,6 +6,7 @@ import {
 	deleteNode as apiDeleteNode,
 	execNodeMethod as apiExecNodeMethod,
 	execPythonScript as apiExecPythonScript,
+	getModuleHelp as apiGetModuleHelp,
 	getNodeDetail as apiGetNodeDetail,
 	getNodes as apiGetNodes,
 	getTdInfo as apiGetTdInfo,
@@ -16,6 +17,7 @@ import {
 	type DeleteNodeParams,
 	type ExecNodeMethodRequest,
 	type ExecPythonScriptRequest,
+	type GetModuleHelpParams,
 	type GetNodeDetailParams,
 	type GetNodesParams,
 	type UpdateNodeRequest,
@@ -42,6 +44,7 @@ export interface ITouchDesignerApi {
 	deleteNode: typeof apiDeleteNode;
 	getTdPythonClasses: typeof apiGetTdPythonClasses;
 	getTdPythonClassDetails: typeof apiGetTdPythonClassDetails;
+	getModuleHelp: typeof apiGetModuleHelp;
 }
 
 /**
@@ -52,6 +55,7 @@ const defaultApiClient: ITouchDesignerApi = {
 	deleteNode: apiDeleteNode,
 	execNodeMethod: apiExecNodeMethod,
 	execPythonScript: apiExecPythonScript,
+	getModuleHelp: apiGetModuleHelp,
 	getNodeDetail: apiGetNodeDetail,
 	getNodes: apiGetNodes,
 	getTdInfo: apiGetTdInfo,
@@ -284,6 +288,17 @@ export class TouchDesignerClient {
 		await this.verifyCompatibility();
 
 		const result = await this.api.getTdPythonClassDetails(className);
+		return handleApiResponse<(typeof result)["data"]>(result);
+	}
+
+	/**
+	 * Retrieve Python help() documentation for modules/classes
+	 */
+	async getModuleHelp(params: GetModuleHelpParams) {
+		this.logDebug("Getting module help", { moduleName: params.moduleName });
+		await this.verifyCompatibility();
+
+		const result = await this.api.getModuleHelp(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
 

@@ -4,8 +4,10 @@ Provides API functionality related to TouchDesigner
 """
 
 import contextlib
+import importlib
 import inspect
 import io
+import pydoc
 from typing import Any, Optional, Protocol
 
 import td
@@ -22,6 +24,7 @@ class IApiService(Protocol):
 	def get_td_info(self) -> Result: ...
 	def get_td_python_classes(self) -> Result: ...
 	def get_td_python_class_details(self, class_name: str) -> Result: ...
+	def get_module_help(self, module_name: str) -> Result: ...
 	def get_node_detail(self, node_path: str) -> Result: ...
 	def update_node(self, node_path: str, properties: dict[str, Any]) -> Result: ...
 	def exec_node_method(
@@ -117,6 +120,33 @@ class TouchDesignerApiService(IApiService):
 		}
 
 		return success_result(class_details)
+
+	def get_module_help(self, module_name: str) -> Result:
+		"""Get Python help() output for a module or class"""
+
+		target = self._resolve_help_target(module_name)
+		if target is None:
+			log_message(f"Module not found: {module_name}", LogLevel.WARNING)
+			return error_result(f"Module not found: {module_name}")
+
+		try:
+			help_text = self._normalize_help_text(pydoc.render_doc(target))
+		except Exception as exc:  # noqa: BLE001
+			log_message(
+				f"Error generating help for {module_name}: {str(exc)}",
+				LogLevel.ERROR,
+			)
+			return error_result(
+				f"Failed to get help for {module_name}: {str(exc)}",
+			)
+
+		log_message(f"Retrieved help for {module_name}", LogLevel.DEBUG)
+		return success_result(
+			{
+				"moduleName": module_name,
+				"helpText": help_text,
+			}
+		)
 
 	def get_node(self, node_path: str) -> Result:
 		"""Alias for get_node_detail for backwards compatibility"""
@@ -481,6 +511,57 @@ class TouchDesignerApiService(IApiService):
 				f"Error collecting node information: {str(e)}", LogLevel.WARNING
 			)
 			return {"name": node.name if hasattr(node, "name") else "unknown"}
+
+	def _resolve_help_target(self, module_name: str) -> Optional[Any]:
+		"""Locate a module/class for help() lookup."""
+		if not module_name:
+			return None
+
+		target_name = module_name.strip()
+		if not target_name:
+			return None
+
+		eval_globals = {"__builtins__": {}}
+		eval_locals = {"td": td}
+		if hasattr(td, "tdu"):
+			eval_locals["tdu"] = td.tdu
+
+		try:
+			return eval(target_name, eval_globals, eval_locals)
+		except Exception:
+			pass
+
+		if hasattr(td, target_name):
+			return getattr(td, target_name)
+
+		imported = self._import_module_safely(target_name)
+		if imported:
+			return imported
+
+		if not target_name.startswith("td."):
+			imported = self._import_module_safely(f"td.{target_name}")
+			if imported:
+				return imported
+
+		return None
+
+	def _import_module_safely(self, target: str) -> Optional[Any]:
+		try:
+			return importlib.import_module(target)
+		except Exception:
+			return None
+
+	def _normalize_help_text(self, text: str) -> str:
+		if not text:
+			return text
+		buffer: list[str] = []
+		for char in text:
+			if char == "\b":
+				if buffer:
+					buffer.pop()
+				continue
+			buffer.append(char)
+		return "".join(buffer)
 
 	def _process_method_result(self, result: Any) -> Any:
 		"""
