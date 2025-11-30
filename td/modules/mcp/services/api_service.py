@@ -13,6 +13,7 @@ from utils.logging import log_message
 from utils.result import error_result, success_result
 from utils.serialization import safe_serialize
 from utils.types import LogLevel, Result
+from utils.version import get_mcp_api_version
 
 
 class IApiService(Protocol):
@@ -42,6 +43,7 @@ class TouchDesignerApiService(IApiService):
 			"version": f"{version}.{build}",
 			"osName": td.app.osName,
 			"osVersion": td.app.osVersion,
+			"mcpApiVersion": get_mcp_api_version(),
 		}
 
 		return success_result(server_info)

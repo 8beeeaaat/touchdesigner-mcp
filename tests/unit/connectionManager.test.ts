@@ -9,11 +9,8 @@ import {
 	vi,
 } from "vitest";
 import type { ILogger } from "../../src/core/logger.js";
-import { createSuccessResult } from "../../src/core/result.js";
 import { ConnectionManager } from "../../src/server/connectionManager.js";
-import type { TouchDesignerClient } from "../../src/tdClient/touchDesignerClient.js";
 
-// Mock dependencies
 const mockServer = {
 	close: vi.fn(),
 	connect: vi.fn(),
@@ -22,10 +19,6 @@ const mockServer = {
 const mockLogger = {
 	sendLog: vi.fn(),
 } as ILogger;
-
-const mockTdClient = {
-	getTdInfo: vi.fn(),
-} as unknown as TouchDesignerClient;
 
 const mockTransport = {} as Transport;
 
@@ -36,82 +29,52 @@ describe("ConnectionManager", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-
-		// Spy on console methods
 		consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 		consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
-		// Setup environment variables
 		process.env.TD_WEB_SERVER_HOST = "http://127.0.0.1";
 		process.env.TD_WEB_SERVER_PORT = "9981";
 
-		connectionManager = new ConnectionManager(
-			mockServer,
-			mockLogger,
-			mockTdClient,
-		);
+		connectionManager = new ConnectionManager(mockServer, mockLogger);
 	});
 
 	describe("connect", () => {
-		it("should successfully connect when MCP server and TouchDesigner are available", async () => {
-			// Arrange
+		it("should successfully connect when MCP server is available", async () => {
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
-			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
-				createSuccessResult({
-					osName: "macOS",
-					osVersion: "12.6.1",
-					server: "TouchDesigner",
-					version: "2023.11340",
-				}),
-			);
 
-			// Act
 			const result = await connectionManager.connect(mockTransport);
 
-			// Assert
 			expect(result.success).toBe(true);
 			expect(mockServer.connect).toHaveBeenCalledWith(mockTransport);
-			expect(mockLogger.sendLog).toHaveBeenCalledWith({
-				data: "Server connected and ready to process requests: http://127.0.0.1:9981",
-				level: "info",
-			});
-			expect(mockTdClient.getTdInfo).toHaveBeenCalled();
+			expect(mockLogger.sendLog).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: "Server connected and ready to process requests: http://127.0.0.1:9981",
+					level: "info",
+				}),
+			);
 			expect(connectionManager.isConnected()).toBe(true);
 		});
 
 		it("should return success if already connected", async () => {
-			// Arrange - Connect first
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
-			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
-				createSuccessResult({
-					osName: "macOS",
-					osVersion: "12.6.1",
-					server: "TouchDesigner",
-					version: "2023.11340",
-				}),
-			);
 			await connectionManager.connect(mockTransport);
 
-			// Act
 			const result = await connectionManager.connect(mockTransport);
 
-			// Assert
 			expect(result.success).toBe(true);
-			expect(mockLogger.sendLog).toHaveBeenCalledWith({
-				data: "MCP server already connected",
-				level: "info",
-			});
+			expect(mockLogger.sendLog).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: "MCP server already connected",
+					level: "info",
+				}),
+			);
 		});
 
 		it("should handle MCP server connection failure", async () => {
-			// Arrange
 			const connectionError = new Error("MCP connection failed");
 			vi.mocked(mockServer.connect).mockRejectedValue(connectionError);
 
-			// Act
 			const result = await connectionManager.connect(mockTransport);
 
-			// Assert
 			expect(result.success).toBe(false);
 			if (!result.success) {
 				expect(result.error).toBe(connectionError);
@@ -123,33 +86,11 @@ describe("ConnectionManager", () => {
 			expect(connectionManager.isConnected()).toBe(false);
 		});
 
-		it("should handle TouchDesigner getTdInfo throwing an error", async () => {
-			// Arrange
-			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
-			const tdError = new Error("Network error");
-			vi.mocked(mockTdClient.getTdInfo).mockRejectedValue(tdError);
-
-			// Act
-			const result = await connectionManager.connect(mockTransport);
-
-			// Assert
-			expect(result.success).toBe(false);
-			if (!result.success) {
-				expect(result.error.message).toBe(
-					"Failed to connect to TouchDesigner. The mcp_webserver_base on TouchDesigner not currently available: Network error",
-				);
-			}
-			expect(connectionManager.isConnected()).toBe(false);
-		});
-
 		it("should handle non-Error objects thrown during connection", async () => {
-			// Arrange
 			vi.mocked(mockServer.connect).mockRejectedValue("String error");
 
-			// Act
 			const result = await connectionManager.connect(mockTransport);
 
-			// Assert
 			expect(result.success).toBe(false);
 			if (!result.success) {
 				expect(result.error.message).toBe("String error");
@@ -160,23 +101,12 @@ describe("ConnectionManager", () => {
 
 	describe("disconnect", () => {
 		it("should successfully disconnect when connected", async () => {
-			// Arrange - Connect first
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
-			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
-				createSuccessResult({
-					osName: "macOS",
-					osVersion: "12.6.1",
-					server: "TouchDesigner",
-					version: "2023.11340",
-				}),
-			);
 			await connectionManager.connect(mockTransport);
 			vi.mocked(mockServer.close).mockResolvedValue(undefined);
 
-			// Act
 			const result = await connectionManager.disconnect();
 
-			// Assert
 			expect(result.success).toBe(true);
 			expect(mockServer.close).toHaveBeenCalled();
 			expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -186,35 +116,22 @@ describe("ConnectionManager", () => {
 		});
 
 		it("should return success if not connected", async () => {
-			// Act
 			const result = await connectionManager.disconnect();
 
-			// Assert
 			expect(result.success).toBe(true);
 			expect(consoleLogSpy).toHaveBeenCalledWith("MCP server not connected");
 			expect(mockServer.close).not.toHaveBeenCalled();
 		});
 
 		it("should handle server close failure", async () => {
-			// Arrange - Connect first
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
-			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
-				createSuccessResult({
-					osName: "macOS",
-					osVersion: "12.6.1",
-					server: "TouchDesigner",
-					version: "2023.11340",
-				}),
-			);
 			await connectionManager.connect(mockTransport);
 
 			const closeError = new Error("Close failed");
 			vi.mocked(mockServer.close).mockRejectedValue(closeError);
 
-			// Act
 			const result = await connectionManager.disconnect();
 
-			// Assert
 			expect(result.success).toBe(false);
 			if (!result.success) {
 				expect(result.error).toBe(closeError);
@@ -226,24 +143,12 @@ describe("ConnectionManager", () => {
 		});
 
 		it("should handle non-Error objects during disconnect", async () => {
-			// Arrange - Connect first
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
-			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
-				createSuccessResult({
-					osName: "macOS",
-					osVersion: "12.6.1",
-					server: "TouchDesigner",
-					version: "2023.11340",
-				}),
-			);
 			await connectionManager.connect(mockTransport);
-
 			vi.mocked(mockServer.close).mockRejectedValue("String error");
 
-			// Act
 			const result = await connectionManager.disconnect();
 
-			// Assert
 			expect(result.success).toBe(false);
 			if (!result.success) {
 				expect(result.error.message).toBe("String error");
@@ -257,56 +162,31 @@ describe("ConnectionManager", () => {
 		});
 
 		it("should return true when connected", async () => {
-			// Arrange
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
-			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
-				createSuccessResult({
-					osName: "macOS",
-					osVersion: "12.6.1",
-					server: "TouchDesigner",
-					version: "2023.11340",
-				}),
-			);
 
-			// Act
 			await connectionManager.connect(mockTransport);
 
-			// Assert
 			expect(connectionManager.isConnected()).toBe(true);
 		});
 
 		it("should return false after disconnect", async () => {
-			// Arrange - Connect first
 			vi.mocked(mockServer.connect).mockResolvedValue(undefined);
-			vi.mocked(mockTdClient.getTdInfo).mockResolvedValue(
-				createSuccessResult({
-					osName: "macOS",
-					osVersion: "12.6.1",
-					server: "TouchDesigner",
-					version: "2023.11340",
-				}),
-			);
 			await connectionManager.connect(mockTransport);
 			vi.mocked(mockServer.close).mockResolvedValue(undefined);
 
-			// Act
 			await connectionManager.disconnect();
 
-			// Assert
 			expect(connectionManager.isConnected()).toBe(false);
 		});
 	});
 
 	describe("error messages", () => {
 		it("should display helpful setup instructions on connection failure", async () => {
-			// Arrange
 			const connectionError = new Error("Connection failed");
 			vi.mocked(mockServer.connect).mockRejectedValue(connectionError);
 
-			// Act
 			await connectionManager.connect(mockTransport);
 
-			// Assert
 			expect(consoleErrorSpy).toHaveBeenCalledWith(
 				"Fatal error starting server! Check TouchDesigner setup and starting webserver. For detailed setup instructions, see https://github.com/8beeeaaat/touchdesigner-mcp",
 				connectionError,

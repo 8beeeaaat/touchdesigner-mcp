@@ -1,4 +1,6 @@
 import type { ILogger } from "../core/logger.js";
+import { createErrorResult, createSuccessResult } from "../core/result.js";
+import { PACKAGE_VERSION } from "../core/version.js";
 import {
 	createNode as apiCreateNode,
 	deleteNode as apiDeleteNode,
@@ -19,16 +21,12 @@ import {
 	type UpdateNodeRequest,
 } from "../gen/endpoints/TouchDesignerAPI.js";
 
-/**
- * Server information returned by TouchDesigner
- */
-export interface TdInfo {
-	server: string;
-	version: string;
-	status?: string;
-	buildDate?: string;
-	platform?: string;
-}
+const updateGuide = `
+	1. Download the latest [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) from the releases page.
+	2. Delete the existing \`touchdesigner-mcp-td\` folder and replace it with the newly extracted contents.
+	3. Remove the old \`mcp_webserver_base\` component from your TouchDesigner project and import the \`.tox\` from the new folder.
+	4. Restart TouchDesigner and the AI agent running the MCP server (e.g., Claude Desktop).
+`;
 
 /**
  * Interface for TouchDesignerClient HTTP operations
@@ -118,6 +116,7 @@ function handleApiResponse<T>(response: TdResponse<T>): Result<T> {
 export class TouchDesignerClient {
 	private readonly logger: ILogger;
 	private readonly api: ITouchDesignerApi;
+	private verifiedCompatibilityError: Error | null;
 
 	private logDebug(message: string, context?: Record<string, unknown>) {
 		const data = context ? { message, ...context } : { message };
@@ -126,6 +125,23 @@ export class TouchDesignerClient {
 			level: "debug",
 			logger: "TouchDesignerClient",
 		});
+	}
+
+	/**
+	 * Verify compatibility with the TouchDesigner server
+	 */
+	private async verifyCompatibility() {
+		if (this.verifiedCompatibilityError) {
+			throw this.verifiedCompatibilityError;
+		}
+
+		const result = await this.verifyVersionCompatibility();
+		if (result.success) {
+			this.verifiedCompatibilityError = null;
+			return;
+		}
+		this.verifiedCompatibilityError = result.error;
+		throw result.error;
 	}
 
 	/**
@@ -139,6 +155,7 @@ export class TouchDesignerClient {
 	) {
 		this.logger = params.logger || nullLogger;
 		this.api = params.httpClient || defaultApiClient;
+		this.verifiedCompatibilityError = null;
 	}
 
 	/**
@@ -153,6 +170,7 @@ export class TouchDesignerClient {
 			method: params.method,
 			nodePath: params.nodePath,
 		});
+		await this.verifyCompatibility();
 
 		const result = await this.api.execNodeMethod(params);
 		return handleApiResponse<DATA>(result as TdResponse<DATA>);
@@ -167,6 +185,8 @@ export class TouchDesignerClient {
 		},
 	>(params: ExecPythonScriptRequest) {
 		this.logDebug("Executing Python script", { params });
+		await this.verifyCompatibility();
+
 		const result = await this.api.execPythonScript(params);
 		return handleApiResponse<DATA>(result as TdResponse<DATA>);
 	}
@@ -176,6 +196,8 @@ export class TouchDesignerClient {
 	 */
 	async getTdInfo() {
 		this.logDebug("Getting server info");
+		await this.verifyCompatibility();
+
 		const result = await this.api.getTdInfo();
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -187,6 +209,8 @@ export class TouchDesignerClient {
 		this.logDebug("Getting nodes for parent", {
 			parentPath: params.parentPath,
 		});
+		await this.verifyCompatibility();
+
 		const result = await this.api.getNodes(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -198,6 +222,8 @@ export class TouchDesignerClient {
 		this.logDebug("Getting properties for node", {
 			nodePath: params.nodePath,
 		});
+		await this.verifyCompatibility();
+
 		const result = await this.api.getNodeDetail(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -211,6 +237,8 @@ export class TouchDesignerClient {
 			nodeType: params.nodeType,
 			parentPath: params.parentPath,
 		});
+		await this.verifyCompatibility();
+
 		const result = await this.api.createNode(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -220,6 +248,8 @@ export class TouchDesignerClient {
 	 */
 	async updateNode(params: UpdateNodeRequest) {
 		this.logDebug("Updating node", { nodePath: params.nodePath });
+		await this.verifyCompatibility();
+
 		const result = await this.api.updateNode(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -229,6 +259,8 @@ export class TouchDesignerClient {
 	 */
 	async deleteNode(params: DeleteNodeParams) {
 		this.logDebug("Deleting node", { nodePath: params.nodePath });
+		await this.verifyCompatibility();
+
 		const result = await this.api.deleteNode(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -238,6 +270,8 @@ export class TouchDesignerClient {
 	 */
 	async getClasses() {
 		this.logDebug("Getting Python classes");
+		await this.verifyCompatibility();
+
 		const result = await this.api.getTdPythonClasses();
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -247,7 +281,55 @@ export class TouchDesignerClient {
 	 */
 	async getClassDetails(className: string) {
 		this.logDebug("Getting class details", { className });
+		await this.verifyCompatibility();
+
 		const result = await this.api.getTdPythonClassDetails(className);
 		return handleApiResponse<(typeof result)["data"]>(result);
+	}
+
+	async verifyVersionCompatibility() {
+		const tdInfoResult = await this.api.getTdInfo();
+		if (!tdInfoResult.success) {
+			return createErrorResult(
+				new Error(
+					`Failed to retrieve TouchDesigner info for version check: ${tdInfoResult.error}`,
+				),
+			);
+		}
+		const apiVersion = tdInfoResult.data?.mcpApiVersion?.trim();
+		if (!apiVersion) {
+			return createErrorResult(
+				new Error(
+					`TouchDesigner API server did not report its version. Please reinstall the TouchDesigner components from the latest release.\n${updateGuide}`,
+				),
+			);
+		}
+
+		const normalizedServerVersion = this.normalizeVersion(PACKAGE_VERSION);
+		const normalizedApiVersion = this.normalizeVersion(apiVersion);
+		if (normalizedServerVersion !== normalizedApiVersion) {
+			this.logger.sendLog({
+				data: {
+					message:
+						"MCP server and TouchDesigner API server versions are incompatible",
+					touchDesignerApiVersion: normalizedApiVersion,
+					touchDesignerServerVersion: normalizedServerVersion,
+				},
+				level: "error",
+				logger: "TouchDesignerClient",
+			});
+
+			return createErrorResult(
+				new Error(
+					`Version mismatch detected between MCP server (${normalizedServerVersion}) and TouchDesigner API server (${normalizedApiVersion}). Update both components to the same release.\n${updateGuide}`,
+				),
+			);
+		}
+
+		return createSuccessResult(undefined);
+	}
+
+	private normalizeVersion(version: string): string {
+		return version.trim().replace(/^v/i, "");
 	}
 }
