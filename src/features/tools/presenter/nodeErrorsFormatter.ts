@@ -34,7 +34,6 @@ export function formatNodeErrors(
 		return finalizeFormattedText(noErrorText, opts, {
 			context: {
 				errorCount: 0,
-				includeChildren: data.includeChildren ?? true,
 				nodeName: data.nodeName,
 				nodePath: data.nodePath,
 			},
@@ -44,9 +43,7 @@ export function formatNodeErrors(
 	}
 
 	const { items, truncated } = limitArray(errors, opts.limit);
-	const header = `Node: ${data.nodePath}\nOperator: ${data.opType} (${data.nodeName})\n${data.errorCount} error(s) found${
-		data.includeChildren ? " (children included)" : ""
-	}\n`;
+	const header = `Node: ${data.nodePath}\nOperator: ${data.opType} (${data.nodeName})\n${data.errorCount} error(s) found (children included)\n`;
 
 	const body =
 		opts.detailLevel === "minimal"
@@ -63,7 +60,6 @@ export function formatNodeErrors(
 		context: {
 			displayed: items.length,
 			errorCount: data.errorCount,
-			includeChildren: data.includeChildren ?? true,
 			nodeName: data.nodeName,
 			nodePath: data.nodePath,
 			opType: data.opType,

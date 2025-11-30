@@ -1,6 +1,6 @@
 get:
   summary: Get node errors
-  description: Collects TouchDesigner error messages for a node (optionally traversing children)
+  description: Collects TouchDesigner error messages for a node and its children
   operationId: get_node_errors
   parameters:
     - description: Absolute path to the node to inspect. e.g., "/project1/text1"
@@ -9,13 +9,6 @@ get:
       required: true
       schema:
         type: string
-    - description: Whether to traverse child nodes to aggregate their errors
-      in: query
-      name: includeChildren
-      required: false
-      schema:
-        type: boolean
-        default: true
   responses:
     "200":
       description: Node error report

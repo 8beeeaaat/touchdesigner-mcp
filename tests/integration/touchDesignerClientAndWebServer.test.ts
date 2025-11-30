@@ -373,7 +373,7 @@ describe("TouchDesigner Client E2E Tests", () => {
 			errors.some(
 				(msg) =>
 					msg.message ===
-					`Error: Not enough sources specified (${addNodePath})`,
+					`${addNodePath}:  Error: Not enough sources specified`,
 			),
 		).toBe(true);
 	});

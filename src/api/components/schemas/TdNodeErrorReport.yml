@@ -17,9 +17,6 @@ properties:
   opType:
     type: string
     description: Operator type of the inspected node
-  includeChildren:
-    type: boolean
-    description: Whether child nodes were traversed while collecting errors
   errorCount:
     type: integer
     description: Number of errors that were discovered

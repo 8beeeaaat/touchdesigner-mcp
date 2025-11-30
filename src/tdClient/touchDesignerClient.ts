@@ -241,7 +241,6 @@ export class TouchDesignerClient {
 	 */
 	async getNodeErrors(params: GetNodeErrorsParams) {
 		this.logDebug("Checking node errors", {
-			includeChildren: params.includeChildren,
 			nodePath: params.nodePath,
 		});
 		await this.verifyCompatibility();

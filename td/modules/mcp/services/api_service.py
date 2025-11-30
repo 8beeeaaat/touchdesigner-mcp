@@ -166,27 +166,77 @@ class TouchDesignerApiService(IApiService):
 		node_info = self._get_node_summary(node)
 		return success_result(node_info)
 
-	def get_node_errors(self, node_path: str, include_children: bool = True) -> Result:
-		"""Collect error messages for the specified node (optionally including children)"""
+	def get_node_errors(self, node_path: str) -> Result:
+		"""Collect error messages for the specified node and its children"""
 
 		node = td.op(node_path)
 
 		if node is None or not node.valid:
-			raise error_result(f"Node not found at path: {node_path}")
+			return error_result(f"Node not found at path: {node_path}")
 
-		include_children_flag = self._normalize_bool(include_children, default=True)
+		# Use TouchDesigner's built-in errors() method
+		all_errors = []
+		if hasattr(node, "errors") and callable(node.errors):
+			try:
+				# errors(recurse=True) returns a string with newline-separated error messages
+				error_output = node.errors(recurse=True)
+				if error_output:
+					# Parse the error output into structured data
+					error_lines = error_output.strip().split("\n")
+					for line in error_lines:
+						line = line.strip()
+						if line:
+							# Extract node path from error message if present
+							# Format: "Error message (node_path)"
+							if "(" in line and line.endswith(")"):
+								message_part, path_part = line.rsplit("(", 1)
+								error_node_path = path_part.rstrip(")")
+								message = message_part.strip()
 
-		errors = self._collect_node_errors(node, include_children_flag)
+								# Try to get the actual node to extract more info
+								error_node = td.op(error_node_path)
+								if error_node and error_node.valid:
+									all_errors.append(
+										{
+											"nodePath": error_node.path,
+											"nodeName": error_node.name,
+											"opType": error_node.OPType,
+											"message": message,
+										}
+									)
+								else:
+									all_errors.append(
+										{
+											"nodePath": error_node_path,
+											"nodeName": "",
+											"opType": "",
+											"message": message,
+										}
+									)
+							else:
+								# Simple error message without node path
+								all_errors.append(
+									{
+										"nodePath": node.path,
+										"nodeName": node.name,
+										"opType": node.OPType,
+										"message": line,
+									}
+								)
+			except Exception as e:
+				log_message(
+					f"Error getting errors from node {node_path}: {str(e)}",
+					LogLevel.WARNING,
+				)
 
 		return success_result(
 			{
 				"nodePath": node.path,
 				"nodeName": node.name,
 				"opType": node.OPType,
-				"includeChildren": include_children_flag,
-				"errorCount": len(errors),
-				"hasErrors": bool(errors),
-				"errors": errors,
+				"errorCount": len(all_errors),
+				"hasErrors": bool(all_errors),
+				"errors": all_errors,
 			}
 		)
 
@@ -538,131 +588,6 @@ class TouchDesignerApiService(IApiService):
 				f"Error collecting node information: {str(e)}", LogLevel.WARNING
 			)
 			return {"name": node.name if hasattr(node, "name") else "unknown"}
-
-	def _normalize_bool(self, value: Any, default: bool = False) -> bool:
-		"""Best effort conversion of various truthy inputs to boolean"""
-		if isinstance(value, bool):
-			return value
-
-		if value is None:
-			return default
-
-		if isinstance(value, str):
-			normalized = value.strip().lower()
-			if normalized in {"false", "0", "no", "off", ""}:
-				return False
-			if normalized in {"true", "1", "yes", "on"}:
-				return True
-			return default
-
-		return bool(value)
-
-	def _collect_node_errors(
-		self, node, include_children: bool
-	) -> list[dict[str, Any]]:
-		"""Recursively collect error entries for a node (and optionally its children)"""
-		errors = self._extract_node_errors(node)
-		if include_children:
-			children_attr = getattr(node, "children", None)
-			child_nodes = []
-			try:
-				if callable(children_attr):
-					child_nodes = children_attr() or []
-				elif children_attr is not None:
-					child_nodes = children_attr
-			except Exception as e:
-				log_message(
-					f"Unable to iterate children for node {node.path}: {str(e)}",
-					LogLevel.DEBUG,
-				)
-				child_nodes = []
-
-			for child in child_nodes or []:
-				try:
-					if child is not None and getattr(child, "valid", True):
-						errors.extend(
-							self._collect_node_errors(child, include_children)
-						)
-				except Exception as child_error:
-					log_message(
-						f"Error while collecting child errors for {node.path}: {str(child_error)}",
-						LogLevel.DEBUG,
-					)
-		return errors
-
-	def _extract_node_errors(self, node) -> list[dict[str, Any]]:
-		"""Extract error messages for a single node"""
-		errors_attr = getattr(node, "errors", None)
-		raw_errors: Any = None
-		try:
-			raw_errors = errors_attr() if callable(errors_attr) else errors_attr
-		except Exception as e:
-			log_message(
-				f"Failed to read errors from node {node.path}: {str(e)}",
-				LogLevel.WARNING,
-			)
-			return [
-				self._format_error_entry(
-					node, f"Unable to read errors from node: {str(e)}"
-				)
-			]
-
-		if raw_errors is None:
-			return []
-
-		if isinstance(raw_errors, (str, bytes)):
-			iterable_errors = [raw_errors]
-		else:
-			try:
-				iterable_errors = list(raw_errors)
-			except TypeError:
-				iterable_errors = [raw_errors]
-
-		entries: list[dict[str, Any]] = []
-		for item in iterable_errors:
-			message = self._stringify_node_error(item)
-			if message:
-				entries.append(self._format_error_entry(node, message))
-
-		return entries
-
-	def _format_error_entry(self, node, message: str) -> dict[str, Any]:
-		"""Normalize a node error entry"""
-		return {
-			"nodePath": getattr(node, "path", ""),
-			"nodeName": getattr(node, "name", ""),
-			"opType": getattr(node, "OPType", ""),
-			"message": message.strip() if isinstance(message, str) else message,
-		}
-
-	def _stringify_node_error(self, error: Any) -> Optional[str]:
-		"""Convert arbitrary TouchDesigner error representations to strings"""
-		if error is None:
-			return None
-
-		if isinstance(error, bytes):
-			return error.decode("utf-8", errors="replace").strip()
-
-		if isinstance(error, str):
-			return error.strip()
-
-		if hasattr(error, "message"):
-			try:
-				message = error.message() if callable(error.message) else error.message
-				return str(message).strip()
-			except Exception:
-				pass
-
-		if hasattr(error, "description"):
-			try:
-				return str(error.description).strip()
-			except Exception:
-				pass
-
-		try:
-			return str(error).strip()
-		except Exception:
-			return None
 
 	def _resolve_help_target(self, module_name: str) -> Optional[Any]:
 		"""Locate a module/class for help() lookup."""
