@@ -1,17 +1,42 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isStdioMode, parseArgs, startServer } from "../../src/cli.js";
 
+const {
+	connectMock,
+	defaultTouchDesignerServerImpl,
+	defaultStdioTransportImpl,
+	TouchDesignerServerMock,
+	StdioServerTransportMock,
+} = vi.hoisted(() => {
+	const connectMock = vi.fn();
+
+	const defaultTouchDesignerServerImpl =
+		function MockTouchDesignerServer(this: {
+			connect: typeof connectMock;
+		}) {
+			this.connect = connectMock;
+		};
+	const TouchDesignerServerMock = vi.fn(defaultTouchDesignerServerImpl);
+
+	const defaultStdioTransportImpl = function MockStdioServerTransport() {};
+	const StdioServerTransportMock = vi.fn(defaultStdioTransportImpl);
+
+	return {
+		connectMock,
+		defaultStdioTransportImpl,
+		defaultTouchDesignerServerImpl,
+		StdioServerTransportMock,
+		TouchDesignerServerMock,
+	};
+});
+
 // Mock dependencies
 vi.mock("@modelcontextprotocol/sdk/server/stdio.js", () => ({
-	StdioServerTransport: vi.fn().mockImplementation(() => ({
-		// Mock transport implementation
-	})),
+	StdioServerTransport: StdioServerTransportMock,
 }));
 
 vi.mock("../../src/server/touchDesignerServer.js", () => ({
-	TouchDesignerServer: vi.fn().mockImplementation(() => ({
-		connect: vi.fn().mockResolvedValue({ success: true }),
-	})),
+	TouchDesignerServer: TouchDesignerServerMock,
 }));
 
 describe("CLI", () => {
@@ -66,17 +91,27 @@ describe("CLI", () => {
 			// Clear environment variables
 			delete process.env.TD_WEB_SERVER_HOST;
 			delete process.env.TD_WEB_SERVER_PORT;
+
+			connectMock.mockReset();
+			connectMock.mockResolvedValue({ success: true });
+
+			TouchDesignerServerMock.mockReset();
+			TouchDesignerServerMock.mockImplementation(
+				defaultTouchDesignerServerImpl,
+			);
+
+			StdioServerTransportMock.mockReset();
+			StdioServerTransportMock.mockImplementation(defaultStdioTransportImpl);
 		});
 
 		afterEach(() => {
 			vi.clearAllMocks();
-			vi.restoreAllMocks();
 		});
 
 		it("should set environment variables from parsed arguments", async () => {
 			await startServer({
-				nodeEnv: "cli",
 				argv: ["node", "cli.js", "--stdio", "--host=127.0.0.1", "--port=8080"],
+				nodeEnv: "cli",
 			});
 
 			expect(process.env.TD_WEB_SERVER_HOST).toBe("127.0.0.1");
@@ -84,50 +119,24 @@ describe("CLI", () => {
 		});
 
 		it("should create TouchDesigner server and connect in stdio mode", async () => {
-			const { TouchDesignerServer } = await import(
-				"../../src/server/touchDesignerServer.js"
-			);
-			const { StdioServerTransport } = await import(
-				"@modelcontextprotocol/sdk/server/stdio.js"
-			);
-
-			// Reset the mock to ensure it returns success
-			const mockServer = {
-				connect: vi.fn().mockResolvedValue({ success: true }),
-			};
-			vi.mocked(TouchDesignerServer).mockImplementation(
-				() => mockServer as unknown as InstanceType<typeof TouchDesignerServer>,
-			);
-
 			await startServer({
-				nodeEnv: "cli",
 				argv: ["node", "cli.js", "--stdio", "--host=127.0.0.1", "--port=8080"],
+				nodeEnv: "cli",
 			});
 
-			expect(TouchDesignerServer).toHaveBeenCalled();
-			expect(StdioServerTransport).toHaveBeenCalled();
+			expect(TouchDesignerServerMock).toHaveBeenCalled();
+			expect(StdioServerTransportMock).toHaveBeenCalled();
+			expect(connectMock).toHaveBeenCalled();
 		});
 
 		it("should handle connection failure gracefully", async () => {
-			const { TouchDesignerServer } = await import(
-				"../../src/server/touchDesignerServer.js"
-			);
-
-			// Mock server connection to fail
-			const mockServer = {
-				connect: vi.fn().mockResolvedValue({
-					success: false,
-					error: { message: "Connection failed" },
-				}),
-			} as Partial<InstanceType<typeof TouchDesignerServer>>;
-
-			vi.mocked(TouchDesignerServer).mockImplementation(
-				() => mockServer as InstanceType<typeof TouchDesignerServer>,
-			);
+			connectMock.mockResolvedValue({
+				error: { message: "Connection failed" },
+				success: false,
+			});
 
 			await expect(
 				startServer({
-					nodeEnv: "cli",
 					argv: [
 						"node",
 						"cli.js",
@@ -135,6 +144,7 @@ describe("CLI", () => {
 						"--host=127.0.0.1",
 						"--port=8080",
 					],
+					nodeEnv: "cli",
 				}),
 			).rejects.toThrow(
 				"Failed to initialize server: Failed to connect: Connection failed",
@@ -142,18 +152,12 @@ describe("CLI", () => {
 		});
 
 		it("should handle unexpected errors gracefully", async () => {
-			const { TouchDesignerServer } = await import(
-				"../../src/server/touchDesignerServer.js"
-			);
-
-			// Mock server to throw an error
-			vi.mocked(TouchDesignerServer).mockImplementation(() => {
+			TouchDesignerServerMock.mockImplementation(function ThrowingServer() {
 				throw new Error("Unexpected error");
 			});
 
 			await expect(
 				startServer({
-					nodeEnv: "cli",
 					argv: [
 						"node",
 						"cli.js",
@@ -161,23 +165,18 @@ describe("CLI", () => {
 						"--host=127.0.0.1",
 						"--port=8080",
 					],
+					nodeEnv: "cli",
 				}),
 			).rejects.toThrow("Failed to initialize server: Unexpected error");
 		});
 
 		it("should handle non-Error exceptions", async () => {
-			const { TouchDesignerServer } = await import(
-				"../../src/server/touchDesignerServer.js"
-			);
-
-			// Mock server to throw a non-Error object
-			vi.mocked(TouchDesignerServer).mockImplementation(() => {
+			TouchDesignerServerMock.mockImplementation(function ThrowingServer() {
 				throw "String error";
 			});
 
 			await expect(
 				startServer({
-					nodeEnv: "cli",
 					argv: [
 						"node",
 						"cli.js",
@@ -185,6 +184,7 @@ describe("CLI", () => {
 						"--host=127.0.0.1",
 						"--port=8080",
 					],
+					nodeEnv: "cli",
 				}),
 			).rejects.toThrow("Failed to initialize server: String error");
 		});
@@ -192,8 +192,8 @@ describe("CLI", () => {
 		it("should throw error for non-stdio mode", async () => {
 			await expect(
 				startServer({
-					nodeEnv: "test",
 					argv: ["node", "cli.js", "arg1", "arg2", "arg3"],
+					nodeEnv: "test",
 				}),
 			).rejects.toThrow(
 				"Failed to initialize server: Sorry, this server is not yet available in the browser. Please use the CLI mode.",
