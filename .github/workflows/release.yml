@@ -103,6 +103,11 @@ jobs:
             https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854
 
             5. The extension will automatically handle the TouchDesigner server connection.
+            6. If you see a version mismatch warning, follow these steps before reconnecting:
+               1. Download the latest `touchdesigner-mcp-td.zip` from the releases page.
+               2. Delete the existing `touchdesigner-mcp-td` folder and replace it with the newly extracted contents.
+               3. Remove the old `mcp_webserver_base` component from your TouchDesigner project and import the `.tox` from the new folder.
+               4. Restart TouchDesigner and the AI agent running the MCP server (e.g., Claude Desktop).
 
             ### Set up with npx
             1. Download and extract the TouchDesigner components from `touchdesigner-mcp-td.zip`.
@@ -119,6 +124,12 @@ jobs:
               }
             }
             ```
+
+            4. If the MCP client reports incompatible server versions, follow the same remediation steps:
+               1. Download the latest `touchdesigner-mcp-td.zip`.
+               2. Replace the old `touchdesigner-mcp-td` folder with the new one.
+               3. Remove the previously imported `mcp_webserver_base`, import the updated `.tox`, and restart TouchDesigner.
+               4. Restart the AI agent that runs the MCP client.
 
             ## Changes
             See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for a detailed history of changes.

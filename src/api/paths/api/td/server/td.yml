@@ -21,24 +21,27 @@ get:
                 nullable: true
                 type: object
                 required:
-                  - server
-                  - version
-                  - compileDate
+                  - mcpApiVersion
                   - osName
                   - osVersion
+                  - server
+                  - version
                 properties:
-                  server:
+                  mcpApiVersion:
                     type: string
-                    description: Server name (typically "TouchDesigner")
-                  version:
-                    type: string
-                    description: TouchDesigner version number
+                    description: Version of the TouchDesigner MCP API server
                   osName:
                     type: string
                     description: Operating system name
                   osVersion:
                     type: string
                     description: Operating system version
+                  server:
+                    type: string
+                    description: Server name (typically "TouchDesigner")
+                  version:
+                    type: string
+                    description: TouchDesigner version number
               error:
                 nullable: true
                 description: Error message if the operation was not successful

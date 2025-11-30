@@ -354,6 +354,24 @@ This project uses OpenAPI-based code generation tools (Orval and openapi-generat
 
 The build process (`npm run build`) runs all necessary generation steps (`npm run gen`), followed by TypeScript compilation (`tsc`).
 
+### Version management
+
+- `package.json` is the single source of truth for every component version (Node.js MCP server, TouchDesigner Python API, MCP bundle, and `server.json` metadata).
+- Run `npm version <patch|minor|major>` (or the underlying `npm run gen:version`) whenever you bump the version. The script rewrites `pyproject.toml`, `td/modules/utils/version.py`, `mcpb/manifest.json`, and `server.json` so that the release workflow can trust the tag value.
+- The GitHub release workflow (`.github/workflows/release.yml`) tags the commit as `v${version}` and publishes `touchdesigner-mcp-td.zip` / `touchdesigner-mcp.mcpb` from the exact same version number. Always run the sync step before triggering a release so that every artifact stays aligned.
+
+## Troubleshooting
+
+### Troubleshooting version compatibility
+
+- During `ConnectionManager.connect` the MCP server compares its own version with the TouchDesigner API server version reported by `getTdInfo`. If the API server does not expose a version or the versions differ (for example because only one side was updated), the MCP server aborts the connection with a descriptive error message in the Claude/Codex console and in the TouchDesigner log DAT.
+- To resolve the mismatch, reinstall both the TouchDesigner components
+  1. Download the latest [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) from the releases page.
+  2. Delete the existing \`touchdesigner-mcp-td\` folder and replace it with the newly extracted contents.
+  3. Remove the old \`mcp_webserver_base\` component from your TouchDesigner project and import the \`.tox\` from the new folder.
+  4. Restart TouchDesigner and the AI agent running the MCP server (e.g., Claude Desktop).
+- When developing locally, run `npm run gen:version` after editing `package.json` (or simply use `npm version ...`). This keeps the Python API (`pyproject.toml` + `td/modules/utils/version.py`), MCP bundle manifest, and registry metadata in sync so that the runtime compatibility check succeeds.
+
 ## Contributing
 
 We welcome your contributions!
