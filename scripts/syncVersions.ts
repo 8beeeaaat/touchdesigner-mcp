@@ -101,6 +101,10 @@ writeTextFile("td/modules/utils/version.py", (contents) => {
 	);
 });
 
+writeTextFile("src/api/index.yml", (contents) => {
+	return contents.replace(/version:\s*[\d.]+/, `version: ${packageVersion}`);
+});
+
 console.log(
 	`Synchronized version ${packageVersion} across: ${updatedFiles.join(", ")}`,
 );

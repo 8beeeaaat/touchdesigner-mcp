@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import packageJson from "../../package.json";
 import type { ILogger } from "../../src/core/logger";
 import * as touchDesignerAPI from "../../src/gen/endpoints/TouchDesignerAPI";
 
@@ -6,6 +7,8 @@ import {
 	type ITouchDesignerApi,
 	TouchDesignerClient,
 } from "../../src/tdClient/touchDesignerClient";
+
+const CURRENT_VERSION = packageJson.version;
 
 vi.mock("../../src/gen/endpoints/TouchDesignerAPI", async () => {
 	return {
@@ -34,7 +37,7 @@ describe("TouchDesignerClient with mocks", () => {
 
 		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
 			data: {
-				mcpApiVersion: "1.2.0",
+				mcpApiVersion: CURRENT_VERSION,
 				osName: "macOS",
 				osVersion: "12.6.1",
 				server: "TouchDesigner",
@@ -48,7 +51,7 @@ describe("TouchDesignerClient with mocks", () => {
 	test("getTdInfo should handle successful response", async () => {
 		const mockResponse = {
 			data: {
-				mcpApiVersion: "1.2.0",
+				mcpApiVersion: CURRENT_VERSION,
 				osName: "macOS",
 				osVersion: "12.6.1",
 				server: "TouchDesigner",
@@ -77,7 +80,7 @@ describe("TouchDesignerClient with mocks", () => {
 	test("getTdInfo should handle error response", async () => {
 		const compatibilityResponse = {
 			data: {
-				mcpApiVersion: "1.2.0",
+				mcpApiVersion: CURRENT_VERSION,
 				osName: "macOS",
 				osVersion: "12.6.1",
 				server: "TouchDesigner",
@@ -109,7 +112,7 @@ describe("TouchDesignerClient with mocks", () => {
 	test("getTdInfo should handle missing data response", async () => {
 		const compatibilityResponse = {
 			data: {
-				mcpApiVersion: "1.2.0",
+				mcpApiVersion: CURRENT_VERSION,
 				osName: "macOS",
 				osVersion: "12.6.1",
 				server: "TouchDesigner",
@@ -235,7 +238,7 @@ describe("TouchDesignerClient with mocks", () => {
 
 		const mockResponse = {
 			data: {
-				mcpApiVersion: "1.2.0",
+				mcpApiVersion: CURRENT_VERSION,
 				osName: "macOS",
 				osVersion: "12.6.1",
 				server: "TouchDesigner",
@@ -260,7 +263,7 @@ describe("TouchDesignerClient with mocks", () => {
 		const mockHttpClient = {
 			getTdInfo: vi.fn().mockResolvedValue({
 				data: {
-					mcpApiVersion: "1.2.0",
+					mcpApiVersion: CURRENT_VERSION,
 					server: "CustomServer",
 					status: "CustomStatus",
 					version: "CustomVersion",
