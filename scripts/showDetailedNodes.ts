@@ -36,10 +36,17 @@ class MockMcpServer {
 }
 
 const logger: ILogger = {
-	debug: () => {},
-	error: console.error,
-	log: () => {},
-	warn: console.warn,
+	sendLog: ({ level, data }) => {
+		if (level === "error") {
+			console.error(data);
+			return;
+		}
+		if (level === "warning") {
+			console.warn(data);
+			return;
+		}
+		console.log(data);
+	},
 };
 
 async function callTool(tool: ToolEntry, params?: Record<string, unknown>) {

@@ -22,16 +22,20 @@ export class ConnectionManager {
 	 */
 	async connect(transport: Transport): Promise<Result<void, Error>> {
 		if (this.isConnected()) {
-			this.logger.log("MCP server already connected");
+			this.logger.sendLog({
+				data: "MCP server already connected",
+				level: "info",
+			});
 			return createSuccessResult(undefined);
 		}
 
 		this.transport = transport;
 		try {
 			await this.server.connect(transport);
-			this.logger.log(
-				`Server connected and ready to process requests: ${process.env.TD_WEB_SERVER_HOST}:${process.env.TD_WEB_SERVER_PORT}`,
-			);
+			this.logger.sendLog({
+				data: `Server connected and ready to process requests: ${process.env.TD_WEB_SERVER_HOST}:${process.env.TD_WEB_SERVER_PORT}`,
+				level: "info",
+			});
 
 			// Connection will be checked when tools are actually used
 			const connectionResult = await this.checkTDConnection();
@@ -40,7 +44,10 @@ export class ConnectionManager {
 					`Failed to connect to TouchDesigner. The mcp_webserver_base on TouchDesigner not currently available: ${connectionResult.error.message}`,
 				);
 			}
-			this.logger.log("TouchDesigner connection verified");
+			this.logger.sendLog({
+				data: "TouchDesigner connection verified",
+				level: "info",
+			});
 			return createSuccessResult(undefined);
 		} catch (error) {
 			this.transport = null;
@@ -85,7 +92,10 @@ export class ConnectionManager {
 	 * Check connection to TouchDesigner
 	 */
 	private async checkTDConnection(): Promise<Result<unknown, Error>> {
-		this.logger.log("Testing connection to TouchDesigner server...");
+		this.logger.sendLog({
+			data: "Testing connection to TouchDesigner server...",
+			level: "info",
+		});
 		try {
 			const result = await this.tdClient.getTdInfo();
 			if (!result.success) {

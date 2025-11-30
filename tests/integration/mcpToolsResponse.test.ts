@@ -26,10 +26,7 @@ class MockMcpServer {
 }
 
 const logger: ILogger = {
-	debug: () => {},
-	error: () => {},
-	log: () => {},
-	warn: () => {},
+	sendLog: () => {},
 };
 
 function createMockTdClient(): TouchDesignerClient {

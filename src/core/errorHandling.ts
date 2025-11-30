@@ -27,7 +27,25 @@ export function handleToolError(
 			? error
 			: new Error(error === null ? "Null error received" : String(error));
 
-	logger.error(toolName, formattedError);
+	const logData: Record<string, unknown> = {
+		error: formattedError.message,
+		message: "Tool execution failed",
+		toolName,
+	};
+
+	if (referenceComment) {
+		logData.referenceComment = referenceComment;
+	}
+
+	if (formattedError.stack) {
+		logData.stack = formattedError.stack;
+	}
+
+	logger.sendLog({
+		data: logData,
+		level: "error",
+		logger: "ErrorHandling",
+	});
 
 	const errorMessage = `${toolName}: ${formattedError}${referenceComment ? `. ${referenceComment}` : ""}`;
 

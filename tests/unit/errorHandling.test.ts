@@ -5,17 +5,21 @@ import type { ILogger } from "../../src/core/logger.js";
 describe("errorHandling", () => {
 	describe("handleToolError", () => {
 		const mockLogger: ILogger = {
-			debug: vi.fn(),
-			error: vi.fn(),
-			log: vi.fn(),
-			warn: vi.fn(),
+			sendLog: vi.fn(),
 		};
 
 		it("should handle Error instance correctly", () => {
 			const error = new Error("Test error");
 			const result = handleToolError(error, mockLogger, "Operation failed");
 
-			expect(mockLogger.error).toHaveBeenCalledWith("Operation failed", error);
+			expect(mockLogger.sendLog).toHaveBeenCalledWith({
+				data: expect.objectContaining({
+					error: "Test error",
+					toolName: "Operation failed",
+				}),
+				level: "error",
+				logger: "ErrorHandling",
+			});
 			expect(result).toEqual({
 				content: [
 					{
@@ -31,7 +35,7 @@ describe("errorHandling", () => {
 			const error = "String error";
 			const result = handleToolError(error, mockLogger, "Operation failed");
 
-			expect(mockLogger.error).toHaveBeenCalled();
+			expect(mockLogger.sendLog).toHaveBeenCalled();
 			expect(result.isError).toBe(true);
 			expect(result.content[0].text).toContain("String error");
 		});
@@ -40,7 +44,7 @@ describe("errorHandling", () => {
 			const error = null;
 			const result = handleToolError(error, mockLogger, "Operation failed");
 
-			expect(mockLogger.error).toHaveBeenCalled();
+			expect(mockLogger.sendLog).toHaveBeenCalled();
 			expect(result.isError).toBe(true);
 			expect(result.content[0].text).toContain("Null error received");
 		});
