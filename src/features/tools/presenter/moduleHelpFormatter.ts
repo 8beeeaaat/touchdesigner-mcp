@@ -345,8 +345,8 @@ function extractClassSummary(helpText: string): ClassSummary | undefined {
 
 		if (inMro) {
 			if (!trimmed.startsWith("|")) {
+				// MRO section ended - fall through to the exit check below
 				inMro = false;
-				// Allow early exit check below to be evaluated immediately
 			} else {
 				const entry = trimmed.replace(/^\|\s*/, "");
 				if (entry) {
@@ -355,6 +355,7 @@ function extractClassSummary(helpText: string): ClassSummary | undefined {
 			}
 		}
 
+		// Exit early once we have collected the MRO and we're done with both sections
 		if (methodResolutionOrder.length > 0 && !inMro && !inDescription) {
 			break;
 		}

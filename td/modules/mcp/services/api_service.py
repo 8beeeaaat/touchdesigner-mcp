@@ -532,6 +532,9 @@ class TouchDesignerApiService(IApiService):
 			else:
 				return None
 			for part in parts[1:]:
+				# Validate part is non-empty and a valid identifier
+				if not part or not part.isidentifier():
+					return None
 				if not hasattr(obj, part):
 					return None
 				obj = getattr(obj, part)
