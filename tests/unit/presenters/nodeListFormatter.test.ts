@@ -10,8 +10,8 @@ describe("nodeListFormatter", () => {
 		const createNode = (id: number, name: string, opType: string): TdNode => ({
 			id,
 			name,
-			path: `/project1/${name}`,
 			opType,
+			path: `/project1/${name}`,
 			properties: {},
 		});
 
@@ -110,8 +110,8 @@ describe("nodeListFormatter", () => {
 
 			const result = formatNodeList(data, {
 				detailLevel: "minimal",
-				limit: 2,
 				includeHints: false,
+				limit: 2,
 			});
 
 			expect(result).not.toContain("omitted");
@@ -155,15 +155,15 @@ describe("nodeListFormatter", () => {
 				{
 					id: 1,
 					name: "unknown1",
-					path: "/unknown1",
 					opType: "",
+					path: "/unknown1",
 					properties: {},
 				},
 				{
 					id: 2,
 					name: "unknown2",
-					path: "/unknown2",
 					opType: "",
+					path: "/unknown2",
 					properties: {},
 				},
 			];

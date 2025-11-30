@@ -8,7 +8,9 @@ import {
 	deleteNodeQueryParams,
 	execNodeMethodBody,
 	execPythonScriptBody,
+	getModuleHelpQueryParams,
 	getNodeDetailQueryParams,
+	getNodeErrorsQueryParams,
 	getNodesQueryParams,
 	getTdPythonClassDetailsParams,
 	updateNodeBody,
@@ -22,7 +24,9 @@ import {
 	formatCreateNodeResult,
 	formatDeleteNodeResult,
 	formatExecNodeMethodResult,
+	formatModuleHelp,
 	formatNodeDetails,
+	formatNodeErrors,
 	formatNodeList,
 	formatScriptResult,
 	formatTdInfo,
@@ -53,6 +57,11 @@ const getNodeDetailToolSchema = getNodeDetailQueryParams.extend(
 );
 type GetNodeDetailToolParams = z.input<typeof getNodeDetailToolSchema>;
 
+const getNodeErrorsToolSchema = getNodeErrorsQueryParams.extend(
+	formattingOptionsSchema.shape,
+);
+type GetNodeErrorsToolParams = z.input<typeof getNodeErrorsToolSchema>;
+
 const createNodeToolSchema = createNodeBody.extend(
 	detailOnlyFormattingSchema.shape,
 );
@@ -75,6 +84,11 @@ const classDetailToolSchema = getTdPythonClassDetailsParams.extend(
 	formattingOptionsSchema.shape,
 );
 type ClassDetailToolParams = z.input<typeof classDetailToolSchema>;
+
+const moduleHelpToolSchema = getModuleHelpQueryParams.extend(
+	detailOnlyFormattingSchema.shape,
+);
+type ModuleHelpToolParams = z.input<typeof moduleHelpToolSchema>;
 
 const execNodeMethodToolSchema = execNodeMethodBody.extend(
 	detailOnlyFormattingSchema.shape,
@@ -120,8 +134,8 @@ export function registerTdTools(
 					return {
 						content: [
 							{
-								type: "text" as const,
 								text: message,
+								type: "text" as const,
 							},
 						],
 					};
@@ -129,15 +143,15 @@ export function registerTdTools(
 
 				const formattedText = formatToolMetadata(filteredEntries, {
 					detailLevel: detailLevel ?? (filter ? "summary" : "minimal"),
-					responseFormat,
 					filter: normalizedFilter,
+					responseFormat,
 				});
 
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -165,8 +179,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -183,7 +197,10 @@ export function registerTdTools(
 		async (params: ExecPythonScriptToolParams) => {
 			try {
 				const { detailLevel, responseFormat, ...scriptParams } = params;
-				logger.debug(`Executing script: ${scriptParams.script}`);
+				logger.sendLog({
+					data: `Executing script: ${scriptParams.script}`,
+					level: "debug",
+				});
 
 				const result = await tdClient.execPythonScript(scriptParams);
 				if (!result.success) {
@@ -199,8 +216,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -228,8 +245,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -262,8 +279,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -303,8 +320,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -341,8 +358,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -352,6 +369,43 @@ export function registerTdTools(
 					logger,
 
 					TOOL_NAMES.GET_TD_NODE_PARAMETERS,
+					REFERENCE_COMMENT,
+				);
+			}
+		},
+	);
+
+	server.tool(
+		TOOL_NAMES.GET_TD_NODE_ERRORS,
+		"Check node and descendant errors reported by TouchDesigner",
+		getNodeErrorsToolSchema.strict().shape,
+		async (params: GetNodeErrorsToolParams) => {
+			try {
+				const { detailLevel, limit, responseFormat, ...queryParams } = params;
+				const result = await tdClient.getNodeErrors(queryParams);
+				if (!result.success) {
+					throw result.error;
+				}
+
+				const formattedText = formatNodeErrors(result.data, {
+					detailLevel: detailLevel ?? "summary",
+					limit,
+					responseFormat,
+				});
+
+				return {
+					content: [
+						{
+							text: formattedText,
+							type: "text" as const,
+						},
+					],
+				};
+			} catch (error) {
+				return handleToolError(
+					error,
+					logger,
+					TOOL_NAMES.GET_TD_NODE_ERRORS,
 					REFERENCE_COMMENT,
 				);
 			}
@@ -376,8 +430,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -407,19 +461,22 @@ export function registerTdTools(
 				}
 				const formattedText = formatExecNodeMethodResult(
 					result.data,
-					{ nodePath, method, args, kwargs },
+					{ args, kwargs, method, nodePath },
 					{ detailLevel: detailLevel ?? "summary", responseFormat },
 				);
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
 			} catch (error) {
-				logger.error(error);
+				logger.sendLog({
+					data: error,
+					level: "error",
+				});
 				return handleToolError(
 					error,
 					logger,
@@ -451,8 +508,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -489,8 +546,8 @@ export function registerTdTools(
 				return {
 					content: [
 						{
-							type: "text" as const,
 							text: formattedText,
+							type: "text" as const,
 						},
 					],
 				};
@@ -501,6 +558,35 @@ export function registerTdTools(
 					TOOL_NAMES.GET_TD_CLASS_DETAILS,
 					REFERENCE_COMMENT,
 				);
+			}
+		},
+	);
+
+	server.tool(
+		TOOL_NAMES.GET_TD_MODULE_HELP,
+		"Retrieve Python help() text for a TouchDesigner module or class",
+		moduleHelpToolSchema.strict().shape,
+		async (params: ModuleHelpToolParams) => {
+			try {
+				const { detailLevel, moduleName, responseFormat } = params;
+				const result = await tdClient.getModuleHelp({ moduleName });
+				if (!result.success) {
+					throw result.error;
+				}
+				const formattedText = formatModuleHelp(result.data, {
+					detailLevel: detailLevel ?? "summary",
+					responseFormat,
+				});
+				return {
+					content: [
+						{
+							text: formattedText,
+							type: "text" as const,
+						},
+					],
+				};
+			} catch (error) {
+				return handleToolError(error, logger, TOOL_NAMES.GET_TD_MODULE_HELP);
 			}
 		},
 	);

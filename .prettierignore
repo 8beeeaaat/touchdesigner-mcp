@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+.venv/
+
+# Build outputs
+dist/
+coverage/
+
+# Generated code
+src/gen/
+td/modules/td_server/
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock

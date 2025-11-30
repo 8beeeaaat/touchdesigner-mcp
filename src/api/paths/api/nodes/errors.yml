@@ -1,10 +1,17 @@
 get:
-  summary: Get a list of Python classes and modules
-  operationId: get_td_python_classes
-  description: Returns a list of Python classes, modules, and functions available in TouchDesigner
+  summary: Get node errors
+  description: Collects TouchDesigner error messages for a node and its children
+  operationId: get_node_errors
+  parameters:
+    - description: Absolute path to the node to inspect. e.g., "/project1/text1"
+      in: query
+      name: nodePath
+      required: true
+      schema:
+        type: string
   responses:
     "200":
-      description: Successful response
+      description: Node error report
       content:
         application/json:
           schema:
@@ -18,13 +25,7 @@ get:
                 type: boolean
                 description: Whether the operation was successful
               data:
-                nullable: true
-                type: object
-                properties:
-                  classes:
-                    type: array
-                    items:
-                      $ref: ../../../../index.yml#/components/schemas/TdPythonClassInfo
+                $ref: ../../../index.yml#/components/schemas/TdNodeErrorReport
               error:
                 nullable: true
                 type: string

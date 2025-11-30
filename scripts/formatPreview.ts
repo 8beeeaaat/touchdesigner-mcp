@@ -34,10 +34,17 @@ class MockMcpServer {
 }
 
 const logger: ILogger = {
-	debug: () => {},
-	log: () => {},
-	warn: console.warn,
-	error: console.error,
+	sendLog: ({ level, data }) => {
+		if (level === "error") {
+			console.error(data);
+			return;
+		}
+		if (level === "warning") {
+			console.warn(data);
+			return;
+		}
+		console.log(data);
+	},
 };
 
 async function callTool(
@@ -84,26 +91,26 @@ async function main() {
 		{ responseFormat: "json" },
 		{ responseFormat: "markdown" },
 		{
-			includeProperties: true,
 			detailLevel: "detailed",
+			includeProperties: true,
 			responseFormat: "yaml",
 		},
 		{
-			includeProperties: true,
 			detailLevel: "detailed",
+			includeProperties: true,
 			responseFormat: "json",
 		},
 		{
-			includeProperties: true,
 			detailLevel: "detailed",
+			includeProperties: true,
 			responseFormat: "markdown",
 		},
 	];
 
 	for (const scenario of scenarios) {
 		await previewResponse(tool, {
-			parentPath: "/project1",
 			limit: 5,
+			parentPath: "/project1",
 			...scenario,
 		});
 	}

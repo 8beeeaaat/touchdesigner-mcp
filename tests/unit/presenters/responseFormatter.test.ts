@@ -43,9 +43,9 @@ describe("responseFormatter", () => {
 
 		it("should merge all custom options", () => {
 			const options: FormatterOptions = {
-				mode: "detailed" as DetailLevel,
-				limit: 5,
 				includeHints: false,
+				limit: 5,
+				mode: "detailed" as DetailLevel,
 			};
 
 			const result = mergeFormatterOptions(options);

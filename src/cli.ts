@@ -75,8 +75,8 @@ export async function startServer(params?: {
 
 // Start server if this file is executed directly
 startServer({
-	nodeEnv: process.env.NODE_ENV,
 	argv: process.argv,
+	nodeEnv: process.env.NODE_ENV,
 }).catch((error) => {
 	console.error("Failed to start server:", error);
 	if (process.env.NODE_ENV === "test") return;

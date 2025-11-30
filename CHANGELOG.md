@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-12-01
+
+> **Notice (EN):** Starting with this release, every tool call fails if the TouchDesigner API server and MCP server versions do not match. Follow the upgrade guide in [README.md](README.md#Troubleshooting) for the fix.
+
+> **Notice:** このバージョン以降、TouchDesigner API サーバーと MCP サーバーのバージョンが一致しない場合はすべてのツール呼び出しがエラーになります。解決手順は [README.ja.md](README.ja.md#トラブルシューティング) のヘルプを参照してください。
+
+### Added
+
+- Introduced the `getNodeErrors` tool to inspect specific nodes and their descendants for current errors, complete with new OpenAPI schemas, presenters, metadata, and integration tests so agents can troubleshoot TouchDesigner graphs without leaving chat. ([#119](https://github.com/8beeeaaat/touchdesigner-mcp/pull/119))
+- Added the `getModuleHelp` tool that proxies Python `help()` output for TouchDesigner modules/classes and formats the response for MCP clients, enabling in-context documentation lookups inside AI agents. ([#117](https://github.com/8beeeaaat/touchdesigner-mcp/pull/117))
+
+### Changed
+
+- TouchDesigner client requests now run through an explicit MCP-vs-TD version compatibility check that logs mismatches, surfaces step-by-step upgrade guidance, and uses the new `scripts/syncVersions.ts` release helper to keep manifests, server.json, API specs, and Python constants aligned. ([#116](https://github.com/8beeeaaat/touchdesigner-mcp/pull/116))
+- Simplified the `ILogger`/`McpLogger` interface so logs carry structured context by default, reducing noisy branching in handlers and tightening the unit/integration tests that assert logging behavior. ([#115](https://github.com/8beeeaaat/touchdesigner-mcp/pull/115))
+
+### Fixed
+
+- Hardened module-help retrieval by validating module/class names, removing `eval` usage, and tightening exception handling so user-supplied identifiers cannot execute arbitrary code and failures yield actionable errors. ([#117](https://github.com/8beeeaaat/touchdesigner-mcp/pull/117))
+- Clarified node-error prompts and API descriptions by removing the unused `includeChildren` parameter, ensuring the tool consistently reports issues for the requested nodes plus their descendants. ([#119](https://github.com/8beeeaaat/touchdesigner-mcp/pull/119))
+
+### Removed
+
+- Dropped hundreds of unused OpenAPI response-model imports and handlers from the Python API controller, shrinking the generated surface area and speeding up future regen cycles. ([f79eba0](https://github.com/8beeeaaat/touchdesigner-mcp/commit/f79eba05d782c6d5cc7ed2e10b78eab8bd01b48b))
+
+### Technical
+
+- Adopted Prettier (with `.prettierrc`, `.prettierignore`, and `pyproject.toml`), added npm scripts for Python/YAML formatting, and taught the development workflow to install Python tooling so formatting and linting stay consistent across languages. ([#114](https://github.com/8beeeaaat/touchdesigner-mcp/pull/114))
+- Updated runtime and dev dependencies (MCP SDK, axios, zod, TypeScript, Vitest, MSW, etc.) and refreshed unit tests/mocks to cover the new versions for improved stability. ([#112](https://github.com/8beeeaaat/touchdesigner-mcp/pull/112))
+
 ## [1.2.0] - 2025-11-18
 
 ### Changed

@@ -250,9 +250,11 @@ td/
 | `delete_td_node`            | 既存のノードを削除します。                     |
 | `exec_node_method`          | ノードに対してPythonメソッドを呼び出します。   |
 | `execute_python_script`     | TD内で任意のPythonスクリプトを実行します。     |
+| `get_module_help`           | TouchDesignerモジュール/クラスのPython help()ドキュメントを取得します。 |
 | `get_td_class_details`      | TD Pythonクラス/モジュールの詳細情報を取得します。 |
 | `get_td_classes`            | TouchDesigner Pythonクラスのリストを取得します。 |
 | `get_td_info`           | TDサーバー環境に関する情報を取得します。       |
+| `get_td_node_errors`        | 指定されたノードとその子ノードのエラーをチェックします。 |
 | `get_td_node_parameters`    | 特定ノードのパラメータを取得します。           |
 | `get_td_nodes`              | 親パス内のノードを取得します（オプションでフィルタリング）。 |
 | `update_td_node_parameters` | 特定ノードのパラメータを更新します。           |
@@ -353,6 +355,24 @@ td/
     - Node.jsサーバーが WebServerDAT にリクエストを行うために使用する、型付けされたTypeScriptクライアント (`src/tdClient/`) を生成します。
 
 ビルドプロセス (`npm run build`) は、必要なすべての生成ステップ (`npm run gen`) を実行し、その後にTypeScriptコンパイル (`tsc`) を行います。
+
+### バージョン管理
+
+- `package.json` はすべてのコンポーネントバージョンの唯一の信頼できる情報源です（Node.js MCPサーバー、TouchDesigner Python API、MCPバンドル、および `server.json` メタデータ）。
+- バージョンを更新する際は `npm version <patch|minor|major>`（または内部で使用される `npm run gen:version`）を実行してください。このスクリプトは `pyproject.toml`、`td/modules/utils/version.py`、`mcpb/manifest.json`、および `server.json` を書き換え、リリースワークフローがタグ値を信頼できるようにします。
+- GitHubリリースワークフロー（`.github/workflows/release.yml`）はコミットを `v${version}` としてタグ付けし、同じバージョン番号から `touchdesigner-mcp-td.zip` / `touchdesigner-mcp.mcpb` を公開します。リリースをトリガーする前に必ず同期ステップを実行し、すべてのアーティファクトが整合するようにしてください。
+
+## トラブルシューティング
+
+### バージョン互換性のトラブルシューティング
+
+- `ConnectionManager.connect` の実行中、MCPサーバーは自身のバージョンと `getTdInfo` が報告するTouchDesigner APIサーバーのバージョンを比較します。APIサーバーがバージョンを公開していない場合、またはバージョンが異なる場合（例：片方のみが更新された場合）、MCPサーバーはClaude/Codexコンソールおよび TouchDesigner ログ DAT に説明的なエラーメッセージを表示して接続を中止します。
+- 不一致を解決するには、TouchDesignerコンポーネントを再インストールしてください：
+  1. リリースページから最新の [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) をダウンロードします。
+  2. 既存の `touchdesigner-mcp-td` フォルダを削除し、新しく展開した内容に置き換えます。
+  3. TouchDesignerプロジェクトから古い `mcp_webserver_base` コンポーネントを削除し、新しいフォルダから `.tox` をインポートします。
+  4. TouchDesignerとMCPサーバーを実行しているAIエージェント（例：Claude Desktop）を再起動します。
+- ローカルで開発している場合は、`package.json` を編集した後に `npm run gen:version` を実行してください（または単に `npm version ...` を使用してください）。これにより、Python API（`pyproject.toml` + `td/modules/utils/version.py`）、MCPバンドルマニフェスト、およびレジストリメタデータが同期され、ランタイム互換性チェックが成功するようになります。
 
 ## 開発で貢献
 

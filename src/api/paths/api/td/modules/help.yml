@@ -1,7 +1,14 @@
 get:
-  summary: Get a list of Python classes and modules
-  operationId: get_td_python_classes
-  description: Returns a list of Python classes, modules, and functions available in TouchDesigner
+  summary: Get module/class Python help documentation
+  operationId: get_module_help
+  description: Retrieve Python help() documentation for TouchDesigner modules, classes, or utilities like tdu.
+  parameters:
+    - name: moduleName
+      in: query
+      description: Module or class name (e.g., "noiseCHOP", "td.noiseCHOP", "tdu").
+      required: true
+      schema:
+        type: string
   responses:
     "200":
       description: Successful response
@@ -19,12 +26,7 @@ get:
                 description: Whether the operation was successful
               data:
                 nullable: true
-                type: object
-                properties:
-                  classes:
-                    type: array
-                    items:
-                      $ref: ../../../../index.yml#/components/schemas/TdPythonClassInfo
+                $ref: ../../../../index.yml#/components/schemas/ModuleHelp
               error:
                 nullable: true
                 type: string

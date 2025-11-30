@@ -18,4 +18,3 @@ properties:
   properties:
     type: object
     additionalProperties: true
-

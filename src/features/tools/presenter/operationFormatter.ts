@@ -34,9 +34,9 @@ export function formatTdInfo(
 			: `${summary}${osLine}`;
 
 	return finalizeFormattedText(text.trim(), opts, {
-		template: opts.detailLevel === "detailed" ? "detailedPayload" : "default",
 		context: { title: "TouchDesigner Info", ...data },
 		structured: data,
+		template: opts.detailLevel === "detailed" ? "detailedPayload" : "default",
 	});
 }
 
@@ -68,9 +68,9 @@ export function formatCreateNodeResult(
 			: `${base}\nProperties detected: ${propCount}`;
 
 	return finalizeFormattedText(text, opts, {
-		template: opts.detailLevel === "detailed" ? "detailedPayload" : "default",
-		context: { title: "Create Node", path, opType },
+		context: { opType, path, title: "Create Node" },
 		structured: data,
+		template: opts.detailLevel === "detailed" ? "detailedPayload" : "default",
 	});
 }
 
@@ -88,16 +88,16 @@ export function formatUpdateNodeResult(
 			: `${base}${failedCount ? `, ${failedCount} failed` : ""}`;
 
 	const context = {
-		title: "Update Node",
-		updated: data?.updated,
 		failed: data?.failed,
 		message: data?.message,
+		title: "Update Node",
+		updated: data?.updated,
 	};
 
 	return finalizeFormattedText(text, opts, {
-		template: opts.detailLevel === "detailed" ? "detailedPayload" : "default",
 		context,
 		structured: data,
+		template: opts.detailLevel === "detailed" ? "detailedPayload" : "default",
 	});
 }
 
@@ -114,9 +114,9 @@ export function formatDeleteNodeResult(
 		: `Deletion status unknown for '${name}' at ${path}`;
 
 	return finalizeFormattedText(text, opts, {
-		template: opts.detailLevel === "detailed" ? "detailedPayload" : "default",
-		context: { title: "Delete Node", path, deleted },
+		context: { deleted, path, title: "Delete Node" },
 		structured: data,
+		template: opts.detailLevel === "detailed" ? "detailedPayload" : "default",
 	});
 }
 
@@ -136,9 +136,9 @@ export function formatExecNodeMethodResult(
 	const text = `${callSignature}\nResult: ${resultPreview}`;
 
 	return finalizeFormattedText(text, opts, {
-		template: opts.detailLevel === "detailed" ? "detailedPayload" : "default",
-		context: { title: "Execute Node Method", callSignature },
+		context: { callSignature, title: "Execute Node Method" },
 		structured: { ...context, result: data?.result },
+		template: opts.detailLevel === "detailed" ? "detailedPayload" : "default",
 	});
 }
 

@@ -8,40 +8,40 @@ import type { ILogger } from "../../../core/logger.js";
 
 const PROMPTS = [
 	{
-		name: PROMPT_NAMES.SEARCH_NODE,
-		description: "Fuzzy search for node",
 		arguments: [
 			{
-				name: "nodeName",
 				description: "Name of the node to check",
+				name: "nodeName",
 				required: true,
 			},
 			{
-				name: "nodeFamily",
 				description: "Family of the node to check",
+				name: "nodeFamily",
 				required: false,
 			},
 			{
-				name: "nodeType",
 				description: "Type of the node to check",
+				name: "nodeType",
 				required: false,
 			},
 		],
+		description: "Fuzzy search for node",
+		name: PROMPT_NAMES.SEARCH_NODE,
 	},
 	{
-		name: PROMPT_NAMES.CHECK_NODE_ERRORS,
-		description: "Fuzzy search for node and return errors in TouchDesigner.",
 		arguments: [
 			{
-				name: "nodePath",
 				description: "Path to the node to check",
+				name: "nodePath",
 				required: true,
 			},
 		],
+		description: "Fuzzy search for node and return errors in TouchDesigner.",
+		name: PROMPT_NAMES.CHECK_NODE_ERRORS,
 	},
 	{
-		name: PROMPT_NAMES.NODE_CONNECTION,
 		description: "Connect nodes between each other in TouchDesigner.",
+		name: PROMPT_NAMES.NODE_CONNECTION,
 	},
 ];
 
@@ -57,7 +57,10 @@ export function registerTdPrompts(server: McpServer, logger: ILogger): void {
 
 	server.server.setRequestHandler(GetPromptRequestSchema, (request) => {
 		try {
-			logger.debug(`Handling GetPromptRequest: ${request.params.name}`);
+			logger.sendLog({
+				data: `Handling GetPromptRequest: ${request.params.name}`,
+				level: "debug",
+			});
 			const prompt = getPrompt(request.params.name);
 			if (!prompt) {
 				throw new Error("Prompt name is required");
@@ -69,8 +72,8 @@ export function registerTdPrompts(server: McpServer, logger: ILogger): void {
 				}
 				const { nodeName, nodeFamily, nodeType } = request.params.arguments;
 				const messages = handleSearchNodePrompt({
-					nodeName,
 					nodeFamily,
+					nodeName,
 					nodeType,
 				});
 				return { messages };
@@ -97,7 +100,10 @@ export function registerTdPrompts(server: McpServer, logger: ILogger): void {
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
-			logger.error(`Error handling prompt request: ${errorMessage}`);
+			logger.sendLog({
+				data: `Error handling prompt request: ${errorMessage}`,
+				level: "error",
+			});
 			throw new Error(errorMessage);
 		}
 	});
@@ -110,13 +116,13 @@ function handleSearchNodePrompt(params: {
 }) {
 	return [
 		{
-			role: "user",
 			content: {
-				type: "text",
 				text: `Use the "${TOOL_NAMES.GET_TD_NODES}", "${TOOL_NAMES.GET_TD_NODE_PARAMETERS}" tools to search nodes what named "${params.nodeName}" in the TouchDesigner project.${
 					params.nodeType ? ` Node Type: ${params.nodeType}.` : ""
 				}${params.nodeFamily ? ` Node Family: ${params.nodeFamily}.` : ""}`,
+				type: "text",
 			},
+			role: "user",
 		},
 	];
 }
@@ -124,11 +130,11 @@ function handleSearchNodePrompt(params: {
 function handleCheckNodeErrorsPrompt(params: { nodePath: string }) {
 	return [
 		{
-			role: "user",
 			content: {
+				text: `Use the "${TOOL_NAMES.GET_TD_NODE_ERRORS}" tool to inspect "${params.nodePath}" (and optionally its children) for error messages. If errors are returned, examine the affected nodes' parameters and connections to resolve them.`,
 				type: "text",
-				text: `Use the "${TOOL_NAMES.EXECUTE_NODE_METHOD}" like "op('${params.nodePath}').errors()" tool to check node errors. If there are any errors, please check the node parameters and connections. If the node has children, please check the child nodes as well. Please check the node connections and parameters. If the node has children, please check the child nodes as well.`,
 			},
+			role: "user",
 		},
 	];
 }
@@ -136,11 +142,11 @@ function handleCheckNodeErrorsPrompt(params: { nodePath: string }) {
 function handleNodeConnectionPrompt() {
 	return [
 		{
-			role: "user",
 			content: {
-				type: "text",
 				text: `Use the "${TOOL_NAMES.EXECUTE_PYTHON_SCRIPT}" tool e.g. op('/project1/text_over_image').outputConnectors[0].connect(op('/project1/out1'))`,
+				type: "text",
 			},
+			role: "user",
 		},
 	];
 }

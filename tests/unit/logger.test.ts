@@ -13,11 +13,14 @@ describe("Logger", () => {
 			};
 
 			const logger = new McpLogger(mockServer as unknown as McpServer);
-			logger.log("test message");
+			logger.sendLog({
+				data: "test message",
+				level: "info",
+			});
 
 			expect(mockSendLoggingMessage).toHaveBeenCalledWith({
-				level: "info",
 				data: "test message",
+				level: "info",
 			});
 		});
 
@@ -34,7 +37,12 @@ describe("Logger", () => {
 
 			const logger = new McpLogger(mockServer as unknown as McpServer);
 
-			expect(() => logger.log("test message")).not.toThrow();
+			expect(() =>
+				logger.sendLog({
+					data: "test message",
+					level: "info",
+				}),
+			).not.toThrow();
 			expect(mockSendLoggingMessage).toHaveBeenCalled();
 		});
 	});

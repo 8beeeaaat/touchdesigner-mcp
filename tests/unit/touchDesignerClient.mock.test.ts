@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import packageJson from "../../package.json";
 import type { ILogger } from "../../src/core/logger";
 import * as touchDesignerAPI from "../../src/gen/endpoints/TouchDesignerAPI";
 
@@ -7,43 +8,57 @@ import {
 	TouchDesignerClient,
 } from "../../src/tdClient/touchDesignerClient";
 
+const CURRENT_VERSION = packageJson.version;
+
 vi.mock("../../src/gen/endpoints/TouchDesignerAPI", async () => {
 	return {
-		getTdInfo: vi.fn(),
-		getTdPythonClasses: vi.fn(),
-		getTdPythonClassDetails: vi.fn(),
+		createNode: vi.fn(),
+		deleteNode: vi.fn(),
 		execNodeMethod: vi.fn(),
 		execPythonScript: vi.fn(),
-		createNode: vi.fn(),
-		updateNode: vi.fn(),
-		deleteNode: vi.fn(),
-		getNodes: vi.fn(),
+		getModuleHelp: vi.fn(),
 		getNodeDetail: vi.fn(),
+		getNodeErrors: vi.fn(),
+		getNodes: vi.fn(),
+		getTdInfo: vi.fn(),
+		getTdPythonClassDetails: vi.fn(),
+		getTdPythonClasses: vi.fn(),
+		updateNode: vi.fn(),
 	};
 });
 
 const nullLogger: ILogger = {
-	debug: () => {},
-	log: () => {},
-	warn: () => {},
-	error: () => {},
+	sendLog: () => {},
 };
 
 describe("TouchDesignerClient with mocks", () => {
 	beforeEach(() => {
 		vi.resetAllMocks();
+
+		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
+			data: {
+				mcpApiVersion: CURRENT_VERSION,
+				osName: "macOS",
+				osVersion: "12.6.1",
+				server: "TouchDesigner",
+				version: "2023.11050",
+			},
+			error: null,
+			success: true,
+		});
 	});
 
 	test("getTdInfo should handle successful response", async () => {
 		const mockResponse = {
-			success: true,
 			data: {
-				server: "TouchDesigner",
-				version: "2023.11050",
+				mcpApiVersion: CURRENT_VERSION,
 				osName: "macOS",
 				osVersion: "12.6.1",
+				server: "TouchDesigner",
+				version: "2023.11050",
 			},
 			error: null,
+			success: true,
 		};
 
 		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(mockResponse);
@@ -63,13 +78,26 @@ describe("TouchDesignerClient with mocks", () => {
 	});
 
 	test("getTdInfo should handle error response", async () => {
-		const mockResponse = {
-			success: false,
+		const compatibilityResponse = {
+			data: {
+				mcpApiVersion: CURRENT_VERSION,
+				osName: "macOS",
+				osVersion: "12.6.1",
+				server: "TouchDesigner",
+				version: "2023.11050",
+			},
+			error: null,
+			success: true,
+		};
+		const errorResponse = {
 			data: null,
 			error: "Failed to connect to server",
+			success: false,
 		};
 
-		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(mockResponse);
+		vi.mocked(touchDesignerAPI.getTdInfo)
+			.mockResolvedValueOnce(compatibilityResponse)
+			.mockResolvedValueOnce(errorResponse);
 
 		const client = new TouchDesignerClient({ logger: nullLogger });
 		const result = await client.getTdInfo();
@@ -81,28 +109,91 @@ describe("TouchDesignerClient with mocks", () => {
 		expect(result.error.message).toBe("Failed to connect to server");
 	});
 
+	test("getTdInfo should handle missing data response", async () => {
+		const compatibilityResponse = {
+			data: {
+				mcpApiVersion: CURRENT_VERSION,
+				osName: "macOS",
+				osVersion: "12.6.1",
+				server: "TouchDesigner",
+				version: "2023.11050",
+			},
+			error: null,
+			success: true,
+		};
+		const mockResponse = {
+			data: null,
+			error: null,
+			success: true,
+		};
+
+		vi.mocked(touchDesignerAPI.getTdInfo)
+			.mockResolvedValueOnce(compatibilityResponse)
+			.mockResolvedValueOnce(mockResponse);
+
+		const client = new TouchDesignerClient({ logger: nullLogger });
+		const result = await client.getTdInfo();
+		if (result.success) {
+			throw new Error("Expected success to be false");
+		}
+		expect(result.error).toBeInstanceOf(Error);
+		expect(result.error.message).toBe("No data received");
+	});
+
+	test("getTdInfo should fail when API version mismatches server version", async () => {
+		const mockLogger: ILogger = {
+			sendLog: vi.fn(),
+		};
+
+		const mismatchResponse = {
+			data: {
+				mcpApiVersion: "0.9.0",
+				osName: "macOS",
+				osVersion: "12.6.1",
+				server: "TouchDesigner",
+				version: "2023.11050",
+			},
+			error: null,
+			success: true,
+		};
+
+		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(mismatchResponse);
+
+		const client = new TouchDesignerClient({ logger: mockLogger });
+
+		await expect(client.getTdInfo()).rejects.toThrow(
+			"Version mismatch detected",
+		);
+		expect(mockLogger.sendLog).toHaveBeenCalledWith(
+			expect.objectContaining({
+				level: "error",
+				logger: "TouchDesignerClient",
+			}),
+		);
+	});
+
 	test("createNode should handle successful creation", async () => {
 		const mockResponse = {
-			success: true,
 			data: {
 				result: {
 					id: 123,
 					name: "testNode",
-					path: "/project1/testNode",
 					opType: "nullCOMP",
+					path: "/project1/testNode",
 					properties: {},
 				},
 			},
 			error: null,
+			success: true,
 		};
 
 		vi.mocked(touchDesignerAPI.createNode).mockResolvedValue(mockResponse);
 
 		const client = new TouchDesignerClient({ logger: nullLogger });
 		const result = await client.createNode({
-			parentPath: "/project1",
-			nodeType: "nullCOMP",
 			nodeName: "testNode",
+			nodeType: "nullCOMP",
+			parentPath: "/project1",
 		});
 		if (!result.success) {
 			throw new Error("Expected success to be true");
@@ -114,11 +205,11 @@ describe("TouchDesignerClient with mocks", () => {
 
 	test("execPythonScript should handle successful execution", async () => {
 		const mockResponse = {
-			success: true,
 			data: {
 				result: { value: "Script executed successfully" }, // Adjusted structure
 			},
 			error: null,
+			success: true,
 		};
 
 		vi.mocked(touchDesignerAPI.execPythonScript).mockResolvedValue(
@@ -142,21 +233,19 @@ describe("TouchDesignerClient with mocks", () => {
 
 	test("TouchDesignerClient should accept custom logger", async () => {
 		const mockLogger: ILogger = {
-			debug: vi.fn(),
-			log: vi.fn(),
-			warn: vi.fn(),
-			error: vi.fn(),
+			sendLog: vi.fn(),
 		};
 
 		const mockResponse = {
-			success: true,
 			data: {
-				server: "TouchDesigner",
-				version: "2023.11050",
+				mcpApiVersion: CURRENT_VERSION,
 				osName: "macOS",
 				osVersion: "12.6.1",
+				server: "TouchDesigner",
+				version: "2023.11050",
 			},
 			error: null,
+			success: true,
 		};
 
 		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(mockResponse);
@@ -165,24 +254,27 @@ describe("TouchDesignerClient with mocks", () => {
 		const result = await client.getTdInfo();
 
 		expect(result.success).toBe(true);
-		expect(mockLogger.debug).toHaveBeenCalled();
+		expect(mockLogger.sendLog).toHaveBeenCalledWith(
+			expect.objectContaining({ level: "debug" }),
+		);
 	});
 
 	test("TouchDesignerClient should accept custom httpClient", async () => {
 		const mockHttpClient = {
 			getTdInfo: vi.fn().mockResolvedValue({
-				success: true,
 				data: {
+					mcpApiVersion: CURRENT_VERSION,
 					server: "CustomServer",
-					version: "CustomVersion",
 					status: "CustomStatus",
+					version: "CustomVersion",
 				},
+				success: true,
 			}),
 		};
 
 		const client = new TouchDesignerClient({
-			logger: nullLogger,
 			httpClient: mockHttpClient as unknown as ITouchDesignerApi,
+			logger: nullLogger,
 		});
 
 		const result = await client.getTdInfo();

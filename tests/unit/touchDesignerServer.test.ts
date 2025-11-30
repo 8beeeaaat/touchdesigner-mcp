@@ -16,22 +16,22 @@ vi.mock("../../src/features/tools/index.js", () => ({
 }));
 
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => ({
-	McpServer: vi.fn().mockImplementation(() => ({
-		connect: vi.fn().mockResolvedValue(undefined),
-		close: vi.fn().mockResolvedValue(undefined),
-		tool: vi.fn(),
-		server: {
-			setRequestHandler: vi.fn(),
+	McpServer: vi.fn(function MockMcpServer(this: Record<string, unknown>) {
+		this.connect = vi.fn().mockResolvedValue(undefined);
+		this.close = vi.fn().mockResolvedValue(undefined);
+		this.tool = vi.fn();
+		this.server = {
 			sendLoggingMessage: vi.fn(),
-		},
-	})),
+			setRequestHandler: vi.fn(),
+		};
+	}),
 }));
 
 vi.mock("../../src/tdClient/index.js", () => ({
 	createTouchDesignerClient: vi.fn().mockReturnValue({
 		getTdInfo: vi
 			.fn()
-			.mockResolvedValue({ success: true, data: { server: "info" } }),
+			.mockResolvedValue({ data: { server: "info" }, success: true }),
 	}),
 }));
 

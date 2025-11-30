@@ -3,31 +3,31 @@ Type definitions module for TouchDesigner MCP Web server
 Defines Result and APIResponse types
 """
 
-from typing import Any, Dict, TypedDict
+from typing import Any, TypedDict
 
 
 class Result(TypedDict, total=False):
-    """Type representing operation results (equivalent to TypeScript Result pattern)"""
+	"""Type representing operation results (equivalent to TypeScript Result pattern)"""
 
-    success: bool
-    data: Any  # Data when successful
-    error: Any  # Error information when failed
+	success: bool
+	data: Any  # Data when successful
+	error: Any  # Error information when failed
 
 
 class APIResponse(TypedDict, total=False):
-    """Type representing API responses"""
+	"""Type representing API responses"""
 
-    statusCode: int
-    statusReason: str
-    data: str  # JSON string
-    content_type: str
-    headers: Dict[str, str]
+	statusCode: int
+	statusReason: str
+	data: str  # JSON string
+	content_type: str
+	headers: dict[str, str]
 
 
 class LogLevel:
-    """Log level definitions"""
+	"""Log level definitions"""
 
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"
+	DEBUG = "DEBUG"
+	INFO = "INFO"
+	WARNING = "WARNING"
+	ERROR = "ERROR"
