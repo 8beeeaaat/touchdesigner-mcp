@@ -183,7 +183,10 @@ export function registerTdTools(
 		async (params: ExecPythonScriptToolParams) => {
 			try {
 				const { detailLevel, responseFormat, ...scriptParams } = params;
-				logger.debug(`Executing script: ${scriptParams.script}`);
+				logger.sendLog({
+					data: `Executing script: ${scriptParams.script}`,
+					level: "debug",
+				});
 
 				const result = await tdClient.execPythonScript(scriptParams);
 				if (!result.success) {
@@ -419,7 +422,10 @@ export function registerTdTools(
 					],
 				};
 			} catch (error) {
-				logger.error(error);
+				logger.sendLog({
+					data: error,
+					level: "error",
+				});
 				return handleToolError(
 					error,
 					logger,

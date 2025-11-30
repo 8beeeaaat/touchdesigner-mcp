@@ -77,10 +77,7 @@ export type Result<T, E = Error> = SuccessResult<T> | ErrorResult<E>;
  * Null logger implementation that discards all logs
  */
 const nullLogger: ILogger = {
-	debug: () => {},
-	error: () => {},
-	log: () => {},
-	warn: () => {},
+	sendLog: () => {},
 };
 
 /**
@@ -122,6 +119,15 @@ export class TouchDesignerClient {
 	private readonly logger: ILogger;
 	private readonly api: ITouchDesignerApi;
 
+	private logDebug(message: string, context?: Record<string, unknown>) {
+		const data = context ? { message, ...context } : { message };
+		this.logger.sendLog({
+			data,
+			level: "debug",
+			logger: "TouchDesignerClient",
+		});
+	}
+
 	/**
 	 * Initialize TouchDesigner client with optional dependencies
 	 */
@@ -143,9 +149,10 @@ export class TouchDesignerClient {
 			result: unknown;
 		}>,
 	>(params: ExecNodeMethodRequest) {
-		this.logger.debug(
-			`Executing node method: ${params.method} on ${params.nodePath}`,
-		);
+		this.logDebug("Executing node method", {
+			method: params.method,
+			nodePath: params.nodePath,
+		});
 
 		const result = await this.api.execNodeMethod(params);
 		return handleApiResponse<DATA>(result as TdResponse<DATA>);
@@ -159,7 +166,7 @@ export class TouchDesignerClient {
 			result: unknown;
 		},
 	>(params: ExecPythonScriptRequest) {
-		this.logger.debug(`Executing Python script: ${params}`);
+		this.logDebug("Executing Python script", { params });
 		const result = await this.api.execPythonScript(params);
 		return handleApiResponse<DATA>(result as TdResponse<DATA>);
 	}
@@ -168,7 +175,7 @@ export class TouchDesignerClient {
 	 * Get TouchDesigner server information
 	 */
 	async getTdInfo() {
-		this.logger.debug("Getting server info");
+		this.logDebug("Getting server info");
 		const result = await this.api.getTdInfo();
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -177,7 +184,9 @@ export class TouchDesignerClient {
 	 * Get list of nodes
 	 */
 	async getNodes(params: GetNodesParams) {
-		this.logger.debug(`Getting nodes for parent: ${params.parentPath}`);
+		this.logDebug("Getting nodes for parent", {
+			parentPath: params.parentPath,
+		});
 		const result = await this.api.getNodes(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -186,7 +195,9 @@ export class TouchDesignerClient {
 	 * Get node properties
 	 */
 	async getNodeDetail(params: GetNodeDetailParams) {
-		this.logger.debug(`Getting properties for node: ${params.nodePath}`);
+		this.logDebug("Getting properties for node", {
+			nodePath: params.nodePath,
+		});
 		const result = await this.api.getNodeDetail(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -195,9 +206,11 @@ export class TouchDesignerClient {
 	 * Create a new node
 	 */
 	async createNode(params: CreateNodeRequest) {
-		this.logger.debug(
-			`Creating node: ${params.nodeName} of type ${params.nodeType} under ${params.parentPath}`,
-		);
+		this.logDebug("Creating node", {
+			nodeName: params.nodeName,
+			nodeType: params.nodeType,
+			parentPath: params.parentPath,
+		});
 		const result = await this.api.createNode(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -206,7 +219,7 @@ export class TouchDesignerClient {
 	 * Update node properties
 	 */
 	async updateNode(params: UpdateNodeRequest) {
-		this.logger.debug(`Updating node: ${params.nodePath}`);
+		this.logDebug("Updating node", { nodePath: params.nodePath });
 		const result = await this.api.updateNode(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -215,7 +228,7 @@ export class TouchDesignerClient {
 	 * Delete a node
 	 */
 	async deleteNode(params: DeleteNodeParams) {
-		this.logger.debug(`Deleting node: ${params.nodePath}`);
+		this.logDebug("Deleting node", { nodePath: params.nodePath });
 		const result = await this.api.deleteNode(params);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -224,7 +237,7 @@ export class TouchDesignerClient {
 	 * Get list of available Python classes/modules in TouchDesigner
 	 */
 	async getClasses() {
-		this.logger.debug("Getting Python classes");
+		this.logDebug("Getting Python classes");
 		const result = await this.api.getTdPythonClasses();
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}
@@ -233,7 +246,7 @@ export class TouchDesignerClient {
 	 * Get details of a specific class/module
 	 */
 	async getClassDetails(className: string) {
-		this.logger.debug(`Getting class details for: ${className}`);
+		this.logDebug("Getting class details", { className });
 		const result = await this.api.getTdPythonClassDetails(className);
 		return handleApiResponse<(typeof result)["data"]>(result);
 	}

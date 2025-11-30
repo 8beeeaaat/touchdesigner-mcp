@@ -20,10 +20,7 @@ const mockServer = {
 } as unknown as McpServer;
 
 const mockLogger = {
-	debug: vi.fn(),
-	error: vi.fn(),
-	log: vi.fn(),
-	warn: vi.fn(),
+	sendLog: vi.fn(),
 } as ILogger;
 
 const mockTdClient = {
@@ -74,9 +71,10 @@ describe("ConnectionManager", () => {
 			// Assert
 			expect(result.success).toBe(true);
 			expect(mockServer.connect).toHaveBeenCalledWith(mockTransport);
-			expect(mockLogger.log).toHaveBeenCalledWith(
-				"Server connected and ready to process requests: http://127.0.0.1:9981",
-			);
+			expect(mockLogger.sendLog).toHaveBeenCalledWith({
+				data: "Server connected and ready to process requests: http://127.0.0.1:9981",
+				level: "info",
+			});
 			expect(mockTdClient.getTdInfo).toHaveBeenCalled();
 			expect(connectionManager.isConnected()).toBe(true);
 		});
@@ -99,9 +97,10 @@ describe("ConnectionManager", () => {
 
 			// Assert
 			expect(result.success).toBe(true);
-			expect(mockLogger.log).toHaveBeenCalledWith(
-				"MCP server already connected",
-			);
+			expect(mockLogger.sendLog).toHaveBeenCalledWith({
+				data: "MCP server already connected",
+				level: "info",
+			});
 		});
 
 		it("should handle MCP server connection failure", async () => {

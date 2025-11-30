@@ -23,10 +23,7 @@ vi.mock("../../src/gen/endpoints/TouchDesignerAPI", async () => {
 });
 
 const nullLogger: ILogger = {
-	debug: () => {},
-	error: () => {},
-	log: () => {},
-	warn: () => {},
+	sendLog: () => {},
 };
 
 describe("TouchDesignerClient with mocks", () => {
@@ -142,10 +139,7 @@ describe("TouchDesignerClient with mocks", () => {
 
 	test("TouchDesignerClient should accept custom logger", async () => {
 		const mockLogger: ILogger = {
-			debug: vi.fn(),
-			error: vi.fn(),
-			log: vi.fn(),
-			warn: vi.fn(),
+			sendLog: vi.fn(),
 		};
 
 		const mockResponse = {
@@ -165,7 +159,9 @@ describe("TouchDesignerClient with mocks", () => {
 		const result = await client.getTdInfo();
 
 		expect(result.success).toBe(true);
-		expect(mockLogger.debug).toHaveBeenCalled();
+		expect(mockLogger.sendLog).toHaveBeenCalledWith(
+			expect.objectContaining({ level: "debug" }),
+		);
 	});
 
 	test("TouchDesignerClient should accept custom httpClient", async () => {
