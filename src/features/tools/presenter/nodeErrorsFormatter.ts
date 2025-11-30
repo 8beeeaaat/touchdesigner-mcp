@@ -43,7 +43,7 @@ export function formatNodeErrors(
 	}
 
 	const { items, truncated } = limitArray(errors, opts.limit);
-	const header = `Node: ${data.nodePath}\nOperator: ${data.opType} (${data.nodeName})\n${data.errorCount} error(s) found (children included)\n`;
+	const header = `Node: ${data.nodePath}\nOperator: ${data.opType} (${data.nodeName})\n${data.errorCount} error(s) found\n`;
 
 	const body =
 		opts.detailLevel === "minimal"
