@@ -118,7 +118,6 @@ DATA DESCRIPTORS
 					},
 				],
 				hasErrors: true,
-				includeChildren: true,
 				nodeName: "mockNode",
 				nodePath: "/project1/mockNode",
 				opType: "textTOP",
