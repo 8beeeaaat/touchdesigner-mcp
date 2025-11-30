@@ -521,23 +521,41 @@ class TouchDesignerApiService(IApiService):
 		if not target_name:
 			return None
 
-		eval_globals = {"__builtins__": {}}
-		eval_locals = {"td": td}
-		if hasattr(td, "tdu"):
-			eval_locals["tdu"] = td.tdu
+		# Handle dotted names like "td.noiseCHOP" or "td.tdu.SomeClass"
+		def resolve_dotted_name(name: str) -> Optional[Any]:
+			parts = name.split(".")
+			# Only allow access starting from td or tdu
+			if parts[0] == "td":
+				obj: Any = td
+			elif parts[0] == "tdu" and hasattr(td, "tdu"):
+				obj = td.tdu
+			else:
+				return None
+			for part in parts[1:]:
+				# Validate part is non-empty and a valid identifier
+				if not part or not part.isidentifier():
+					return None
+				if not hasattr(obj, part):
+					return None
+				obj = getattr(obj, part)
+			return obj
 
-		try:
-			return eval(target_name, eval_globals, eval_locals)
-		except Exception:
-			pass
+		# Try resolving as a dotted name
+		if "." in target_name:
+			resolved = resolve_dotted_name(target_name)
+			if resolved is not None:
+				return resolved
 
+		# Try direct attribute of td
 		if hasattr(td, target_name):
 			return getattr(td, target_name)
 
+		# Try importing as a module
 		imported = self._import_module_safely(target_name)
 		if imported:
 			return imported
 
+		# Try importing with td. prefix
 		if not target_name.startswith("td."):
 			imported = self._import_module_safely(f"td.{target_name}")
 			if imported:
@@ -548,10 +566,25 @@ class TouchDesignerApiService(IApiService):
 	def _import_module_safely(self, target: str) -> Optional[Any]:
 		try:
 			return importlib.import_module(target)
-		except Exception:
+		except (ImportError, ModuleNotFoundError) as e:
+			log_message(f"Failed to import module '{target}': {str(e)}", LogLevel.DEBUG)
+			return None
+		except Exception as e:
+			log_message(
+				f"Unexpected error importing module '{target}': {str(e)}",
+				LogLevel.WARNING,
+			)
 			return None
 
 	def _normalize_help_text(self, text: str) -> str:
+		"""Normalize help text by removing terminal control sequences.
+
+		The pydoc module uses backspace characters (\b) for text formatting
+		(e.g., bold text is written as "c\bc" to print 'c' over 'c').
+		This method removes those backspace sequences to produce clean text.
+		If a backspace is encountered at the start (empty buffer), it is safely
+		ignored as there is no character to remove.
+		"""
 		if not text:
 			return text
 		buffer: list[str] = []
