@@ -65,7 +65,7 @@
     },
     {
       "name": "get_td_node_errors",
-      "description": "Check for errors on a specified node and optionally its children"
+      "description": "Check for errors on a specified node and its children"
     },
     {
       "name": "get_td_node_parameters",
