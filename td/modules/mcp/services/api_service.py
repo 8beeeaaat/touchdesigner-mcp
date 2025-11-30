@@ -567,9 +567,7 @@ class TouchDesignerApiService(IApiService):
 		try:
 			return importlib.import_module(target)
 		except (ImportError, ModuleNotFoundError) as e:
-			log_message(
-				f"Failed to import module '{target}': {str(e)}", LogLevel.DEBUG
-			)
+			log_message(f"Failed to import module '{target}': {str(e)}", LogLevel.DEBUG)
 			return None
 		except Exception as e:
 			log_message(
