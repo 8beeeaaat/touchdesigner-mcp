@@ -366,7 +366,7 @@ The build process (`npm run build`) runs all necessary generation steps (`npm ru
 
 ### Troubleshooting version compatibility
 
-- During `ConnectionManager.connect` the MCP server compares its own version with the TouchDesigner API server version reported by `getTdInfo`. If the API server does not expose a version or the versions differ (for example because only one side was updated), the MCP server aborts the connection with a descriptive error message in the Claude/Codex console and in the TouchDesigner log DAT.
+- When any tool is called, the MCP server compares its own version with the TouchDesigner API server version reported by `getTdInfo`. If the API server does not expose a version or the versions differ (for example because only one side was updated), the tool call fails with a descriptive error message in the Claude/Codex console and in the TouchDesigner log DAT.
 - To resolve the mismatch, reinstall both the TouchDesigner components
   1. Download the latest [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) from the releases page.
   2. Delete the existing \`touchdesigner-mcp-td\` folder and replace it with the newly extracted contents.
