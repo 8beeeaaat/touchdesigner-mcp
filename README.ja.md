@@ -366,7 +366,7 @@ td/
 
 ### バージョン互換性のトラブルシューティング
 
-- `ConnectionManager.connect` の実行中、MCPサーバーは自身のバージョンと `getTdInfo` が報告するTouchDesigner APIサーバーのバージョンを比較します。APIサーバーがバージョンを公開していない場合、またはバージョンが異なる場合（例：片方のみが更新された場合）、MCPサーバーはClaude/Codexコンソールおよび TouchDesigner ログ DAT に説明的なエラーメッセージを表示して接続を中止します。
+- ツールが呼び出されると、MCPサーバーは自身のバージョンと `getTdInfo` が報告するTouchDesigner APIサーバーのバージョンを比較します。APIサーバーがバージョンを公開していない場合、またはバージョンが異なる場合（例：片方のみが更新された場合）、ツール呼び出しは失敗し、Claude/Codexコンソールおよび TouchDesigner ログ DAT に説明的なエラーメッセージが表示されます。
 - 不一致を解決するには、TouchDesignerコンポーネントを再インストールしてください：
   1. リリースページから最新の [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) をダウンロードします。
   2. 既存の `touchdesigner-mcp-td` フォルダを削除し、新しく展開した内容に置き換えます。
