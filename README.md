@@ -366,13 +366,30 @@ The build process (`npm run build`) runs all necessary generation steps (`npm ru
 
 ### Troubleshooting version compatibility
 
-- When any tool is called, the MCP server compares its own version with the TouchDesigner API server version reported by `getTdInfo`. If the API server does not expose a version or the versions differ (for example because only one side was updated), the tool call fails with a descriptive error message in the Claude/Codex console and in the TouchDesigner log DAT.
-- To resolve the mismatch, reinstall both the TouchDesigner components
+The MCP server uses **semantic versioning** for flexible compatibility checks
+
+| MCP Server | API Server | Minimum compatible API version | Behavior | Status | Notes |
+|------------|------------|----------------|----------|--------|-------|
+| 1.3.x | 1.3.0 | ✅ 1.3.0 | ✅ Works normally | Compatible | Recommended baseline configuration |
+| 1.3.x | 1.4.0 | ✅ 1.3.0 | ⚠️ Warning shown, continues | Warning | Older MCP MINOR with newer API may lack new features |
+| 1.4.0 | 1.3.x | ✅ 1.3.0 | ⚠️ Warning shown, continues | Warning | Newer MCP MINOR may have additional features |
+| 1.5.0 | 1.3.0 | ✅ 1.3.0 | ⚠️ Warning shown, continues | Warning | Multiple MINOR versions ahead |
+| 1.3.2 | 1.3.1 | ❌ 1.3.2 | ❌ Execution stops | Error | API below minimum compatible version |
+| 2.0.0 | 1.x.x | ❌ N/A | ❌ Execution stops | Error | Different MAJOR = breaking changes |
+
+**Compatibility Rules**:
+
+- ✅ **Compatible**: Same MAJOR version, same MINOR version, AND API version ≥ 1.3.0 (minimum compatible version)
+- ⚠️ **Warning**: Different MINOR versions (either direction) within same MAJOR version (shows warning but continues execution)
+- ❌ **Error**: Different MAJOR versions OR API server < 1.3.0 (execution stops immediately, update required)
+
+- **To resolve compatibility errors:**
   1. Download the latest [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) from the releases page.
   2. Delete the existing `touchdesigner-mcp-td` folder and replace it with the newly extracted contents.
   3. Remove the old `mcp_webserver_base` component from your TouchDesigner project and import the `.tox` from the new folder.
   4. Restart TouchDesigner and the AI agent running the MCP server (e.g., Claude Desktop).
-- When developing locally, run `npm run gen:version` after editing `package.json` (or simply use `npm version ...`). This keeps the Python API (`pyproject.toml` + `td/modules/utils/version.py`), MCP bundle manifest, and registry metadata in sync so that the runtime compatibility check succeeds.
+
+- **For developers:** When developing locally, run `npm run version` after editing `package.json` (or simply use `npm version ...`). This keeps the Python API (`pyproject.toml` + `td/modules/utils/version.py`), MCP bundle manifest, and registry metadata in sync so that the runtime compatibility check succeeds.
 
 ## Contributing
 

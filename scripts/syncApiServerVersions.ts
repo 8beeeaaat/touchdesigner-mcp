@@ -17,18 +17,6 @@ if (!packageVersion) {
 
 const updatedFiles: string[] = [];
 
-const writeJsonFile = (
-	relativePath: string,
-	updater: (data: any, version: string) => any,
-) => {
-	const absPath = join(rootDir, relativePath);
-	const original = readFileSync(absPath, "utf8");
-	const parsed = JSON.parse(original);
-	const next = updater(parsed, packageVersion);
-	writeFileSync(absPath, `${JSON.stringify(next, null, 2)}\n`, "utf8");
-	updatedFiles.push(relativePath);
-};
-
 const writeTextFile = (
 	relativePath: string,
 	updater: (data: any, version: string) => any,
@@ -39,53 +27,6 @@ const writeTextFile = (
 	writeFileSync(absPath, next, "utf8");
 	updatedFiles.push(relativePath);
 };
-
-writeJsonFile("mcpb/manifest.json", (manifest) => {
-	return {
-		...manifest,
-		version: packageVersion,
-	};
-});
-
-writeJsonFile("server.json", (serverConfig) => {
-	const updatedPackages = serverConfig.packages?.map(
-		(pkg: {
-			registryType: string;
-			identifier: string | Record<string, unknown>;
-			version: string;
-		}) => {
-			if (pkg.registryType === "npm") {
-				return {
-					...pkg,
-					version: packageVersion,
-				};
-			}
-
-			if (pkg.registryType === "mcpb") {
-				const updatedIdentifier =
-					typeof pkg.identifier === "string"
-						? pkg.identifier.replace(
-								/\/download\/v[^/]+\//,
-								`/download/v${packageVersion}/`,
-							)
-						: pkg.identifier;
-				return {
-					...pkg,
-					identifier: updatedIdentifier,
-					version: packageVersion,
-				};
-			}
-
-			return pkg;
-		},
-	);
-
-	return {
-		...serverConfig,
-		packages: updatedPackages,
-		version: packageVersion,
-	};
-});
 
 writeTextFile("pyproject.toml", (contents) => {
 	return contents.replace(

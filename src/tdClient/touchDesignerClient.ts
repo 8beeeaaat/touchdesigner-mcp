@@ -1,6 +1,14 @@
+import {
+	type CompatibilityPolicyErrorLevel,
+	getCompatibilityPolicy,
+	getCompatibilityPolicyType,
+} from "../core/compatibility.js";
 import type { ILogger } from "../core/logger.js";
 import { createErrorResult, createSuccessResult } from "../core/result.js";
-import { PACKAGE_VERSION } from "../core/version.js";
+import {
+	MCP_SERVER_VERSION,
+	MIN_COMPATIBLE_API_VERSION,
+} from "../core/version.js";
 import {
 	createNode as apiCreateNode,
 	deleteNode as apiDeleteNode,
@@ -24,13 +32,6 @@ import {
 	type GetNodesParams,
 	type UpdateNodeRequest,
 } from "../gen/endpoints/TouchDesignerAPI.js";
-
-const updateGuide = `
-	1. Download the latest [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) from the releases page.
-	2. Delete the existing \`touchdesigner-mcp-td\` folder and replace it with the newly extracted contents.
-	3. Remove the old \`mcp_webserver_base\` component from your TouchDesigner project and import the \`.tox\` from the new folder.
-	4. Restart TouchDesigner and the AI agent running the MCP server (e.g., Claude Desktop).
-`;
 
 /**
  * Interface for TouchDesignerClient HTTP operations
@@ -328,40 +329,70 @@ export class TouchDesignerClient {
 				),
 			);
 		}
-		const apiVersion = tdInfoResult.data?.mcpApiVersion?.trim();
-		if (!apiVersion) {
+
+		const apiVersionRaw = tdInfoResult.data?.mcpApiVersion?.trim();
+		if (!apiVersionRaw) {
 			return createErrorResult(
 				new Error(
-					`TouchDesigner API server did not report its version. Please reinstall the TouchDesigner components from the latest release.\n${updateGuide}`,
+					"TouchDesigner API server did not report its version. Please reinstall the TouchDesigner components from the latest release.\n" +
+						"Download: https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest",
 				),
 			);
 		}
 
-		const normalizedServerVersion = this.normalizeVersion(PACKAGE_VERSION);
-		const normalizedApiVersion = this.normalizeVersion(apiVersion);
-		if (normalizedServerVersion !== normalizedApiVersion) {
-			this.logger.sendLog({
-				data: {
-					message:
-						"MCP server and TouchDesigner API server versions are incompatible",
-					touchDesignerApiVersion: normalizedApiVersion,
-					touchDesignerServerVersion: normalizedServerVersion,
-				},
-				level: "error",
-				logger: "TouchDesignerClient",
-			});
+		const result = this.checkVersionCompatibility(
+			MCP_SERVER_VERSION,
+			apiVersionRaw,
+		);
 
-			return createErrorResult(
-				new Error(
-					`Version mismatch detected between MCP server (${normalizedServerVersion}) and TouchDesigner API server (${normalizedApiVersion}). Update both components to the same release.\n${updateGuide}`,
-				),
-			);
+		this.logger.sendLog({
+			data: {
+				apiVersion: result.details.apiVersion,
+				mcpVersion: result.details.mcpVersion,
+				message: result.message,
+				minRequired: result.details.minRequired,
+			},
+			level: result.level,
+			logger: "TouchDesignerClient",
+		});
+
+		if (result.level === "error") {
+			return createErrorResult(new Error(result.message));
+		}
+
+		if (result.level === "warning") {
+			console.warn(`[TouchDesigner MCP] ${result.message}`);
 		}
 
 		return createSuccessResult(undefined);
 	}
 
-	private normalizeVersion(version: string): string {
-		return version.trim().replace(/^v/i, "");
+	private checkVersionCompatibility(
+		mcpVersion: string,
+		apiVersion: string,
+	): {
+		compatible: boolean;
+		level: CompatibilityPolicyErrorLevel;
+		message: string;
+		details: {
+			mcpVersion: string;
+			apiVersion: string;
+			minRequired: string;
+		};
+	} {
+		const policyType = getCompatibilityPolicyType(mcpVersion, apiVersion);
+		const policy = getCompatibilityPolicy(policyType);
+		const message = policy.message(mcpVersion, apiVersion);
+
+		return {
+			compatible: policy.compatible,
+			details: {
+				apiVersion,
+				mcpVersion,
+				minRequired: MIN_COMPATIBLE_API_VERSION,
+			},
+			level: policy.level,
+			message,
+		};
 	}
 }

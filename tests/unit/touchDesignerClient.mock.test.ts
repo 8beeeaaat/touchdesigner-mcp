@@ -1,14 +1,12 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import packageJson from "../../package.json";
 import type { ILogger } from "../../src/core/logger";
+import * as version from "../../src/core/version";
 import * as touchDesignerAPI from "../../src/gen/endpoints/TouchDesignerAPI";
 
 import {
 	type ITouchDesignerApi,
 	TouchDesignerClient,
 } from "../../src/tdClient/touchDesignerClient";
-
-const CURRENT_VERSION = packageJson.version;
 
 vi.mock("../../src/gen/endpoints/TouchDesignerAPI", async () => {
 	return {
@@ -31,38 +29,39 @@ const nullLogger: ILogger = {
 	sendLog: () => {},
 };
 
+const compatibilityResponse = {
+	data: {
+		mcpApiVersion: "1.3.1",
+		osName: "macOS",
+		osVersion: "12.6.1",
+		server: "TouchDesigner",
+		version: "2023.11050",
+	},
+	error: null,
+	success: true,
+};
+
 describe("TouchDesignerClient with mocks", () => {
 	beforeEach(() => {
-		vi.resetAllMocks();
+		vi.clearAllMocks();
 
-		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
-			data: {
-				mcpApiVersion: CURRENT_VERSION,
-				osName: "macOS",
-				osVersion: "12.6.1",
-				server: "TouchDesigner",
-				version: "2023.11050",
-			},
-			error: null,
-			success: true,
+		// Note: version mocks are reset to return actual values by default
+		// Individual tests can override these as needed
+
+		vi.mock("../../src/core/version", async () => {
+			return {
+				getMcpServerVersion: vi.fn(() => "1.3.1"),
+				getMinCompatibleApiVersion: vi.fn(() => "1.3.0"),
+				MCP_SERVER_VERSION: "1.3.1",
+				MIN_COMPATIBLE_API_VERSION: "1.3.0",
+			};
 		});
+		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(
+			compatibilityResponse,
+		);
 	});
 
 	test("getTdInfo should handle successful response", async () => {
-		const mockResponse = {
-			data: {
-				mcpApiVersion: CURRENT_VERSION,
-				osName: "macOS",
-				osVersion: "12.6.1",
-				server: "TouchDesigner",
-				version: "2023.11050",
-			},
-			error: null,
-			success: true,
-		};
-
-		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(mockResponse);
-
 		const client = new TouchDesignerClient({ logger: nullLogger });
 		const result = await client.getTdInfo();
 
@@ -78,17 +77,6 @@ describe("TouchDesignerClient with mocks", () => {
 	});
 
 	test("getTdInfo should handle error response", async () => {
-		const compatibilityResponse = {
-			data: {
-				mcpApiVersion: CURRENT_VERSION,
-				osName: "macOS",
-				osVersion: "12.6.1",
-				server: "TouchDesigner",
-				version: "2023.11050",
-			},
-			error: null,
-			success: true,
-		};
 		const errorResponse = {
 			data: null,
 			error: "Failed to connect to server",
@@ -110,17 +98,6 @@ describe("TouchDesignerClient with mocks", () => {
 	});
 
 	test("getTdInfo should handle missing data response", async () => {
-		const compatibilityResponse = {
-			data: {
-				mcpApiVersion: CURRENT_VERSION,
-				osName: "macOS",
-				osVersion: "12.6.1",
-				server: "TouchDesigner",
-				version: "2023.11050",
-			},
-			error: null,
-			success: true,
-		};
 		const mockResponse = {
 			data: null,
 			error: null,
@@ -140,36 +117,138 @@ describe("TouchDesignerClient with mocks", () => {
 		expect(result.error.message).toBe("No data received");
 	});
 
-	test("getTdInfo should fail when API version mismatches server version", async () => {
-		const mockLogger: ILogger = {
-			sendLog: vi.fn(),
-		};
+	describe("Semantic Version Compatibility", () => {
+		test("should accept same MAJOR with different PATCH", async () => {
+			vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
+				data: {
+					mcpApiVersion: "1.3.5",
+					osName: "macOS",
+					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11050",
+				},
+				error: null,
+				success: true,
+			});
 
-		const mismatchResponse = {
-			data: {
-				mcpApiVersion: "0.9.0",
-				osName: "macOS",
-				osVersion: "12.6.1",
-				server: "TouchDesigner",
-				version: "2023.11050",
-			},
-			error: null,
-			success: true,
-		};
+			const client = new TouchDesignerClient({ logger: nullLogger });
+			const result = await client.getTdInfo();
 
-		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(mismatchResponse);
+			expect(result.success).toBe(true);
+		});
 
-		const client = new TouchDesignerClient({ logger: mockLogger });
+		test("should reject different MAJOR version", async () => {
+			vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
+				data: {
+					mcpApiVersion: "2.0.0",
+					osName: "macOS",
+					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11050",
+				},
+				error: null,
+				success: true,
+			});
 
-		await expect(client.getTdInfo()).rejects.toThrow(
-			"Version mismatch detected",
-		);
-		expect(mockLogger.sendLog).toHaveBeenCalledWith(
-			expect.objectContaining({
-				level: "error",
-				logger: "TouchDesignerClient",
-			}),
-		);
+			const client = new TouchDesignerClient({ logger: nullLogger });
+			await expect(client.getTdInfo()).rejects.toThrow("MAJOR version");
+		});
+
+		test("should reject version below minimum compatible version", async () => {
+			vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
+				data: {
+					mcpApiVersion: "1.2.99",
+					osName: "macOS",
+					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11050",
+				},
+				error: null,
+				success: true,
+			});
+
+			const client = new TouchDesignerClient({ logger: nullLogger });
+			await expect(client.getTdInfo()).rejects.toThrow(
+				"TouchDesigner API Server Update Required",
+			);
+		});
+
+		test("should warn when MCP is newer MINOR", async () => {
+			const mockLogger: ILogger = {
+				sendLog: vi.fn(),
+			};
+
+			vi.mocked(version.getMcpServerVersion).mockReturnValue("1.4.0");
+			vi.mocked(version).MCP_SERVER_VERSION = "1.4.0";
+
+			const client = new TouchDesignerClient({ logger: mockLogger });
+			const result = await client.getTdInfo();
+
+			expect(result.success).toBe(true);
+			expect(mockLogger.sendLog).toHaveBeenCalledWith(
+				expect.objectContaining({
+					level: "warning",
+					logger: "TouchDesignerClient",
+				}),
+			);
+		});
+
+		test("should allow API server with newer MINOR", async () => {
+			vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
+				data: {
+					mcpApiVersion: "1.5.0",
+					osName: "macOS",
+					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11050",
+				},
+				error: null,
+				success: true,
+			});
+
+			const client = new TouchDesignerClient({ logger: nullLogger });
+			const result = await client.getTdInfo();
+
+			expect(result.success).toBe(true);
+		});
+
+		test("should accept same version with v-prefix", async () => {
+			vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
+				data: {
+					mcpApiVersion: `v${"1.3.1"}`,
+					osName: "macOS",
+					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11050",
+				},
+				error: null,
+				success: true,
+			});
+
+			const client = new TouchDesignerClient({ logger: nullLogger });
+			const result = await client.getTdInfo();
+
+			expect(result.success).toBe(true);
+		});
+
+		test("should reject invalid semver version format", async () => {
+			vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
+				data: {
+					mcpApiVersion: "Invalid semver version",
+					osName: "macOS",
+					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11050",
+				},
+				error: null,
+				success: true,
+			});
+
+			const client = new TouchDesignerClient({ logger: nullLogger });
+			await expect(client.getTdInfo()).rejects.toThrow(
+				"Invalid semver version",
+			);
+		});
 	});
 
 	test("createNode should handle successful creation", async () => {
@@ -238,7 +317,7 @@ describe("TouchDesignerClient with mocks", () => {
 
 		const mockResponse = {
 			data: {
-				mcpApiVersion: CURRENT_VERSION,
+				mcpApiVersion: "1.3.1",
 				osName: "macOS",
 				osVersion: "12.6.1",
 				server: "TouchDesigner",
@@ -263,7 +342,7 @@ describe("TouchDesignerClient with mocks", () => {
 		const mockHttpClient = {
 			getTdInfo: vi.fn().mockResolvedValue({
 				data: {
-					mcpApiVersion: CURRENT_VERSION,
+					mcpApiVersion: "1.3.1",
 					server: "CustomServer",
 					status: "CustomStatus",
 					version: "CustomVersion",
