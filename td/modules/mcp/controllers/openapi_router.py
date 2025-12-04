@@ -180,9 +180,22 @@ class OpenAPIRouter:
 
 		if load_schema:
 			self.routes = extract_routes()
+
+			log_message(
+				f"OpenAPI Schema Version: {openapi_schema.get('info', {}).get('version', 'unknown')}",
+				LogLevel.INFO,
+			)
+
 			log_message(
 				f"Router initialized with {len(self.routes)} routes", LogLevel.INFO
 			)
+
+			for r in self.routes:
+				log_message(
+					f"Route loaded: {r.method} {r.path_pattern} (operationId: {r.operation_id})",
+					LogLevel.DEBUG,
+				)
+
 			self._routes_by_operation_id: dict[str, RouteDefinition] = {
 				r.operation_id: r for r in self.routes
 			}
