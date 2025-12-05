@@ -1,3 +1,4 @@
+import axios from "axios";
 import {
 	getCompatibilityPolicy,
 	getCompatibilityPolicyType,
@@ -383,20 +384,19 @@ export class TouchDesignerClient {
 		try {
 			tdInfoResult = await this.api.getTdInfo();
 		} catch (error) {
-			// Only catch network/HTTP errors from the API call
-			// Let programming errors propagate to help identify bugs
-			if (
-				error instanceof TypeError &&
-				error.message &&
-				!error.message.toLowerCase().includes("fetch") &&
-				!error.message.toLowerCase().includes("network")
-			) {
-				// This is likely a programming error, not a connection error
+			// Use axios.isAxiosError() for robust network/HTTP error detection
+			// AxiosError includes connection refused, timeout, network errors, etc.
+			// All other errors (TypeError, etc.) are programming errors and should propagate
+			if (!axios.isAxiosError(error)) {
+				// This is a programming error (e.g., TypeError, ReferenceError), not a connection error
+				const errorMessage =
+					error instanceof Error ? error.message : String(error);
+				const errorStack = error instanceof Error ? error.stack : undefined;
 				this.logger.sendLog({
 					data: {
-						error: error.message,
+						error: errorMessage,
 						errorType: "programming_error",
-						stack: error.stack,
+						stack: errorStack,
 					},
 					level: "error",
 					logger: "TouchDesignerClient",
@@ -404,7 +404,8 @@ export class TouchDesignerClient {
 				throw error;
 			}
 
-			const rawMessage = error instanceof Error ? error.message : String(error);
+			// Handle AxiosError (network/HTTP errors)
+			const rawMessage = error.message;
 			const errorMessage = this.formatConnectionError(rawMessage);
 			this.logger.sendLog({
 				data: { error: rawMessage, errorType: "connection" },

@@ -1,3 +1,4 @@
+import { AxiosError } from "axios";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { ILogger } from "../../src/core/logger";
 import * as version from "../../src/core/version";
@@ -885,10 +886,16 @@ describe("TouchDesignerClient with mocks", () => {
 			expect(mockCreateNode).toHaveBeenCalledTimes(0);
 		});
 
-		test("should format connection error when getTdInfo rejects", async () => {
-			const mockGetTdInfo = vi
-				.fn()
-				.mockRejectedValue(new Error("connect ECONNREFUSED 127.0.0.1:9981"));
+		test("should format connection error when getTdInfo rejects with AxiosError", async () => {
+			const axiosError = new AxiosError(
+				"connect ECONNREFUSED 127.0.0.1:9981",
+				"ECONNREFUSED",
+				undefined,
+				undefined,
+				undefined,
+			);
+
+			const mockGetTdInfo = vi.fn().mockRejectedValue(axiosError);
 
 			const mockHttpClient = {
 				getTdInfo: mockGetTdInfo,
@@ -901,6 +908,29 @@ describe("TouchDesignerClient with mocks", () => {
 
 			await expect(client.getTdInfo()).rejects.toThrow(
 				/TouchDesigner Connection Failed/,
+			);
+			expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
+		});
+
+		test("should propagate programming errors (non-AxiosError)", async () => {
+			const mockGetTdInfo = vi
+				.fn()
+				.mockRejectedValue(
+					new TypeError("Cannot read property 'x' of undefined"),
+				);
+
+			const mockHttpClient = {
+				getTdInfo: mockGetTdInfo,
+			} as Partial<ITouchDesignerApi>;
+
+			const client = new TouchDesignerClient({
+				httpClient: mockHttpClient as ITouchDesignerApi,
+				logger: nullLogger,
+			});
+
+			// Programming errors should propagate with their original message
+			await expect(client.getTdInfo()).rejects.toThrow(
+				"Cannot read property 'x' of undefined",
 			);
 			expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
 		});
