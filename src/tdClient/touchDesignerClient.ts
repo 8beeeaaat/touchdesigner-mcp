@@ -1,3 +1,4 @@
+import axios from "axios";
 import {
 	getCompatibilityPolicy,
 	getCompatibilityPolicyType,
@@ -180,13 +181,34 @@ export class TouchDesignerClient {
 
 		// Clear cached error if TTL has expired
 		if (this.verifiedCompatibilityError && this.shouldClearErrorCache()) {
-			this.logDebug("Clearing cached connection error, retrying...");
+			this.logDebug(
+				"Clearing cached connection error (TTL expired), retrying...",
+			);
 			this.verifiedCompatibilityError = null;
 			this.errorCacheTimestamp = null;
 			this.cachedCompatibilityCheck = false;
 		}
 
 		if (this.verifiedCompatibilityError) {
+			// Re-log the cached error so users know it's still failing
+			const ttlRemaining = this.errorCacheTimestamp
+				? Math.max(
+						0,
+						Math.ceil(
+							(ERROR_CACHE_TTL_MS - (Date.now() - this.errorCacheTimestamp)) /
+								1000,
+						),
+					)
+				: 0;
+			this.logDebug(
+				`Using cached connection error (retry in ${ttlRemaining} seconds)`,
+				{
+					cacheAge: this.errorCacheTimestamp
+						? Date.now() - this.errorCacheTimestamp
+						: 0,
+					cachedError: this.verifiedCompatibilityError.message,
+				},
+			);
 			throw this.verifiedCompatibilityError;
 		}
 
@@ -195,8 +217,17 @@ export class TouchDesignerClient {
 			this.verifiedCompatibilityError = null;
 			this.errorCacheTimestamp = null;
 			this.cachedCompatibilityCheck = true;
+			this.logDebug("Compatibility verified successfully");
 			return;
 		}
+
+		// Log when we're caching a NEW error
+		this.logDebug(
+			`Caching connection error for ${ERROR_CACHE_TTL_MS / 1000} seconds`,
+			{
+				error: result.error.message,
+			},
+		);
 		this.verifiedCompatibilityError = result.error;
 		this.errorCacheTimestamp = Date.now();
 		this.cachedCompatibilityCheck = false;
@@ -356,19 +387,41 @@ export class TouchDesignerClient {
 		try {
 			tdInfoResult = await this.api.getTdInfo();
 		} catch (error) {
-			const rawMessage = error instanceof Error ? error.message : String(error);
+			// Use axios.isAxiosError() for robust network/HTTP error detection
+			// AxiosError includes connection refused, timeout, network errors, etc.
+			// All other errors (TypeError, etc.) are programming errors and should propagate
+			if (!axios.isAxiosError(error)) {
+				// This is a programming error (e.g., TypeError, ReferenceError), not a connection error
+				const errorMessage =
+					error instanceof Error ? error.message : String(error);
+				const errorStack = error instanceof Error ? error.stack : undefined;
+				this.logger.sendLog({
+					data: {
+						error: errorMessage,
+						errorType: "programming_error",
+						stack: errorStack,
+					},
+					level: "error",
+					logger: "TouchDesignerClient",
+				});
+				throw error;
+			}
+
+			// Handle AxiosError (network/HTTP errors)
+			const rawMessage = error.message || "Unknown network error";
 			const errorMessage = this.formatConnectionError(rawMessage);
 			this.logger.sendLog({
-				data: { error: rawMessage },
+				data: { error: rawMessage, errorType: "connection" },
 				level: "error",
 				logger: "TouchDesignerClient",
 			});
 			return createErrorResult(new Error(errorMessage));
 		}
+
 		if (!tdInfoResult.success) {
 			const errorMessage = this.formatConnectionError(tdInfoResult.error);
 			this.logger.sendLog({
-				data: { error: tdInfoResult.error },
+				data: { error: tdInfoResult.error, errorType: "api_response" },
 				level: "error",
 				logger: "TouchDesignerClient",
 			});
