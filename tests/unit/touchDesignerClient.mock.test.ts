@@ -4,6 +4,7 @@ import * as version from "../../src/core/version";
 import * as touchDesignerAPI from "../../src/gen/endpoints/TouchDesignerAPI";
 
 import {
+	ERROR_CACHE_TTL_MS,
 	type ITouchDesignerApi,
 	TouchDesignerClient,
 } from "../../src/tdClient/touchDesignerClient";
@@ -363,5 +364,343 @@ describe("TouchDesignerClient with mocks", () => {
 			expect(result.data?.server).toBe("CustomServer");
 		}
 		expect(mockHttpClient.getTdInfo).toHaveBeenCalled();
+	});
+
+	test("should cache compatibility check and not call getTdInfo multiple times", async () => {
+		const mockGetTdInfo = vi.fn().mockResolvedValue({
+			data: {
+				mcpApiVersion: "1.3.1",
+				osName: "macOS",
+				osVersion: "12.6.1",
+				server: "TouchDesigner",
+				version: "2023.11050",
+			},
+			error: null,
+			success: true,
+		});
+
+		const mockCreateNode = vi.fn().mockResolvedValue({
+			data: { result: { name: "test" } },
+			error: null,
+			success: true,
+		});
+
+		const mockHttpClient = {
+			createNode: mockCreateNode,
+			getTdInfo: mockGetTdInfo,
+		};
+
+		const client = new TouchDesignerClient({
+			httpClient: mockHttpClient as unknown as ITouchDesignerApi,
+			logger: nullLogger,
+		});
+
+		// First call should trigger compatibility check
+		await client.createNode({
+			nodeName: "test1",
+			nodeType: "null",
+			parentPath: "/",
+		});
+
+		// Second call should use cached compatibility result
+		await client.createNode({
+			nodeName: "test2",
+			nodeType: "null",
+			parentPath: "/",
+		});
+
+		// getTdInfo should only be called once (during first compatibility check)
+		expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
+		// createNode should be called twice
+		expect(mockCreateNode).toHaveBeenCalledTimes(2);
+	});
+
+	test("should re-check compatibility after error", async () => {
+		const mockGetTdInfo = vi
+			.fn()
+			.mockResolvedValueOnce({
+				// First call fails compatibility
+				data: {
+					mcpApiVersion: "2.0.0", // Major version mismatch
+					osName: "macOS",
+					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11050",
+				},
+				error: null,
+				success: true,
+			})
+			.mockResolvedValueOnce({
+				// Second call succeeds
+				data: {
+					mcpApiVersion: "1.3.1",
+					osName: "macOS",
+					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11050",
+				},
+				error: null,
+				success: true,
+			});
+
+		const mockCreateNode = vi.fn().mockResolvedValue({
+			data: { result: { name: "test" } },
+			error: null,
+			success: true,
+		});
+
+		const mockHttpClient = {
+			createNode: mockCreateNode,
+			getTdInfo: mockGetTdInfo,
+		};
+
+		const client = new TouchDesignerClient({
+			httpClient: mockHttpClient as unknown as ITouchDesignerApi,
+			logger: nullLogger,
+		});
+
+		// First call should fail due to version mismatch
+		await expect(
+			client.createNode({
+				nodeName: "test1",
+				nodeType: "null",
+				parentPath: "/",
+			}),
+		).rejects.toThrow();
+
+		// After error, cached error should be thrown immediately
+		await expect(
+			client.createNode({
+				nodeName: "test2",
+				nodeType: "null",
+				parentPath: "/",
+			}),
+		).rejects.toThrow();
+
+		// getTdInfo should only be called once (error is cached)
+		expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
+		// createNode should never be called
+		expect(mockCreateNode).toHaveBeenCalledTimes(0);
+	});
+
+	describe("Connection error handling", () => {
+		test("should format ECONNREFUSED error with helpful message", async () => {
+			const mockGetTdInfo = vi.fn().mockResolvedValue({
+				data: null,
+				error: "connect ECONNREFUSED 127.0.0.1:9981",
+				success: false,
+			});
+
+			const mockHttpClient = {
+				getTdInfo: mockGetTdInfo,
+			};
+
+			const client = new TouchDesignerClient({
+				httpClient: mockHttpClient as unknown as ITouchDesignerApi,
+				logger: nullLogger,
+			});
+
+			await expect(client.getTdInfo()).rejects.toThrow(
+				/TouchDesigner is not running/,
+			);
+		});
+
+		test("should format ETIMEDOUT error with helpful message", async () => {
+			const mockGetTdInfo = vi.fn().mockResolvedValue({
+				data: null,
+				error: "connect ETIMEDOUT",
+				success: false,
+			});
+
+			const mockHttpClient = {
+				getTdInfo: mockGetTdInfo,
+			};
+
+			const client = new TouchDesignerClient({
+				httpClient: mockHttpClient as unknown as ITouchDesignerApi,
+				logger: nullLogger,
+			});
+
+			await expect(client.getTdInfo()).rejects.toThrow(/Connection Timeout/);
+		});
+
+		test("should format ENOTFOUND error with helpful message", async () => {
+			const mockGetTdInfo = vi.fn().mockResolvedValue({
+				data: null,
+				error: "getaddrinfo ENOTFOUND invalid-host",
+				success: false,
+			});
+
+			const mockHttpClient = {
+				getTdInfo: mockGetTdInfo,
+			};
+
+			const client = new TouchDesignerClient({
+				httpClient: mockHttpClient as unknown as ITouchDesignerApi,
+				logger: nullLogger,
+			});
+
+			await expect(client.getTdInfo()).rejects.toThrow(
+				/Invalid Host Configuration/,
+			);
+		});
+
+		test("should retry after error cache TTL expires", async () => {
+			vi.useFakeTimers();
+
+			const mockGetTdInfo = vi
+				.fn()
+				.mockResolvedValueOnce({
+					// First call fails
+					data: null,
+					error: "connect ECONNREFUSED 127.0.0.1:9981",
+					success: false,
+				})
+				.mockResolvedValueOnce({
+					// Second call (after TTL) succeeds
+					data: {
+						mcpApiVersion: "1.3.1",
+						osName: "macOS",
+						osVersion: "12.6.1",
+						server: "TouchDesigner",
+						version: "2023.11050",
+					},
+					error: null,
+					success: true,
+				});
+
+			const mockCreateNode = vi.fn().mockResolvedValue({
+				data: { result: { name: "test" } },
+				error: null,
+				success: true,
+			});
+
+			const mockHttpClient = {
+				createNode: mockCreateNode,
+				getTdInfo: mockGetTdInfo,
+			};
+
+			const client = new TouchDesignerClient({
+				httpClient: mockHttpClient as unknown as ITouchDesignerApi,
+				logger: nullLogger,
+			});
+
+			// First call should fail
+			await expect(
+				client.createNode({
+					nodeName: "test1",
+					nodeType: "null",
+					parentPath: "/",
+				}),
+			).rejects.toThrow();
+
+			expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
+
+			// Advance time by 31 seconds (past the 30s TTL)
+			vi.advanceTimersByTime(31000);
+
+			// Second call should retry and succeed
+			const result = await client.createNode({
+				nodeName: "test2",
+				nodeType: "null",
+				parentPath: "/",
+			});
+
+			expect(result.success).toBe(true);
+			expect(mockGetTdInfo).toHaveBeenCalledTimes(2);
+			expect(mockCreateNode).toHaveBeenCalledTimes(1);
+
+			vi.useRealTimers();
+		});
+
+		test("should not retry before error cache TTL expires", async () => {
+			vi.useFakeTimers();
+
+			const mockGetTdInfo = vi.fn().mockResolvedValue({
+				data: null,
+				error: "connect ECONNREFUSED 127.0.0.1:9981",
+				success: false,
+			});
+
+			const mockCreateNode = vi.fn().mockResolvedValue({
+				data: { result: { name: "test" } },
+				error: null,
+				success: true,
+			});
+
+			const mockHttpClient = {
+				createNode: mockCreateNode,
+				getTdInfo: mockGetTdInfo,
+			};
+
+			const client = new TouchDesignerClient({
+				httpClient: mockHttpClient as unknown as ITouchDesignerApi,
+				logger: nullLogger,
+			});
+
+			// First call should fail
+			await expect(
+				client.createNode({
+					nodeName: "test1",
+					nodeType: "null",
+					parentPath: "/",
+				}),
+			).rejects.toThrow();
+
+			expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
+
+			// before TTL expires
+			vi.advanceTimersByTime(ERROR_CACHE_TTL_MS - 1000);
+
+			// Second call should use cached error
+			await expect(
+				client.createNode({
+					nodeName: "test2",
+					nodeType: "null",
+					parentPath: "/",
+				}),
+			).rejects.toThrow();
+
+			// getTdInfo should still be called only once
+			expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
+			expect(mockCreateNode).toHaveBeenCalledTimes(0);
+
+			vi.advanceTimersByTime(1000);
+
+			// After TTL expires, next call should retry
+			await expect(
+				client.createNode({
+					nodeName: "test3",
+					nodeType: "null",
+					parentPath: "/",
+				}),
+			).rejects.toThrow();
+
+			// getTdInfo should be called again
+			expect(mockGetTdInfo).toHaveBeenCalledTimes(2);
+			expect(mockCreateNode).toHaveBeenCalledTimes(0);
+
+			vi.useRealTimers();
+		});
+
+		test("should format connection error when getTdInfo rejects", async () => {
+			const mockGetTdInfo = vi
+				.fn()
+				.mockRejectedValue(new Error("connect ECONNREFUSED 127.0.0.1:9981"));
+
+			const mockHttpClient = {
+				getTdInfo: mockGetTdInfo,
+			} as Partial<ITouchDesignerApi>;
+
+			const client = new TouchDesignerClient({
+				httpClient: mockHttpClient as ITouchDesignerApi,
+				logger: nullLogger,
+			});
+
+			await expect(client.getTdInfo()).rejects.toThrow(
+				/TouchDesigner Connection Failed/,
+			);
+			expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
+		});
 	});
 });

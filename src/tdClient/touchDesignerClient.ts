@@ -80,6 +80,8 @@ export type SuccessResult<T> = { success: true; data: NonNullable<T> };
 
 export type Result<T, E = Error> = SuccessResult<T> | ErrorResult<E>;
 
+export const ERROR_CACHE_TTL_MS = 5000; // 5 seconds
+
 /**
  * Null logger implementation that discards all logs
  */
@@ -126,6 +128,8 @@ export class TouchDesignerClient {
 	private readonly logger: ILogger;
 	private readonly api: ITouchDesignerApi;
 	private verifiedCompatibilityError: Error | null;
+	private cachedCompatibilityCheck: boolean;
+	private errorCacheTimestamp: number | null;
 
 	private logDebug(message: string, context?: Record<string, unknown>) {
 		const data = context ? { message, ...context } : { message };
@@ -137,9 +141,33 @@ export class TouchDesignerClient {
 	}
 
 	/**
+	 * Check if the cached error should be cleared (TTL expired)
+	 */
+	private shouldClearErrorCache(): boolean {
+		if (!this.errorCacheTimestamp) {
+			return false;
+		}
+		const now = Date.now();
+		return now - this.errorCacheTimestamp >= ERROR_CACHE_TTL_MS;
+	}
+
+	/**
 	 * Verify compatibility with the TouchDesigner server
 	 */
 	private async verifyCompatibility() {
+		// If we've already verified compatibility successfully, skip re-verification
+		if (this.cachedCompatibilityCheck && !this.verifiedCompatibilityError) {
+			return;
+		}
+
+		// Clear cached error if TTL has expired
+		if (this.verifiedCompatibilityError && this.shouldClearErrorCache()) {
+			this.logDebug("Clearing cached connection error, retrying...");
+			this.verifiedCompatibilityError = null;
+			this.errorCacheTimestamp = null;
+			this.cachedCompatibilityCheck = false;
+		}
+
 		if (this.verifiedCompatibilityError) {
 			throw this.verifiedCompatibilityError;
 		}
@@ -147,9 +175,13 @@ export class TouchDesignerClient {
 		const result = await this.verifyVersionCompatibility();
 		if (result.success) {
 			this.verifiedCompatibilityError = null;
+			this.errorCacheTimestamp = null;
+			this.cachedCompatibilityCheck = true;
 			return;
 		}
 		this.verifiedCompatibilityError = result.error;
+		this.errorCacheTimestamp = Date.now();
+		this.cachedCompatibilityCheck = false;
 		throw result.error;
 	}
 
@@ -165,6 +197,8 @@ export class TouchDesignerClient {
 		this.logger = params.logger || nullLogger;
 		this.api = params.httpClient || defaultApiClient;
 		this.verifiedCompatibilityError = null;
+		this.cachedCompatibilityCheck = false;
+		this.errorCacheTimestamp = null;
 	}
 
 	/**
@@ -321,13 +355,27 @@ export class TouchDesignerClient {
 	}
 
 	async verifyVersionCompatibility() {
-		const tdInfoResult = await this.api.getTdInfo();
+		let tdInfoResult: Awaited<ReturnType<ITouchDesignerApi["getTdInfo"]>>;
+		try {
+			tdInfoResult = await this.api.getTdInfo();
+		} catch (error) {
+			const rawMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage = this.formatConnectionError(rawMessage);
+			this.logger.sendLog({
+				data: { error: rawMessage },
+				level: "error",
+				logger: "TouchDesignerClient",
+			});
+			return createErrorResult(new Error(errorMessage));
+		}
 		if (!tdInfoResult.success) {
-			return createErrorResult(
-				new Error(
-					`Failed to retrieve TouchDesigner info for version check: ${tdInfoResult.error}`,
-				),
-			);
+			const errorMessage = this.formatConnectionError(tdInfoResult.error);
+			this.logger.sendLog({
+				data: { error: tdInfoResult.error },
+				level: "error",
+				logger: "TouchDesignerClient",
+			});
+			return createErrorResult(new Error(errorMessage));
 		}
 
 		const apiVersionRaw = tdInfoResult.data?.mcpApiVersion?.trim();
@@ -360,11 +408,66 @@ export class TouchDesignerClient {
 			return createErrorResult(new Error(result.message));
 		}
 
-		if (result.level === "warning") {
-			console.warn(`[TouchDesigner MCP] ${result.message}`);
+		return createSuccessResult(undefined);
+	}
+
+	/**
+	 * Format connection errors with helpful messages
+	 */
+	private formatConnectionError(error: string | null): string {
+		if (!error) {
+			return "Failed to connect to TouchDesigner API server (unknown error)";
 		}
 
-		return createSuccessResult(undefined);
+		// Check for common connection errors
+		if (error.includes("ECONNREFUSED") || error.includes("connect refused")) {
+			return `🔌 TouchDesigner Connection Failed
+
+Cannot connect to TouchDesigner API server at the configured address.
+
+Possible causes:
+  1. TouchDesigner is not running
+     → Please start TouchDesigner
+
+  2. WebServer DAT is not active
+     → Import 'mcp_webserver_base.tox' and ensure it's active
+
+  3. Wrong port configuration
+     → Default port is 9981, check your configuration
+
+For setup instructions, visit:
+https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest
+
+Original error: ${error}`;
+		}
+
+		if (error.includes("ETIMEDOUT") || error.includes("timeout")) {
+			return `⏱️  TouchDesigner Connection Timeout
+
+The connection to TouchDesigner timed out.
+
+Possible causes:
+  1. TouchDesigner is slow to respond
+  2. Network issues
+  3. WebServer DAT is overloaded
+
+Try restarting TouchDesigner or check the network connection.
+
+Original error: ${error}`;
+		}
+
+		if (error.includes("ENOTFOUND") || error.includes("getaddrinfo")) {
+			return `🌐 Invalid Host Configuration
+
+Cannot resolve the TouchDesigner API server hostname.
+
+Please check your host configuration (default: 127.0.0.1)
+
+Original error: ${error}`;
+		}
+
+		// Generic error message
+		return `Failed to connect to TouchDesigner API server: ${error}`;
 	}
 
 	private checkVersionCompatibility(

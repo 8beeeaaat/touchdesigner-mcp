@@ -391,6 +391,16 @@ The MCP server uses **semantic versioning** for flexible compatibility checks
 
 - **For developers:** When developing locally, run `npm run version` after editing `package.json` (or simply use `npm version ...`). This keeps the Python API (`pyproject.toml` + `td/modules/utils/version.py`), MCP bundle manifest, and registry metadata in sync so that the runtime compatibility check succeeds.
 
+### Troubleshooting connection errors
+
+- `TouchDesignerClient` caches failed connection checks for **5 seconds**. Subsequent tool calls reuse the cached error to avoid spamming TouchDesigner and automatically retry after the TTL expires.
+- When the MCP server cannot reach TouchDesigner, you now get guided error messages with concrete fixes:
+  - `ECONNREFUSED` / "connect refused": start TouchDesigner, ensure the WebServer DAT from `mcp_webserver_base.tox` is running, and confirm the configured port (default `9981`).
+  - `ETIMEDOUT` / "timeout": TouchDesigner is responding slowly or the network is blocked. Restart TouchDesigner/WebServer DAT or check your network connection.
+  - `ENOTFOUND` / `getaddrinfo`: the host name is invalid. Use `127.0.0.1` unless you explicitly changed it.
+- The structured error text is also logged through `ILogger`, so you can check the MCP logs to understand why a request stopped before hitting TouchDesigner.
+- Once the underlying issue is fixed, simply run the tool again—the client clears the cached error and re-verifies the connection automatically.
+
 ## Contributing
 
 We welcome your contributions!

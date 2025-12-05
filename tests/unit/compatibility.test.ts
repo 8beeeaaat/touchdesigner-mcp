@@ -231,7 +231,9 @@ describe("getCompatibilityPolicy", () => {
 	});
 
 	test("PATCH_DIFF policy has correct properties", () => {
-		const policy = getCompatibilityPolicy(COMPATIBILITY_POLICY_TYPES.PATCH_DIFF);
+		const policy = getCompatibilityPolicy(
+			COMPATIBILITY_POLICY_TYPES.PATCH_DIFF,
+		);
 		expect(policy.compatible).toBe(true);
 		expect(policy.level).toBe(COMPATIBILITY_POLICY_ERROR_LEVELS.WARNING);
 		expect(policy.message).toBeDefined();
@@ -289,7 +291,9 @@ describe("Compatibility policy message generation", () => {
 	});
 
 	test("generates message for PATCH_DIFF", () => {
-		const policy = getCompatibilityPolicy(COMPATIBILITY_POLICY_TYPES.PATCH_DIFF);
+		const policy = getCompatibilityPolicy(
+			COMPATIBILITY_POLICY_TYPES.PATCH_DIFF,
+		);
 		const message = policy.message("1.3.2", "1.3.1");
 		expect(message).toContain("1.3.2");
 		expect(message).toContain("1.3.1");

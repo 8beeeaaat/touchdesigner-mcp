@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Semantic Versioning for Compatibility**: Introduced flexible semantic versioning compatibility checks between MCP server and TouchDesigner API server ([c377266](https://github.com/8beeeaaat/touchdesigner-mcp/commit/c377266))
+#### Semantic Versioning for Compatibility
+
+- Introduced flexible semantic versioning compatibility checks between MCP server and TouchDesigner API server ([c377266](https://github.com/8beeeaaat/touchdesigner-mcp/commit/c377266))
   - Replaces strict version matching with intelligent compatibility logic
   - **Minimum compatible API version: 1.3.0** (enforced at runtime)
   - Comprehensive compatibility matrix with minimum version checks:
@@ -23,23 +25,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     | 1.3.2 | 1.3.1 | ❌ 1.3.2 | ❌ Execution stops | Error | API below minimum compatible version |
     | 2.0.0 | 1.x.x | ❌ N/A | ❌ Execution stops | Error | Different MAJOR = breaking changes |
 
-**Compatibility Rules**:
+- **Compatibility Rules**
 
-- ✅ **Compatible**: Same MAJOR version AND API version ≥ minimum compatible version
-- ⚠️ **Warning**: Different MINOR versions (either direction) within same MAJOR version (shows warning but continues execution)
-- ❌ **Error**: Different MAJOR versions OR API server < minimum compatible version. Execution stops immediately, update required.
+  - ✅ **Compatible**: Same MAJOR version AND API version ≥ minimum compatible version
+  - ⚠️ **Warning**: Different MINOR versions (either direction) within same MAJOR version (shows warning but continues execution)
+  - ❌ **Error**: Different MAJOR versions OR API server < minimum compatible version. Execution stops immediately, update required.
 
-**About Minimum Compatible Version (1.3.0)**:
+- **About Minimum Compatible Version (1.3.0)**:
 
-- Introduced in v1.3.0 to enforce baseline feature set
-- API servers below 1.3.0 are incompatible with all v1.3.x+ MCP servers
-- Runtime check occurs on every tool call to ensure compatibility
-- Update TouchDesigner components to v1.3.0+ to resolve compatibility errors
+  - Introduced in v1.3.0 to enforce baseline feature set
+  - API servers below 1.3.0 are incompatible with all v1.3.x+ MCP servers
+  - Runtime check occurs on every tool call to ensure compatibility
+  - Update TouchDesigner components to v1.3.0+ to resolve compatibility errors
 
-- **Version Management Improvements**: Split version synchronization into separate scripts for better maintainability ([c377266](https://github.com/8beeeaaat/touchdesigner-mcp/commit/c377266))
-  - `scripts/syncApiServerVersions.ts`: Syncs Python API versions (pyproject.toml, version.py, index.yml)
-  - `scripts/syncMcpServerVersions.ts`: Syncs MCP server metadata (manifest.json, server.json)
-  - Updated npm scripts: `version:api` and `version:mcp`
+  - **Version Management Improvements**: Split version synchronization into separate scripts for better maintainability ([c377266](https://github.com/8beeeaaat/touchdesigner-mcp/commit/c377266))
+    - `scripts/syncApiServerVersions.ts`: Syncs Python API versions (pyproject.toml, version.py, index.yml)
+    - `scripts/syncMcpServerVersions.ts`: Syncs MCP server metadata (manifest.json, server.json)
+    - Updated npm scripts: `version:api` and `version:mcp`
+
+- **Enhanced Connection Recovery for TouchDesignerClient**: Improved by caching compatibility check results for up to 5 seconds to control retries. It now provides guided messages for typical connection failures such as `ECONNREFUSED`, `ETIMEDOUT`, and `ENOTFOUND` ([533f8](https://github.com/8beeeaaat/touchdesigner-mcp/commit/533f8b87acfed23075e21352fe4bf543731ad932)).
+  - When reconnecting, it detects cache expiration to automatically retry, preventing unnecessary API calls.
+  - Setup instructions are included in logs and exceptions, allowing users to quickly check TouchDesigner-side settings (WebServer DAT, port, and host).
 
 ### Technical
 
