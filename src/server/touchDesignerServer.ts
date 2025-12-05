@@ -3,7 +3,7 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { ILogger } from "../core/logger.js";
 import { McpLogger } from "../core/logger.js";
 import type { Result } from "../core/result.js";
-import { PACKAGE_VERSION } from "../core/version.js";
+import { MCP_SERVER_VERSION } from "../core/version.js";
 import { registerPrompts } from "../features/prompts/index.js";
 import { registerTools } from "../features/tools/index.js";
 import { createTouchDesignerClient } from "../tdClient/index.js";
@@ -26,7 +26,7 @@ export class TouchDesignerServer {
 		this.server = new McpServer(
 			{
 				name: "TouchDesigner",
-				version: PACKAGE_VERSION,
+				version: MCP_SERVER_VERSION,
 			},
 			{
 				capabilities: {

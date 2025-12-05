@@ -1,3 +1,4 @@
+import { MCP_SERVER_VERSION } from "../../../core/version.js";
 import type {
 	CreateNode200ResponseData,
 	DeleteNode200ResponseData,
@@ -24,19 +25,24 @@ export function formatTdInfo(
 		});
 	}
 
-	const summary = `Server: ${data.server}\nVersion: ${data.version}`;
-	const osLine = data.osName
-		? `\nOS: ${data.osName} ${data.osVersion ?? ""}`
-		: "";
-	const text =
-		opts.detailLevel === "minimal"
-			? `Server: ${data.server}, v${data.version}`
-			: `${summary}${osLine}`;
+	const structured = {
+		"API Server Version": data.mcpApiVersion,
+		"MCP Server Version": MCP_SERVER_VERSION,
+		"Operating System": data.osName
+			? `${data.osName} ${data.osVersion ?? ""}`.trim()
+			: "Unknown",
+		"TouchDesigner Version": data.version,
+	};
+	const text = Object.entries(structured)
+		.map(([key, value]) => `${key}: ${value}`)
+		.join("\n");
 
 	return finalizeFormattedText(text.trim(), opts, {
-		context: { title: "TouchDesigner Info", ...data },
-		structured: data,
-		template: opts.detailLevel === "detailed" ? "detailedPayload" : "default",
+		context: {
+			title: "TouchDesigner Info",
+		},
+		structured,
+		template: "detailedPayload",
 	});
 }
 

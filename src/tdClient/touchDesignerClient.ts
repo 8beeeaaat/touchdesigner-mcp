@@ -1,6 +1,14 @@
+import {
+	type CompatibilityPolicyErrorLevel,
+	getCompatibilityPolicy,
+	getCompatibilityPolicyType,
+} from "../core/compatibility.js";
 import type { ILogger } from "../core/logger.js";
 import { createErrorResult, createSuccessResult } from "../core/result.js";
-import { PACKAGE_VERSION } from "../core/version.js";
+import {
+	MCP_SERVER_VERSION,
+	MIN_COMPATIBLE_API_VERSION,
+} from "../core/version.js";
 import {
 	createNode as apiCreateNode,
 	deleteNode as apiDeleteNode,
@@ -24,13 +32,6 @@ import {
 	type GetNodesParams,
 	type UpdateNodeRequest,
 } from "../gen/endpoints/TouchDesignerAPI.js";
-
-const updateGuide = `
-	1. Download the latest [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) from the releases page.
-	2. Delete the existing \`touchdesigner-mcp-td\` folder and replace it with the newly extracted contents.
-	3. Remove the old \`mcp_webserver_base\` component from your TouchDesigner project and import the \`.tox\` from the new folder.
-	4. Restart TouchDesigner and the AI agent running the MCP server (e.g., Claude Desktop).
-`;
 
 /**
  * Interface for TouchDesignerClient HTTP operations
@@ -79,6 +80,8 @@ export type SuccessResult<T> = { success: true; data: NonNullable<T> };
 
 export type Result<T, E = Error> = SuccessResult<T> | ErrorResult<E>;
 
+export const ERROR_CACHE_TTL_MS = 5000; // 5 seconds
+
 /**
  * Null logger implementation that discards all logs
  */
@@ -125,32 +128,8 @@ export class TouchDesignerClient {
 	private readonly logger: ILogger;
 	private readonly api: ITouchDesignerApi;
 	private verifiedCompatibilityError: Error | null;
-
-	private logDebug(message: string, context?: Record<string, unknown>) {
-		const data = context ? { message, ...context } : { message };
-		this.logger.sendLog({
-			data,
-			level: "debug",
-			logger: "TouchDesignerClient",
-		});
-	}
-
-	/**
-	 * Verify compatibility with the TouchDesigner server
-	 */
-	private async verifyCompatibility() {
-		if (this.verifiedCompatibilityError) {
-			throw this.verifiedCompatibilityError;
-		}
-
-		const result = await this.verifyVersionCompatibility();
-		if (result.success) {
-			this.verifiedCompatibilityError = null;
-			return;
-		}
-		this.verifiedCompatibilityError = result.error;
-		throw result.error;
-	}
+	private cachedCompatibilityCheck: boolean;
+	private errorCacheTimestamp: number | null;
 
 	/**
 	 * Initialize TouchDesigner client with optional dependencies
@@ -164,6 +143,80 @@ export class TouchDesignerClient {
 		this.logger = params.logger || nullLogger;
 		this.api = params.httpClient || defaultApiClient;
 		this.verifiedCompatibilityError = null;
+		this.cachedCompatibilityCheck = false;
+		this.errorCacheTimestamp = null;
+	}
+
+	/**
+	 * Log debug message
+	 */
+	private logDebug(message: string, context?: Record<string, unknown>) {
+		const data = context ? { message, ...context } : { message };
+		this.logger.sendLog({
+			data,
+			level: "debug",
+			logger: "TouchDesignerClient",
+		});
+	}
+
+	/**
+	 * Check if the cached error should be cleared (TTL expired)
+	 */
+	private shouldClearErrorCache(): boolean {
+		if (!this.errorCacheTimestamp) {
+			return false;
+		}
+		const now = Date.now();
+		return now - this.errorCacheTimestamp >= ERROR_CACHE_TTL_MS;
+	}
+
+	/**
+	 * Verify compatibility with the TouchDesigner server
+	 */
+	private async verifyCompatibility() {
+		// If we've already verified compatibility successfully, skip re-verification
+		if (this.cachedCompatibilityCheck && !this.verifiedCompatibilityError) {
+			return;
+		}
+
+		// Clear cached error if TTL has expired
+		if (this.verifiedCompatibilityError && this.shouldClearErrorCache()) {
+			this.logDebug("Clearing cached connection error, retrying...");
+			this.verifiedCompatibilityError = null;
+			this.errorCacheTimestamp = null;
+			this.cachedCompatibilityCheck = false;
+		}
+
+		if (this.verifiedCompatibilityError) {
+			throw this.verifiedCompatibilityError;
+		}
+
+		const result = await this.verifyVersionCompatibility();
+		if (result.success) {
+			this.verifiedCompatibilityError = null;
+			this.errorCacheTimestamp = null;
+			this.cachedCompatibilityCheck = true;
+			return;
+		}
+		this.verifiedCompatibilityError = result.error;
+		this.errorCacheTimestamp = Date.now();
+		this.cachedCompatibilityCheck = false;
+		throw result.error;
+	}
+
+	/**
+	 * Wrapper for API calls that require compatibility verification
+	 * @private
+	 */
+	private async apiCall<T>(
+		message: string,
+		call: () => Promise<TdResponse<T>>,
+		context?: Record<string, unknown>,
+	): Promise<Result<T>> {
+		this.logDebug(message, context);
+		await this.verifyCompatibility();
+		const result = await call();
+		return handleApiResponse<T>(result);
 	}
 
 	/**
@@ -174,14 +227,14 @@ export class TouchDesignerClient {
 			result: unknown;
 		}>,
 	>(params: ExecNodeMethodRequest) {
-		this.logDebug("Executing node method", {
-			method: params.method,
-			nodePath: params.nodePath,
-		});
-		await this.verifyCompatibility();
-
-		const result = await this.api.execNodeMethod(params);
-		return handleApiResponse<DATA>(result as TdResponse<DATA>);
+		return this.apiCall(
+			"Executing node method",
+			() => this.api.execNodeMethod(params),
+			{
+				method: params.method,
+				nodePath: params.nodePath,
+			},
+		) as Promise<Result<DATA>>;
 	}
 
 	/**
@@ -192,176 +245,250 @@ export class TouchDesignerClient {
 			result: unknown;
 		},
 	>(params: ExecPythonScriptRequest) {
-		this.logDebug("Executing Python script", { params });
-		await this.verifyCompatibility();
-
-		const result = await this.api.execPythonScript(params);
-		return handleApiResponse<DATA>(result as TdResponse<DATA>);
+		return this.apiCall(
+			"Executing Python script",
+			() => this.api.execPythonScript(params),
+			{ params },
+		) as Promise<Result<DATA>>;
 	}
 
 	/**
 	 * Get TouchDesigner server information
 	 */
 	async getTdInfo() {
-		this.logDebug("Getting server info");
-		await this.verifyCompatibility();
-
-		const result = await this.api.getTdInfo();
-		return handleApiResponse<(typeof result)["data"]>(result);
+		return this.apiCall("Getting server info", () => this.api.getTdInfo());
 	}
 
 	/**
 	 * Get list of nodes
 	 */
 	async getNodes(params: GetNodesParams) {
-		this.logDebug("Getting nodes for parent", {
-			parentPath: params.parentPath,
-		});
-		await this.verifyCompatibility();
-
-		const result = await this.api.getNodes(params);
-		return handleApiResponse<(typeof result)["data"]>(result);
+		return this.apiCall(
+			"Getting nodes for parent",
+			() => this.api.getNodes(params),
+			{ parentPath: params.parentPath },
+		);
 	}
 
 	/**
 	 * Get node properties
 	 */
 	async getNodeDetail(params: GetNodeDetailParams) {
-		this.logDebug("Getting properties for node", {
-			nodePath: params.nodePath,
-		});
-		await this.verifyCompatibility();
-
-		const result = await this.api.getNodeDetail(params);
-		return handleApiResponse<(typeof result)["data"]>(result);
+		return this.apiCall(
+			"Getting properties for node",
+			() => this.api.getNodeDetail(params),
+			{ nodePath: params.nodePath },
+		);
 	}
 
 	/**
 	 * Get node error information
 	 */
 	async getNodeErrors(params: GetNodeErrorsParams) {
-		this.logDebug("Checking node errors", {
-			nodePath: params.nodePath,
-		});
-		await this.verifyCompatibility();
-
-		const result = await this.api.getNodeErrors(params);
-		return handleApiResponse<(typeof result)["data"]>(result);
+		return this.apiCall(
+			"Checking node errors",
+			() => this.api.getNodeErrors(params),
+			{ nodePath: params.nodePath },
+		);
 	}
 
 	/**
 	 * Create a new node
 	 */
 	async createNode(params: CreateNodeRequest) {
-		this.logDebug("Creating node", {
+		return this.apiCall("Creating node", () => this.api.createNode(params), {
 			nodeName: params.nodeName,
 			nodeType: params.nodeType,
 			parentPath: params.parentPath,
 		});
-		await this.verifyCompatibility();
-
-		const result = await this.api.createNode(params);
-		return handleApiResponse<(typeof result)["data"]>(result);
 	}
 
 	/**
 	 * Update node properties
 	 */
 	async updateNode(params: UpdateNodeRequest) {
-		this.logDebug("Updating node", { nodePath: params.nodePath });
-		await this.verifyCompatibility();
-
-		const result = await this.api.updateNode(params);
-		return handleApiResponse<(typeof result)["data"]>(result);
+		return this.apiCall("Updating node", () => this.api.updateNode(params), {
+			nodePath: params.nodePath,
+		});
 	}
 
 	/**
 	 * Delete a node
 	 */
 	async deleteNode(params: DeleteNodeParams) {
-		this.logDebug("Deleting node", { nodePath: params.nodePath });
-		await this.verifyCompatibility();
-
-		const result = await this.api.deleteNode(params);
-		return handleApiResponse<(typeof result)["data"]>(result);
+		return this.apiCall("Deleting node", () => this.api.deleteNode(params), {
+			nodePath: params.nodePath,
+		});
 	}
 
 	/**
 	 * Get list of available Python classes/modules in TouchDesigner
 	 */
 	async getClasses() {
-		this.logDebug("Getting Python classes");
-		await this.verifyCompatibility();
-
-		const result = await this.api.getTdPythonClasses();
-		return handleApiResponse<(typeof result)["data"]>(result);
+		return this.apiCall("Getting Python classes", () =>
+			this.api.getTdPythonClasses(),
+		);
 	}
 
 	/**
 	 * Get details of a specific class/module
 	 */
 	async getClassDetails(className: string) {
-		this.logDebug("Getting class details", { className });
-		await this.verifyCompatibility();
-
-		const result = await this.api.getTdPythonClassDetails(className);
-		return handleApiResponse<(typeof result)["data"]>(result);
+		return this.apiCall(
+			"Getting class details",
+			() => this.api.getTdPythonClassDetails(className),
+			{ className },
+		);
 	}
 
 	/**
 	 * Retrieve Python help() documentation for modules/classes
 	 */
 	async getModuleHelp(params: GetModuleHelpParams) {
-		this.logDebug("Getting module help", { moduleName: params.moduleName });
-		await this.verifyCompatibility();
-
-		const result = await this.api.getModuleHelp(params);
-		return handleApiResponse<(typeof result)["data"]>(result);
+		return this.apiCall(
+			"Getting module help",
+			() => this.api.getModuleHelp(params),
+			{ moduleName: params.moduleName },
+		);
 	}
 
 	async verifyVersionCompatibility() {
-		const tdInfoResult = await this.api.getTdInfo();
-		if (!tdInfoResult.success) {
-			return createErrorResult(
-				new Error(
-					`Failed to retrieve TouchDesigner info for version check: ${tdInfoResult.error}`,
-				),
-			);
-		}
-		const apiVersion = tdInfoResult.data?.mcpApiVersion?.trim();
-		if (!apiVersion) {
-			return createErrorResult(
-				new Error(
-					`TouchDesigner API server did not report its version. Please reinstall the TouchDesigner components from the latest release.\n${updateGuide}`,
-				),
-			);
-		}
-
-		const normalizedServerVersion = this.normalizeVersion(PACKAGE_VERSION);
-		const normalizedApiVersion = this.normalizeVersion(apiVersion);
-		if (normalizedServerVersion !== normalizedApiVersion) {
+		let tdInfoResult: Awaited<ReturnType<ITouchDesignerApi["getTdInfo"]>>;
+		try {
+			tdInfoResult = await this.api.getTdInfo();
+		} catch (error) {
+			const rawMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage = this.formatConnectionError(rawMessage);
 			this.logger.sendLog({
-				data: {
-					message:
-						"MCP server and TouchDesigner API server versions are incompatible",
-					touchDesignerApiVersion: normalizedApiVersion,
-					touchDesignerServerVersion: normalizedServerVersion,
-				},
+				data: { error: rawMessage },
 				level: "error",
 				logger: "TouchDesignerClient",
 			});
+			return createErrorResult(new Error(errorMessage));
+		}
+		if (!tdInfoResult.success) {
+			const errorMessage = this.formatConnectionError(tdInfoResult.error);
+			this.logger.sendLog({
+				data: { error: tdInfoResult.error },
+				level: "error",
+				logger: "TouchDesignerClient",
+			});
+			return createErrorResult(new Error(errorMessage));
+		}
 
-			return createErrorResult(
-				new Error(
-					`Version mismatch detected between MCP server (${normalizedServerVersion}) and TouchDesigner API server (${normalizedApiVersion}). Update both components to the same release.\n${updateGuide}`,
-				),
-			);
+		const apiVersionRaw = tdInfoResult.data?.mcpApiVersion?.trim() || "";
+
+		const result = this.checkVersionCompatibility(
+			MCP_SERVER_VERSION,
+			apiVersionRaw,
+		);
+
+		this.logger.sendLog({
+			data: {
+				apiVersion: result.details.apiVersion,
+				mcpVersion: result.details.mcpVersion,
+				message: result.message,
+				minRequired: result.details.minRequired,
+			},
+			level: result.level,
+			logger: "TouchDesignerClient",
+		});
+
+		if (result.level === "error") {
+			return createErrorResult(new Error(result.message));
 		}
 
 		return createSuccessResult(undefined);
 	}
 
-	private normalizeVersion(version: string): string {
-		return version.trim().replace(/^v/i, "");
+	/**
+	 * Format connection errors with helpful messages
+	 */
+	private formatConnectionError(error: string | null): string {
+		if (!error) {
+			return "Failed to connect to TouchDesigner API server (unknown error)";
+		}
+
+		// Check for common connection errors
+		if (
+			error.includes("ECONNREFUSED") ||
+			error.toLowerCase().includes("connect refused")
+		) {
+			return `🔌 TouchDesigner Connection Failed
+
+Cannot connect to TouchDesigner API server at the configured address.
+
+Possible causes:
+  1. TouchDesigner is not running
+     → Please start TouchDesigner
+
+  2. WebServer DAT is not active
+     → Import 'mcp_webserver_base.tox' and ensure it's active
+
+  3. Wrong port configuration
+     → Default port is 9981, check your configuration
+
+For setup instructions, visit:
+https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest
+
+Original error: ${error}`;
+		}
+
+		if (error.includes("ETIMEDOUT") || error.includes("timeout")) {
+			return `⏱️  TouchDesigner Connection Timeout
+
+The connection to TouchDesigner timed out.
+
+Possible causes:
+  1. TouchDesigner is slow to respond
+  2. Network issues
+  3. WebServer DAT is overloaded
+
+Try restarting TouchDesigner or check the network connection.
+
+Original error: ${error}`;
+		}
+
+		if (error.includes("ENOTFOUND") || error.includes("getaddrinfo")) {
+			return `🌐 Invalid Host Configuration
+
+Cannot resolve the TouchDesigner API server hostname.
+
+Please check your host configuration (default: 127.0.0.1)
+
+Original error: ${error}`;
+		}
+
+		// Generic error message
+		return `Failed to connect to TouchDesigner API server: ${error}`;
+	}
+
+	private checkVersionCompatibility(
+		mcpVersion: string,
+		apiVersion: string,
+	): {
+		compatible: boolean;
+		level: CompatibilityPolicyErrorLevel;
+		message: string;
+		details: {
+			mcpVersion: string;
+			apiVersion: string;
+			minRequired: string;
+		};
+	} {
+		const policyType = getCompatibilityPolicyType(mcpVersion, apiVersion);
+		const policy = getCompatibilityPolicy(policyType);
+		const message = policy.message(mcpVersion, apiVersion);
+
+		return {
+			compatible: policy.compatible,
+			details: {
+				apiVersion,
+				mcpVersion,
+				minRequired: MIN_COMPATIBLE_API_VERSION,
+			},
+			level: policy.level,
+			message,
+		};
 	}
 }
