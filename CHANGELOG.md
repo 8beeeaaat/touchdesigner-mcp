@@ -5,6 +5,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2025-12-06
+
+### Added
+
+- **Semantic Version Compatibility Checks**: Introduced robust semantic versioning validation between MCP server and TouchDesigner API server ([#125](https://github.com/8beeeaaat/touchdesigner-mcp/pull/125))
+  - Added `mcpCompatibility.minApiVersion` field to package.json to declare minimum compatible API version
+  - Integrated `semver` package for precise version comparison logic
+  - Implemented three-tier compatibility system (Compatible, Warning, Error) based on semver rules
+  - Version checks now run on every tool call, ensuring continuous compatibility validation
+  - Compatible: Same MAJOR version with API ≥ minimum compatible version
+  - Warning: Different MINOR/PATCH versions (shows warning, continues execution)
+  - Error: Different MAJOR versions or API below minimum (execution stops immediately)
+
+  | MCP Server | API Server | Minimum compatible API version | Behavior | Status | Notes |
+  |------------|------------|----------------|----------|--------|-------|
+  | 1.3.x | 1.3.0 | ✅ 1.3.0 | ✅ Works normally | Compatible | Recommended baseline configuration |
+  | 1.3.x | 1.4.0 | ✅ 1.3.0 | ⚠️ Warning shown, continues | Warning | Older MCP MINOR with newer API may lack new features |
+  | 1.4.0 | 1.3.x | ✅ 1.3.0 | ⚠️ Warning shown, continues | Warning | Newer MCP MINOR may have additional features |
+  | 1.3.2 | 1.3.1 | ❌ 1.3.2 | ❌ Execution stops | Error | API below minimum compatible version |
+  | 2.0.0 | 1.x.x | ❌ N/A | ❌ Execution stops | Error | Different MAJOR = breaking changes |
+
+  **Compatibility Rules**:
+
+  - ✅ **Compatible**: Same MAJOR version AND API version ≥ 1.3.0 (minimum compatible version)
+  - ⚠️ **Warning**: Different MINOR or PATCH versions within the same MAJOR version (shows warning but continues execution)
+  - ❌ **Error**: Different MAJOR versions OR API server < 1.3.0 (execution stops immediately, update required)
+
+### Changed
+
+- **Version Synchronization Scripts**: Refactored version management workflow for better maintainability ([#125](https://github.com/8beeeaaat/touchdesigner-mcp/pull/125))
+  - Split `scripts/syncVersions.ts` into two targeted scripts:
+    - `scripts/syncApiServerVersions.ts` - Manages Python API and OpenAPI spec versions
+    - `scripts/syncMcpServerVersions.ts` - Manages MCP manifest and server config versions
+  - Updated npm scripts to use new version commands: `version:api` and `version:mcp`
+- **Enhanced Python Logging**: Added detailed logging in OpenAPIRouter for better debugging
+  - Now logs OpenAPI schema version on initialization
+  - Displays loaded route count and available endpoints
+  - Improves visibility into API server state during development
+
+### Fixed
+
+- **Documentation Improvements**: Enhanced troubleshooting guidance and version compatibility documentation
+  - Updated README files (English and Japanese) with comprehensive semantic versioning rules ([#125](https://github.com/8beeeaaat/touchdesigner-mcp/pull/125))
+  - Added detailed compatibility table explaining version combinations and behaviors
+  - Clarified that version checks occur on every tool call, not just during connection ([#120](https://github.com/8beeeaaat/touchdesigner-mcp/pull/120))
+  - Improved formatting in installation instructions for better readability ([#121](https://github.com/8beeeaaat/touchdesigner-mcp/pull/121))
+  - Added step-by-step remediation procedures for compatibility errors
+  - Enhanced release workflow with clearer upgrade instructions
+
+### Technical
+
+- **Dependency Updates**: Updated dependencies to latest stable versions ([#124](https://github.com/8beeeaaat/touchdesigner-mcp/pull/124))
+  - Updated `@modelcontextprotocol/sdk` from ^1.23.0 to ^1.24.3
+  - Updated `@vitest/coverage-v8` from ^4.0.14 to ^4.0.15
+  - Updated `msw` from ^2.12.3 to ^2.12.4
+  - Updated `prettier` from ^3.7.3 to ^3.7.4
+  - Updated `vitest` from ^4.0.14 to ^4.0.15
+- **Comprehensive Test Coverage**: Added extensive tests for compatibility module ([#125](https://github.com/8beeeaaat/touchdesigner-mcp/pull/125))
+  - 378 lines of new compatibility test coverage
+  - Enhanced TouchDesigner client tests with 778 lines of comprehensive mock tests
+  - Improved test organization and reliability
+
 ## [1.3.0] - 2025-12-01
 
 > **Notice (EN):** Starting with this release, every tool call fails if the TouchDesigner API server and MCP server versions do not match. Follow the upgrade guide in [README.md](README.md#Troubleshooting) for the fix.
