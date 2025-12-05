@@ -26,6 +26,15 @@ vi.mock("../../src/gen/endpoints/TouchDesignerAPI", async () => {
 	};
 });
 
+vi.mock("../../src/core/version", async () => {
+	return {
+		getMcpServerVersion: vi.fn(() => "1.3.1"),
+		getMinCompatibleApiVersion: vi.fn(() => "1.3.0"),
+		MCP_SERVER_VERSION: "1.3.1",
+		MIN_COMPATIBLE_API_VERSION: "1.3.0",
+	};
+});
+
 const nullLogger: ILogger = {
 	sendLog: () => {},
 };
@@ -46,17 +55,11 @@ describe("TouchDesignerClient with mocks", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 
-		// Note: version mocks are reset to return actual values by default
-		// Individual tests can override these as needed
+		// Reset version mocks to default values
+		// Individual tests can override these as needed using vi.mocked().mockReturnValue()
+		vi.mocked(version.getMcpServerVersion).mockReturnValue("1.3.1");
+		vi.mocked(version.getMinCompatibleApiVersion).mockReturnValue("1.3.0");
 
-		vi.mock("../../src/core/version", async () => {
-			return {
-				getMcpServerVersion: vi.fn(() => "1.3.1"),
-				getMinCompatibleApiVersion: vi.fn(() => "1.3.0"),
-				MCP_SERVER_VERSION: "1.3.1",
-				MIN_COMPATIBLE_API_VERSION: "1.3.0",
-			};
-		});
 		vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(
 			compatibilityResponse,
 		);
