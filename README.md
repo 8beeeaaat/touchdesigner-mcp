@@ -373,7 +373,6 @@ The MCP server uses **semantic versioning** for flexible compatibility checks
 | 1.3.x | 1.3.0 | ✅ 1.3.0 | ✅ Works normally | Compatible | Recommended baseline configuration |
 | 1.3.x | 1.4.0 | ✅ 1.3.0 | ⚠️ Warning shown, continues | Warning | Older MCP MINOR with newer API may lack new features |
 | 1.4.0 | 1.3.x | ✅ 1.3.0 | ⚠️ Warning shown, continues | Warning | Newer MCP MINOR may have additional features |
-| 1.5.0 | 1.3.0 | ✅ 1.3.0 | ⚠️ Warning shown, continues | Warning | Multiple MINOR versions ahead |
 | 1.3.2 | 1.3.1 | ❌ 1.3.2 | ❌ Execution stops | Error | API below minimum compatible version |
 | 2.0.0 | 1.x.x | ❌ N/A | ❌ Execution stops | Error | Different MAJOR = breaking changes |
 
