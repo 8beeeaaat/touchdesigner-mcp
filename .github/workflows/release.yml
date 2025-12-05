@@ -103,7 +103,7 @@ jobs:
             https://github.com/user-attachments/assets/0786d244-8b82-4387-bbe4-9da048212854
 
             5. The extension will automatically handle the TouchDesigner server connection.
-            6. If you see a version mismatch warning, follow these steps before reconnecting:
+            6. **Version Compatibility:** Starting from v1.3.1, the MCP server uses semantic versioning for flexible compatibility. Most updates work without action, but if you see a compatibility error:
                1. Download the latest `touchdesigner-mcp-td.zip` from the releases page.
                2. Delete the existing `touchdesigner-mcp-td` folder and replace it with the newly extracted contents.
                3. Remove the old `mcp_webserver_base` component from your TouchDesigner project and import the `.tox` from the new folder.
@@ -125,7 +125,7 @@ jobs:
             }
             ```
 
-            4. If the MCP client reports incompatible server versions, follow the same remediation steps:
+            4. **Version Compatibility:** Most version updates are compatible automatically. Only update TouchDesigner components if you see a compatibility error:
                1. Download the latest `touchdesigner-mcp-td.zip`.
                2. Replace the old `touchdesigner-mcp-td` folder with the new one.
                3. Remove the previously imported `mcp_webserver_base`, import the updated `.tox`, and restart TouchDesigner.
