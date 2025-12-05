@@ -191,9 +191,12 @@ export class TouchDesignerClient {
 		if (this.verifiedCompatibilityError) {
 			// Re-log the cached error so users know it's still failing
 			const ttlRemaining = this.errorCacheTimestamp
-				? Math.ceil(
-						(ERROR_CACHE_TTL_MS - (Date.now() - this.errorCacheTimestamp)) /
-							1000,
+				? Math.max(
+						0,
+						Math.ceil(
+							(ERROR_CACHE_TTL_MS - (Date.now() - this.errorCacheTimestamp)) /
+								1000,
+						)
 					)
 				: 0;
 			this.logDebug(
