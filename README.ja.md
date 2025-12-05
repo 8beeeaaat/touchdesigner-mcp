@@ -366,13 +366,39 @@ td/
 
 ### バージョン互換性のトラブルシューティング
 
-- ツールが呼び出されると、MCPサーバーは自身のバージョンと `getTdInfo` が報告するTouchDesigner APIサーバーのバージョンを比較します。APIサーバーがバージョンを公開していない場合、またはバージョンが異なる場合（例：片方のみが更新された場合）、ツール呼び出しは失敗し、Claude/Codexコンソールおよび TouchDesigner ログ DAT に説明的なエラーメッセージが表示されます。
-- 不一致を解決するには、TouchDesignerコンポーネントを再インストールしてください：
+柔軟な互換性チェックのために**セマンティックバージョニング**を使用しています
+
+| MCP Server | API Server | 最小互換APIバージョン | 動作 | ステータス | 備考 |
+|------------|------------|----------------|----------|--------|-------|
+| 1.3.x | 1.3.0 | 1.3.0 | ✅ 正常動作 | 互換 | 推奨ベースライン構成 |
+| 1.3.x | 1.4.0 | 1.3.0 | ⚠️ 警告表示、実行継続 | 警告 | 旧MCP MINORと新API、新機能未対応の可能性 |
+| 1.4.0 | 1.3.x | 1.3.0 | ⚠️ 警告表示、実行継続 | 警告 | 新MCP MINORに追加機能がある可能性 |
+| 1.3.2 | 1.3.1 | 1.3.2 | ❌ 実行停止 | エラー | APIが最小互換バージョン未満 |
+| 2.0.0 | 1.x.x | N/A | ❌ 実行停止 | エラー | MAJORバージョン相違 = 破壊的変更 |
+
+**互換性ルール**:
+
+- ✅ **互換**: 同じMAJORバージョン、かつAPIバージョン ≥ 最小互換バージョン
+- ⚠️ **警告**: 同じMAJOR内でMINORまたはPATCHバージョンが異なる（警告表示、実行継続）
+- ❌ **エラー**: MAJORバージョンが異なる、またはAPIサーバー < 最小互換バージョン（即座に実行停止、更新が必要）
+
+- **互換性エラーを解決するには：**
   1. リリースページから最新の [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) をダウンロードします。
   2. 既存の `touchdesigner-mcp-td` フォルダを削除し、新しく展開した内容に置き換えます。
   3. TouchDesignerプロジェクトから古い `mcp_webserver_base` コンポーネントを削除し、新しいフォルダから `.tox` をインポートします。
   4. TouchDesignerとMCPサーバーを実行しているAIエージェント（例：Claude Desktop）を再起動します。
-- ローカルで開発している場合は、`package.json` を編集した後に `npm run gen:version` を実行してください（または単に `npm version ...` を使用してください）。これにより、Python API（`pyproject.toml` + `td/modules/utils/version.py`）、MCPバンドルマニフェスト、およびレジストリメタデータが同期され、ランタイム互換性チェックが成功するようになります。
+
+- **開発者向け：** ローカルで開発している場合は、`package.json` を編集した後に `npm run version` を実行してください（または単に `npm version ...` を使用してください）。これにより、Python API（`pyproject.toml` + `td/modules/utils/version.py`）、MCPバンドルマニフェスト、およびレジストリメタデータが同期され、ランタイム互換性チェックが成功するようになります。
+
+### 接続エラーのトラブルシューティング
+
+- `TouchDesignerClient` は接続に失敗した互換性チェック結果を **最大5秒間キャッシュ**し、その間のツール呼び出しでは同じエラーを再利用して TouchDesigner への無駄な負荷を避けます。TTL が切れると自動的に再試行します。
+- MCP サーバーが TouchDesigner に接続できない場合は、次のようなガイド付きメッセージが表示されます：
+  - `ECONNREFUSED` / "connect refused": TouchDesigner を起動し、`mcp_webserver_base.tox` からインポートした WebServer DAT がアクティブか、ポート設定（デフォルト `9981`）が正しいか確認してください。
+  - `ETIMEDOUT` / "timeout": TouchDesigner の応答が遅い、またはネットワークが詰まっています。TouchDesigner/ WebServer DAT の再起動やネットワーク状況の確認を行ってください。
+  - `ENOTFOUND` / `getaddrinfo`: ホスト名が解決できません。特別な理由がなければ `127.0.0.1` を使用してください。
+- これらの詳細なエラーテキストは `ILogger` にも出力されるため、MCP 側のログを確認すれば TouchDesigner に到達する前に止まった理由を把握できます。
+- 問題を解決したら再度ツールを実行するだけで、キャッシュされたエラーがクリアされて接続チェックがやり直されます。
 
 ## 開発で貢献
 
