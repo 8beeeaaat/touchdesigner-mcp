@@ -20,17 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   | MCP Server | API Server | Minimum compatible API version | Behavior | Status | Notes |
   |------------|------------|----------------|----------|--------|-------|
-  | 1.3.x | 1.3.0 | ✅ 1.3.0 | ✅ Works normally | Compatible | Recommended baseline configuration |
-  | 1.3.x | 1.4.0 | ✅ 1.3.0 | ⚠️ Warning shown, continues | Warning | Older MCP MINOR with newer API may lack new features |
-  | 1.4.0 | 1.3.x | ✅ 1.3.0 | ⚠️ Warning shown, continues | Warning | Newer MCP MINOR may have additional features |
-  | 1.3.2 | 1.3.1 | ❌ 1.3.2 | ❌ Execution stops | Error | API below minimum compatible version |
-  | 2.0.0 | 1.x.x | ❌ N/A | ❌ Execution stops | Error | Different MAJOR = breaking changes |
+  | 1.3.x | 1.3.0 | 1.3.0 | ✅ Works normally | Compatible | Recommended baseline configuration |
+  | 1.3.x | 1.4.0 | 1.3.0 | ⚠️ Warning shown, continues | Warning | Older MCP MINOR with newer API may lack new features |
+  | 1.4.0 | 1.3.x | 1.3.0 | ⚠️ Warning shown, continues | Warning | Newer MCP MINOR may have additional features |
+  | 1.3.x | 1.2.9 | 1.3.0 | ❌ Execution stops | Error | API below minimum compatible version (1.3.0) |
+  | 2.0.0 | 1.x.x | 1.3.0 | ❌ Execution stops | Error | Different MAJOR = breaking changes |
 
   **Compatibility Rules**:
 
-  - ✅ **Compatible**: Same MAJOR version AND API version ≥ 1.3.0 (minimum compatible version)
-  - ⚠️ **Warning**: Different MINOR or PATCH versions within the same MAJOR version (shows warning but continues execution)
-  - ❌ **Error**: Different MAJOR versions OR API server < 1.3.0 (execution stops immediately, update required)
+  - ✅ **Compatible**: Same MAJOR version AND API version ≥ minimum compatible version (currently 1.3.0)
+  - ⚠️ **Warning**: Same MAJOR version with different MINOR or PATCH versions (e.g., MCP 1.4.0 with API 1.3.x, or vice versa) - shows warning but continues execution
+  - ❌ **Error**: Different MAJOR versions (e.g., 2.x vs 1.x) OR API server below minimum compatible version
 
 ### Changed
 
@@ -39,10 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `scripts/syncApiServerVersions.ts` - Manages Python API and OpenAPI spec versions
     - `scripts/syncMcpServerVersions.ts` - Manages MCP manifest and server config versions
   - Updated npm scripts to use new version commands: `version:api` and `version:mcp`
-- **Enhanced Python Logging**: Added detailed logging in OpenAPIRouter for better debugging
-  - Now logs OpenAPI schema version on initialization
-  - Displays loaded route count and available endpoints
-  - Improves visibility into API server state during development
+- **Enhanced Python Logging**: Added logging in OpenAPIRouter
+  - Logs OpenAPI schema version at INFO level on initialization
+  - Logs total route count at INFO level
+  - Logs individual routes at DEBUG level for detailed debugging when enabled
 
 ### Fixed
 

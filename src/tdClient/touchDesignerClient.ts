@@ -180,13 +180,31 @@ export class TouchDesignerClient {
 
 		// Clear cached error if TTL has expired
 		if (this.verifiedCompatibilityError && this.shouldClearErrorCache()) {
-			this.logDebug("Clearing cached connection error, retrying...");
+			this.logDebug(
+				"Clearing cached connection error (TTL expired), retrying...",
+			);
 			this.verifiedCompatibilityError = null;
 			this.errorCacheTimestamp = null;
 			this.cachedCompatibilityCheck = false;
 		}
 
 		if (this.verifiedCompatibilityError) {
+			// Re-log the cached error so users know it's still failing
+			const ttlRemaining = this.errorCacheTimestamp
+				? Math.ceil(
+						(ERROR_CACHE_TTL_MS - (Date.now() - this.errorCacheTimestamp)) /
+							1000,
+					)
+				: 0;
+			this.logDebug(
+				`Using cached connection error (retry in ${ttlRemaining} seconds)`,
+				{
+					cacheAge: this.errorCacheTimestamp
+						? Date.now() - this.errorCacheTimestamp
+						: 0,
+					cachedError: this.verifiedCompatibilityError.message,
+				},
+			);
 			throw this.verifiedCompatibilityError;
 		}
 
@@ -195,8 +213,17 @@ export class TouchDesignerClient {
 			this.verifiedCompatibilityError = null;
 			this.errorCacheTimestamp = null;
 			this.cachedCompatibilityCheck = true;
+			this.logDebug("Compatibility verified successfully");
 			return;
 		}
+
+		// Log when we're caching a NEW error
+		this.logDebug(
+			`Caching connection error for ${ERROR_CACHE_TTL_MS / 1000} seconds`,
+			{
+				error: result.error.message,
+			},
+		);
 		this.verifiedCompatibilityError = result.error;
 		this.errorCacheTimestamp = Date.now();
 		this.cachedCompatibilityCheck = false;
@@ -356,19 +383,41 @@ export class TouchDesignerClient {
 		try {
 			tdInfoResult = await this.api.getTdInfo();
 		} catch (error) {
+			// Only catch network/HTTP errors from the API call
+			// Let programming errors propagate to help identify bugs
+			if (
+				error instanceof TypeError &&
+				error.message &&
+				!error.message.toLowerCase().includes("fetch") &&
+				!error.message.toLowerCase().includes("network")
+			) {
+				// This is likely a programming error, not a connection error
+				this.logger.sendLog({
+					data: {
+						error: error.message,
+						errorType: "programming_error",
+						stack: error.stack,
+					},
+					level: "error",
+					logger: "TouchDesignerClient",
+				});
+				throw error;
+			}
+
 			const rawMessage = error instanceof Error ? error.message : String(error);
 			const errorMessage = this.formatConnectionError(rawMessage);
 			this.logger.sendLog({
-				data: { error: rawMessage },
+				data: { error: rawMessage, errorType: "connection" },
 				level: "error",
 				logger: "TouchDesignerClient",
 			});
 			return createErrorResult(new Error(errorMessage));
 		}
+
 		if (!tdInfoResult.success) {
 			const errorMessage = this.formatConnectionError(tdInfoResult.error);
 			this.logger.sendLog({
-				data: { error: tdInfoResult.error },
+				data: { error: tdInfoResult.error, errorType: "api_response" },
 				level: "error",
 				logger: "TouchDesignerClient",
 			});

@@ -21,12 +21,20 @@ export class McpLogger implements ILogger {
 				...args,
 			});
 		} catch (error) {
+			// Only swallow the expected "Not connected" error during startup/shutdown
 			if (error instanceof Error && error.message === "Not connected") {
 				return;
 			}
 
+			// For all other errors, log detailed information to help diagnose logging system failures
 			console.error(
-				`Failed to send log to MCP server: ${error instanceof Error ? error.message : String(error)}`,
+				"CRITICAL: Failed to send log to MCP server. Logging system may be compromised.",
+				{
+					error: error instanceof Error ? error.message : String(error),
+					originalLogger: args.logger,
+					originalLogLevel: args.level,
+					stack: error instanceof Error ? error.stack : undefined,
+				},
 			);
 		}
 	}
