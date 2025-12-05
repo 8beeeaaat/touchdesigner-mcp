@@ -98,12 +98,12 @@ const COMPATIBILITY_POLICY = {
 	} as const,
 } as const;
 
-export const getCompatibilityPolicyType = (
-	mcpVersion: string,
-	apiVersion: string,
-): CompatibilityPolicyType => {
-	const mcpSemVer = semver.coerce(mcpVersion);
-	const apiSemVer = semver.coerce(apiVersion);
+export const getCompatibilityPolicyType = (params: {
+	mcpVersion: string;
+	apiVersion: string;
+}): CompatibilityPolicyType => {
+	const mcpSemVer = semver.coerce(params.mcpVersion);
+	const apiSemVer = semver.coerce(params.apiVersion);
 
 	if (!mcpSemVer || !apiSemVer) {
 		return COMPATIBILITY_POLICY_TYPES.NO_VERSION;
@@ -152,20 +152,16 @@ For more details, see: https://github.com/8beeeaaat/touchdesigner-mcp#troublesho
 
 /**
  * Generate error message for unknown version information
- *
- * @param mcpVer MCP server version
- * @param apiVer TouchDesigner API server version
- * @returns Error message
  */
-export function generateNoVersionMessage(
-	mcpVer: string,
-	apiVer: string,
-): string {
+export function generateNoVersionMessage(args: {
+	apiVersion: string;
+	mcpVersion: string;
+}): string {
 	return `
 🚨 Version Information Missing
 
-MCP Server:  ${mcpVer || "Unknown"}
-API Server:  ${apiVer || "Unknown"}
+MCP Server:  ${args.mcpVersion || "Unknown"}
+API Server:  ${args.apiVersion || "Unknown"}
 
 Version information is required to ensure compatibility between the MCP server and TouchDesigner components.
 Please ensure both components are updated to compatible versions.
@@ -176,20 +172,16 @@ ${updateGuide}
 
 /**
  * Generate error message for MAJOR version mismatch
- *
- * @param mcpVer MCP server version
- * @param apiVer TouchDesigner API server version
- * @returns Error message
  */
-export function generateMajorMismatchMessage(
-	mcpVer: string,
-	apiVer: string,
-): string {
+export function generateMajorMismatchMessage(args: {
+	apiVersion: string;
+	mcpVersion: string;
+}): string {
 	return `
 🚨 Version Incompatibility Detected
 
-MCP Server:  ${mcpVer}
-API Server:  ${apiVer}
+MCP Server:  ${args.mcpVersion}
+API Server:  ${args.apiVersion}
 
 MAJOR version mismatch indicates breaking changes.
 Both components must be updated to compatible versions.
@@ -200,20 +192,16 @@ ${updateGuide}
 
 /**
  * Generate error message when API version is below minimum compatible version
- *
- * @param apiVer Current TouchDesigner API server version
- * @param minRequired Minimum required version
- * @returns Error message
  */
-export function generateMinVersionMessage(
-	apiVer: string,
-	minRequired: string,
-): string {
+export function generateMinVersionMessage(args: {
+	apiVersion: string;
+	minRequired: string;
+}): string {
 	return `
 ⚠️  TouchDesigner API Server Update Required
 
-Current:  ${apiVer}
-Required: ${minRequired}+
+Current:  ${args.apiVersion}
+Required: ${args.minRequired}+
 
 Your TouchDesigner components are outdated and may not support all features.
 
@@ -223,20 +211,16 @@ ${updateGuide}
 
 /**
  * Generate warning message when MCP server has newer MINOR version
- *
- * @param mcpVer MCP server version
- * @param apiVer TouchDesigner API server version
- * @returns Warning message
  */
-export function generateNewerMinorMessage(
-	mcpVer: string,
-	apiVer: string,
-): string {
+export function generateNewerMinorMessage(args: {
+	apiVersion: string;
+	mcpVersion: string;
+}): string {
 	return `
 💡 Update Recommended
 
-MCP Server:  ${mcpVer}
-API Server:  ${apiVer}
+MCP Server:  ${args.mcpVersion}
+API Server:  ${args.apiVersion}
 
 The MCP server has newer features that may not work with your TouchDesigner components.
 Consider updating for the best experience.
@@ -247,20 +231,16 @@ ${updateGuide}
 
 /**
  * Generate warning message when API server has newer MINOR version
- *
- * @param mcpVer MCP server version
- * @param apiVer TouchDesigner API server version
- * @returns Warning message
  */
-export function generateOlderMinorMessage(
-	mcpVer: string,
-	apiVer: string,
-): string {
+export function generateOlderMinorMessage(args: {
+	apiVersion: string;
+	mcpVersion: string;
+}): string {
 	return `
 💡 Update Recommended
 
-MCP Server:  ${mcpVer}
-API Server:  ${apiVer}
+MCP Server:  ${args.mcpVersion}
+API Server:  ${args.apiVersion}
 
 Your TouchDesigner components have features that may not be supported by the MCP server.
 Consider updating the MCP server for the best experience.
@@ -271,20 +251,16 @@ ${updateGuide}
 
 /**
  * Generate warning message when PATCH versions differ
- *
- * @param mcpVer MCP server version
- * @param apiVer TouchDesigner API server version
- * @returns Warning message
  */
-export function generatePatchDiffMessage(
-	mcpVer: string,
-	apiVer: string,
-): string {
+export function generatePatchDiffMessage(args: {
+	apiVersion: string;
+	mcpVersion: string;
+}): string {
 	return `
 💡 Patch Version Mismatch
 
-MCP Server:  ${mcpVer}
-API Server:  ${apiVer}
+MCP Server:  ${args.mcpVersion}
+API Server:  ${args.apiVersion}
 
 The MCP server and TouchDesigner components have different PATCH versions.
 While generally compatible, updating both to the latest versions is recommended.
@@ -296,19 +272,19 @@ ${updateGuide}
 /**
  * Generate info message when versions are fully compatible
  *
- * @param mcpVer MCP server version
- * @param apiVer TouchDesigner API server version
+ * @param mcpVersion MCP server version
+ * @param apiVersion TouchDesigner API server version
  * @returns Info message
  */
-export function generateFullyCompatibleMessage(
-	mcpVer: string,
-	apiVer: string,
-): string {
+export function generateFullyCompatibleMessage(args: {
+	apiVersion: string;
+	mcpVersion: string;
+}): string {
 	return `
 ✅ Versions Fully Compatible
 
-MCP Server:  ${mcpVer}
-API Server:  ${apiVer}
+MCP Server:  ${args.mcpVersion}
+API Server:  ${args.apiVersion}
 
 Your MCP server and TouchDesigner components are fully compatible.
 No action is needed.

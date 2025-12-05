@@ -1,5 +1,4 @@
 import {
-	type CompatibilityPolicyErrorLevel,
 	getCompatibilityPolicy,
 	getCompatibilityPolicyType,
 } from "../core/compatibility.js";
@@ -463,30 +462,19 @@ Original error: ${error}`;
 		return `Failed to connect to TouchDesigner API server: ${error}`;
 	}
 
-	private checkVersionCompatibility(
-		mcpVersion: string,
-		apiVersion: string,
-	): {
-		compatible: boolean;
-		level: CompatibilityPolicyErrorLevel;
-		message: string;
-		details: {
-			mcpVersion: string;
-			apiVersion: string;
-			minRequired: string;
-		};
-	} {
-		const policyType = getCompatibilityPolicyType(mcpVersion, apiVersion);
+	private checkVersionCompatibility(mcpVersion: string, apiVersion: string) {
+		const policyType = getCompatibilityPolicyType({ apiVersion, mcpVersion });
 		const policy = getCompatibilityPolicy(policyType);
-		const message = policy.message(mcpVersion, apiVersion);
+		const details = {
+			apiVersion,
+			mcpVersion,
+			minRequired: MIN_COMPATIBLE_API_VERSION,
+		};
+		const message = policy.message(details);
 
 		return {
 			compatible: policy.compatible,
-			details: {
-				apiVersion,
-				mcpVersion,
-				minRequired: MIN_COMPATIBLE_API_VERSION,
-			},
+			details,
 			level: policy.level,
 			message,
 		};

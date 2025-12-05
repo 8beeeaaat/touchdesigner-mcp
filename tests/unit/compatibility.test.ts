@@ -4,6 +4,12 @@ import { describe, expect, test } from "vitest";
 import {
 	COMPATIBILITY_POLICY_ERROR_LEVELS,
 	COMPATIBILITY_POLICY_TYPES,
+	generateFullyCompatibleMessage,
+	generateMajorMismatchMessage,
+	generateMinVersionMessage,
+	generateNewerMinorMessage,
+	generateOlderMinorMessage,
+	generatePatchDiffMessage,
 	getCompatibilityPolicy,
 	getCompatibilityPolicyType,
 } from "../../src/core/compatibility.js";
@@ -73,119 +79,182 @@ describe("semver.coerce behavior", () => {
 describe("getCompatibilityPolicyType", () => {
 	describe("BELOW_MIN_VERSION cases", () => {
 		test("returns BELOW_MIN_VERSION when API version is below minimum", () => {
-			const result = getCompatibilityPolicyType("1.3.0", "1.2.9");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.2.9",
+				mcpVersion: "1.3.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.BELOW_MIN_VERSION);
 		});
 
 		test("returns BELOW_MIN_VERSION when API version is 1.0.0", () => {
-			const result = getCompatibilityPolicyType("1.3.0", "1.0.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.0.0",
+				mcpVersion: "1.3.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.BELOW_MIN_VERSION);
 		});
 	});
 
 	describe("MAJOR_MISMATCH cases", () => {
 		test("returns MAJOR_MISMATCH when MCP major is higher", () => {
-			const result = getCompatibilityPolicyType("2.0.0", "1.3.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.3.0",
+				mcpVersion: "2.0.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.MAJOR_MISMATCH);
 		});
 
 		test("returns MAJOR_MISMATCH when API major is higher", () => {
-			const result = getCompatibilityPolicyType("1.3.0", "2.0.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "2.0.0",
+				mcpVersion: "1.3.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.MAJOR_MISMATCH);
 		});
 
 		test("returns MAJOR_MISMATCH with different major versions (3.x vs 1.x)", () => {
-			const result = getCompatibilityPolicyType("3.0.0", "1.5.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.5.0",
+				mcpVersion: "3.0.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.MAJOR_MISMATCH);
 		});
 	});
 
 	describe("NEWER_MINOR cases", () => {
 		test("returns NEWER_MINOR when MCP minor is higher (1.4.0 vs 1.3.0)", () => {
-			const result = getCompatibilityPolicyType("1.4.0", "1.3.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.3.0",
+				mcpVersion: "1.4.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.NEWER_MINOR);
 		});
 
 		test("returns NEWER_MINOR when MCP minor is much higher (1.5.0 vs 1.3.0)", () => {
-			const result = getCompatibilityPolicyType("1.5.0", "1.3.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.3.0",
+				mcpVersion: "1.5.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.NEWER_MINOR);
 		});
 
 		test("returns NEWER_MINOR even with different patch versions", () => {
-			const result = getCompatibilityPolicyType("1.4.5", "1.3.2");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.3.2",
+				mcpVersion: "1.4.5",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.NEWER_MINOR);
 		});
 	});
 
 	describe("OLDER_MINOR cases", () => {
 		test("returns OLDER_MINOR when MCP minor is lower (1.3.0 vs 1.4.0)", () => {
-			const result = getCompatibilityPolicyType("1.3.0", "1.4.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.4.0",
+				mcpVersion: "1.3.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.OLDER_MINOR);
 		});
 
 		test("returns OLDER_MINOR when MCP minor is much lower (1.3.0 vs 1.5.0)", () => {
-			const result = getCompatibilityPolicyType("1.3.0", "1.5.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.5.0",
+				mcpVersion: "1.3.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.OLDER_MINOR);
 		});
 
 		test("returns OLDER_MINOR even with different patch versions", () => {
-			const result = getCompatibilityPolicyType("1.3.2", "1.4.5");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.4.5",
+				mcpVersion: "1.3.2",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.OLDER_MINOR);
 		});
 	});
 
 	describe("PATCH_DIFF cases", () => {
 		test("returns PATCH_DIFF when only patch differs (MCP higher)", () => {
-			const result = getCompatibilityPolicyType("1.3.2", "1.3.1");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.3.1",
+				mcpVersion: "1.3.2",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.PATCH_DIFF);
 		});
 
 		test("returns PATCH_DIFF when only patch differs (API higher)", () => {
-			const result = getCompatibilityPolicyType("1.3.1", "1.3.2");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.3.2",
+				mcpVersion: "1.3.1",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.PATCH_DIFF);
 		});
 
 		test("returns PATCH_DIFF with larger patch difference", () => {
-			const result = getCompatibilityPolicyType("1.3.10", "1.3.5");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.3.5",
+				mcpVersion: "1.3.10",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.PATCH_DIFF);
 		});
 	});
 
 	describe("COMPATIBLE cases", () => {
 		test("returns COMPATIBLE when versions are identical", () => {
-			const result = getCompatibilityPolicyType("1.3.0", "1.3.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.3.0",
+				mcpVersion: "1.3.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.COMPATIBLE);
 		});
 
 		test("returns COMPATIBLE with same version (different formats)", () => {
-			const result = getCompatibilityPolicyType("v1.3.0", "1.3.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.3.0",
+				mcpVersion: "v1.3.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.COMPATIBLE);
 		});
 	});
 
 	describe("edge cases", () => {
 		test("handles versions with v-prefix", () => {
-			const result = getCompatibilityPolicyType("v1.4.0", "v1.3.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "v1.3.0",
+				mcpVersion: "v1.4.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.NEWER_MINOR);
 		});
 
 		test("handles pre-release versions (ignores pre-release part)", () => {
-			const result = getCompatibilityPolicyType("1.3.0-beta.1", "1.3.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.3.0",
+				mcpVersion: "1.3.0-beta.1",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.COMPATIBLE);
 		});
 
 		test("handles build metadata (ignores build part)", () => {
-			const result = getCompatibilityPolicyType("1.3.0+build.123", "1.3.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.3.0",
+				mcpVersion: "1.3.0+build.123",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.COMPATIBLE);
 		});
 
 		test("returns NO_VERSION for invalid MCP version", () => {
-			const result = getCompatibilityPolicyType("invalid", "1.3.0");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "1.3.0",
+				mcpVersion: "invalid",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.NO_VERSION);
 		});
 
 		test("returns NO_VERSION for invalid API version", () => {
-			const result = getCompatibilityPolicyType("1.3.0", "invalid");
+			const result = getCompatibilityPolicyType({
+				apiVersion: "invalid",
+				mcpVersion: "1.3.0",
+			});
 			expect(result).toBe(COMPATIBILITY_POLICY_TYPES.NO_VERSION);
 		});
 	});
@@ -249,60 +318,60 @@ describe("getCompatibilityPolicy", () => {
 
 describe("Compatibility policy message generation", () => {
 	test("generates message for BELOW_MIN_VERSION", () => {
-		const policy = getCompatibilityPolicy(
-			COMPATIBILITY_POLICY_TYPES.BELOW_MIN_VERSION,
-		);
-		const message = policy.message("1.2.9", MIN_COMPATIBLE_API_VERSION);
+		const message = generateMinVersionMessage({
+			apiVersion: "1.2.9",
+			minRequired: MIN_COMPATIBLE_API_VERSION,
+		});
 		expect(message).toContain("1.2.9");
 		expect(message).toContain(MIN_COMPATIBLE_API_VERSION);
 		expect(message).toContain("Update Required");
 	});
 
 	test("generates message for MAJOR_MISMATCH", () => {
-		const policy = getCompatibilityPolicy(
-			COMPATIBILITY_POLICY_TYPES.MAJOR_MISMATCH,
-		);
-		const message = policy.message("2.0.0", "1.3.0");
+		const message = generateMajorMismatchMessage({
+			apiVersion: "1.3.0",
+			mcpVersion: "2.0.0",
+		});
 		expect(message).toContain("2.0.0");
 		expect(message).toContain("1.3.0");
 		expect(message).toContain("MAJOR version");
 	});
 
 	test("generates message for NEWER_MINOR", () => {
-		const policy = getCompatibilityPolicy(
-			COMPATIBILITY_POLICY_TYPES.NEWER_MINOR,
-		);
-		const message = policy.message("1.4.0", "1.3.0");
+		const message = generateNewerMinorMessage({
+			apiVersion: "1.3.0",
+			mcpVersion: "1.4.0",
+		});
 		expect(message).toContain("1.4.0");
 		expect(message).toContain("1.3.0");
 		expect(message).toContain("Update Recommended");
 	});
 
 	test("generates message for OLDER_MINOR", () => {
-		const policy = getCompatibilityPolicy(
-			COMPATIBILITY_POLICY_TYPES.OLDER_MINOR,
-		);
-		const message = policy.message("1.3.0", "1.4.0");
+		const message = generateOlderMinorMessage({
+			apiVersion: "1.4.0",
+			mcpVersion: "1.3.0",
+		});
 		expect(message).toContain("1.3.0");
 		expect(message).toContain("1.4.0");
 		expect(message).toContain("Update Recommended");
 	});
 
 	test("generates message for PATCH_DIFF", () => {
-		const policy = getCompatibilityPolicy(
-			COMPATIBILITY_POLICY_TYPES.PATCH_DIFF,
-		);
-		const message = policy.message("1.3.2", "1.3.1");
+		const message = generatePatchDiffMessage({
+			apiVersion: "1.3.1",
+			mcpVersion: "1.3.2",
+		});
 		expect(message).toContain("1.3.2");
 		expect(message).toContain("1.3.1");
 		expect(message).toContain("Patch Version");
 	});
 
 	test("generates message for COMPATIBLE", () => {
-		const policy = getCompatibilityPolicy(
-			COMPATIBILITY_POLICY_TYPES.COMPATIBLE,
-		);
-		const message = policy.message("1.3.0", "1.3.0");
+		const message = generateFullyCompatibleMessage({
+			apiVersion: "1.3.0",
+			mcpVersion: "1.3.0",
+		});
 		expect(message).toContain("1.3.0");
 		expect(message).toContain("Fully Compatible");
 	});
