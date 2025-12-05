@@ -405,7 +405,7 @@ export class TouchDesignerClient {
 			}
 
 			// Handle AxiosError (network/HTTP errors)
-			const rawMessage = error.message;
+			const rawMessage = error.message || "Unknown network error";
 			const errorMessage = this.formatConnectionError(rawMessage);
 			this.logger.sendLog({
 				data: { error: rawMessage, errorType: "connection" },

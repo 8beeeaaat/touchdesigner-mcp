@@ -887,12 +887,10 @@ describe("TouchDesignerClient with mocks", () => {
 		});
 
 		test("should format connection error when getTdInfo rejects with AxiosError", async () => {
+			// AxiosError constructor: (message, code, config, request, response)
 			const axiosError = new AxiosError(
-				"connect ECONNREFUSED 127.0.0.1:9981",
-				"ECONNREFUSED",
-				undefined,
-				undefined,
-				undefined,
+				"connect ECONNREFUSED 127.0.0.1:9981", // message
+				"ECONNREFUSED", // code
 			);
 
 			const mockGetTdInfo = vi.fn().mockRejectedValue(axiosError);
