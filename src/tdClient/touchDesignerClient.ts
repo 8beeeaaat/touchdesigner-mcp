@@ -197,7 +197,7 @@ export class TouchDesignerClient {
 						Math.ceil(
 							(ERROR_CACHE_TTL_MS - (Date.now() - this.errorCacheTimestamp)) /
 								1000,
-						)
+						),
 					)
 				: 0;
 			this.logDebug(
