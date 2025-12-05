@@ -76,7 +76,8 @@ const COMPATIBILITY_POLICY = {
 		message: generatePatchDiffMessage,
 	} as const,
 
-	/**	 * Behavior when versions are fully compatible
+	/**
+	 * Behavior when versions are fully compatible
 	 * - 'allow': Allow without logging
 	 */
 	[COMPATIBILITY_POLICY_TYPES.COMPATIBLE]: {
@@ -209,7 +210,8 @@ ${updateGuide}
 `.trim();
 }
 
-/** * Generate warning message when API server has newer MINOR version
+/**
+ * Generate warning message when API server has newer MINOR version
  *
  * @param mcpVer MCP server version
  * @param apiVer TouchDesigner API server version
@@ -232,7 +234,8 @@ ${updateGuide}
 `.trim();
 }
 
-/**	 * Generate warning message when PATCH versions differ
+/**
+ * Generate warning message when PATCH versions differ
  *
  * @param mcpVer MCP server version
  * @param apiVer TouchDesigner API server version
@@ -255,7 +258,8 @@ ${updateGuide}
 `.trim();
 }
 
-/**	 * Generate info message when versions are fully compatible
+/**
+ * Generate info message when versions are fully compatible
  *
  * @param mcpVer MCP server version
  * @param apiVer TouchDesigner API server version

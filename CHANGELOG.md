@@ -52,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Created `src/core/compatibility.ts` module with `VersionCompatibility` class for reusable version comparison logic
 - Enhanced `TouchDesignerClient` to perform compatibility checks on initialization and provide actionable error messages
 - Updated dependencies: semver package for robust semantic version parsing
-- Added unit tests: `tests/unit/compatibility.test.ts` with 65+ test cases covering edge cases
+- Added unit tests: `tests/unit/compatibility.test.ts` with 41 test cases covering edge cases
 
 ## [1.3.0] - 2025-12-01
 

@@ -596,8 +596,8 @@ describe("TouchDesignerClient with mocks", () => {
 
 			expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
 
-			// Advance time by 31 seconds (past the 30s TTL)
-			vi.advanceTimersByTime(31000);
+			// Advance time by 6 seconds (past the 5s TTL)
+			vi.advanceTimersByTime(6000);
 
 			// Second call should retry and succeed
 			const result = await client.createNode({
@@ -649,7 +649,7 @@ describe("TouchDesignerClient with mocks", () => {
 
 			expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
 
-			// before TTL expires
+			// Before TTL expires
 			vi.advanceTimersByTime(ERROR_CACHE_TTL_MS - 1000);
 
 			// Second call should use cached error

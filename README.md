@@ -379,8 +379,8 @@ The MCP server uses **semantic versioning** for flexible compatibility checks
 
 **Compatibility Rules**:
 
-- ✅ **Compatible**: Same MAJOR version, same MINOR version, AND API version ≥ 1.3.0 (minimum compatible version)
-- ⚠️ **Warning**: Different MINOR versions (either direction) within same MAJOR version (shows warning but continues execution)
+- ✅ **Compatible**: Same MAJOR version AND API version ≥ 1.3.0 (minimum compatible version)
+- ⚠️ **Warning**: Different MINOR or PATCH versions within the same MAJOR version (shows warning but continues execution)
 - ❌ **Error**: Different MAJOR versions OR API server < 1.3.0 (execution stops immediately, update required)
 
 - **To resolve compatibility errors:**
