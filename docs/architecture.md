@@ -1198,8 +1198,8 @@ static create(config: TransportConfig): Result<Transport, Error> {
 
 ### MCP Specification
 
-- [MCP Specification - Transports](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports)
-- [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#http-with-sse)
+- [MCP Specification - Transports](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)
+- [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#http-with-sse)
 
 ### MCP TypeScript SDK
 

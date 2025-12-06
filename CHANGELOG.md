@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Streaming-capable HTTP transport**: Added the `streamable-http` mode with SSE real-time responses and session reuse via the `mcp-session-id` header. Host/port/endpoint can be configured via CLI or environment variables. `TransportRegistry` and `SessionManager` manage multi-session lifecycles. ([#131](https://github.com/8beeeaaat/touchdesigner-mcp/pull/131), [#133](https://github.com/8beeeaaat/touchdesigner-mcp/pull/133))
+- **Streamable HTTP transport**: Added the [streamable-http](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http) mode with SSE real-time responses and session reuse via the `mcp-session-id` header. Host/port/endpoint can be configured via CLI or environment variables. `TransportRegistry` and `SessionManager` manage multi-session lifecycles. ([#131](https://github.com/8beeeaaat/touchdesigner-mcp/pull/131), [#133](https://github.com/8beeeaaat/touchdesigner-mcp/pull/133))
 - **Comprehensive documentation expansion**: Added new English and Japanese docs (architecture overview, installation guides, developer guide) to clarify the full setup-to-operations workflow. ([#134](https://github.com/8beeeaaat/touchdesigner-mcp/pull/134))
 
 ### Changed
