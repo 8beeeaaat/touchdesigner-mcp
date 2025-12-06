@@ -361,7 +361,9 @@ describe("SessionManager", () => {
 
 			expect(mockLogger.sendLog).toHaveBeenCalledWith(
 				expect.objectContaining({
-					data: expect.stringContaining("Starting TTL cleanup (interval: 300000ms, TTL: 3600000ms)"),
+					data: expect.stringContaining(
+						"Starting TTL cleanup (interval: 300000ms, TTL: 3600000ms)",
+					),
 				}),
 			);
 		});
