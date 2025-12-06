@@ -181,7 +181,7 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
 
 3. **コンテナを起動**
 
-##### オプションA: [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http)
+##### オプションA: [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
 
 1. `TRANSPORT=http` でコンテナを起動します。
 

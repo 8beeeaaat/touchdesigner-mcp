@@ -194,7 +194,7 @@ Add the optional flags only when TouchDesigner is not running on `http://127.0.0
 
 Choose a transport configuration:
 
-##### Option A: Streamable HTTP ([spec](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http))
+##### Option A: Streamable HTTP ([spec](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http))
 
 1. Start the container with HTTP transport:
 
