@@ -12,6 +12,7 @@
 		"ignoreUnknown": false,
 		"includes": [
 			"**",
+			"tests/**/*",
 			"!**/public",
 			"!**/*.json",
 			"!**/dist/**/*",

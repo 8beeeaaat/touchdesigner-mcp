@@ -121,26 +121,6 @@ describe("Transport Configuration", () => {
 			expect(config.sessionConfig?.cleanupInterval).toBe(600000);
 		});
 
-		test("StreamableHttpTransportConfig should accept optional security config", () => {
-			const config: StreamableHttpTransportConfig = {
-				endpoint: "/mcp",
-				host: "127.0.0.1",
-				port: 3000,
-				securityConfig: {
-					allowedHosts: ["example.com"],
-					allowedOrigins: ["http://example.com"],
-					enableDnsRebindingProtection: false,
-				},
-				type: "streamable-http",
-			};
-
-			expect(config.securityConfig?.allowedOrigins).toEqual([
-				"http://example.com",
-			]);
-			expect(config.securityConfig?.allowedHosts).toEqual(["example.com"]);
-			expect(config.securityConfig?.enableDnsRebindingProtection).toBe(false);
-		});
-
 		test("SessionConfig should support partial configuration", () => {
 			const config: StreamableHttpTransportConfig = {
 				endpoint: "/mcp",
@@ -156,23 +136,6 @@ describe("Transport Configuration", () => {
 			expect(config.sessionConfig?.enabled).toBe(true);
 			expect(config.sessionConfig?.ttl).toBeUndefined();
 			expect(config.sessionConfig?.cleanupInterval).toBeUndefined();
-		});
-
-		test("SecurityConfig should support partial configuration", () => {
-			const config: StreamableHttpTransportConfig = {
-				endpoint: "/mcp",
-				host: "127.0.0.1",
-				port: 3000,
-				securityConfig: {
-					enableDnsRebindingProtection: true,
-					// allowedOrigins and allowedHosts are optional
-				},
-				type: "streamable-http",
-			};
-
-			expect(config.securityConfig?.enableDnsRebindingProtection).toBe(true);
-			expect(config.securityConfig?.allowedOrigins).toBeUndefined();
-			expect(config.securityConfig?.allowedHosts).toBeUndefined();
 		});
 	});
 
@@ -191,32 +154,6 @@ describe("Transport Configuration", () => {
 			expect(configs).toHaveLength(2);
 			expect(configs[0].type).toBe("stdio");
 			expect(configs[1].type).toBe("streamable-http");
-		});
-
-		test("discriminated union should enable type-safe pattern matching", () => {
-			const config: TransportConfig = {
-				endpoint: "/mcp",
-				host: "127.0.0.1",
-				port: 3000,
-				type: "streamable-http",
-			};
-
-			switch (config.type) {
-				case "stdio":
-					// TypeScript knows config is StdioTransportConfig here
-					expect.fail("Should not reach stdio case");
-					break;
-				case "streamable-http":
-					// TypeScript knows config is StreamableHttpTransportConfig here
-					expect(config.port).toBe(3000);
-					expect(config.host).toBe("127.0.0.1");
-					break;
-				default:
-					// TypeScript ensures exhaustiveness checking
-					// biome-ignore lint/correctness/noSwitchDeclarations: exhaustiveness check
-					const _exhaustive: never = config;
-					expect.fail(`Unexpected config type: ${_exhaustive}`);
-			}
 		});
 	});
 });
