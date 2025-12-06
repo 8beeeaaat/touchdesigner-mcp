@@ -111,7 +111,7 @@ export class SessionManager implements ISessionManager {
 	private cleanupInterval: NodeJS.Timeout | null = null;
 
 	constructor(config: SessionConfig, logger: ILogger) {
-		// Apply defaults when optional values are not provided to avoid disabled TTL cleanup
+		// Apply defaults for optional values to ensure TTL cleanup is active by default
 		this.config = {
 			cleanupInterval:
 				config.cleanupInterval ?? DEFAULT_SESSION_CONFIG.cleanupInterval,
