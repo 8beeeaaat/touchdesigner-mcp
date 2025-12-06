@@ -242,7 +242,7 @@ Choose a transport configuration:
     }
     ```
 
-4. Confirm the container is healthy:
+4. Confirm the container is healthy (container binds `0.0.0.0`, Docker publishes to `127.0.0.1` by default):
 
    ```bash
    curl http://localhost:6280/health
@@ -304,9 +304,11 @@ touchdesigner-mcp-server \
 | Option | Description | Default |
 | --- | --- | --- |
 | `--mcp-http-port` | HTTP server port (required for HTTP mode) | - |
-| `--mcp-http-host` | Bind address | `127.0.0.1` |
+| `--mcp-http-host` | Bind address (`0.0.0.0` in Docker entrypoint, `127.0.0.1` in CLI) | `127.0.0.1` (CLI) |
 | `--host` | TouchDesigner WebServer host | `http://127.0.0.1` |
 | `--port` | TouchDesigner WebServer port | `9981` |
+
+> Security tip (Docker): the container binds to `0.0.0.0`, but `docker-compose.yml` publishes `127.0.0.1:${MCP_HTTP_PORT}` by default so the endpoint is loopback-only. If you intentionally expose it to your LAN/WAN, change the compose port mapping (for example `"0.0.0.0:6280:6280"`) and protect it with a firewall/reverse proxy and authentication.
 
 ### Health Check
 
