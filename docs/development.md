@@ -1,7 +1,8 @@
 # TouchDesigner MCP Server Developer Guide
 
 This guide consolidates all developer-focused content: local environment setup, MCP client
-configuration, project structure, code generation workflows, and release/versioning tips.
+configuration, project structure, code generation workflows, and release/versioning tips. For a
+high-level view of components and data flow, see **[Architecture](./architecture.md)**.
 
 ## Quick Start for Development
 
