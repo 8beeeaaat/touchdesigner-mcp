@@ -11,6 +11,15 @@ import type { TouchDesignerClient } from "../tdClient/touchDesignerClient.js";
 import { ConnectionManager } from "./connectionManager.js";
 
 /**
+ * Capabilities supported by TouchDesigner MCP Server
+ */
+export interface TouchDesignerCapabilities {
+	logging: Record<string, never>;
+	prompts: Record<string, never>;
+	tools: Record<string, never>;
+}
+
+/**
  * TouchDesigner MCP Server implementation
  */
 export class TouchDesignerServer {
@@ -43,6 +52,26 @@ export class TouchDesignerServer {
 		this.connectionManager = new ConnectionManager(this.server, this.logger);
 
 		this.registerAllFeatures();
+	}
+
+	/**
+	 * Create a new TouchDesignerServer instance
+	 *
+	 * Factory method for creating server instances in multi-session scenarios.
+	 * Each session should have its own server instance to maintain independent MCP protocol state.
+	 *
+	 * @returns McpServer instance ready for connection to a transport
+	 *
+	 * @example
+	 * ```typescript
+	 * // In TransportRegistry
+	 * const serverFactory = () => TouchDesignerServer.create();
+	 * const transport = await registry.getOrCreate(sessionId, body, serverFactory);
+	 * ```
+	 */
+	static create(): McpServer {
+		const instance = new TouchDesignerServer();
+		return instance.server;
 	}
 
 	/**

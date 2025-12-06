@@ -32,6 +32,7 @@
 		"@types/ws": "^8.18.1",
 		"@types/yargs": "^17.0.35",
 		"axios": "^1.13.2",
+		"express": "^5.2.1",
 		"mustache": "^4.2.0",
 		"semver": "^7.7.3",
 		"yaml": "^2.8.2",
@@ -40,6 +41,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.3.8",
 		"@openapitools/openapi-generator-cli": "^2.25.2",
+		"@types/express": "^5.0.6",
 		"@types/jsdom": "^27.0.0",
 		"@types/mustache": "^4.2.6",
 		"@types/node": "^24.10.1",
@@ -80,6 +82,7 @@
 		"format:python": "ruff format td/ && ruff check --fix td/",
 		"format:yaml": "prettier --write \"**/*.{yml,yaml}\"",
 		"dev": "npx @modelcontextprotocol/inspector node dist/cli.js --stdio",
+		"http": "npm run build && node dist/cli.js --mcp-http-port=6280 --mcp-http-host=127.0.0.1 --host=http://127.0.0.1 --port=9981",
 		"test": "run-p test:*",
 		"test:integration": "vitest run ./tests/integration",
 		"test:unit": "vitest run ./tests/unit",
