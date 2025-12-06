@@ -15,6 +15,7 @@ function createMockSessionManager(activeSessions = 0): ISessionManager & {
 		getActiveSessionCount: vi.fn<number, []>().mockReturnValue(activeSessions),
 		list: vi.fn().mockReturnValue([]),
 		register: vi.fn(),
+		setExpirationHandler: vi.fn(),
 		startTTLCleanup: vi.fn(),
 		stopTTLCleanup: vi.fn(),
 	};

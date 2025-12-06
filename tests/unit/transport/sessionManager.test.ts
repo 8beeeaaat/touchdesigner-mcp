@@ -175,6 +175,29 @@ describe("SessionManager", () => {
 			expect(sessionManager.list()).toHaveLength(0);
 		});
 
+		test("should invoke expiration handler when session expires", () => {
+			vi.useFakeTimers();
+
+			const config: SessionConfig = {
+				cleanupInterval: 100,
+				enabled: true,
+				ttl: 1000,
+			};
+			const onExpired = vi.fn();
+			sessionManager = new SessionManager(config, mockLogger);
+			sessionManager.setExpirationHandler(onExpired);
+
+			const sessionId = sessionManager.create();
+			sessionManager.startTTLCleanup();
+
+			// Expire session
+			vi.advanceTimersByTime(1100);
+			vi.advanceTimersByTime(100);
+
+			expect(onExpired).toHaveBeenCalledWith(sessionId);
+			expect(sessionManager.list()).toHaveLength(0);
+		});
+
 		test("should work without TTL configured", () => {
 			const config: SessionConfig = {
 				enabled: true,

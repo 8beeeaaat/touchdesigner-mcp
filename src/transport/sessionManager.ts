@@ -40,6 +40,13 @@ export interface ISessionManager {
 	create(metadata?: Record<string, unknown>): string;
 
 	/**
+	 * Register a callback invoked when a session expires via TTL cleanup.
+	 */
+	setExpirationHandler(
+		handler: (sessionId: string) => Promise<void> | void,
+	): void;
+
+	/**
 	 * Register an existing session (created by SDK)
 	 */
 	register(sessionId: string, metadata?: Record<string, unknown>): void;
@@ -109,6 +116,9 @@ export class SessionManager implements ISessionManager {
 	private readonly config: SessionConfig;
 	private readonly logger: ILogger;
 	private cleanupInterval: NodeJS.Timeout | null = null;
+	private onSessionExpired:
+		| ((sessionId: string) => Promise<void> | void)
+		| null = null;
 
 	constructor(config: SessionConfig, logger: ILogger) {
 		// Apply defaults for optional values to ensure TTL cleanup is active by default
@@ -147,6 +157,17 @@ export class SessionManager implements ISessionManager {
 		});
 
 		return sessionId;
+	}
+
+	/**
+	 * Register a callback to run when TTL cleanup expires a session.
+	 *
+	 * @param handler - Callback invoked with expired session ID
+	 */
+	setExpirationHandler(
+		handler: (sessionId: string) => Promise<void> | void,
+	): void {
+		this.onSessionExpired = handler;
 	}
 
 	/**
@@ -283,7 +304,6 @@ export class SessionManager implements ISessionManager {
 			try {
 				const elapsed = now - session.lastAccessedAt;
 				if (elapsed > ttl) {
-					this.sessions.delete(id);
 					expiredIds.push(id);
 				}
 			} catch (error) {
@@ -295,6 +315,33 @@ export class SessionManager implements ISessionManager {
 					logger: "SessionManager",
 				});
 			}
+		}
+
+		for (const sessionId of expiredIds) {
+			try {
+				const result = this.onSessionExpired?.(sessionId);
+				if (result && typeof (result as Promise<void>).catch === "function") {
+					(result as Promise<void>).catch((error: unknown) => {
+						const err =
+							error instanceof Error ? error : new Error(String(error));
+						this.logger.sendLog({
+							data: `Error running expiration handler for ${sessionId}: ${err.message}`,
+							level: "error",
+							logger: "SessionManager",
+						});
+					});
+				}
+			} catch (error) {
+				const err = error instanceof Error ? error : new Error(String(error));
+				this.logger.sendLog({
+					data: `Error running expiration handler for ${sessionId}: ${err.message}`,
+					level: "error",
+					logger: "SessionManager",
+				});
+			}
+
+			// Ensure the session is removed from tracking even if handler fails
+			this.sessions.delete(sessionId);
 		}
 
 		if (expiredIds.length > 0) {
