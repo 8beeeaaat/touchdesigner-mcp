@@ -154,6 +154,7 @@ describe("SessionManager", () => {
 			vi.useFakeTimers();
 
 			const config: SessionConfig = {
+				cleanupInterval: 100,
 				enabled: true,
 				ttl: 1000,
 			};
@@ -167,8 +168,8 @@ describe("SessionManager", () => {
 			// Advance time beyond TTL
 			vi.advanceTimersByTime(1001);
 
-			// Trigger cleanup interval (default is TTL/2 = 500ms)
-			vi.advanceTimersByTime(500);
+			// Trigger cleanup interval (configured to 100ms)
+			vi.advanceTimersByTime(100);
 
 			// Session should be cleaned up
 			expect(sessionManager.list()).toHaveLength(0);
@@ -347,19 +348,20 @@ describe("SessionManager", () => {
 			expect(secondCallCount).toBe(firstCallCount);
 		});
 
-		test("should not start cleanup if TTL not configured", () => {
+		test("should apply default TTL when not specified", () => {
+			vi.useFakeTimers();
+
 			const config: SessionConfig = {
 				enabled: true,
-				// No TTL
+				// No TTL specified so default should apply
 			};
 			sessionManager = new SessionManager(config, mockLogger);
 
 			sessionManager.startTTLCleanup();
 
-			// Should not log cleanup start
-			expect(mockLogger.sendLog).not.toHaveBeenCalledWith(
+			expect(mockLogger.sendLog).toHaveBeenCalledWith(
 				expect.objectContaining({
-					data: expect.stringContaining("Starting TTL cleanup"),
+					data: expect.stringContaining("Starting TTL cleanup (interval: 300000ms, TTL: 3600000ms)"),
 				}),
 			);
 		});
@@ -487,10 +489,10 @@ describe("SessionManager", () => {
 
 			sessionManager.startTTLCleanup();
 
-			// Default cleanup interval should be TTL/2 = 500ms
+			// Default cleanup interval should fall back to 5 minutes (300000ms)
 			expect(mockLogger.sendLog).toHaveBeenCalledWith(
 				expect.objectContaining({
-					data: expect.stringContaining("interval: 500ms"),
+					data: expect.stringContaining("interval: 300000ms"),
 				}),
 			);
 		});
