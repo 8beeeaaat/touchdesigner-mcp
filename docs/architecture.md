@@ -86,7 +86,100 @@ flowchart TB
     class D1,D2,D3,D4 td
 ```
 
-#### Connection Modes
+### Connection Modes Comparison
+
+#### Stdio Mode Architecture
+
+```mermaid
+flowchart LR
+    subgraph Client ["Claude Desktop"]
+        C1["MCP Client"]
+    end
+
+    subgraph Server ["MCP Server Process"]
+        S1["StdioServerTransport<br/>(stdin/stdout)"]
+        S2["TouchDesignerServer"]
+        S3["TouchDesignerClient<br/>(HTTP)"]
+    end
+
+    subgraph TD ["TouchDesigner"]
+        T1["WebServer DAT<br/>:9981"]
+    end
+
+    C1 <-->|"stdio<br/>(single connection)"| S1
+    S1 --> S2
+    S2 --> S3
+    S3 <-->|"HTTP API"| T1
+
+    classDef client fill:#d8e8ff,stroke:#1f6feb,stroke-width:2px
+    classDef server fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    classDef td fill:#d7f5e3,stroke:#2f9e44,stroke-width:2px
+
+    class C1 client
+    class S1,S2,S3 server
+    class T1 td
+```
+
+**Key Characteristics**:
+
+- **Single Process**: 1 MCP server process = 1 client connection
+- **Standard I/O**: Communication via stdin/stdout pipes
+- **No Session Management**: Direct 1:1 connection
+- **Local Only**: Cannot accept remote connections
+
+#### Streamable HTTP Mode Architecture
+
+```mermaid
+flowchart TB
+    subgraph Clients ["Multiple AI Agents"]
+        C1["Claude Code"]
+        C2["MCP Inspector"]
+        C3["Web Browser"]
+    end
+
+    subgraph Server ["MCP Server Process"]
+        direction TB
+        S1["ExpressHttpManager<br/>:6280"]
+        S2["SessionManager<br/>(TTL cleanup)"]
+        S3["StreamableHTTPServerTransport<br/>(MCP SDK)"]
+        S4["TouchDesignerServer"]
+        S5["TouchDesignerClient<br/>(HTTP)"]
+
+        S1 --> S2
+        S1 --> S3
+        S3 --> S4
+        S4 --> S5
+    end
+
+    subgraph TD ["TouchDesigner"]
+        T1["WebServer DAT<br/>:9981"]
+    end
+
+    C1 -->|"HTTP/SSE<br/>Session 1"| S1
+    C2 -->|"HTTP/SSE<br/>Session 2"| S1
+    C3 -->|"HTTP/SSE<br/>Session 3"| S1
+
+    S5 <-->|"HTTP API"| T1
+
+    classDef client fill:#d8e8ff,stroke:#1f6feb,stroke-width:2px
+    classDef server fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    classDef td fill:#d7f5e3,stroke:#2f9e44,stroke-width:2px
+
+    class C1,C2,C3 client
+    class S1,S2,S3,S4,S5 server
+    class T1 td
+```
+
+**Key Characteristics**:
+
+- **Multi-Session**: Single MCP server process handles multiple concurrent clients
+- **HTTP/SSE**: RESTful API + Server-Sent Events for streaming
+- **Session Management**: TTL-based automatic cleanup
+- **Network Accessible**: Can accept remote connections
+
+**Current Limitation**: The current implementation has a bug where multiple sessions cannot initialize simultaneously due to a shared `StreamableHTTPServerTransport` instance. This is a known issue that needs to be resolved for proper multi-session support.
+
+#### Architecture Layers
 
 **Stdio Mode**
 
@@ -145,13 +238,6 @@ flowchart LR
     class S2 core
     class W2,P2 td
 ```
-
-### Architecture Layers
-
-1. **AI Agent Layer**: MCP clients (Claude, Codex, etc.)
-2. **Transport Layer**: Handles MCP protocol communication (Stdio/HTTP)
-3. **Core Layer**: MCP server business logic and TouchDesigner client
-4. **TouchDesigner Integration Layer**: Python WebServer and node operations within TouchDesigner
 
 ---
 
@@ -949,6 +1035,76 @@ npm run gen:handlers   # Python handlers generation
 npm run gen:mcp        # TypeScript client + Zod schemas
 npm run gen            # Run all generation steps
 ```
+
+---
+
+## Known Issues and Limitations
+
+### Multiple Session Support (HTTP Mode)
+
+**Issue**: The current HTTP transport implementation cannot handle multiple concurrent client sessions.
+
+**Symptoms**:
+
+```bash
+# First client (Claude Code)
+$ claude mcp list
+touchdesigner-http: http://localhost:6280/mcp (HTTP) - ✓ Connected
+
+# Second client (MCP Inspector)
+Error from MCP server: StreamableHTTPError: Streamable HTTP error:
+Error POSTing to endpoint: {"jsonrpc":"2.0","error":{"code":-32600,
+"message":"Invalid Request: Server already initialized"},"id":null}
+```
+
+**Root Cause**:
+
+The current implementation creates a single `StreamableHTTPServerTransport` instance that is shared across all HTTP requests. When a second client attempts to initialize a session, the transport's `initialize()` method is called again, which throws "Server already initialized" error.
+
+```typescript
+// Current problematic implementation (src/transport/factory.ts)
+const transport = new StreamableHTTPServerTransport(
+  this.config.endpoint,
+  sessionManager
+);
+
+// Single transport instance handles ALL sessions
+// When session 2 calls initialize(), it fails because session 1 already initialized
+```
+
+**Expected Behavior**:
+
+Each client session should have its own isolated MCP protocol state while sharing the same HTTP server endpoint.
+
+**Impact**:
+
+- Only one client can connect at a time in HTTP mode
+- Subsequent connection attempts fail with "Server already initialized" error
+- SessionManager correctly tracks multiple sessions, but transport layer blocks them
+
+**Workaround**:
+
+Currently, only one client can be connected at a time. To switch clients:
+
+1. Disconnect the first client
+2. Wait for session cleanup (or manually cleanup)
+3. Connect the second client
+
+**Proposed Solution**:
+
+Investigate MCP SDK's session handling for `StreamableHTTPServerTransport`. The SDK may provide:
+
+1. Per-session transport isolation
+2. Session lifecycle callbacks for creating/destroying transport instances
+3. Multiplexing support for single transport instance
+
+Further investigation of MCP SDK documentation and source code is needed to determine the correct implementation pattern for multi-session support.
+
+**Related Files**:
+
+- [src/transport/factory.ts](../src/transport/factory.ts) - Transport creation logic
+- [src/transport/expressHttpManager.ts](../src/transport/expressHttpManager.ts) - HTTP request handling
+- [src/transport/sessionManager.ts](../src/transport/sessionManager.ts) - Session tracking (working correctly)
 
 ---
 
