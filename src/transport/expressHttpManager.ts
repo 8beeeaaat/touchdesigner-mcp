@@ -119,7 +119,19 @@ export class ExpressHttpManager {
 
 			// Configure /health endpoint
 			app.get("/health", (_req, res) => {
-				const sessionCount = this.sessionManager?.getActiveSessionCount() ?? 0;
+				// Explicitly check for null sessionManager - in HTTP mode this would indicate
+				// a configuration error since session management should always be available
+				if (!this.sessionManager) {
+					res.status(500).json({
+						message:
+							"Session manager is not configured. This is a configuration error in HTTP mode.",
+						sessions: null,
+						status: "error",
+						timestamp: new Date().toISOString(),
+					});
+					return;
+				}
+				const sessionCount = this.sessionManager.getActiveSessionCount();
 
 				res.json({
 					sessions: sessionCount,

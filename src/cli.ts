@@ -66,7 +66,14 @@ export function parseTransportConfig(args?: string[]): TransportConfig {
 	);
 
 	if (httpPortArg) {
-		const port = Number.parseInt(httpPortArg.split("=")[1], 10);
+		const portStr = httpPortArg.split("=")[1];
+		const port = Number.parseInt(portStr, 10);
+		if (Number.isNaN(port) || port < 1 || port > 65535) {
+			console.error(
+				`Invalid value for --mcp-http-port: "${portStr}". Please specify a valid port number (1-65535).`,
+			);
+			process.exit(1);
+		}
 		const hostArg = argsToProcess.find((arg) =>
 			arg.startsWith("--mcp-http-host="),
 		);
@@ -214,13 +221,24 @@ export async function startServer(params?: {
 			return;
 		}
 
-		throw new Error(
-			`Unsupported transport type: ${(transportConfig as TransportConfig).type}`,
-		);
+		// Type-safe exhaustive check using never type
+		// This ensures all cases of the TransportConfig discriminated union are handled
+		// If a new transport type is added, TypeScript will error at compile time
+		assertNever(transportConfig);
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
 		throw new Error(`Failed to initialize server: ${errorMessage}`);
 	}
+}
+
+/**
+ * Helper function for exhaustive type checking
+ * TypeScript will error if called with a non-never type, ensuring all cases are handled
+ */
+function assertNever(value: never): never {
+	throw new Error(
+		`Unsupported transport type: ${(value as { type: string }).type}`,
+	);
 }
 
 // Start server if this file is executed directly
