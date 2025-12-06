@@ -12,6 +12,7 @@
 		"ignoreUnknown": false,
 		"includes": [
 			"**",
+			"tests/**/*",
 			"!**/public",
 			"!**/*.json",
 			"!**/dist/**/*",
@@ -33,6 +34,9 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
+			"complexity": {
+				"noStaticOnlyClass": "off"
+			},
 			"recommended": true,
 			"style": {
 				"noInferrableTypes": "error",

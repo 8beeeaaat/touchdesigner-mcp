@@ -16,6 +16,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Use a command that keeps the container running but doesn't start the MCP server
-# This allows us to use `docker-compose exec` to start the server on demand
-CMD ["tail", "-f", "/dev/null"]
+# Prepare startup helper for stdio/http selection
+RUN chmod +x docker/start.sh
+
+CMD ["./docker/start.sh"]

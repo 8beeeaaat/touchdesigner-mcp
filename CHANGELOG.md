@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-12-07
+
+### Added
+
+- **Streamable HTTP transport**: Added the [streamable-http](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http) mode with SSE real-time responses and session reuse via the `mcp-session-id` header. Host/port/endpoint can be configured via CLI or environment variables. `TransportRegistry` and `SessionManager` manage multi-session lifecycles. ([#131](https://github.com/8beeeaaat/touchdesigner-mcp/pull/131), [#133](https://github.com/8beeeaaat/touchdesigner-mcp/pull/133))
+- **Comprehensive documentation expansion**: Added new English and Japanese docs (architecture overview, installation guides, developer guide) to clarify the full setup-to-operations workflow. ([#134](https://github.com/8beeeaaat/touchdesigner-mcp/pull/134))
+
+### Changed
+
+- Restructured README and installation guides; separated and simplified configuration examples for each AI client and HTTP mode steps. ([#134](https://github.com/8beeeaaat/touchdesigner-mcp/pull/134))
+
+### Fixed
+
+- Revised docker-compose `MCP_HTTP_HOST`/port exposure: loopback-only by default for HTTP mode while binding to `0.0.0.0` inside the container. ([#135](https://github.com/8beeeaaat/touchdesigner-mcp/pull/135))
+- Ensured default TTL and cleanup interval are applied in `SessionManager` so sessions expire correctly even when configuration is omitted. ([#137](https://github.com/8beeeaaat/touchdesigner-mcp/pull/137))
+
+### Technical
+
+- Added HTTP transport config validation, Express management layer, factory, and session management logic; unit/integration tests cover SSE streaming and session lifecycle. ([#131](https://github.com/8beeeaaat/touchdesigner-mcp/pull/131), [#133](https://github.com/8beeeaaat/touchdesigner-mcp/pull/133))
+- Updated MCP bundle/server configuration and dependencies for HTTP mode; aligned release workflow with the latest transport setup. ([#131](https://github.com/8beeeaaat/touchdesigner-mcp/pull/131))
+
 ## [1.3.1] - 2025-12-06
 
 ### Added

@@ -9,6 +9,13 @@ services:
     ports:
       - "6274:6274" # MCP inspector
       - "6277:6277" # MCP inspector proxy
+      - "127.0.0.1:${MCP_HTTP_PORT:-6280}:${MCP_HTTP_PORT:-6280}" # Streamable HTTP (optional, loopback-only by default)
     stdin_open: true
     tty: true
     restart: unless-stopped
+    environment:
+      - TRANSPORT=${TRANSPORT:-manual}
+      - MCP_HTTP_PORT=${MCP_HTTP_PORT:-6280}
+      - MCP_HTTP_HOST=${MCP_HTTP_HOST:-0.0.0.0}
+      - TD_HOST=${TD_HOST:-http://host.docker.internal}
+      - TD_PORT=${TD_PORT:-9981}
