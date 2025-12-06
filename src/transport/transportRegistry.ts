@@ -74,6 +74,34 @@ export class TransportRegistry {
 		this.config = config;
 		this.sessionManager = sessionManager;
 		this.logger = logger;
+
+		if (this.sessionManager) {
+			this.sessionManager.setExpirationHandler(async (sessionId: string) => {
+				const entry = this.sessions.get(sessionId);
+				if (!entry) {
+					return;
+				}
+
+				this.logger.sendLog({
+					data: `Expiring session via TTL: ${sessionId}`,
+					level: "info",
+					logger: "TransportRegistry",
+				});
+
+				try {
+					await entry.transport.close();
+				} catch (error) {
+					const err = error instanceof Error ? error : new Error(String(error));
+					this.logger.sendLog({
+						data: `Error closing expired session ${sessionId}: ${err.message}`,
+						level: "error",
+						logger: "TransportRegistry",
+					});
+				} finally {
+					this.remove(sessionId);
+				}
+			});
+		}
 	}
 
 	/**
