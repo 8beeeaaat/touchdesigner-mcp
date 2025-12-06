@@ -66,7 +66,14 @@ export function parseTransportConfig(args?: string[]): TransportConfig {
 	);
 
 	if (httpPortArg) {
-		const port = Number.parseInt(httpPortArg.split("=")[1], 10);
+		const portStr = httpPortArg.split("=")[1];
+		const port = Number.parseInt(portStr, 10);
+		if (Number.isNaN(port) || port < 1 || port > 65535) {
+			console.error(
+				`Invalid value for --mcp-http-port: "${portStr}". Please specify a valid port number (1-65535).`,
+			);
+			process.exit(1);
+		}
 		const hostArg = argsToProcess.find((arg) =>
 			arg.startsWith("--mcp-http-host="),
 		);
@@ -214,8 +221,11 @@ export async function startServer(params?: {
 			return;
 		}
 
+		// Type-safe exhaustive check using never type
+		// This ensures all cases of the TransportConfig discriminated union are handled
+		const exhaustiveCheck: never = transportConfig;
 		throw new Error(
-			`Unsupported transport type: ${(transportConfig as TransportConfig).type}`,
+			`Unsupported transport type: ${(exhaustiveCheck as TransportConfig).type}`,
 		);
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);

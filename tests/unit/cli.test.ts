@@ -100,6 +100,63 @@ describe("CLI", () => {
 				expect(config.host).toBe("localhost");
 			}
 		});
+
+		it("should exit with error for non-numeric port value", () => {
+			const mockExit = vi
+				.spyOn(process, "exit")
+				.mockImplementation(() => undefined as never);
+			const mockConsoleError = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {});
+
+			parseTransportConfig(["--mcp-http-port=abc"]);
+
+			expect(mockConsoleError).toHaveBeenCalledWith(
+				expect.stringContaining('Invalid value for --mcp-http-port: "abc"'),
+			);
+			expect(mockExit).toHaveBeenCalledWith(1);
+
+			mockExit.mockRestore();
+			mockConsoleError.mockRestore();
+		});
+
+		it("should exit with error for port number below valid range", () => {
+			const mockExit = vi
+				.spyOn(process, "exit")
+				.mockImplementation(() => undefined as never);
+			const mockConsoleError = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {});
+
+			parseTransportConfig(["--mcp-http-port=0"]);
+
+			expect(mockConsoleError).toHaveBeenCalledWith(
+				expect.stringContaining('Invalid value for --mcp-http-port: "0"'),
+			);
+			expect(mockExit).toHaveBeenCalledWith(1);
+
+			mockExit.mockRestore();
+			mockConsoleError.mockRestore();
+		});
+
+		it("should exit with error for port number above valid range", () => {
+			const mockExit = vi
+				.spyOn(process, "exit")
+				.mockImplementation(() => undefined as never);
+			const mockConsoleError = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {});
+
+			parseTransportConfig(["--mcp-http-port=70000"]);
+
+			expect(mockConsoleError).toHaveBeenCalledWith(
+				expect.stringContaining('Invalid value for --mcp-http-port: "70000"'),
+			);
+			expect(mockExit).toHaveBeenCalledWith(1);
+
+			mockExit.mockRestore();
+			mockConsoleError.mockRestore();
+		});
 	});
 
 	describe("startServer functionality", () => {

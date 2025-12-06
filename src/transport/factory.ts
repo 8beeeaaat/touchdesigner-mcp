@@ -21,6 +21,16 @@ import { TransportConfigValidator } from "./validator.js";
  * It validates configuration and creates the appropriate transport type (stdio or HTTP).
  */
 export class TransportFactory {
+	/**
+	 * Reset the internal state of a StreamableHTTPServerTransport instance
+	 *
+	 * WARNING: This method manipulates the private field '_initialized' using Reflect.set().
+	 * This is fragile and may break if the MCP SDK implementation changes.
+	 * There is currently no public API to reset the initialized state, so this is required
+	 * to ensure the transport can be reused safely after a session is closed.
+	 * If the SDK adds a public reset/init method, use that instead.
+	 * If the SDK changes the field name or its semantics, update this code accordingly.
+	 */
 	private static resetStreamableHttpState(
 		transport: StreamableHTTPServerTransport,
 	): void {
@@ -184,6 +194,21 @@ export class TransportFactory {
 					: undefined,
 			});
 
+			// Override the transport's close method to handle session cleanup scenarios.
+			//
+			// Why suppressCloseEvent is necessary:
+			// When a session is explicitly closed (via DELETE request), the SDK calls onsessionclosed
+			// which triggers our handleSessionClosed callback. We need to reset the transport state
+			// without triggering the onclose callback, which would signal a transport-level disconnection.
+			//
+			// Scenarios that trigger this code path:
+			// 1. Client sends DELETE request to close session → onsessionclosed fires → suppressCloseEvent = true
+			// 2. Session TTL expires → cleanup triggers close → suppressCloseEvent = true
+			//
+			// Relationship between suppressCloseEvent and handleSessionClosed:
+			// - handleSessionClosed sets suppressCloseEvent = true to indicate a session-level (not transport-level) close
+			// - When close() is called with suppressCloseEvent = true, we temporarily remove onclose callback
+			// - This prevents the MCP server from treating session cleanup as a transport disconnection
 			const originalClose = transport.close.bind(transport);
 			transport.close = (async () => {
 				if (suppressCloseEvent) {

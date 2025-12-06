@@ -13,9 +13,11 @@ function createMockSessionManager(activeSessions = 0): ISessionManager & {
 } {
 	return {
 		cleanup: vi.fn(),
+		clearAll: vi.fn(),
 		create: vi.fn(),
 		getActiveSessionCount: vi.fn<number, []>().mockReturnValue(activeSessions),
 		list: vi.fn().mockReturnValue([]),
+		register: vi.fn(),
 		startTTLCleanup: vi.fn(),
 		stopTTLCleanup: vi.fn(),
 	};
@@ -215,7 +217,7 @@ describe("ExpressHttpManager", () => {
 	it("should fail on double start attempts", async () => {
 		logger = createMockLogger();
 		sessionManager = createMockSessionManager();
-		createManager(getTestPort());
+		const { config } = createManager(getTestPort());
 
 		const first = await manager?.start();
 		expect(first.success).toBe(true);
@@ -225,5 +227,13 @@ describe("ExpressHttpManager", () => {
 		expect(second.error?.message).toContain(
 			"Express HTTP server is already running",
 		);
+
+		// Verify the first server instance is still running and functional
+		// after the failed second start attempt
+		expect(manager?.isRunning()).toBe(true);
+		const healthResponse = await fetch(
+			`http://${config.host}:${config.port}/health`,
+		);
+		expect(healthResponse.status).toBe(200);
 	});
 });

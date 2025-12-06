@@ -7,7 +7,14 @@ import { TransportFactory } from "../../src/transport/factory.js";
 import { SessionManager } from "../../src/transport/sessionManager.js";
 
 describe("HTTP Transport Integration", () => {
-	const testPort = 3302;
+	// Use a port range starting at 3302 to avoid conflicts with unit tests (3100+)
+	// and other common services. Each test run uses a new port.
+	let nextIntegrationPort = 3302;
+	function getIntegrationTestPort(): number {
+		return nextIntegrationPort++;
+	}
+
+	const testPort = getIntegrationTestPort();
 	const baseUrl = `http://127.0.0.1:${testPort}`;
 	let server: TouchDesignerServer;
 	let transport: Transport;
