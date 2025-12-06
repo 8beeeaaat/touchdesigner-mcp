@@ -19,6 +19,12 @@ import { TransportConfigValidator } from "./validator.js";
  * It validates configuration and creates the appropriate transport type (stdio or HTTP).
  */
 export class TransportFactory {
+	private static resetStreamableHttpState(
+		transport: StreamableHTTPServerTransport,
+	): void {
+		transport.sessionId = undefined;
+		Reflect.set(transport, "_initialized", false);
+	}
 	/**
 	 * Create a transport instance from configuration
 	 *
@@ -104,19 +110,26 @@ export class TransportFactory {
 		config: StreamableHttpTransportConfig,
 	): Result<Transport, Error> {
 		try {
+			let transport: StreamableHTTPServerTransport | null = null;
+			let suppressCloseEvent = false;
+			const handleSessionClosed = config.sessionConfig?.enabled
+				? (sessionId: string) => {
+						console.log(`Session closed: ${sessionId}`);
+						suppressCloseEvent = true;
+						if (transport) {
+							TransportFactory.resetStreamableHttpState(transport);
+						}
+					}
+				: undefined;
 			// Create transport with session management only
 			// Security (DNS rebinding protection) is handled by Express middleware
-			const transport = new StreamableHTTPServerTransport({
+			transport = new StreamableHTTPServerTransport({
 				// Enable JSON responses for simple request/response scenarios
 				enableJsonResponse: false,
 
 				// Session close callback
 				// This is called when a session is terminated via DELETE request
-				onsessionclosed: config.sessionConfig?.enabled
-					? (sessionId: string) => {
-							console.log(`Session closed: ${sessionId}`);
-						}
-					: undefined,
+				onsessionclosed: handleSessionClosed,
 
 				// Session initialization callback
 				// This is called when a new session is created
@@ -134,6 +147,22 @@ export class TransportFactory {
 					? () => randomUUID()
 					: undefined,
 			});
+
+			const originalClose = transport.close.bind(transport);
+			transport.close = (async () => {
+				if (suppressCloseEvent) {
+					const previousOnClose = transport?.onclose;
+					transport.onclose = undefined;
+					try {
+						await originalClose();
+					} finally {
+						transport.onclose = previousOnClose;
+						suppressCloseEvent = false;
+					}
+					return;
+				}
+				await originalClose();
+			}) as typeof transport.close;
 
 			return createSuccessResult(transport);
 		} catch (error) {

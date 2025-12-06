@@ -64,7 +64,7 @@ The following design decisions were confirmed:
 4. **Error Log Level**: `error` level for all errors (maximum visibility)
 5. **Environment Variables**: Maintain existing `TD_WEB_SERVER_HOST/PORT` pattern
 6. **Graceful Shutdown**: Full implementation with transport cleanup
-7. **Development Tools**: `npm run dev:http` script for easy testing
+7. **Development Tools**: `npm run http` script for easy testing
 8. **Type Safety**: Zod runtime validation for all configuration
 
 ---
@@ -940,8 +940,7 @@ curl http://localhost:3000/health
 ## Development Commands
 
 ### HTTP Transport Mode
-- `npm run dev:http` - Start MCP server in HTTP mode with inspector
-- `npm run test:http` - Run HTTP transport integration tests
+- `npm run http` - Start MCP server in HTTP mode with inspector
 
 ### Architecture
 The server now supports multiple transports through a factory pattern:
@@ -957,8 +956,7 @@ See `docs/architecture/transport-layer.md` for detailed architecture.
 ```json
 {
   "scripts": {
-    "dev:http": "npm run build && node dist/cli.js --mcp-http-port=3000 --mcp-http-host=127.0.0.1",
-    "test:http": "vitest run tests/integration/httpTransport.test.ts"
+    "http": "npm run build && node dist/cli.js --mcp-http-port=3000 --mcp-http-host=127.0.0.1",
   }
 }
 ```
@@ -1224,7 +1222,7 @@ describe('HTTP Transport Integration', () => {
 #!/bin/bash
 
 echo "Starting TouchDesigner MCP Server in HTTP mode..."
-npm run dev:http &
+npm run http &
 SERVER_PID=$!
 
 sleep 2

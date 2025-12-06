@@ -211,6 +211,61 @@ docker-compose up -d
 
 </details>
 
+## HTTP Transport モード
+
+TouchDesigner MCP Serverは、リモートクライアントやWeb統合向けにHTTPトランスポートも提供しています。
+
+### HTTPモードで起動
+
+```bash
+touchdesigner-mcp-server \
+  --mcp-http-port=3000 \
+  --mcp-http-host=127.0.0.1 \
+  --host=http://127.0.0.1 \
+  --port=9981
+```
+
+### 設定オプション
+
+| オプション | 説明 | デフォルト |
+| --- | --- | --- |
+| `--mcp-http-port` | HTTPサーバーポート（HTTPモード必須） | - |
+| `--mcp-http-host` | バインドアドレス | `127.0.0.1` |
+| `--host` | TouchDesigner WebServerのホスト | `http://127.0.0.1` |
+| `--port` | TouchDesigner WebServerのポート | `9981` |
+
+### ヘルスチェックエンドポイント
+
+```bash
+curl http://localhost:3000/health
+```
+
+期待されるレスポンス:
+
+```json
+{
+  "status": "healthy",
+  "sessions": 0
+}
+```
+
+### stdioモードとの違い
+
+| 項目 | stdioモード | HTTPモード |
+| --- | --- | --- |
+| 接続方式 | 標準入出力 | HTTP/SSE |
+| 用途 | ローカルCLI/デスクトップツール | リモートエージェント、ブラウザ連携 |
+| セッション管理 | 単一接続 | TTL付き複数セッション |
+| ポート必要性 | 不要 | 必須 |
+
+### 開発
+
+```bash
+# MCP Inspector付きでHTTPモード起動
+# 127.0.0.1:3000/mcp
+npm run http
+```
+
 ## 接続確認
 
 MCPサーバーが認識されていればセットアップは完了です。

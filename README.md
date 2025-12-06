@@ -211,6 +211,61 @@ The MCP bundle will automatically handle the connection to the TouchDesigner ser
 
 </details>
 
+## HTTP Transport Mode
+
+TouchDesigner MCP Server also exposes an HTTP transport for remote clients and browser-based integrations.
+
+### Starting in HTTP Mode
+
+```bash
+touchdesigner-mcp-server \
+  --mcp-http-port=3000 \
+  --mcp-http-host=127.0.0.1 \
+  --host=http://127.0.0.1 \
+  --port=9981
+```
+
+### Configuration Options
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `--mcp-http-port` | HTTP server port (required for HTTP mode) | - |
+| `--mcp-http-host` | Bind address | `127.0.0.1` |
+| `--host` | TouchDesigner WebServer host | `http://127.0.0.1` |
+| `--port` | TouchDesigner WebServer port | `9981` |
+
+### Health Check Endpoint
+
+```bash
+curl http://localhost:3000/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "healthy",
+  "sessions": 0
+}
+```
+
+### Difference from stdio Mode
+
+| Feature | stdio Mode | HTTP Mode |
+| --- | --- | --- |
+| Connection | Standard I/O | HTTP/SSE |
+| Use Case | Local CLI / desktop tools | Remote agents, browser integrations |
+| Session Management | Single connection | Multi-session with TTL |
+| Port Required | No | Yes |
+
+### Development
+
+```bash
+# Start HTTP server together with MCP Inspector
+# 127.0.0.1:3000/mcp
+npm run http
+```
+
 ## Verify Connection
 
 If the MCP server is recognized, the setup is complete.

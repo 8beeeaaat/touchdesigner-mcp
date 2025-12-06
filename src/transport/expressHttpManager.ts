@@ -1,6 +1,7 @@
 import type { Server as HttpServer } from "node:http";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import type { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import type { RequestHandler } from "express";
 import type { ILogger } from "../core/logger.js";
 import type { Result } from "../core/result.js";
 import { createErrorResult, createSuccessResult } from "../core/result.js";
@@ -79,14 +80,19 @@ export class ExpressHttpManager {
 	 */
 	async start(): Promise<Result<void, Error>> {
 		try {
+			if (this.server?.listening) {
+				return createErrorResult(
+					new Error("Express HTTP server is already running"),
+				);
+			}
+
 			// Create Express app using SDK's factory
 			// This automatically includes DNS rebinding protection for localhost
 			const app = createMcpExpressApp({
 				host: this.config.host,
 			});
 
-			// Configure /mcp endpoint - delegate to transport
-			app.post(this.config.endpoint, async (req, res) => {
+			const handleMcpRequest: RequestHandler = async (req, res) => {
 				try {
 					await this.transport.handleRequest(req, res, req.body);
 				} catch (error) {
@@ -104,7 +110,12 @@ export class ExpressHttpManager {
 						});
 					}
 				}
-			});
+			};
+
+			// Configure /mcp endpoints (POST for JSON-RPC, GET for SSE, DELETE for session close)
+			app.post(this.config.endpoint, handleMcpRequest);
+			app.get(this.config.endpoint, handleMcpRequest);
+			app.delete(this.config.endpoint, handleMcpRequest);
 
 			// Configure /health endpoint
 			app.get("/health", (_req, res) => {
