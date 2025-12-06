@@ -51,23 +51,10 @@ flowchart LR
 
 ## Installation
 
-For complete installation instructions across all AI agents and transports, read the
-**[Installation Guide](docs/installation.md)**. It consolidates everything for Claude Desktop,
-Claude Code, Codex, stdio/HTTP transports, Docker deployments, and developer setups in one
-place, including verification and troubleshooting steps.
-
-### Quick Start (Claude Desktop)
-
-1. Download [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip)
-   and [touchdesigner-mcp.mcpb](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp.mcpb).
-2. Extract the ZIP contents and import `mcp_webserver_base.tox` into your TouchDesigner project
-   (recommended path: `/project1/mcp_webserver_base`).
-3. Double-click `touchdesigner-mcp.mcpb` to install the MCP bundle in Claude Desktop. Restart
-   Claude Desktop if the MCP server list does not refresh automatically. The bundle then
-   handles the TouchDesigner connection automatically once the component is running.
-
-Need Claude Code, Codex, npm-based stdio, Docker, or HTTP mode? Follow the per-agent
-instructions in the [Installation Guide](docs/installation.md).
+For installation instructions covering Claude Desktop, Claude Code, Codex, stdio/HTTP transports,
+Docker, and developer workflows, read the **[Installation Guide](docs/installation.md)**. The guide
+includes the required TouchDesigner preparation, per-agent setup, verification steps, and
+troubleshooting tips.
 
 ## MCP Server Features
 

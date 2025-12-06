@@ -15,12 +15,12 @@ component is running.
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
+- [TouchDesigner Setup (Required for All Methods)](#touchdesigner-setup-required-for-all-methods)
 - [MCP Server Installation Methods](#mcp-server-installation-methods)
   - [Method 1: MCP Bundle (Claude Desktop only)](#method-1-mcp-bundle-claude-desktop-only)
   - [Method 2: NPM Package (Claude Code, Codex, and other MCP clients)](#method-2-npm-package-claude-code-codex-and-other-mcp-clients)
   - [Method 3: Docker Container](#method-3-docker-container)
 - [HTTP Transport Mode](#http-transport-mode)
-- [TouchDesigner Setup (Required for All Methods)](#touchdesigner-setup-required-for-all-methods)
 - [Verification](#verification)
 - [Troubleshooting](#troubleshooting)
 - [Developer Setup](#developer-setup)
@@ -31,11 +31,40 @@ component is running.
 - For NPM-based installations: **Node.js** 18.x or later _(not required when you only use Claude Desktop with the MCP bundle)_
 - For Docker-based installations: **Docker** and **Docker Compose**
 
+## TouchDesigner Setup (Required for All Methods)
+
+**This step is required regardless of which installation method you choose.**
+
+1. Download [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) from the latest release
+2. Extract the ZIP file
+3. Import `mcp_webserver_base.tox` into your TouchDesigner project
+4. Place it at `/project1/mcp_webserver_base` (or your preferred location)
+
+<https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
+
+**⚠️ Critical**: Do not delete or modify the directory structure. The `mcp_webserver_base.tox` component uses relative paths to locate the `modules/` directory.
+
+**Directory Structure**:
+
+```text
+touchdesigner-mcp-td/
+├── import_modules.py          # Module loader
+├── mcp_webserver_base.tox     # Main component
+└── modules/                   # Python modules
+    ├── mcp/                   # Core MCP logic
+    ├── utils/                 # Utilities
+    └── td_server/             # API server code
+```
+
+You can verify successful setup by checking the Textport (Alt+T or Dialogs → Textport):
+
+![Textport](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
+
 ## MCP Server Installation Methods
 
 Choose one of the following installation methods based on your AI agent and preferences.
-Regardless of the method, you must also prepare your TouchDesigner project (see
-[TouchDesigner Setup](#touchdesigner-setup-required-for-all-methods)).
+They all assume your TouchDesigner project already contains the imported
+`mcp_webserver_base.tox` component from the previous section.
 
 ### Method 1: MCP Bundle (Claude Desktop only)
 
@@ -50,18 +79,8 @@ Download the following from the [latest release](https://github.com/8beeeaaat/to
 
 #### Installation Steps
 
-1. **Set up TouchDesigner Components**
-   - Extract `touchdesigner-mcp-td.zip`
-   - Import `mcp_webserver_base.tox` into your TouchDesigner project
-   - Place it at `/project1/mcp_webserver_base`
-
-   <https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
-
-   **⚠️ Important**: The directory structure MUST be preserved exactly as extracted. The `mcp_webserver_base.tox` component references relative paths to the `modules/` directory.
-
-   You can verify the startup by opening the Textport from the TouchDesigner menu:
-
-   ![Textport](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
+1. **Prepare TouchDesigner**
+   - Complete the [TouchDesigner Setup](#touchdesigner-setup-required-for-all-methods) once per project (import `mcp_webserver_base.tox`, keep the folder layout intact, verify via Textport).
 
 2. **Install the MCP Bundle**
    - Double-click the `touchdesigner-mcp.mcpb` file to install it in Claude Desktop
@@ -82,6 +101,8 @@ Download the following from the [latest release](https://github.com/8beeeaaat/to
 - Node.js 18.x or later installed
 - TouchDesigner components set up (see [TouchDesigner Setup](#touchdesigner-setup-required-for-all-methods))
 
+Once those prerequisites are in place, add the MCP server to your client using one of the following configurations.
+
 #### For Claude Desktop
 
 Edit your `claude_desktop_config.json`:
@@ -97,24 +118,7 @@ Edit your `claude_desktop_config.json`:
 }
 ```
 
-**Customization**: You can customize the TouchDesigner server connection:
-
-```json
-{
-  "mcpServers": {
-    "touchdesigner": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "touchdesigner-mcp-server@latest",
-        "--stdio",
-        "--host=http://127.0.0.1",
-        "--port=9981"
-      ]
-    }
-  }
-}
-```
+*Optional: Add `--host` / `--port` arguments if TouchDesigner is not running on the defaults (`http://127.0.0.1:9981`).*
 
 #### For Claude Code
 
@@ -162,6 +166,8 @@ Any MCP-compatible client can use the NPM package via stdio transport:
 - **Command**: `npx`
 - **Args**: `["-y", "touchdesigner-mcp-server@latest", "--stdio"]`
 - **Optional Args**: `--host=<url>`, `--port=<number>`
+
+Add the optional flags only when TouchDesigner is not running on `http://127.0.0.1:9981`.
 
 ### Method 3: Docker Container
 
@@ -264,8 +270,9 @@ Choose a transport configuration:
 ## HTTP Transport Mode
 
 TouchDesigner MCP Server can run as an HTTP endpoint for remote clients, browser-based
-integrations, or when you prefer not to rely on stdio. This mode can be started directly
-from the Node.js CLI or from the Docker container.
+integrations, or when you prefer not to rely on stdio. Treat this section as optional—only
+follow it if you need HTTP/SSE access instead of stdio. You can start HTTP mode directly
+from the Node.js CLI or inside the Docker container.
 
 ### Starting in HTTP Mode
 
@@ -318,64 +325,6 @@ Expected response:
 # 127.0.0.1:6280/mcp
 npm run http
 ```
-
-## TouchDesigner Setup (Required for All Methods)
-
-**This step is required regardless of which installation method you choose.**
-
-1. Download [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) from the latest release
-2. Extract the ZIP file
-3. Import `mcp_webserver_base.tox` into your TouchDesigner project
-4. Place it at `/project1/mcp_webserver_base` (or your preferred location)
-
-<https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
-
-**⚠️ Critical**: Do not delete or modify the directory structure. The `mcp_webserver_base.tox` component uses relative paths to locate the `modules/` directory.
-
-**Directory Structure**:
-
-```text
-touchdesigner-mcp-td/
-├── import_modules.py          # Module loader
-├── mcp_webserver_base.tox     # Main component
-└── modules/                   # Python modules
-    ├── mcp/                   # Core MCP logic
-    ├── utils/                 # Utilities
-    └── td_server/             # API server code
-```
-
-You can verify successful setup by checking the Textport (Alt+T or Dialogs → Textport):
-
-![Textport](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
-
-## TouchDesigner Setup (Required for All Methods)
-
-**This step is required regardless of which installation method you choose.**
-
-1. Download [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) from the latest release
-2. Extract the ZIP file
-3. Import `mcp_webserver_base.tox` into your TouchDesigner project
-4. Place it at `/project1/mcp_webserver_base` (or your preferred location)
-
-<https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
-
-**⚠️ Critical**: Do not delete or modify the directory structure. The `mcp_webserver_base.tox` component uses relative paths to locate the `modules/` directory.
-
-**Directory Structure**:
-
-```text
-touchdesigner-mcp-td/
-├── import_modules.py          # Module loader
-├── mcp_webserver_base.tox     # Main component
-└── modules/                   # Python modules
-    ├── mcp/                   # Core MCP logic
-    ├── utils/                 # Utilities
-    └── td_server/             # API server code
-```
-
-You can verify successful setup by checking the Textport (Alt+T or Dialogs → Textport):
-
-![Textport](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
 ## Verification
 
