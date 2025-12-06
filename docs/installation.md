@@ -133,10 +133,8 @@ Or manually edit `~/.claude.json`:
 {
   "mcpServers": {
     "touchdesigner": {
-      "type": "stdio",
       "command": "npx",
       "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"],
-      "env": {}
     }
   }
 }
@@ -215,34 +213,34 @@ Choose a transport configuration:
 
 3. Point your MCP client to the HTTP endpoint. For example:
 
-   - **Claude Code (native HTTP entry):**
+- **Claude Code (native HTTP entry):**
 
-     ```json
-     {
-       "mcpServers": {
-         "touchdesigner-http": {
-           "type": "http",
-           "url": "http://localhost:6280/mcp"
-         }
-       }
-     }
-     ```
+    ```json
+    {
+      "mcpServers": {
+        "touchdesigner-http": {
+          "type": "http",
+          "url": "http://localhost:6280/mcp"
+        }
+      }
+    }
+    ```
 
-   - **Claude Desktop (via `mcp-remote`):**
+- **Claude Desktop (via `mcp-remote`):**
 
-     ```json
-     {
-       "mcpServers": {
-         "touchdesigner-http": {
-           "command": "npx",
-           "args": [
-             "mcp-remote",
-             "http://localhost:6280/mcp"
-           ]
-         }
-       }
-     }
-     ```
+    ```json
+    {
+      "mcpServers": {
+        "touchdesigner-http": {
+          "command": "npx",
+          "args": [
+            "mcp-remote",
+            "http://localhost:6280/mcp"
+          ]
+        }
+      }
+    }
+    ```
 
 4. Confirm the container is healthy:
 

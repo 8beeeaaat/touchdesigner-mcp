@@ -224,7 +224,7 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
            "mcp-remote",
            "http://localhost:6280/mcp"
          ]
-       },
+       }
      }
    }
    ```
