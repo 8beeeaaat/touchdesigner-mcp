@@ -229,7 +229,7 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
    }
    ```
 
-4. コンテナのヘルスチェックを実行して接続確認します。
+4. コンテナのヘルスチェックを実行して接続確認します（コンテナは `0.0.0.0` で待ち受けますが、`docker-compose.yml` で `127.0.0.1` に公開するためデフォルトではローカルのみ到達可能です）。
 
    ```bash
    curl http://localhost:6280/health
@@ -278,9 +278,11 @@ TouchDesigner MCP Server は stdio だけでなく HTTP/SSE でも動作しま�
 | オプション | 説明 | デフォルト |
 | --- | --- | --- |
 | `--mcp-http-port` | HTTP サーバーポート（HTTP モード必須） | - |
-| `--mcp-http-host` | バインドアドレス | `127.0.0.1` |
+| `--mcp-http-host` | バインドアドレス（Docker エントリポイントでは `0.0.0.0`、CLI では `127.0.0.1`） | `127.0.0.1` (CLI) |
 | `--host` | TouchDesigner WebServer ホスト | `http://127.0.0.1` |
 | `--port` | TouchDesigner WebServer ポート | `9981` |
+
+> セキュリティメモ（Docker）：コンテナ内は `0.0.0.0` で待ち受けますが、`docker-compose.yml` では `127.0.0.1:${MCP_HTTP_PORT}` にのみ公開するためデフォルトではローカル専用です。LAN/WAN に開放する場合はポートマッピングを `"0.0.0.0:6280:6280"` などに変更し、ファイアウォールやリバースプロキシ・認証を必ず併用してください。
 
 ### ヘルスチェック
 
