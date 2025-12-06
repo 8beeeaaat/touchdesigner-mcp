@@ -10,7 +10,8 @@ This document describes the architecture of the TouchDesigner MCP server.
 4. [Core Layer](#core-layer)
 5. [TouchDesigner Integration Layer](#touchdesigner-integration-layer)
 6. [Data Flow](#data-flow)
-7. [Design Principles](#design-principles)
+7. [Transport Selection Guide](#transport-selection-guide)
+8. [Design Principles](#design-principles)
 
 ---
 
@@ -83,6 +84,66 @@ flowchart TB
     class B1,B2,B3,B4,B5 transport
     class C1,C2,C3,C4 core
     class D1,D2,D3,D4 td
+```
+
+#### Connection Modes
+
+**Stdio Mode**
+
+```mermaid
+flowchart LR
+    A["🤖 AI Agent CLI"]
+
+    subgraph Node ["Node.js MCP Server"]
+        T1["📞 StdioServerTransport"]
+        S1["🎯 TouchDesignerServer"]
+    end
+
+    subgraph TD ["TouchDesigner"]
+        W1["🧩 WebServer DAT"]
+        P1["🎨 TouchDesigner Nodes"]
+    end
+
+    A -->|"stdin/stdout"| T1 --> S1 --> W1 --> P1
+
+    classDef node fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    classDef core fill:#efe1ff,stroke:#8250df,stroke-width:2px
+    classDef td fill:#d7f5e3,stroke:#2f9e44,stroke-width:2px
+
+    class T1 node
+    class S1 core
+    class W1,P1 td
+```
+
+**Streamable HTTP Mode**
+
+```mermaid
+flowchart LR
+    C["🤖 AI Agent / Browser"]
+    subgraph HTTP ["HTTP Edge"]
+        H1["🌐 Streamable HTTP<br/>Server Transport"]
+        H2["🖥️ ExpressHttpManager"]
+        H3["🔐 SessionManager"]
+    end
+
+    subgraph NodeCore ["Node.js Core"]
+        S2["🎯 TouchDesignerServer"]
+    end
+
+    subgraph TouchDesigner ["TouchDesigner"]
+        W2["🧩 WebServer DAT"]
+        P2["🎨 TouchDesigner Nodes"]
+    end
+
+    C -->|"HTTPS + SSE"| H1 --> H2 --> H3 --> S2 --> W2 --> P2
+
+    classDef transport fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    classDef core fill:#efe1ff,stroke:#8250df,stroke-width:2px
+    classDef td fill:#d7f5e3,stroke:#2f9e44,stroke-width:2px
+
+    class H1,H2,H3 transport
+    class S2 core
+    class W2,P2 td
 ```
 
 ### Architecture Layers
@@ -449,6 +510,359 @@ stateDiagram-v2
         TTL/2 interval
     end note
 ```
+
+---
+
+## Transport Selection Guide
+
+### Overview
+
+The TouchDesigner MCP Server supports two transport modes, each optimized for different use cases. Both modes provide identical functionality through the same `TouchDesignerServer` implementation—the only difference is the communication protocol.
+
+### Transport Comparison
+
+| Feature | Stdio Mode | HTTP Mode |
+| --- | --- | --- |
+| **Connection** | Standard I/O (stdin/stdout) | HTTP/SSE (Server-Sent Events) |
+| **Use Case** | Local CLI tools, desktop applications | Remote agents, web applications, microservices |
+| **Session Management** | Single connection | Multi-session with TTL expiration |
+| **Concurrency** | 1 process = 1 connection | Multiple concurrent sessions |
+| **Remote Access** | Not supported | Supported (network accessible) |
+| **Health Check** | Not available | `GET /health` endpoint |
+| **Monitoring** | Limited | Session tracking, metrics |
+| **Debugging** | Requires MCP Inspector | Standard HTTP tools (curl, Postman, browser DevTools) |
+| **Scalability** | Limited (1:1 process model) | High (load balancing, horizontal scaling) |
+| **Security** | Process isolation | DNS rebinding protection, session validation |
+| **Deployment** | Simple (local binary) | Requires HTTP server setup |
+
+### When to Use Stdio Mode
+
+**Best For**:
+
+- Local development and testing
+- Claude Desktop integration
+- Single-user desktop applications
+- Development environments where simplicity is prioritized
+- Scenarios requiring strict process isolation
+
+**Example Use Cases**:
+
+1. **Claude Desktop Integration**
+
+   ```json
+   {
+     "mcpServers": {
+       "touchdesigner": {
+         "command": "npx",
+         "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
+       }
+     }
+   }
+   ```
+
+2. **Local Development**
+
+   ```bash
+   # Direct MCP server execution
+   npx touchdesigner-mcp-server --stdio
+
+   # With MCP Inspector for debugging
+   npx @modelcontextprotocol/inspector node dist/cli.js --stdio
+   ```
+
+3. **Docker Integration** (Local)
+
+   ```json
+   {
+     "mcpServers": {
+       "touchdesigner": {
+         "command": "docker",
+         "args": [
+           "compose", "-f", "/path/to/docker-compose.yml",
+           "exec", "-i", "touchdesigner-mcp-server",
+           "node", "dist/cli.js", "--stdio",
+           "--host=http://host.docker.internal"
+         ]
+       }
+     }
+   }
+   ```
+
+**Advantages**:
+
+- Simple setup (no port configuration)
+- Strong process isolation
+- No network exposure
+- Minimal attack surface
+- Works with standard POSIX tools
+
+**Limitations**:
+
+- Cannot accept remote connections
+- Limited to single client
+- No built-in health checking
+- Harder to debug (requires specialized tools)
+
+### When to Use HTTP Mode
+
+**Best For**:
+
+- Production deployments
+- Web application integrations
+- Remote access scenarios
+- Multiple concurrent clients
+- Monitoring and observability requirements
+- Scalable architectures
+
+**Example Use Cases**:
+
+1. **Production Server**
+
+   ```bash
+   # Start HTTP server
+   touchdesigner-mcp-server \
+     --mcp-http-port=3000 \
+     --mcp-http-host=127.0.0.1 \
+     --host=http://127.0.0.1 \
+     --port=9981
+
+   # Health check
+   curl http://localhost:3000/health
+   # Response: {"status":"ok","sessions":0,"timestamp":"2025-12-06T..."}
+   ```
+
+2. **Web Browser Integration**
+
+   ```javascript
+   // Browser-based MCP client
+   const eventSource = new EventSource('http://localhost:3000/mcp');
+
+   eventSource.onmessage = (event) => {
+     const response = JSON.parse(event.data);
+     console.log('TouchDesigner response:', response);
+   };
+
+   // Send JSON-RPC request
+   fetch('http://localhost:3000/mcp', {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({
+       jsonrpc: '2.0',
+       method: 'tools/call',
+       params: {
+         name: 'get_td_nodes',
+         arguments: { parentPath: '/project1' }
+       }
+     })
+   });
+   ```
+
+3. **Multi-Client Architecture**
+
+   ```bash
+   # Multiple AI agents can connect simultaneously
+   # Client 1: Claude Desktop (via HTTP client library)
+   # Client 2: Web application
+   # Client 3: VSCode extension
+   # All sharing the same MCP server instance
+   ```
+
+4. **Monitoring Integration**
+
+   ```bash
+   # Prometheus metrics scraping
+   curl http://localhost:3000/health
+
+   # Load balancer health check
+   # Configure ALB/NLB to check /health endpoint
+   ```
+
+**Advantages**:
+
+- Remote access capability
+- Multiple concurrent sessions
+- Standard HTTP debugging tools
+- Built-in health checking
+- Session management with TTL
+- Horizontal scalability
+- Load balancing support
+- Easy monitoring integration
+
+**Limitations**:
+
+- Requires port configuration
+- Network security considerations
+- More complex setup
+- Requires session management
+
+### Usage Examples
+
+#### Stdio Mode Configuration
+
+**Claude Desktop** (`~/.config/claude-desktop/config.json`):
+
+```json
+{
+  "mcpServers": {
+    "touchdesigner": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "touchdesigner-mcp-server@latest",
+        "--stdio",
+        "--host=http://127.0.0.1",
+        "--port=9981"
+      ]
+    }
+  }
+}
+```
+
+**Docker Compose**:
+
+```yaml
+services:
+  touchdesigner-mcp-server:
+    image: touchdesigner-mcp-server
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    stdin_open: true
+    tty: true
+    command: ["tail", "-f", "/dev/null"]  # Keep container running
+```
+
+**Usage**:
+
+```bash
+docker-compose up -d
+# Connect via docker compose exec
+docker compose exec -i touchdesigner-mcp-server \
+  node dist/cli.js --stdio --host=http://host.docker.internal
+```
+
+#### HTTP Mode Configuration
+
+**Direct Execution**:
+
+```bash
+touchdesigner-mcp-server \
+  --mcp-http-port=3000 \
+  --mcp-http-host=127.0.0.1 \
+  --host=http://127.0.0.1 \
+  --port=9981
+```
+
+**Docker Compose** (Future Support):
+
+```yaml
+services:
+  touchdesigner-mcp-server:
+    image: touchdesigner-mcp-server
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "3000:3000"
+    environment:
+      - MCP_HTTP_PORT=3000
+      - MCP_HTTP_HOST=0.0.0.0
+      - TD_HOST=http://host.docker.internal
+      - TD_PORT=9981
+    command: [
+      "node", "dist/cli.js",
+      "--mcp-http-port=3000",
+      "--mcp-http-host=0.0.0.0",
+      "--host=http://host.docker.internal",
+      "--port=9981"
+    ]
+```
+
+**With Load Balancer**:
+
+```yaml
+services:
+  nginx:
+    image: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - mcp-server-1
+      - mcp-server-2
+
+  mcp-server-1:
+    image: touchdesigner-mcp-server
+    command: ["node", "dist/cli.js", "--mcp-http-port=3000"]
+
+  mcp-server-2:
+    image: touchdesigner-mcp-server
+    command: ["node", "dist/cli.js", "--mcp-http-port=3000"]
+```
+
+### Common Configuration Options
+
+Both modes support these TouchDesigner connection options:
+
+| Option | Description | Default | Example |
+| --- | --- | --- | --- |
+| `--host` | TouchDesigner WebServer host | `http://127.0.0.1` | `--host=http://192.168.1.100` |
+| `--port` | TouchDesigner WebServer port | `9981` | `--port=9982` |
+
+**HTTP Mode Additional Options**:
+
+| Option | Description | Default | Required |
+| --- | --- | --- | --- |
+| `--mcp-http-port` | MCP HTTP server port | - | Yes (for HTTP mode) |
+| `--mcp-http-host` | MCP HTTP bind address | `127.0.0.1` | No |
+
+### Migration Guide
+
+#### From Stdio to HTTP
+
+**Before** (Stdio):
+
+```bash
+npx touchdesigner-mcp-server --stdio
+```
+
+**After** (HTTP):
+
+```bash
+npx touchdesigner-mcp-server \
+  --mcp-http-port=3000 \
+  --mcp-http-host=127.0.0.1
+```
+
+**Client Code Changes**:
+
+```javascript
+// Before: Stdio (via child_process)
+const { spawn } = require('child_process');
+const server = spawn('npx', ['touchdesigner-mcp-server', '--stdio']);
+
+// After: HTTP (via fetch/EventSource)
+const response = await fetch('http://localhost:3000/mcp', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ /* MCP request */ })
+});
+```
+
+#### From HTTP to Stdio
+
+**Before** (HTTP):
+
+```bash
+touchdesigner-mcp-server --mcp-http-port=3000
+```
+
+**After** (Stdio):
+
+```bash
+touchdesigner-mcp-server --stdio
+```
+
+**Note**: Session management features (TTL, health checks, concurrent sessions) are not available in Stdio mode.
 
 ---
 
