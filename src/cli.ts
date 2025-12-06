@@ -223,14 +223,22 @@ export async function startServer(params?: {
 
 		// Type-safe exhaustive check using never type
 		// This ensures all cases of the TransportConfig discriminated union are handled
-		const exhaustiveCheck: never = transportConfig;
-		throw new Error(
-			`Unsupported transport type: ${(exhaustiveCheck as TransportConfig).type}`,
-		);
+		// If a new transport type is added, TypeScript will error at compile time
+		assertNever(transportConfig);
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
 		throw new Error(`Failed to initialize server: ${errorMessage}`);
 	}
+}
+
+/**
+ * Helper function for exhaustive type checking
+ * TypeScript will error if called with a non-never type, ensuring all cases are handled
+ */
+function assertNever(value: never): never {
+	throw new Error(
+		`Unsupported transport type: ${(value as { type: string }).type}`,
+	);
 }
 
 // Start server if this file is executed directly
