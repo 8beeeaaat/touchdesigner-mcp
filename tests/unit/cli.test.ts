@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { isStdioMode, parseArgs, startServer } from "../../src/cli.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { parseArgs, parseTransportConfig, startServer } from "../../src/cli.js";
 
 const {
 	connectMock,
@@ -75,14 +75,30 @@ describe("CLI", () => {
 		});
 	});
 
-	describe("stdio mode detection", () => {
-		it("should detect stdio mode correctly", () => {
-			expect(isStdioMode("cli", ["node", "script.js", "args"])).toBe(true);
-			expect(isStdioMode("", ["node", "script.js", "--stdio"])).toBe(true);
-			expect(isStdioMode("", ["node", "script.js"])).toBe(false);
-			expect(
-				isStdioMode("", ["node", "script.js", "--stdio", "many", "args"]),
-			).toBe(true);
+	describe("parseTransportConfig functionality", () => {
+		it("should default to stdio mode when no HTTP args provided", () => {
+			const config = parseTransportConfig([]);
+			expect(config.type).toBe("stdio");
+		});
+
+		it("should parse HTTP mode when --mcp-http-port is provided", () => {
+			const config = parseTransportConfig(["--mcp-http-port=3000"]);
+			expect(config.type).toBe("streamable-http");
+			if (config.type === "streamable-http") {
+				expect(config.port).toBe(3000);
+				expect(config.host).toBe("127.0.0.1");
+				expect(config.endpoint).toBe("/mcp");
+			}
+		});
+
+		it("should use custom host when --mcp-http-host is provided", () => {
+			const config = parseTransportConfig([
+				"--mcp-http-port=3000",
+				"--mcp-http-host=localhost",
+			]);
+			if (config.type === "streamable-http") {
+				expect(config.host).toBe("localhost");
+			}
 		});
 	});
 
@@ -102,9 +118,7 @@ describe("CLI", () => {
 
 			StdioServerTransportMock.mockReset();
 			StdioServerTransportMock.mockImplementation(defaultStdioTransportImpl);
-		});
 
-		afterEach(() => {
 			vi.clearAllMocks();
 		});
 
@@ -187,17 +201,6 @@ describe("CLI", () => {
 					nodeEnv: "cli",
 				}),
 			).rejects.toThrow("Failed to initialize server: String error");
-		});
-
-		it("should throw error for non-stdio mode", async () => {
-			await expect(
-				startServer({
-					argv: ["node", "cli.js", "arg1", "arg2", "arg3"],
-					nodeEnv: "test",
-				}),
-			).rejects.toThrow(
-				"Failed to initialize server: Sorry, this server is not yet available in the browser. Please use the CLI mode.",
-			);
 		});
 	});
 });

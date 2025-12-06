@@ -1,15 +1,24 @@
 #!/usr/bin/env node
 
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { McpLogger } from "./core/logger.js";
 import { TouchDesignerServer } from "./server/touchDesignerServer.js";
+import type {
+	StreamableHttpTransportConfig,
+	TransportConfig,
+} from "./transport/config.js";
+import { isStreamableHttpTransportConfig } from "./transport/config.js";
+import { TransportFactory } from "./transport/factory.js";
+import { HttpTransportManager } from "./transport/httpTransportManager.js";
+import { SessionManager } from "./transport/sessionManager.js";
 
 // Note: Environment variables should be set by the MCP Bundle runtime or CLI arguments
 
 const DEFAULT_HOST = "http://127.0.0.1";
 const DEFAULT_PORT = 9981;
+const DEFAULT_MCP_ENDPOINT = "/mcp";
 
 /**
- * Parse command line arguments
+ * Parse command line arguments for TouchDesigner connection
  */
 export function parseArgs(args?: string[]) {
 	const argsToProcess = args || process.argv.slice(2);
@@ -31,42 +40,161 @@ export function parseArgs(args?: string[]) {
 }
 
 /**
- * Determine if the server should run in stdio mode
+ * Parse transport configuration from command line arguments
+ *
+ * Detects if HTTP mode is requested via --mcp-http-port flag.
+ * If not specified, defaults to stdio mode.
+ *
+ * @param args - Command line arguments (defaults to process.argv.slice(2))
+ * @returns Transport configuration (stdio or streamable-http)
+ *
+ * @example
+ * ```bash
+ * # Stdio mode (default)
+ * touchdesigner-mcp-server --host=http://localhost --port=9981
+ *
+ * # HTTP mode
+ * touchdesigner-mcp-server --mcp-http-port=3000 --mcp-http-host=127.0.0.1
+ * ```
  */
-export function isStdioMode(nodeEnv?: string, argv?: string[]): boolean {
-	const env = nodeEnv ?? process.env.NODE_ENV;
-	const args = argv ?? process.argv;
+export function parseTransportConfig(args?: string[]): TransportConfig {
+	const argsToProcess = args || process.argv.slice(2);
 
-	return env === "cli" || args.includes("--stdio");
+	// Check for HTTP mode
+	const httpPortArg = argsToProcess.find((arg) =>
+		arg.startsWith("--mcp-http-port="),
+	);
+
+	if (httpPortArg) {
+		const port = Number.parseInt(httpPortArg.split("=")[1], 10);
+		const hostArg = argsToProcess.find((arg) =>
+			arg.startsWith("--mcp-http-host="),
+		);
+		const host = hostArg ? hostArg.split("=")[1] : "127.0.0.1";
+
+		const config: StreamableHttpTransportConfig = {
+			endpoint: DEFAULT_MCP_ENDPOINT,
+			host,
+			port,
+			sessionConfig: { enabled: true },
+			type: "streamable-http",
+		};
+
+		return config;
+	}
+
+	// Default to stdio mode
+	return { type: "stdio" };
 }
 
 /**
  * Start TouchDesigner MCP server
+ *
+ * Supports both stdio and HTTP transport modes based on command line arguments.
+ *
+ * @param params - Server startup parameters
+ * @param params.argv - Command line arguments
+ * @param params.nodeEnv - Node environment
+ *
+ * @example
+ * ```bash
+ * # Stdio mode (default)
+ * touchdesigner-mcp-server --host=http://localhost --port=9981
+ *
+ * # HTTP mode
+ * touchdesigner-mcp-server --mcp-http-port=3000 --host=http://localhost --port=9981
+ * ```
  */
 export async function startServer(params?: {
 	nodeEnv?: string;
 	argv?: string[];
 }): Promise<void> {
 	try {
-		const isStdioModeFlag = isStdioMode(params?.nodeEnv, params?.argv);
-		if (!isStdioModeFlag) {
-			throw new Error(
-				"Sorry, this server is not yet available in the browser. Please use the CLI mode.",
-			);
-		}
+		// Parse transport configuration
+		const transportConfig = parseTransportConfig(params?.argv);
 
-		// Parse command line arguments and set environment variables
+		// Parse TouchDesigner connection arguments
 		const args = parseArgs(params?.argv);
 		process.env.TD_WEB_SERVER_HOST = args.host;
 		process.env.TD_WEB_SERVER_PORT = args.port.toString();
 
+		// Create MCP server
 		const server = new TouchDesignerServer();
-		const transport = new StdioServerTransport();
-		const result = await server.connect(transport);
 
-		if (!result.success) {
-			throw new Error(`Failed to connect: ${result.error.message}`);
+		// Handle stdio mode
+		if (transportConfig.type === "stdio") {
+			const transportResult = TransportFactory.create(transportConfig);
+			if (!transportResult.success) {
+				throw transportResult.error;
+			}
+
+			const result = await server.connect(transportResult.data);
+			if (!result.success) {
+				throw new Error(`Failed to connect: ${result.error.message}`);
+			}
+
+			console.error("MCP server started in stdio mode");
+			return;
 		}
+
+		// Handle HTTP mode
+		if (isStreamableHttpTransportConfig(transportConfig)) {
+			const logger = new McpLogger(server.server);
+			const sessionManager = transportConfig.sessionConfig?.enabled
+				? new SessionManager(transportConfig.sessionConfig, logger)
+				: null;
+
+			// Create HTTP transport manager
+			const httpManager = new HttpTransportManager(
+				transportConfig,
+				() => TransportFactory.create(transportConfig),
+				sessionManager,
+				logger,
+			);
+
+			// Start HTTP server
+			const startResult = await httpManager.start();
+			if (!startResult.success) {
+				throw startResult.error;
+			}
+
+			console.error(
+				`MCP server started in HTTP mode on ${transportConfig.host}:${transportConfig.port}`,
+			);
+
+			// Start session cleanup if enabled
+			if (sessionManager) {
+				sessionManager.startTTLCleanup();
+			}
+
+			// Set up graceful shutdown
+			const shutdown = async () => {
+				console.error("\nShutting down server...");
+
+				// Stop session cleanup
+				if (sessionManager) {
+					sessionManager.stopTTLCleanup();
+				}
+
+				// Stop HTTP server
+				const stopResult = await httpManager.stop();
+				if (!stopResult.success) {
+					console.error(`Error during shutdown: ${stopResult.error.message}`);
+				}
+
+				console.error("Server shutdown complete");
+				process.exit(0);
+			};
+
+			process.on("SIGINT", shutdown);
+			process.on("SIGTERM", shutdown);
+
+			return;
+		}
+
+		throw new Error(
+			`Unsupported transport type: ${(transportConfig as TransportConfig).type}`,
+		);
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
 		throw new Error(`Failed to initialize server: ${errorMessage}`);
