@@ -40,6 +40,11 @@ export interface ISessionManager {
 	create(metadata?: Record<string, unknown>): string;
 
 	/**
+	 * Refresh last access time for a session
+	 */
+	touch(sessionId: string): Result<void, Error>;
+
+	/**
 	 * Register a callback invoked when a session expires via TTL cleanup.
 	 */
 	setExpirationHandler(
@@ -157,6 +162,21 @@ export class SessionManager implements ISessionManager {
 		});
 
 		return sessionId;
+	}
+
+	/**
+	 * Update lastAccessedAt when a session receives activity
+	 *
+	 * @param sessionId - Session ID to refresh
+	 */
+	touch(sessionId: string): Result<void, Error> {
+		const session = this.sessions.get(sessionId);
+		if (!session) {
+			return createErrorResult(new Error(`Session not found: ${sessionId}`));
+		}
+
+		session.lastAccessedAt = Date.now();
+		return createSuccessResult(undefined);
 	}
 
 	/**

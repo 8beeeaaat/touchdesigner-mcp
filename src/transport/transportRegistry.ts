@@ -126,6 +126,9 @@ export class TransportRegistry {
 		if (sessionId && this.sessions.has(sessionId)) {
 			const entry = this.sessions.get(sessionId);
 			if (entry) {
+				if (this.sessionManager) {
+					this.sessionManager.touch(sessionId);
+				}
 				this.logger.sendLog({
 					data: `Reusing existing session: ${sessionId}`,
 					level: "debug",
