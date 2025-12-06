@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import type { ILogger } from "../core/logger.js";
 import type { Result } from "../core/result.js";
 import { createErrorResult, createSuccessResult } from "../core/result.js";
 import type {
@@ -10,6 +11,7 @@ import type {
 	TransportConfig,
 } from "./config.js";
 import { isStreamableHttpTransportConfig } from "./config.js";
+import type { ISessionManager } from "./sessionManager.js";
 import { TransportConfigValidator } from "./validator.js";
 
 /**
@@ -29,6 +31,8 @@ export class TransportFactory {
 	 * Create a transport instance from configuration
 	 *
 	 * @param config - Transport configuration (stdio or streamable-http)
+	 * @param logger - Optional logger for HTTP transport session events (ignored for stdio)
+	 * @param sessionManager - Optional session manager for HTTP transport (ignored for stdio)
 	 * @returns Result with Transport instance or Error
 	 *
 	 * @example
@@ -36,16 +40,20 @@ export class TransportFactory {
 	 * // Create stdio transport
 	 * const stdioResult = TransportFactory.create({ type: 'stdio' });
 	 *
-	 * // Create HTTP transport
+	 * // Create HTTP transport with logger and session manager
 	 * const httpResult = TransportFactory.create({
 	 *   type: 'streamable-http',
 	 *   port: 3000,
 	 *   host: '127.0.0.1',
 	 *   endpoint: '/mcp'
-	 * });
+	 * }, logger, sessionManager);
 	 * ```
 	 */
-	static create(config: TransportConfig): Result<Transport, Error> {
+	static create(
+		config: TransportConfig,
+		logger?: ILogger,
+		sessionManager?: ISessionManager | null,
+	): Result<Transport, Error> {
 		// Validate configuration first
 		const validationResult = TransportConfigValidator.validate(config);
 		if (!validationResult.success) {
@@ -56,7 +64,11 @@ export class TransportFactory {
 
 		// Dispatch to appropriate factory method based on type
 		if (isStreamableHttpTransportConfig(validatedConfig)) {
-			return TransportFactory.createStreamableHttp(validatedConfig);
+			return TransportFactory.createStreamableHttp(
+				validatedConfig,
+				logger,
+				sessionManager,
+			);
 		}
 
 		return TransportFactory.createStdio(validatedConfig);
@@ -92,6 +104,8 @@ export class TransportFactory {
 	 * in the ExpressHttpManager, not by the transport itself.
 	 *
 	 * @param config - Streamable HTTP transport configuration
+	 * @param logger - Optional logger for session lifecycle events
+	 * @param sessionManager - Optional session manager for tracking sessions
 	 * @returns Result with StreamableHTTPServerTransport instance or Error
 	 *
 	 * @example
@@ -103,18 +117,30 @@ export class TransportFactory {
 	 *   endpoint: '/mcp',
 	 *   sessionConfig: { enabled: true }
 	 * };
-	 * const result = TransportFactory.createStreamableHttp(config);
+	 * const result = TransportFactory.createStreamableHttp(config, logger, sessionManager);
 	 * ```
 	 */
 	private static createStreamableHttp(
 		config: StreamableHttpTransportConfig,
+		logger?: ILogger,
+		sessionManager?: ISessionManager | null,
 	): Result<Transport, Error> {
 		try {
 			let transport: StreamableHTTPServerTransport | null = null;
 			let suppressCloseEvent = false;
 			const handleSessionClosed = config.sessionConfig?.enabled
 				? (sessionId: string) => {
-						console.log(`Session closed: ${sessionId}`);
+						if (logger) {
+							logger.sendLog({
+								data: `Session closed: ${sessionId}`,
+								level: "info",
+								logger: "TransportFactory",
+							});
+						}
+						// Clean up session from SessionManager
+						if (sessionManager) {
+							sessionManager.cleanup(sessionId);
+						}
 						suppressCloseEvent = true;
 						if (transport) {
 							TransportFactory.resetStreamableHttpState(transport);
@@ -135,7 +161,17 @@ export class TransportFactory {
 				// This is called when a new session is created
 				onsessioninitialized: config.sessionConfig?.enabled
 					? (sessionId: string) => {
-							console.log(`Session initialized: ${sessionId}`);
+							if (logger) {
+								logger.sendLog({
+									data: `Session initialized: ${sessionId}`,
+									level: "info",
+									logger: "TransportFactory",
+								});
+							}
+							// Register session with SessionManager
+							if (sessionManager) {
+								sessionManager.register(sessionId);
+							}
 						}
 					: undefined,
 

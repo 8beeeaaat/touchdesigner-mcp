@@ -138,9 +138,20 @@ graph TB
 
 ```typescript
 class TransportFactory {
-  static create(config: TransportConfig): Result<Transport, Error>
+  static create(
+    config: TransportConfig,
+    logger?: ILogger,
+    sessionManager?: ISessionManager | null
+  ): Result<Transport, Error>
 }
 ```
+
+**Key Features**:
+
+- **Logger Integration**: Session lifecycle events logged via ILogger
+- **SessionManager Integration**: SDK callbacks wired to SessionManager methods
+  - `onsessioninitialized` → `sessionManager.register(sessionId)`
+  - `onsessionclosed` → `sessionManager.cleanup(sessionId)`
 
 **Supported Transports**:
 
@@ -148,11 +159,13 @@ class TransportFactory {
    - For local CLI usage
    - No session management required
    - Single connection
+   - Logger and SessionManager parameters ignored
 
 2. **Streamable HTTP**: HTTP + SSE based transport
    - For remote clients/web applications
-   - Session management support
-   - Multiple sessions support
+   - Full session management support via SDK callbacks
+   - Multiple concurrent sessions support
+   - Logger and SessionManager parameters utilized
 
 ### ExpressHttpManager
 
@@ -193,19 +206,25 @@ app.get('/health', (req, res) => {
 
 **Key Features**:
 
-- Session creation (UUID v4)
+- Session registration (SDK-generated UUIDs)
 - Session cleanup
-- TTL-based automatic expiration
+- TTL-based automatic expiration with error handling
 - Active session tracking
 
 **SDK Integration**:
 
-- Session validation is handled by SDK (`StreamableHTTPServerTransport.handleRequest()`)
-- SessionManager focuses on session tracking and TTL cleanup
+Session lifecycle is fully integrated with MCP SDK callbacks:
+
+- **Session Creation**: SDK generates session IDs via `onsessioninitialized` callback
+- **Session Registration**: `SessionManager.register()` tracks SDK-created sessions
+- **Session Validation**: Handled by SDK (`StreamableHTTPServerTransport.handleRequest()`)
+- **Session Cleanup**: `SessionManager.cleanup()` called from `onsessionclosed` callback
+- **Automatic Expiration**: TTL-based cleanup runs independently
 
 ```typescript
 interface ISessionManager {
-  create(metadata?: Record<string, unknown>): string;
+  create(metadata?: Record<string, unknown>): string;  // Manual creation (not used with SDK)
+  register(sessionId: string, metadata?: Record<string, unknown>): void;  // SDK integration
   cleanup(sessionId: string): Result<void, Error>;
   list(): Session[];
   startTTLCleanup(): void;
@@ -374,8 +393,9 @@ sequenceDiagram
 
     Client->>Express: POST /mcp (initialize)
     Express->>Transport: handleRequest()
-    Transport->>Session: create()
-    Session-->>Transport: sessionId (UUID)
+    Note over Transport: SDK generates sessionId (UUID)
+    Transport->>Session: register(sessionId)<br/>[via onsessioninitialized]
+    Session-->>Session: Track session with metadata
     Transport->>Server: MCP initialize
     Server->>TD: verifyCompatibility()
     TD-->>Server: { mcpApiVersion: "1.3.1" }
@@ -385,15 +405,23 @@ sequenceDiagram
 
     Client->>Express: POST /mcp (tools/list)<br/>Cookie: sessionId
     Express->>Transport: handleRequest()
+    Note over Transport: SDK validates sessionId
     Transport->>Server: tools/list
     Server-->>Transport: tools array
     Transport-->>Express: HTTP 200
     Express-->>Client: JSON-RPC response
 
+    Client->>Express: DELETE /mcp<br/>Cookie: sessionId
+    Express->>Transport: handleRequest()
+    Transport->>Session: cleanup(sessionId)<br/>[via onsessionclosed]
+    Session-->>Session: Remove session
+    Transport-->>Express: HTTP 200
+    Express-->>Client: Session terminated
+
     Client->>Express: GET /health
     Express->>Session: getActiveSessionCount()
     Session-->>Express: session count
-    Express-->>Client: { status: "ok", sessions: N }
+    Express-->>Client: { status: "ok", sessions: N, timestamp: "..." }
 ```
 
 ### Session Lifecycle

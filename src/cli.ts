@@ -146,8 +146,12 @@ export async function startServer(params?: {
 				? new SessionManager(transportConfig.sessionConfig, logger)
 				: null;
 
-			// Create transport instance
-			const transportResult = TransportFactory.create(transportConfig);
+			// Create transport instance with logger and session manager for session lifecycle events
+			const transportResult = TransportFactory.create(
+				transportConfig,
+				logger,
+				sessionManager,
+			);
 			if (!transportResult.success) {
 				throw transportResult.error;
 			}

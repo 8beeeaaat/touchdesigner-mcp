@@ -244,8 +244,9 @@ Expected response:
 
 ```json
 {
-  "status": "healthy",
-  "sessions": 0
+  "status": "ok",
+  "sessions": 0,
+  "timestamp": "2025-12-06T05:30:00.000Z"
 }
 ```
 
