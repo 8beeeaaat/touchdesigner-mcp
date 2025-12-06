@@ -621,21 +621,24 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
    ```bash
    # Start HTTP server
    touchdesigner-mcp-server \
-     --mcp-http-port=3000 \
+    --mcp-http-port=6280 \
      --mcp-http-host=127.0.0.1 \
      --host=http://127.0.0.1 \
      --port=9981
 
    # Health check
-   curl http://localhost:3000/health
-   # Response: {"status":"ok","sessions":0,"timestamp":"2025-12-06T..."}
+
+  curl <http://localhost:6280/health>
+
+# Response: {"status":"ok","sessions":0,"timestamp":"2025-12-06T..."}
+
    ```
 
 2. **Web Browser Integration**
 
    ```javascript
    // Browser-based MCP client
-   const eventSource = new EventSource('http://localhost:3000/mcp');
+  const eventSource = new EventSource('http://localhost:6280/mcp');
 
    eventSource.onmessage = (event) => {
      const response = JSON.parse(event.data);
@@ -643,7 +646,7 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
    };
 
    // Send JSON-RPC request
-   fetch('http://localhost:3000/mcp', {
+  fetch('http://localhost:6280/mcp', {
      method: 'POST',
      headers: { 'Content-Type': 'application/json' },
      body: JSON.stringify({
@@ -671,10 +674,13 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
 
    ```bash
    # Prometheus metrics scraping
-   curl http://localhost:3000/health
 
-   # Load balancer health check
-   # Configure ALB/NLB to check /health endpoint
+  curl <http://localhost:6280/health>
+
+# Load balancer health check
+
+# Configure ALB/NLB to check /health endpoint
+
    ```
 
 **Advantages**:
@@ -746,35 +752,43 @@ docker compose exec -i touchdesigner-mcp-server \
 
 ```bash
 touchdesigner-mcp-server \
-  --mcp-http-port=3000 \
+  --mcp-http-port=6280 \
   --mcp-http-host=127.0.0.1 \
   --host=http://127.0.0.1 \
   --port=9981
 ```
 
-**Docker Compose** (Future Support):
+**Docker Compose (Streamable HTTP)**:
+
+`.env`:
+
+```env
+TRANSPORT=http
+MCP_HTTP_PORT=6280
+TD_HOST=http://host.docker.internal
+TD_PORT=9981
+```
+
+`docker-compose.yml`:
 
 ```yaml
 services:
   touchdesigner-mcp-server:
-    image: touchdesigner-mcp-server
+    build: .
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "3000:3000"
+      - "${MCP_HTTP_PORT:-6280}:${MCP_HTTP_PORT:-6280}"
     environment:
-      - MCP_HTTP_PORT=3000
-      - MCP_HTTP_HOST=0.0.0.0
-      - TD_HOST=http://host.docker.internal
-      - TD_PORT=9981
-    command: [
-      "node", "dist/cli.js",
-      "--mcp-http-port=3000",
-      "--mcp-http-host=0.0.0.0",
-      "--host=http://host.docker.internal",
-      "--port=9981"
-    ]
+      - TRANSPORT=${TRANSPORT:-manual}
+      - MCP_HTTP_PORT=${MCP_HTTP_PORT:-6280}
+      - MCP_HTTP_HOST=${MCP_HTTP_HOST:-0.0.0.0}
+      - TD_HOST=${TD_HOST:-http://host.docker.internal}
+      - TD_PORT=${TD_PORT:-9981}
 ```
+
+`docker compose up -d` で起動すると `docker/start.sh` がHTTPモードを自動選択し、
+`http://localhost:${MCP_HTTP_PORT}/mcp` が利用可能になります。
 
 **With Load Balancer**:
 
@@ -792,11 +806,11 @@ services:
 
   mcp-server-1:
     image: touchdesigner-mcp-server
-    command: ["node", "dist/cli.js", "--mcp-http-port=3000"]
+    command: ["node", "dist/cli.js", "--mcp-http-port=6280"]
 
   mcp-server-2:
     image: touchdesigner-mcp-server
-    command: ["node", "dist/cli.js", "--mcp-http-port=3000"]
+    command: ["node", "dist/cli.js", "--mcp-http-port=6280"]
 ```
 
 ### Common Configuration Options
@@ -829,7 +843,7 @@ npx touchdesigner-mcp-server --stdio
 
 ```bash
 npx touchdesigner-mcp-server \
-  --mcp-http-port=3000 \
+  --mcp-http-port=6280 \
   --mcp-http-host=127.0.0.1
 ```
 
@@ -841,7 +855,7 @@ const { spawn } = require('child_process');
 const server = spawn('npx', ['touchdesigner-mcp-server', '--stdio']);
 
 // After: HTTP (via fetch/EventSource)
-const response = await fetch('http://localhost:3000/mcp', {
+const response = await fetch('http://localhost:6280/mcp', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ /* MCP request */ })
@@ -853,7 +867,7 @@ const response = await fetch('http://localhost:3000/mcp', {
 **Before** (HTTP):
 
 ```bash
-touchdesigner-mcp-server --mcp-http-port=3000
+touchdesigner-mcp-server --mcp-http-port=6280
 ```
 
 **After** (Stdio):

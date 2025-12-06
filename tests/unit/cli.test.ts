@@ -18,7 +18,7 @@ const {
 		};
 	const TouchDesignerServerMock = vi.fn(defaultTouchDesignerServerImpl);
 
-	const defaultStdioTransportImpl = function MockStdioServerTransport() {};
+	const defaultStdioTransportImpl = function MockStdioServerTransport() { };
 	const StdioServerTransportMock = vi.fn(defaultStdioTransportImpl);
 
 	return {
@@ -82,10 +82,10 @@ describe("CLI", () => {
 		});
 
 		it("should parse HTTP mode when --mcp-http-port is provided", () => {
-			const config = parseTransportConfig(["--mcp-http-port=3000"]);
+			const config = parseTransportConfig(["--mcp-http-port=6280"]);
 			expect(config.type).toBe("streamable-http");
 			if (config.type === "streamable-http") {
-				expect(config.port).toBe(3000);
+				expect(config.port).toBe(6280);
 				expect(config.host).toBe("127.0.0.1");
 				expect(config.endpoint).toBe("/mcp");
 			}
@@ -93,7 +93,7 @@ describe("CLI", () => {
 
 		it("should use custom host when --mcp-http-host is provided", () => {
 			const config = parseTransportConfig([
-				"--mcp-http-port=3000",
+				"--mcp-http-port=6280",
 				"--mcp-http-host=localhost",
 			]);
 			if (config.type === "streamable-http") {
@@ -107,7 +107,7 @@ describe("CLI", () => {
 				.mockImplementation(() => undefined as never);
 			const mockConsoleError = vi
 				.spyOn(console, "error")
-				.mockImplementation(() => {});
+				.mockImplementation(() => { });
 
 			parseTransportConfig(["--mcp-http-port=abc"]);
 
@@ -126,7 +126,7 @@ describe("CLI", () => {
 				.mockImplementation(() => undefined as never);
 			const mockConsoleError = vi
 				.spyOn(console, "error")
-				.mockImplementation(() => {});
+				.mockImplementation(() => { });
 
 			parseTransportConfig(["--mcp-http-port=0"]);
 
@@ -145,7 +145,7 @@ describe("CLI", () => {
 				.mockImplementation(() => undefined as never);
 			const mockConsoleError = vi
 				.spyOn(console, "error")
-				.mockImplementation(() => {});
+				.mockImplementation(() => { });
 
 			parseTransportConfig(["--mcp-http-port=70000"]);
 

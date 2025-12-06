@@ -22,7 +22,7 @@ describe("TransportConfigValidator", () => {
 
 		test("should reject stdio config with extra properties", () => {
 			const config = {
-				port: 3000, // Invalid for stdio
+				port: 6280, // Invalid for stdio
 				type: "stdio",
 			};
 
@@ -40,7 +40,7 @@ describe("TransportConfigValidator", () => {
 			const config: StreamableHttpTransportConfig = {
 				endpoint: "/mcp",
 				host: "127.0.0.1",
-				port: 3000,
+				port: 6280,
 				type: "streamable-http",
 			};
 
@@ -49,7 +49,7 @@ describe("TransportConfigValidator", () => {
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.type).toBe("streamable-http");
-				expect(result.data.port).toBe(3000);
+				expect(result.data.port).toBe(6280);
 				expect(result.data.host).toBe("127.0.0.1");
 				expect(result.data.endpoint).toBe("/mcp");
 			}
@@ -59,7 +59,7 @@ describe("TransportConfigValidator", () => {
 			const config: StreamableHttpTransportConfig = {
 				endpoint: "/mcp",
 				host: "localhost",
-				port: 3000,
+				port: 6280,
 				sessionConfig: {
 					cleanupInterval: 300000,
 					enabled: true,
@@ -82,7 +82,7 @@ describe("TransportConfigValidator", () => {
 			const config: StreamableHttpTransportConfig = {
 				endpoint: "/api/mcp",
 				host: "0.0.0.0",
-				port: 3000,
+				port: 6280,
 				type: "streamable-http",
 			};
 
@@ -90,7 +90,7 @@ describe("TransportConfigValidator", () => {
 
 			expect(result.success).toBe(true);
 			if (result.success && result.data.type === "streamable-http") {
-				expect(result.data.port).toBe(3000);
+				expect(result.data.port).toBe(6280);
 				expect(result.data.endpoint).toBe("/api/mcp");
 			}
 		});
@@ -133,7 +133,7 @@ describe("TransportConfigValidator", () => {
 			const config = {
 				endpoint: "/mcp",
 				host: "",
-				port: 3000,
+				port: 6280,
 				type: "streamable-http",
 			};
 
@@ -150,7 +150,7 @@ describe("TransportConfigValidator", () => {
 			const config = {
 				endpoint: "mcp",
 				host: "127.0.0.1",
-				port: 3000,
+				port: 6280,
 				type: "streamable-http",
 			};
 
@@ -167,7 +167,7 @@ describe("TransportConfigValidator", () => {
 			const config = {
 				endpoint: "/mcp",
 				host: "127.0.0.1",
-				port: 3000,
+				port: 6280,
 				sessionConfig: {
 					enabled: true,
 					ttl: -1000,
@@ -187,7 +187,7 @@ describe("TransportConfigValidator", () => {
 			const config = {
 				endpoint: "/mcp",
 				host: "127.0.0.1",
-				port: 3000,
+				port: 6280,
 				sessionConfig: {
 					cleanupInterval: -5000,
 					enabled: true,
@@ -207,7 +207,7 @@ describe("TransportConfigValidator", () => {
 	describe("discriminated union validation", () => {
 		test("should reject config with unknown transport type", () => {
 			const config = {
-				port: 3000,
+				port: 6280,
 				type: "unknown-transport",
 			};
 
@@ -222,7 +222,7 @@ describe("TransportConfigValidator", () => {
 		test("should reject config with missing type field", () => {
 			const config = {
 				host: "127.0.0.1",
-				port: 3000,
+				port: 6280,
 			};
 
 			const result = TransportConfigValidator.validate(config);
@@ -270,7 +270,7 @@ describe("TransportConfigValidator", () => {
 			const config: StreamableHttpTransportConfig = {
 				endpoint: "/mcp",
 				host: "127.0.0.1",
-				port: 3000,
+				port: 6280,
 				sessionConfig: {
 					enabled: false,
 				},

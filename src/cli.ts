@@ -54,7 +54,7 @@ export function parseArgs(args?: string[]) {
  * touchdesigner-mcp-server --host=http://localhost --port=9981
  *
  * # HTTP mode
- * touchdesigner-mcp-server --mcp-http-port=3000 --mcp-http-host=127.0.0.1
+ * touchdesigner-mcp-server --mcp-http-port=6280 --mcp-http-host=127.0.0.1
  * ```
  */
 export function parseTransportConfig(args?: string[]): TransportConfig {
@@ -109,7 +109,7 @@ export function parseTransportConfig(args?: string[]): TransportConfig {
  * touchdesigner-mcp-server --host=http://localhost --port=9981
  *
  * # HTTP mode
- * touchdesigner-mcp-server --mcp-http-port=3000 --host=http://localhost --port=9981
+ * touchdesigner-mcp-server --mcp-http-port=6280 --host=http://localhost --port=9981
  * ```
  */
 export async function startServer(params?: {

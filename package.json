@@ -82,7 +82,7 @@
 		"format:python": "ruff format td/ && ruff check --fix td/",
 		"format:yaml": "prettier --write \"**/*.{yml,yaml}\"",
 		"dev": "npx @modelcontextprotocol/inspector node dist/cli.js --stdio",
-		"http": "npm run build && node dist/cli.js --mcp-http-port=3000 --mcp-http-host=127.0.0.1 --host=http://127.0.0.1 --port=9981",
+		"http": "npm run build && node dist/cli.js --mcp-http-port=6280 --mcp-http-host=127.0.0.1 --host=http://127.0.0.1 --port=9981",
 		"test": "run-p test:*",
 		"test:integration": "vitest run ./tests/integration",
 		"test:unit": "vitest run ./tests/unit",

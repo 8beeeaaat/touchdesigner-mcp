@@ -26,7 +26,7 @@ describe("TransportFactory", () => {
 
 		test("should validate config before creating transport", () => {
 			const invalidConfig = {
-				port: 3000, // Invalid for stdio
+				port: 6280, // Invalid for stdio
 				type: "stdio",
 			};
 
@@ -44,7 +44,7 @@ describe("TransportFactory", () => {
 			const config: StreamableHttpTransportConfig = {
 				endpoint: "/mcp",
 				host: "127.0.0.1",
-				port: 3000,
+				port: 6280,
 				type: "streamable-http",
 			};
 
@@ -156,7 +156,7 @@ describe("TransportFactory", () => {
 			const config: StreamableHttpTransportConfig = {
 				endpoint: "/mcp",
 				host: "127.0.0.1",
-				port: 3000,
+				port: 6280,
 				type: "streamable-http",
 			};
 
