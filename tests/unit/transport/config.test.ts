@@ -26,7 +26,7 @@ describe("Transport Configuration", () => {
 			const config: StreamableHttpTransportConfig = {
 				endpoint: "/mcp",
 				host: "127.0.0.1",
-				port: 3000,
+				port: 6280,
 				type: "streamable-http",
 			};
 
@@ -40,7 +40,7 @@ describe("Transport Configuration", () => {
 				{
 					endpoint: "/mcp",
 					host: "127.0.0.1",
-					port: 3000,
+					port: 6280,
 					type: "streamable-http",
 				},
 			];
@@ -107,7 +107,7 @@ describe("Transport Configuration", () => {
 			const config: StreamableHttpTransportConfig = {
 				endpoint: "/mcp",
 				host: "127.0.0.1",
-				port: 3000,
+				port: 6280,
 				sessionConfig: {
 					cleanupInterval: 600000,
 					enabled: true,
@@ -125,7 +125,7 @@ describe("Transport Configuration", () => {
 			const config: StreamableHttpTransportConfig = {
 				endpoint: "/mcp",
 				host: "127.0.0.1",
-				port: 3000,
+				port: 6280,
 				sessionConfig: {
 					enabled: true,
 					// ttl and cleanupInterval are optional
@@ -146,7 +146,7 @@ describe("Transport Configuration", () => {
 				{
 					endpoint: "/mcp",
 					host: "127.0.0.1",
-					port: 3000,
+					port: 6280,
 					type: "streamable-http",
 				},
 			];

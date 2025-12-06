@@ -86,7 +86,99 @@ flowchart TB
     class D1,D2,D3,D4 td
 ```
 
-#### Connection Modes
+### Connection Modes Comparison
+
+#### Stdio Mode Architecture
+
+```mermaid
+flowchart LR
+    subgraph Client ["Claude Desktop"]
+        C1["MCP Client"]
+    end
+
+    subgraph Server ["MCP Server Process"]
+        S1["StdioServerTransport<br/>(stdin/stdout)"]
+        S2["TouchDesignerServer"]
+        S3["TouchDesignerClient<br/>(HTTP)"]
+    end
+
+    subgraph TD ["TouchDesigner"]
+        T1["WebServer DAT<br/>:9981"]
+    end
+
+    C1 <-->|"stdio<br/>(single connection)"| S1
+    S1 --> S2
+    S2 --> S3
+    S3 <-->|"HTTP API"| T1
+
+    classDef client fill:#d8e8ff,stroke:#1f6feb,stroke-width:2px
+    classDef server fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    classDef td fill:#d7f5e3,stroke:#2f9e44,stroke-width:2px
+
+    class C1 client
+    class S1,S2,S3 server
+    class T1 td
+```
+
+**Key Characteristics**:
+
+- **Single Process**: 1 MCP server process = 1 client connection
+- **Standard I/O**: Communication via stdin/stdout pipes
+- **No Session Management**: Direct 1:1 connection
+- **Local Only**: Cannot accept remote connections
+
+#### Streamable HTTP Mode Architecture
+
+```mermaid
+flowchart TB
+    subgraph Clients ["Multiple AI Agents"]
+        C1["Claude Code"]
+        C2["MCP Inspector"]
+        C3["Web Browser"]
+    end
+
+    subgraph Server ["MCP Server Process"]
+        direction TB
+        S1["ExpressHttpManager<br/>:6280"]
+        S2["SessionManager<br/>(TTL cleanup)"]
+        S3["StreamableHTTPServerTransport<br/>(MCP SDK)"]
+        S4["TouchDesignerServer"]
+        S5["TouchDesignerClient<br/>(HTTP)"]
+
+        S1 --> S2
+        S1 --> S3
+        S3 --> S4
+        S4 --> S5
+    end
+
+    subgraph TD ["TouchDesigner"]
+        T1["WebServer DAT<br/>:9981"]
+    end
+
+    C1 -->|"HTTP/SSE<br/>Session 1"| S1
+    C2 -->|"HTTP/SSE<br/>Session 2"| S1
+    C3 -->|"HTTP/SSE<br/>Session 3"| S1
+
+    S5 <-->|"HTTP API"| T1
+
+    classDef client fill:#d8e8ff,stroke:#1f6feb,stroke-width:2px
+    classDef server fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    classDef td fill:#d7f5e3,stroke:#2f9e44,stroke-width:2px
+
+    class C1,C2,C3 client
+    class S1,S2,S3,S4,S5 server
+    class T1 td
+```
+
+**Key Characteristics**:
+
+- **Multi-Session**: Single MCP server process handles multiple concurrent clients via TransportRegistry
+- **HTTP/SSE**: RESTful API + Server-Sent Events for streaming
+- **Session Management**: TTL-based automatic cleanup with per-session isolation
+- **Network Accessible**: Can accept remote connections
+- **Per-Session State**: Each client gets independent MCP protocol state (transport + server instances)
+
+#### Architecture Layers
 
 **Stdio Mode**
 
@@ -146,13 +238,6 @@ flowchart LR
     class W2,P2 td
 ```
 
-### Architecture Layers
-
-1. **AI Agent Layer**: MCP clients (Claude, Codex, etc.)
-2. **Transport Layer**: Handles MCP protocol communication (Stdio/HTTP)
-3. **Core Layer**: MCP server business logic and TouchDesigner client
-4. **TouchDesigner Integration Layer**: Python WebServer and node operations within TouchDesigner
-
 ---
 
 ## Transport Layer
@@ -175,12 +260,14 @@ graph TB
 
     subgraph HTTP ["HTTP Management"]
         H1["ExpressHttpManager<br/>- start/stop lifecycle<br/>- /mcp endpoint<br/>- /health endpoint<br/>- Graceful shutdown"]
-        H2["SessionManager<br/>- create(metadata)<br/>- cleanup(sessionId)<br/>- TTL-based expiration<br/>- Active session tracking"]
+        H2["TransportRegistry<br/>- getOrCreate(sessionId, request)<br/>- Per-session transport isolation<br/>- Session lifecycle management"]
+        H3["SessionManager<br/>- create(metadata)<br/>- cleanup(sessionId)<br/>- TTL-based expiration<br/>- Active session tracking"]
     end
 
     F1 --> C1 & C2
     C2 --> H1
     H1 --> H2
+    H2 --> H3
 
     classDef factory fill:#fff3cd,stroke:#ffc107,stroke-width:2px
     classDef config fill:#d8e8ff,stroke:#1f6feb,stroke-width:2px
@@ -188,7 +275,7 @@ graph TB
 
     class F1,F2 factory
     class C1,C2 config
-    class H1,H2 http
+    class H1,H2,H3 http
 ```
 
 ### TransportFactory
@@ -228,6 +315,89 @@ class TransportFactory {
    - Multiple concurrent sessions support
    - Logger and SessionManager parameters utilized
 
+### TransportRegistry
+
+**Responsibility**: Per-session transport and server instance management
+
+**Implementation**: [src/transport/transportRegistry.ts](../src/transport/transportRegistry.ts)
+
+**Key Features**:
+
+- **Per-Session Isolation**: Each client gets independent transport + server instances
+- **Session Lifecycle**: Manages creation, reuse, and cleanup of session resources
+- **Request Routing**: Routes HTTP requests to appropriate transport based on session ID
+- **Graceful Cleanup**: Closes all active sessions during shutdown
+
+**Architecture**:
+
+```typescript
+interface SessionEntry {
+  transport: StreamableHTTPServerTransport;
+  server: McpServer;
+  createdAt: number;
+}
+
+class TransportRegistry {
+  private readonly sessions: Map<string, SessionEntry>;
+
+  async getOrCreate(
+    sessionId: string | undefined,
+    requestBody: JSONRPCMessage,
+    serverFactory: () => McpServer,
+  ): Promise<StreamableHTTPServerTransport | null>
+}
+```
+
+**Request Handling Logic**:
+
+1. **Existing Session** (`sessionId` exists in registry) → Return cached transport
+2. **New Session** (no `sessionId` + `initialize` request) → Create new transport + server
+3. **Invalid Session** (all other cases) → Return `null` (triggers 400 error)
+
+**Session Creation Flow**:
+
+```typescript
+// 1. Create transport with lifecycle callbacks
+const transport = new StreamableHTTPServerTransport({
+  sessionIdGenerator: () => randomUUID(),
+  onsessioninitialized: (sessionId) => {
+    // Store in registry
+    this.sessions.set(sessionId, { transport, server, createdAt });
+    // Register with SessionManager for TTL tracking
+    sessionManager?.register(sessionId);
+  },
+  onsessionclosed: (sessionId) => {
+    // Remove from registry
+    this.remove(sessionId);
+    // Cleanup from SessionManager
+    sessionManager?.cleanup(sessionId);
+  },
+});
+
+// 2. Create server instance via factory
+const server = serverFactory();
+
+// 3. Connect server to transport
+await server.connect(transport);
+```
+
+**Multi-Session Support**:
+
+The registry enables multiple concurrent clients by maintaining independent MCP protocol state per session:
+
+```text
+Client 1 → POST /mcp (no session) → TransportRegistry.getOrCreate()
+                                   → New transport + server (Session A)
+                                   → Response includes mcp-session-id: A
+
+Client 1 → POST /mcp (session: A) → TransportRegistry.getOrCreate()
+                                   → Reuse existing transport (Session A)
+
+Client 2 → POST /mcp (no session) → TransportRegistry.getOrCreate()
+                                   → New transport + server (Session B)
+                                   → Response includes mcp-session-id: B
+```
+
 ### ExpressHttpManager
 
 **Responsibility**: HTTP server lifecycle management
@@ -237,13 +407,38 @@ class TransportFactory {
 **Key Features**:
 
 - Express app generation using SDK's `createMcpExpressApp()`
-- `/mcp` endpoint: Delegates to `transport.handleRequest()`
+- `/mcp` endpoint: Routes to TransportRegistry for per-session handling
 - `/health` endpoint: Health check (includes active session count)
-- Graceful shutdown
+- Graceful shutdown with registry cleanup
 
-**Endpoint Configuration**:
+**Request Handling Flow**:
 
 ```typescript
+const handleMcpRequest: RequestHandler = async (req, res) => {
+  // Extract session ID from header
+  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+  // Get or create transport for this session via TransportRegistry
+  const transport = await this.registry.getOrCreate(
+    sessionId,
+    req.body,
+    this.serverFactory,
+  );
+
+  if (!transport) {
+    // Invalid session (session ID provided but not found, or non-initialize without session)
+    res.status(400).json({
+      jsonrpc: "2.0",
+      error: { code: -32000, message: "Invalid session" },
+      id: null
+    });
+    return;
+  }
+
+  // Delegate request to per-session transport
+  await transport.handleRequest(req, res, req.body);
+};
+
 // MCP protocol endpoints
 app.post('/mcp', handleMcpRequest); // JSON-RPC requests
 app.get('/mcp', handleMcpRequest);  // SSE streaming
@@ -253,7 +448,7 @@ app.delete('/mcp', handleMcpRequest); // Session termination
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    sessions: sessionManager.getActiveSessionCount(),
+    sessions: this.registry.getCount(),
     timestamp: new Date().toISOString()
   });
 });
@@ -621,21 +816,24 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
    ```bash
    # Start HTTP server
    touchdesigner-mcp-server \
-     --mcp-http-port=3000 \
+    --mcp-http-port=6280 \
      --mcp-http-host=127.0.0.1 \
      --host=http://127.0.0.1 \
      --port=9981
 
    # Health check
-   curl http://localhost:3000/health
-   # Response: {"status":"ok","sessions":0,"timestamp":"2025-12-06T..."}
+
+  curl <http://localhost:6280/health>
+
+# Response: {"status":"ok","sessions":0,"timestamp":"2025-12-06T..."}
+
    ```
 
 2. **Web Browser Integration**
 
    ```javascript
    // Browser-based MCP client
-   const eventSource = new EventSource('http://localhost:3000/mcp');
+  const eventSource = new EventSource('http://localhost:6280/mcp');
 
    eventSource.onmessage = (event) => {
      const response = JSON.parse(event.data);
@@ -643,7 +841,7 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
    };
 
    // Send JSON-RPC request
-   fetch('http://localhost:3000/mcp', {
+  fetch('http://localhost:6280/mcp', {
      method: 'POST',
      headers: { 'Content-Type': 'application/json' },
      body: JSON.stringify({
@@ -671,10 +869,13 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
 
    ```bash
    # Prometheus metrics scraping
-   curl http://localhost:3000/health
 
-   # Load balancer health check
-   # Configure ALB/NLB to check /health endpoint
+  curl <http://localhost:6280/health>
+
+# Load balancer health check
+
+# Configure ALB/NLB to check /health endpoint
+
    ```
 
 **Advantages**:
@@ -746,35 +947,43 @@ docker compose exec -i touchdesigner-mcp-server \
 
 ```bash
 touchdesigner-mcp-server \
-  --mcp-http-port=3000 \
+  --mcp-http-port=6280 \
   --mcp-http-host=127.0.0.1 \
   --host=http://127.0.0.1 \
   --port=9981
 ```
 
-**Docker Compose** (Future Support):
+**Docker Compose (Streamable HTTP)**:
+
+`.env`:
+
+```env
+TRANSPORT=http
+MCP_HTTP_PORT=6280
+TD_HOST=http://host.docker.internal
+TD_PORT=9981
+```
+
+`docker-compose.yml`:
 
 ```yaml
 services:
   touchdesigner-mcp-server:
-    image: touchdesigner-mcp-server
+    build: .
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "3000:3000"
+      - "${MCP_HTTP_PORT:-6280}:${MCP_HTTP_PORT:-6280}"
     environment:
-      - MCP_HTTP_PORT=3000
-      - MCP_HTTP_HOST=0.0.0.0
-      - TD_HOST=http://host.docker.internal
-      - TD_PORT=9981
-    command: [
-      "node", "dist/cli.js",
-      "--mcp-http-port=3000",
-      "--mcp-http-host=0.0.0.0",
-      "--host=http://host.docker.internal",
-      "--port=9981"
-    ]
+      - TRANSPORT=${TRANSPORT:-manual}
+      - MCP_HTTP_PORT=${MCP_HTTP_PORT:-6280}
+      - MCP_HTTP_HOST=${MCP_HTTP_HOST:-0.0.0.0}
+      - TD_HOST=${TD_HOST:-http://host.docker.internal}
+      - TD_PORT=${TD_PORT:-9981}
 ```
+
+`docker compose up -d` で起動すると `docker/start.sh` がHTTPモードを自動選択し、
+`http://localhost:${MCP_HTTP_PORT}/mcp` が利用可能になります。
 
 **With Load Balancer**:
 
@@ -792,11 +1001,11 @@ services:
 
   mcp-server-1:
     image: touchdesigner-mcp-server
-    command: ["node", "dist/cli.js", "--mcp-http-port=3000"]
+    command: ["node", "dist/cli.js", "--mcp-http-port=6280"]
 
   mcp-server-2:
     image: touchdesigner-mcp-server
-    command: ["node", "dist/cli.js", "--mcp-http-port=3000"]
+    command: ["node", "dist/cli.js", "--mcp-http-port=6280"]
 ```
 
 ### Common Configuration Options
@@ -829,7 +1038,7 @@ npx touchdesigner-mcp-server --stdio
 
 ```bash
 npx touchdesigner-mcp-server \
-  --mcp-http-port=3000 \
+  --mcp-http-port=6280 \
   --mcp-http-host=127.0.0.1
 ```
 
@@ -841,7 +1050,7 @@ const { spawn } = require('child_process');
 const server = spawn('npx', ['touchdesigner-mcp-server', '--stdio']);
 
 // After: HTTP (via fetch/EventSource)
-const response = await fetch('http://localhost:3000/mcp', {
+const response = await fetch('http://localhost:6280/mcp', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ /* MCP request */ })
@@ -853,7 +1062,7 @@ const response = await fetch('http://localhost:3000/mcp', {
 **Before** (HTTP):
 
 ```bash
-touchdesigner-mcp-server --mcp-http-port=3000
+touchdesigner-mcp-server --mcp-http-port=6280
 ```
 
 **After** (Stdio):

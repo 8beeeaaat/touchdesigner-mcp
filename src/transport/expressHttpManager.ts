@@ -1,42 +1,36 @@
 import type { Server as HttpServer } from "node:http";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
-import type { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { RequestHandler } from "express";
 import type { ILogger } from "../core/logger.js";
 import type { Result } from "../core/result.js";
 import { createErrorResult, createSuccessResult } from "../core/result.js";
 import type { StreamableHttpTransportConfig } from "./config.js";
-import type { ISessionManager } from "./sessionManager.js";
-
-/**
- * Type guard to check if transport has handleRequest method
- */
-function isStreamableHTTPTransport(
-	transport: unknown,
-): transport is StreamableHTTPServerTransport {
-	return (
-		typeof transport === "object" &&
-		transport !== null &&
-		"handleRequest" in transport &&
-		typeof transport.handleRequest === "function"
-	);
-}
+import { TransportRegistry } from "./transportRegistry.js";
 
 /**
  * Express HTTP Manager
  *
- * Manages HTTP server lifecycle for Streamable HTTP transport using SDK's createMcpExpressApp.
- * Provides:
- * - /mcp endpoint → delegated to transport.handleRequest()
- * - /health endpoint → custom health check handler
- * - Session TTL cleanup integration
- * - Graceful shutdown
+ * Manages HTTP server lifecycle for Streamable HTTP transport.
+ * Handles multiple concurrent sessions by creating per-session transport and server instances.
+ *
+ * Key Features:
+ * - /mcp endpoint → routes to appropriate transport via TransportRegistry
+ * - /health endpoint → reports active session count
+ * - Per-session isolation → each client gets independent MCP protocol state
+ * - Graceful shutdown → cleans up all active sessions
+ *
+ * Architecture:
+ * ```
+ * Client 1 → POST /mcp → TransportRegistry.getOrCreate() → Transport 1 + Server 1
+ * Client 2 → POST /mcp → TransportRegistry.getOrCreate() → Transport 2 + Server 2
+ * ```
  *
  * @example
  * ```typescript
  * const manager = new ExpressHttpManager(
  *   config,
- *   transport,
+ *   () => TouchDesignerServer.create(), // Server factory
  *   sessionManager,
  *   logger
  * );
@@ -50,27 +44,29 @@ function isStreamableHTTPTransport(
  */
 export class ExpressHttpManager {
 	private readonly config: StreamableHttpTransportConfig;
-	private readonly transport: StreamableHTTPServerTransport;
-	private readonly sessionManager: ISessionManager | null;
+	private readonly serverFactory: () => McpServer;
 	private readonly logger: ILogger;
+	private readonly registry: TransportRegistry;
 	private server: HttpServer | null = null;
 
+	/**
+	 * Create ExpressHttpManager with server factory
+	 *
+	 * @param config - Streamable HTTP transport configuration
+	 * @param serverFactory - Factory function to create new Server instances per session
+	 * @param sessionManager - Session manager for TTL tracking (optional)
+	 * @param logger - Logger instance
+	 */
 	constructor(
 		config: StreamableHttpTransportConfig,
-		transport: unknown,
-		sessionManager: ISessionManager | null,
+		serverFactory: () => McpServer,
+		sessionManager: import("./sessionManager.js").ISessionManager | null,
 		logger: ILogger,
 	) {
-		if (!isStreamableHTTPTransport(transport)) {
-			throw new Error(
-				"Transport must be a StreamableHTTPServerTransport instance",
-			);
-		}
-
 		this.config = config;
-		this.transport = transport;
-		this.sessionManager = sessionManager;
+		this.serverFactory = serverFactory;
 		this.logger = logger;
+		this.registry = new TransportRegistry(config, sessionManager, logger);
 	}
 
 	/**
@@ -92,9 +88,34 @@ export class ExpressHttpManager {
 				host: this.config.host,
 			});
 
+			// MCP endpoint handler - routes to appropriate transport via registry
 			const handleMcpRequest: RequestHandler = async (req, res) => {
 				try {
-					await this.transport.handleRequest(req, res, req.body);
+					// Extract session ID from header
+					const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+					// Get or create transport for this session
+					const transport = await this.registry.getOrCreate(
+						sessionId,
+						req.body,
+						this.serverFactory,
+					);
+
+					if (!transport) {
+						// Invalid session (session ID provided but not found, or non-initialize without session)
+						res.status(400).json({
+							error: {
+								code: -32000,
+								message: "Invalid session",
+							},
+							id: null,
+							jsonrpc: "2.0",
+						});
+						return;
+					}
+
+					// Delegate request to transport
+					await transport.handleRequest(req, res, req.body);
 				} catch (error) {
 					const errorMessage =
 						error instanceof Error ? error.message : String(error);
@@ -112,26 +133,17 @@ export class ExpressHttpManager {
 				}
 			};
 
-			// Configure /mcp endpoints (POST for JSON-RPC, GET for SSE, DELETE for session close)
+			// Configure /mcp endpoints
+			// POST: JSON-RPC requests (initialize, tool calls, etc.)
+			// GET: SSE streaming for notifications
+			// DELETE: Session termination
 			app.post(this.config.endpoint, handleMcpRequest);
 			app.get(this.config.endpoint, handleMcpRequest);
 			app.delete(this.config.endpoint, handleMcpRequest);
 
 			// Configure /health endpoint
 			app.get("/health", (_req, res) => {
-				// Explicitly check for null sessionManager - in HTTP mode this would indicate
-				// a configuration error since session management should always be available
-				if (!this.sessionManager) {
-					res.status(500).json({
-						message:
-							"Session manager is not configured. This is a configuration error in HTTP mode.",
-						sessions: null,
-						status: "error",
-						timestamp: new Date().toISOString(),
-					});
-					return;
-				}
-				const sessionCount = this.sessionManager.getActiveSessionCount();
+				const sessionCount = this.registry.getCount();
 
 				res.json({
 					sessions: sessionCount,
@@ -146,6 +158,16 @@ export class ExpressHttpManager {
 					this.server = app.listen(this.config.port, this.config.host, () => {
 						this.logger.sendLog({
 							data: `Express HTTP server listening on ${this.config.host}:${this.config.port}`,
+							level: "info",
+							logger: "ExpressHttpManager",
+						});
+						this.logger.sendLog({
+							data: `MCP endpoint: ${this.config.endpoint}`,
+							level: "info",
+							logger: "ExpressHttpManager",
+						});
+						this.logger.sendLog({
+							data: "Health check: GET /health",
 							level: "info",
 							logger: "ExpressHttpManager",
 						});
@@ -172,7 +194,7 @@ export class ExpressHttpManager {
 	/**
 	 * Graceful shutdown
 	 *
-	 * Stops HTTP server and cleans up resources.
+	 * Stops HTTP server and cleans up all active sessions.
 	 *
 	 * @returns Result indicating success or failure
 	 */
@@ -180,6 +202,22 @@ export class ExpressHttpManager {
 		try {
 			if (!this.server) {
 				return createSuccessResult(undefined);
+			}
+
+			this.logger.sendLog({
+				data: "Stopping Express HTTP server...",
+				level: "info",
+				logger: "ExpressHttpManager",
+			});
+
+			// Cleanup all active sessions first
+			const cleanupResult = await this.registry.cleanup();
+			if (!cleanupResult.success) {
+				this.logger.sendLog({
+					data: `Warning: Session cleanup failed: ${cleanupResult.error.message}`,
+					level: "warning",
+					logger: "ExpressHttpManager",
+				});
 			}
 
 			// Close HTTP server
@@ -217,5 +255,23 @@ export class ExpressHttpManager {
 	 */
 	isRunning(): boolean {
 		return this.server?.listening ?? false;
+	}
+
+	/**
+	 * Get active session count
+	 *
+	 * @returns Number of active sessions
+	 */
+	getActiveSessionCount(): number {
+		return this.registry.getCount();
+	}
+
+	/**
+	 * Get all active session IDs
+	 *
+	 * @returns Array of session IDs
+	 */
+	getActiveSessionIds(): string[] {
+		return this.registry.getSessionIds();
 	}
 }

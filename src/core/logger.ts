@@ -39,3 +39,18 @@ export class McpLogger implements ILogger {
 		}
 	}
 }
+
+/**
+ * Console Logger implementation for standalone use (e.g., HTTP mode setup)
+ * Outputs to stderr to avoid interfering with stdio transport
+ */
+export class ConsoleLogger implements ILogger {
+	sendLog(args: LoggingMessageNotification["params"]) {
+		const timestamp = new Date().toISOString();
+		const level = args.level?.toUpperCase() || "INFO";
+		const logger = args.logger || "unknown";
+		const data = args.data;
+
+		console.error(`[${timestamp}] [${level}] [${logger}] ${data}`);
+	}
+}

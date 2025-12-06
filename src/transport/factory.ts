@@ -53,7 +53,7 @@ export class TransportFactory {
 	 * // Create HTTP transport with logger and session manager
 	 * const httpResult = TransportFactory.create({
 	 *   type: 'streamable-http',
-	 *   port: 3000,
+	 *   port: 6280,
 	 *   host: '127.0.0.1',
 	 *   endpoint: '/mcp'
 	 * }, logger, sessionManager);
@@ -122,7 +122,7 @@ export class TransportFactory {
 	 * ```typescript
 	 * const config: StreamableHttpTransportConfig = {
 	 *   type: 'streamable-http',
-	 *   port: 3000,
+	 *   port: 6280,
 	 *   host: '127.0.0.1',
 	 *   endpoint: '/mcp',
 	 *   sessionConfig: { enabled: true }

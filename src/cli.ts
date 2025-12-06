@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { McpLogger } from "./core/logger.js";
+import { ConsoleLogger } from "./core/logger.js";
 import { TouchDesignerServer } from "./server/touchDesignerServer.js";
 import type {
 	StreamableHttpTransportConfig,
@@ -54,7 +54,7 @@ export function parseArgs(args?: string[]) {
  * touchdesigner-mcp-server --host=http://localhost --port=9981
  *
  * # HTTP mode
- * touchdesigner-mcp-server --mcp-http-port=3000 --mcp-http-host=127.0.0.1
+ * touchdesigner-mcp-server --mcp-http-port=6280 --mcp-http-host=127.0.0.1
  * ```
  */
 export function parseTransportConfig(args?: string[]): TransportConfig {
@@ -109,7 +109,7 @@ export function parseTransportConfig(args?: string[]): TransportConfig {
  * touchdesigner-mcp-server --host=http://localhost --port=9981
  *
  * # HTTP mode
- * touchdesigner-mcp-server --mcp-http-port=3000 --host=http://localhost --port=9981
+ * touchdesigner-mcp-server --mcp-http-port=6280 --host=http://localhost --port=9981
  * ```
  */
 export async function startServer(params?: {
@@ -146,34 +146,23 @@ export async function startServer(params?: {
 
 		// Handle HTTP mode
 		if (isStreamableHttpTransportConfig(transportConfig)) {
-			const logger = new McpLogger(server.server);
+			// Use ConsoleLogger for HTTP manager and session manager
+			// This avoids "Not connected" errors since HTTP mode doesn't have a global MCP connection
+			const logger = new ConsoleLogger();
 
 			// Create session manager if enabled
 			const sessionManager = transportConfig.sessionConfig?.enabled
 				? new SessionManager(transportConfig.sessionConfig, logger)
 				: null;
 
-			// Create transport instance with logger and session manager for session lifecycle events
-			const transportResult = TransportFactory.create(
-				transportConfig,
-				logger,
-				sessionManager,
-			);
-			if (!transportResult.success) {
-				throw transportResult.error;
-			}
-			const transport = transportResult.data;
+			// Server factory for creating per-session instances
+			// Each session gets its own TouchDesignerServer with independent MCP protocol state
+			const serverFactory = () => TouchDesignerServer.create();
 
-			// Connect server to transport
-			const connectResult = await server.connect(transport);
-			if (!connectResult.success) {
-				throw new Error(`Failed to connect: ${connectResult.error.message}`);
-			}
-
-			// Create Express HTTP manager
+			// Create Express HTTP manager with server factory
 			const httpManager = new ExpressHttpManager(
 				transportConfig,
-				transport,
+				serverFactory,
 				sessionManager,
 				logger,
 			);
@@ -207,9 +196,6 @@ export async function startServer(params?: {
 				if (!stopResult.success) {
 					console.error(`Error during shutdown: ${stopResult.error.message}`);
 				}
-
-				// Close transport
-				await transport.close();
 
 				console.error("Server shutdown complete");
 				process.exit(0);

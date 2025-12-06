@@ -1,9 +1,8 @@
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { ConsoleLogger } from "../../src/core/logger.js";
 import { TouchDesignerServer } from "../../src/server/touchDesignerServer.js";
 import type { StreamableHttpTransportConfig } from "../../src/transport/config.js";
 import { ExpressHttpManager } from "../../src/transport/expressHttpManager.js";
-import { TransportFactory } from "../../src/transport/factory.js";
 import { SessionManager } from "../../src/transport/sessionManager.js";
 
 describe("HTTP Transport Integration", () => {
@@ -16,8 +15,6 @@ describe("HTTP Transport Integration", () => {
 
 	const testPort = getIntegrationTestPort();
 	const baseUrl = `http://127.0.0.1:${testPort}`;
-	let server: TouchDesignerServer;
-	let transport: Transport;
 	let httpManager: ExpressHttpManager;
 	let sessionManager: SessionManager | null = null;
 	const ACCEPT_HEADER = "application/json, text/event-stream";
@@ -36,19 +33,19 @@ describe("HTTP Transport Integration", () => {
 		process.env.TD_WEB_SERVER_HOST = "http://127.0.0.1";
 		process.env.TD_WEB_SERVER_PORT = "9981";
 
-		server = new TouchDesignerServer();
-		const transportResult = TransportFactory.create(config);
-		expect(transportResult.success).toBe(true);
-		transport = transportResult.data;
+		// Create logger for HTTP manager
+		const logger = new ConsoleLogger();
 
-		const connectResult = await server.connect(transport);
-		expect(connectResult.success).toBe(true);
-
-		const logger = server.logger;
+		// Create session manager
 		sessionManager = new SessionManager({ enabled: true }, logger);
+
+		// Server factory for per-session instances
+		const serverFactory = () => TouchDesignerServer.create();
+
+		// Create HTTP manager with factory pattern
 		httpManager = new ExpressHttpManager(
 			config,
-			transport,
+			serverFactory,
 			sessionManager,
 			logger,
 		);
@@ -62,8 +59,6 @@ describe("HTTP Transport Integration", () => {
 	afterAll(async () => {
 		await httpManager.stop();
 		sessionManager?.stopTTLCleanup();
-		await transport.close();
-		await server.disconnect();
 	});
 
 	async function initializeTransportSession(): Promise<string> {

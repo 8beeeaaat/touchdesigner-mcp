@@ -167,10 +167,28 @@ TouchDesignerのメニューからTextportを起動してサーバーの起動�
 ##### 4. MCPサーバーのコンテナを起動
 
 ```bash
+# Stdioモードで起動
 docker-compose up -d
+
+# or
+
+# Streamable HTTPモードで起動
+TRANSPORT=http docker-compose up -d
+```
+
+Docker内部でStreamable HTTPトランスポートを有効化する場合は `TRANSPORT=http` オプションを利用してください。
+（必要に応じて `MCP_HTTP_PORT`、`MCP_HTTP_HOST`、`TD_HOST`、`TD_PORT` も利用可能）
+
+```bash
+TRANSPORT=http \
+MCP_HTTP_PORT=6280 \
+TD_HOST=http://host.docker.internal \
+docker compose up -d
 ```
 
 ##### 5. AIエージェントがDockerコンテナを使用するように設定
+
+###### オプションA: docker exec経由のStdio（デフォルト）
 
 *例 Claude Desktop*
 
@@ -209,6 +227,28 @@ docker-compose up -d
 ]
   ```
 
+###### オプションB: Streamable HTTPエンドポイント
+
+1. コンテナを `TRANSPORT=http` および希望のポートで起動します。
+2. MCPクライアントからHTTPエンドポイントへ直接アクセスします。
+
+```json
+{
+  "mcpServers": {
+    "touchdesigner-http": {
+      "type": "http",
+      "url": "http://localhost:6280/mcp"
+    }
+  }
+}
+```
+
+動作確認は次のようにヘルスチェックを叩いてください:
+
+```bash
+curl http://localhost:6280/health
+```
+
 </details>
 
 ## HTTP Transport モード
@@ -219,7 +259,7 @@ TouchDesigner MCP Serverは、リモートクライアントやWeb統合向け�
 
 ```bash
 touchdesigner-mcp-server \
-  --mcp-http-port=3000 \
+  --mcp-http-port=6280 \
   --mcp-http-host=127.0.0.1 \
   --host=http://127.0.0.1 \
   --port=9981
@@ -237,7 +277,7 @@ touchdesigner-mcp-server \
 ### ヘルスチェックエンドポイント
 
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:6280/health
 ```
 
 期待されるレスポンス:
@@ -263,7 +303,7 @@ curl http://localhost:3000/health
 
 ```bash
 # MCP Inspector付きでHTTPモード起動
-# 127.0.0.1:3000/mcp
+# 127.0.0.1:6280/mcp
 npm run http
 ```
 

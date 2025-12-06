@@ -167,10 +167,29 @@ The MCP bundle will automatically handle the connection to the TouchDesigner ser
 ### 4. Start the MCP server container
 
   ```bash
-  docker-compose up -d
+# Stdio mode
+docker-compose up -d
+
+# or
+
+# Streamable HTTP mode
+TRANSPORT=http docker-compose up -d
+  ```
+
+  To enable the streamable HTTP transport inside Docker, set `TRANSPORT=http`
+  (and optionally `MCP_HTTP_PORT`, `MCP_HTTP_HOST`, `TD_HOST`, `TD_PORT`) before starting the
+  container:
+
+  ```bash
+  TRANSPORT=http \
+  MCP_HTTP_PORT=6280 \
+  TD_HOST=http://host.docker.internal \
+  docker compose up -d
   ```
 
 ### 5. Configure your AI agent to use the Docker container
+
+#### Option A: Stdio passthrough (default)
 
   *Example for Claude Desktop:*
 
@@ -198,7 +217,7 @@ The MCP bundle will automatically handle the connection to the TouchDesigner ser
 
   *On Windows systems, include the drive letter, e.g., `C:\path\to\your\touchdesigner-mcp\docker-compose.yml`.*
 
-**Note:** You can customize the TouchDesigner server connection by adding `--host` and `--port` arguments:
+  **Note:** You can customize the TouchDesigner server connection by adding `--host` and `--port` arguments:
 
   ```json
 "args": [
@@ -207,6 +226,28 @@ The MCP bundle will automatically handle the connection to the TouchDesigner ser
   "--host=http://host.docker.internal",
   "--port=9982"
 ]
+  ```
+
+#### Option B: Streamable HTTP endpoint
+
+  1. Ensure the container was started with `TRANSPORT=http` and the desired port mapping.
+  2. Configure your MCP client to call the HTTP endpoint directly:
+
+  ```json
+  {
+    "mcpServers": {
+      "touchdesigner-http": {
+        "type": "http",
+        "url": "http://localhost:6280/mcp"
+      }
+    }
+  }
+  ```
+
+  You can verify the container is healthy via:
+
+  ```bash
+  curl http://localhost:6280/health
   ```
 
 </details>
@@ -219,7 +260,7 @@ TouchDesigner MCP Server also exposes an HTTP transport for remote clients and b
 
 ```bash
 touchdesigner-mcp-server \
-  --mcp-http-port=3000 \
+  --mcp-http-port=6280 \
   --mcp-http-host=127.0.0.1 \
   --host=http://127.0.0.1 \
   --port=9981
@@ -237,7 +278,7 @@ touchdesigner-mcp-server \
 ### Health Check Endpoint
 
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:6280/health
 ```
 
 Expected response:
@@ -263,7 +304,7 @@ Expected response:
 
 ```bash
 # Start HTTP server together with MCP Inspector
-# 127.0.0.1:3000/mcp
+# 127.0.0.1:6280/mcp
 npm run http
 ```
 
