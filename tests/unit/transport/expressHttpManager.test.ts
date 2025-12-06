@@ -18,6 +18,7 @@ function createMockSessionManager(activeSessions = 0): ISessionManager & {
 		setExpirationHandler: vi.fn(),
 		startTTLCleanup: vi.fn(),
 		stopTTLCleanup: vi.fn(),
+		touch: vi.fn(),
 	};
 }
 

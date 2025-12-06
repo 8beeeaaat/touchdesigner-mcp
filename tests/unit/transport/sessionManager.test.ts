@@ -175,6 +175,32 @@ describe("SessionManager", () => {
 			expect(sessionManager.list()).toHaveLength(0);
 		});
 
+		test("should refresh lastAccessedAt on touch and prevent premature TTL expiry", () => {
+			vi.useFakeTimers();
+
+			const config: SessionConfig = {
+				cleanupInterval: 100,
+				enabled: true,
+				ttl: 1000,
+			};
+			sessionManager = new SessionManager(config, mockLogger);
+
+			const sessionId = sessionManager.create();
+			sessionManager.startTTLCleanup();
+
+			// Advance close to TTL but refresh access
+			vi.advanceTimersByTime(900);
+			sessionManager.touch(sessionId);
+
+			// Advance past original TTL and run cleanup
+			vi.advanceTimersByTime(200);
+			vi.advanceTimersByTime(100);
+
+			// Session should remain because it was accessed
+			expect(sessionManager.list()).toHaveLength(1);
+			expect(sessionManager.list()[0]?.id).toBe(sessionId);
+		});
+
 		test("should invoke expiration handler when session expires", () => {
 			vi.useFakeTimers();
 
@@ -229,6 +255,14 @@ describe("SessionManager", () => {
 					level: "info",
 				}),
 			);
+		});
+
+		test("should fail to touch non-existent session", () => {
+			const config: SessionConfig = { enabled: true };
+			sessionManager = new SessionManager(config, mockLogger);
+
+			const result = sessionManager.touch("missing");
+			expect(result.success).toBe(false);
 		});
 
 		test("should fail to clean up non-existent session", () => {
