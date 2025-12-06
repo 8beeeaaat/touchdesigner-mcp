@@ -23,7 +23,6 @@ component is running.
 - [HTTP Transport Mode](#http-transport-mode)
 - [Verification](#verification)
 - [Troubleshooting](#troubleshooting)
-- [Developer Setup](#developer-setup)
 
 ## Prerequisites
 
@@ -283,7 +282,7 @@ Choose a transport configuration:
    }
    ```
 
-   *On Windows include the drive letter (for example `C:\\path\\to\\touchdesigner-mcp\\docker-compose.yml`).*
+   _On Windows include the drive letter (for example `C:\\path\\to\\touchdesigner-mcp\\docker-compose.yml`)._
 
 ## HTTP Transport Mode
 
@@ -383,114 +382,6 @@ Refer to [Troubleshooting connection errors](https://github.com/8beeeaaat/touchd
 - Check [GitHub Issues](https://github.com/8beeeaaat/touchdesigner-mcp/issues) for known reports
 - Review the [main README](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/README.md) for more background information
 
-## Developer Setup
+## For Developer Setup
 
-For development and testing:
-
-### Local Development with NPM
-
-**For Claude Desktop** (`claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "touchdesigner-stdio": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "/path/to/your/touchdesigner-mcp/dist/cli.js",
-        "--stdio",
-        "--port=9981"
-      ]
-    },
-    "touchdesigner-http-npx": {
-      "command": "npx",
-      "args": [
-        "mcp-remote",
-        "http://localhost:6280/mcp"
-      ]
-    }
-  }
-}
-```
-
-**For Claude Code** (`~/.claude.json`):
-
-```json
-{
-  "mcpServers": {
-    // claude mcp add -s user touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --stdio --port=9981
-    "touchdesigner-stdio": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "/path/to/your/touchdesigner-mcp/dist/cli.js",
-        "--stdio",
-        "--port=9981"
-      ],
-      "env": {}
-    },
-    // claude mcp add -s user --transport http touchdesigner-http http://localhost:6280/mcp
-    "touchdesigner-http": {
-      "type": "http",
-      "url": "http://localhost:6280/mcp"
-    },
-    // claude mcp add -s user touchdesigner-http-npx -- npx mcp-remote http://localhost:6280/mcp
-    "touchdesigner-http-npx": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "mcp-remote",
-        "http://localhost:6280/mcp"
-      ],
-      "env": {}
-    }
-  }
-}
-```
-
-**For Codex** (`~/.codex/config.toml`):
-
-```toml
-# codex mcp add touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --stdio --port=9981
-[mcp_servers.touchdesigner-stdio]
-command = "npx"
-args = ["-y", "/path/to/your/touchdesigner-mcp/dist/cli.js", "--stdio", "--port=9981"]
-
-# codex mcp add touchdesigner-http --url http://localhost:6280/mcp
-[mcp_servers.touchdesigner-http]
-url = "http://localhost:6280/mcp"
-
-# codex mcp add touchdesigner-http-npx -- npx mcp-remote http://localhost:6280/mcp
-[mcp_servers.touchdesigner-http-npx]
-command = "npx"
-args = ["mcp-remote", "http://localhost:6280/mcp"]
-```
-
-### Development Workflow
-
-1. **Clone and install**:
-
-   ```bash
-   git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
-   cd touchdesigner-mcp
-   npm install
-   ```
-
-2. **Build**:
-
-   ```bash
-   npm run build  # Full build with code generation
-   # or
-   make build     # Docker-based build
-   ```
-
-3. **Test**:
-
-   ```bash
-   npm test       # Run all tests
-   npm run dev    # Launch MCP inspector
-   ```
-
-See [CLAUDE.md](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/CLAUDE.md) for detailed development commands and workflow.
+Need developer-focused workflows? See the [Developer Guide](development.md).

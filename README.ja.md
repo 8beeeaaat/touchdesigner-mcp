@@ -14,44 +14,9 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 - ノードプロパティやプロジェクト構造の照会
 - PythonスクリプトによるTouchDesignerのプログラム的制御
 
-## アーキテクチャ
-
-```mermaid
-flowchart LR
-    A["🤖<br/>MCP client<br/>(Claude / Codex / ...)"]
-
-    subgraph S [Node.js MCP server]
-      B1["🧰<br/>Tools & prompts<br/>(src/features/tools)"]
-      B2["🖌️<br/>Presenters & formatters<br/>(markdown output)"]
-      B3["🌐<br/>OpenAPI HTTP client<br/>(src/tdClient)"]
-    end
-
-    subgraph T [TouchDesigner project]
-      C1["🧩<br/>WebServer DAT<br/>(mcp_webserver_base.tox)"]
-      C2["🐍<br/>Python controllers / services<br/>(td/modules/mcp)"]
-      C3["🎛️<br/>Project nodes & parameters<br/>(/project1/...)"]
-    end
-
-    A --> B1
-    B1 --> B2
-    B1 --> B3
-    B2 --> A
-    B3 <--> C1
-    C1 <--> C2
-    C2 <--> C3
-
-    %% Higher-contrast colors for readability
-    classDef client fill:#d8e8ff,stroke:#1f6feb,stroke-width:2px,color:#111,font-weight:bold
-    classDef server fill:#efe1ff,stroke:#8250df,stroke-width:2px,color:#111,font-weight:bold
-    classDef td fill:#d7f5e3,stroke:#2f9e44,stroke-width:2px,color:#111,font-weight:bold
-    class A client;
-    class B1,B2,B3 server;
-    class C1,C2,C3 td;
-```
-
 ## インストール方法
 
-**[Installation Guide](docs/installation.ja.md)** を参照してください。
+**[インストールガイド](docs/installation.ja.md)** を参照してください。
 
 ## MCPサーバーの機能
 
@@ -92,92 +57,7 @@ flowchart LR
 
 ## 開発者向け
 
-### 開発のクイックスタート
-
-1. **環境設定:**
-
-   ```bash
-   # リポジトリをクローンして依存関係をインストール
-   git clone https://github.com/8beeeaaat/touchdesigner-mcp.git
-   cd touchdesigner-mcp
-   npm install
-   ```
-
-2. **プロジェクトをビルド:**
-
-   ```bash
-   make build        # Docker-based build（推奨）
-   # または
-   npm run build     # Node.js-based build
-   ```
-
-3. **利用可能なコマンド:**
-
-   ```bash
-   npm run test      # ユニットテストと統合テストを実行
-   npm run dev       # デバッグ用MCPインスペクターを起動
-   ```
-
-**注意:** コードを更新した場合は、MCPサーバーとTouchDesignerの両方を再起動して変更を反映してください。
-
-### プロジェクト構造の概要
-
-```
-├── src/                       # MCPサーバーソースコード
-│   ├── api/                  # TD WebServerに対するOpenAPI仕様
-│   ├── core/                 # コアユーティリティ（ロガー、エラーハンドリング）
-│   ├── features/             # MCP機能実装
-│   │   ├── prompts/         # プロンプトハンドラ
-│   │   ├── resources/       # リソースハンドラ
-│   │   └── tools/           # ツールハンドラ (例: tdTools.ts)
-│   ├── gen/                  # OpenAPIスキーマから生成されたMCPサーバー向けコード
-│   ├── server/               # MCPサーバーロジック (接続, メインサーバークラス)
-│   ├── tdClient/             # TD接続API用クライアント
-│   ├── index.ts              # Node.jsサーバーのメインエントリーポイント
-│   └── ...
-├── td/                        # TouchDesigner関連ファイル
-│   ├── modules/              # TouchDesigner用Pythonモジュール
-│   │   ├── mcp/              # TD内でMCPからのリクエストを処理するコアロジック
-│   │   │   ├── controllers/ # APIリクエストコントローラ (api_controller.py, generated_handlers.py)
-│   │   │   └── services/    # ビジネスロジック (api_service.py)
-│   │   ├── td_server/        # OpenAPIスキーマから生成されたPythonモデルコード
-│   │   └── utils/            # 共有Pythonユーティリティ
-│   ├── templates/             # Pythonコード生成用Mustacheテンプレート
-│   ├── genHandlers.js         # generated_handlers.py 生成用のNode.jsスクリプト
-│   ├── import_modules.py      # TDへ APIサーバ関連モジュールをインポートするヘルパースクリプト
-│   └── mcp_webserver_base.tox # メインTouchDesignerコンポーネント
-├── tests/                      # テストコード
-│   ├── integration/
-│   └── unit/
-└── orval.config.ts             # Orval 設定 (TSクライアント生成)
-```
-
-### APIコード生成ワークフロー
-
-このプロジェクトでは、OpenAPIによるコード生成ツール ( Orval / openapi-generator-cli )を使用しています：
-
-**API定義:** Node.js MCPサーバーとTouchDesigner内で実行されるPythonサーバー間のAPI規約は `src/api/index.yml` で定義されます。
-
-1. **Pythonサーバー生成 (`npm run gen:webserver`):**
-    - Docker経由で `openapi-generator-cli` を使用します。
-    - `src/api/index.yml` を読み取ります。
-    - API定義に基づいてPythonサーバーのスケルトン (`td/modules/td_server/`) を生成します。このコードはWebServer DATを介してTouchDesigner内で実行されます。
-    - **Dockerがインストールされ、実行されている必要があります。**
-2. **Pythonハンドラ生成 (`npm run gen:handlers`):**
-    - カスタムNode.jsスクリプト (`td/genHandlers.js`) とMustacheテンプレート (`td/templates/`) を使用します。
-    - 生成されたPythonサーバーコードまたはOpenAPI仕様を読み取ります。
-    - `td/modules/mcp/services/api_service.py` にあるビジネスロジックに接続するハンドラ実装 (`td/modules/mcp/controllers/generated_handlers.py`) を生成します。
-3. **TypeScriptクライアント生成 (`npm run gen:mcp`):**
-    - `Orval` を使用し `openapi-generator-cli` がバンドルしたスキーマYAMLからAPIクライアントコードとToolの検証に用いるZodスキーマを生成します。
-    - Node.jsサーバーが WebServerDAT にリクエストを行うために使用する、型付けされたTypeScriptクライアント (`src/tdClient/`) を生成します。
-
-ビルドプロセス (`npm run build`) は、必要なすべての生成ステップ (`npm run gen`) を実行し、その後にTypeScriptコンパイル (`tsc`) を行います。
-
-### バージョン管理
-
-- `package.json` はすべてのコンポーネントバージョンの唯一の信頼できる情報源です（Node.js MCPサーバー、TouchDesigner Python API、MCPバンドル、および `server.json` メタデータ）。
-- バージョンを更新する際は `npm version <patch|minor|major>`（または内部で使用される `npm run gen:version`）を実行してください。このスクリプトは `pyproject.toml`、`td/modules/utils/version.py`、`mcpb/manifest.json`、および `server.json` を書き換え、リリースワークフローがタグ値を信頼できるようにします。
-- GitHubリリースワークフロー（`.github/workflows/release.yml`）はコミットを `v${version}` としてタグ付けし、同じバージョン番号から `touchdesigner-mcp-td.zip` / `touchdesigner-mcp.mcpb` を公開します。リリースをトリガーする前に必ず同期ステップを実行し、すべてのアーティファクトが整合するようにしてください。
+ローカル環境構築やクライアント設定、コード生成ワークフローなどの詳細は **[開発者ガイド](docs/development.ja.md)** を参照してください。
 
 ## トラブルシューティング
 
