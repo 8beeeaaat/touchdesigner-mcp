@@ -23,7 +23,6 @@ export {
 	isStreamableHttpTransportConfig,
 	TransportConfigSchema,
 } from "./config.js";
-
+export { TransportFactory } from "./factory.js";
 export type { ValidationError } from "./validator.js";
-
 export { TransportConfigValidator } from "./validator.js";
