@@ -57,7 +57,6 @@ Alt+T または Dialogs → Textport でログを確認可能です。
 
 ![Textport](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/textport.png)
 
-
 ## MCPサーバーのインストール方法
 
 以下のインストール方法はいずれも、前段で [TouchDesigner セットアップ](#touchdesigner-セットアップ全方法共通) を完了していることを前提としています。利用する AI エージェントや好みに合わせて選択してください。
@@ -112,7 +111,7 @@ Alt+T または Dialogs → Textport でログを確認可能です。
 }
 ```
 
-*任意:* TouchDesigner を別ホスト/ポートで動かす場合は `--host` / `--port` を追記してください（例: `http://127.0.0.1:9981`）。
+_任意:_ TouchDesigner を別ホスト/ポートで動かす場合は `--host` / `--port` を追記してください（例: `http://127.0.0.1:9981`）。
 
 #### Claude Code の例
 
@@ -129,7 +128,7 @@ claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest -
   "mcpServers": {
     "touchdesigner": {
       "command": "npx",
-      "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"],
+      "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
     }
   }
 }
@@ -194,10 +193,15 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
 2. （必要に応じて）HTTP ポートや TouchDesigner ホストを変更します。
 
    ```bash
-   TRANSPORT=http    MCP_HTTP_PORT=6280    TD_HOST=http://host.docker.internal    docker compose up -d
+   TRANSPORT=http \
+   MCP_HTTP_PORT=6280 \
+   TD_HOST=http://host.docker.internal \
+   docker compose up -d
    ```
 
-3. MCP クライアントに HTTP エンドポイントを設定します（Claude Desktop 例）。
+3. MCP クライアントに HTTP エンドポイントを設定します
+
+- 例: Claude Code
 
    ```json
    {
@@ -206,6 +210,22 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
          "type": "http",
          "url": "http://localhost:6280/mcp"
        }
+     }
+   }
+   ```
+
+- 例: Claude Desktop
+
+   ```json
+   {
+     "mcpServers": {
+       "touchdesigner-http": {
+         "command": "npx",
+         "args": [
+           "mcp-remote",
+           "http://localhost:6280/mcp"
+         ]
+       },
      }
    }
    ```
@@ -227,25 +247,25 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
 2. クライアントからコンテナへ exec する設定を追加します（Claude Desktop 例）。
 
 ```json
-{
-  "mcpServers": {
-    "touchdesigner-docker": {
-      "command": "docker",
-      "args": [
-        "compose",
-        "-f",
-        "/path/to/your/touchdesigner-mcp/docker-compose.yml",
-        "exec",
-        "-i",
-        "touchdesigner-mcp-server",
-        "node",
-        "dist/cli.js",
-        "--stdio",
-        "--host=http://host.docker.internal"
-      ]
+    {
+      "mcpServers": {
+        "touchdesigner-docker": {
+          "command": "docker",
+          "args": [
+            "compose",
+            "-f",
+            "/path/to/your/touchdesigner-mcp/docker-compose.yml",
+            "exec",
+            "-i",
+            "touchdesigner-mcp-server",
+            "node",
+            "dist/cli.js",
+            "--stdio",
+            "--host=http://host.docker.internal"
+          ]
+        }
+      }
     }
-  }
-}
 ```
 
 ※Windows の場合は `C:\path\to\...` のようにドライブレターを含めてください。
@@ -285,7 +305,6 @@ curl http://localhost:6280/health
 # 127.0.0.1:6280/mcp
 npm run http
 ```
-
 
 ## 動作確認
 
