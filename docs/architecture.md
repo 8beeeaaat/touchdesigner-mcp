@@ -172,12 +172,11 @@ flowchart TB
 
 **Key Characteristics**:
 
-- **Multi-Session**: Single MCP server process handles multiple concurrent clients
+- **Multi-Session**: Single MCP server process handles multiple concurrent clients via TransportRegistry
 - **HTTP/SSE**: RESTful API + Server-Sent Events for streaming
-- **Session Management**: TTL-based automatic cleanup
+- **Session Management**: TTL-based automatic cleanup with per-session isolation
 - **Network Accessible**: Can accept remote connections
-
-**Current Limitation**: The current implementation has a bug where multiple sessions cannot initialize simultaneously due to a shared `StreamableHTTPServerTransport` instance. This is a known issue that needs to be resolved for proper multi-session support.
+- **Per-Session State**: Each client gets independent MCP protocol state (transport + server instances)
 
 #### Architecture Layers
 
@@ -261,12 +260,14 @@ graph TB
 
     subgraph HTTP ["HTTP Management"]
         H1["ExpressHttpManager<br/>- start/stop lifecycle<br/>- /mcp endpoint<br/>- /health endpoint<br/>- Graceful shutdown"]
-        H2["SessionManager<br/>- create(metadata)<br/>- cleanup(sessionId)<br/>- TTL-based expiration<br/>- Active session tracking"]
+        H2["TransportRegistry<br/>- getOrCreate(sessionId, request)<br/>- Per-session transport isolation<br/>- Session lifecycle management"]
+        H3["SessionManager<br/>- create(metadata)<br/>- cleanup(sessionId)<br/>- TTL-based expiration<br/>- Active session tracking"]
     end
 
     F1 --> C1 & C2
     C2 --> H1
     H1 --> H2
+    H2 --> H3
 
     classDef factory fill:#fff3cd,stroke:#ffc107,stroke-width:2px
     classDef config fill:#d8e8ff,stroke:#1f6feb,stroke-width:2px
@@ -274,7 +275,7 @@ graph TB
 
     class F1,F2 factory
     class C1,C2 config
-    class H1,H2 http
+    class H1,H2,H3 http
 ```
 
 ### TransportFactory
@@ -314,6 +315,89 @@ class TransportFactory {
    - Multiple concurrent sessions support
    - Logger and SessionManager parameters utilized
 
+### TransportRegistry
+
+**Responsibility**: Per-session transport and server instance management
+
+**Implementation**: [src/transport/transportRegistry.ts](../src/transport/transportRegistry.ts)
+
+**Key Features**:
+
+- **Per-Session Isolation**: Each client gets independent transport + server instances
+- **Session Lifecycle**: Manages creation, reuse, and cleanup of session resources
+- **Request Routing**: Routes HTTP requests to appropriate transport based on session ID
+- **Graceful Cleanup**: Closes all active sessions during shutdown
+
+**Architecture**:
+
+```typescript
+interface SessionEntry {
+  transport: StreamableHTTPServerTransport;
+  server: McpServer;
+  createdAt: number;
+}
+
+class TransportRegistry {
+  private readonly sessions: Map<string, SessionEntry>;
+
+  async getOrCreate(
+    sessionId: string | undefined,
+    requestBody: JSONRPCMessage,
+    serverFactory: () => McpServer,
+  ): Promise<StreamableHTTPServerTransport | null>
+}
+```
+
+**Request Handling Logic**:
+
+1. **Existing Session** (`sessionId` exists in registry) → Return cached transport
+2. **New Session** (no `sessionId` + `initialize` request) → Create new transport + server
+3. **Invalid Session** (all other cases) → Return `null` (triggers 400 error)
+
+**Session Creation Flow**:
+
+```typescript
+// 1. Create transport with lifecycle callbacks
+const transport = new StreamableHTTPServerTransport({
+  sessionIdGenerator: () => randomUUID(),
+  onsessioninitialized: (sessionId) => {
+    // Store in registry
+    this.sessions.set(sessionId, { transport, server, createdAt });
+    // Register with SessionManager for TTL tracking
+    sessionManager?.register(sessionId);
+  },
+  onsessionclosed: (sessionId) => {
+    // Remove from registry
+    this.remove(sessionId);
+    // Cleanup from SessionManager
+    sessionManager?.cleanup(sessionId);
+  },
+});
+
+// 2. Create server instance via factory
+const server = serverFactory();
+
+// 3. Connect server to transport
+await server.connect(transport);
+```
+
+**Multi-Session Support**:
+
+The registry enables multiple concurrent clients by maintaining independent MCP protocol state per session:
+
+```text
+Client 1 → POST /mcp (no session) → TransportRegistry.getOrCreate()
+                                   → New transport + server (Session A)
+                                   → Response includes mcp-session-id: A
+
+Client 1 → POST /mcp (session: A) → TransportRegistry.getOrCreate()
+                                   → Reuse existing transport (Session A)
+
+Client 2 → POST /mcp (no session) → TransportRegistry.getOrCreate()
+                                   → New transport + server (Session B)
+                                   → Response includes mcp-session-id: B
+```
+
 ### ExpressHttpManager
 
 **Responsibility**: HTTP server lifecycle management
@@ -323,13 +407,38 @@ class TransportFactory {
 **Key Features**:
 
 - Express app generation using SDK's `createMcpExpressApp()`
-- `/mcp` endpoint: Delegates to `transport.handleRequest()`
+- `/mcp` endpoint: Routes to TransportRegistry for per-session handling
 - `/health` endpoint: Health check (includes active session count)
-- Graceful shutdown
+- Graceful shutdown with registry cleanup
 
-**Endpoint Configuration**:
+**Request Handling Flow**:
 
 ```typescript
+const handleMcpRequest: RequestHandler = async (req, res) => {
+  // Extract session ID from header
+  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+  // Get or create transport for this session via TransportRegistry
+  const transport = await this.registry.getOrCreate(
+    sessionId,
+    req.body,
+    this.serverFactory,
+  );
+
+  if (!transport) {
+    // Invalid session (session ID provided but not found, or non-initialize without session)
+    res.status(400).json({
+      jsonrpc: "2.0",
+      error: { code: -32000, message: "Invalid session" },
+      id: null
+    });
+    return;
+  }
+
+  // Delegate request to per-session transport
+  await transport.handleRequest(req, res, req.body);
+};
+
 // MCP protocol endpoints
 app.post('/mcp', handleMcpRequest); // JSON-RPC requests
 app.get('/mcp', handleMcpRequest);  // SSE streaming
@@ -339,7 +448,7 @@ app.delete('/mcp', handleMcpRequest); // Session termination
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    sessions: sessionManager.getActiveSessionCount(),
+    sessions: this.registry.getCount(),
     timestamp: new Date().toISOString()
   });
 });
@@ -1035,76 +1144,6 @@ npm run gen:handlers   # Python handlers generation
 npm run gen:mcp        # TypeScript client + Zod schemas
 npm run gen            # Run all generation steps
 ```
-
----
-
-## Known Issues and Limitations
-
-### Multiple Session Support (HTTP Mode)
-
-**Issue**: The current HTTP transport implementation cannot handle multiple concurrent client sessions.
-
-**Symptoms**:
-
-```bash
-# First client (Claude Code)
-$ claude mcp list
-touchdesigner-http: http://localhost:6280/mcp (HTTP) - ✓ Connected
-
-# Second client (MCP Inspector)
-Error from MCP server: StreamableHTTPError: Streamable HTTP error:
-Error POSTing to endpoint: {"jsonrpc":"2.0","error":{"code":-32600,
-"message":"Invalid Request: Server already initialized"},"id":null}
-```
-
-**Root Cause**:
-
-The current implementation creates a single `StreamableHTTPServerTransport` instance that is shared across all HTTP requests. When a second client attempts to initialize a session, the transport's `initialize()` method is called again, which throws "Server already initialized" error.
-
-```typescript
-// Current problematic implementation (src/transport/factory.ts)
-const transport = new StreamableHTTPServerTransport(
-  this.config.endpoint,
-  sessionManager
-);
-
-// Single transport instance handles ALL sessions
-// When session 2 calls initialize(), it fails because session 1 already initialized
-```
-
-**Expected Behavior**:
-
-Each client session should have its own isolated MCP protocol state while sharing the same HTTP server endpoint.
-
-**Impact**:
-
-- Only one client can connect at a time in HTTP mode
-- Subsequent connection attempts fail with "Server already initialized" error
-- SessionManager correctly tracks multiple sessions, but transport layer blocks them
-
-**Workaround**:
-
-Currently, only one client can be connected at a time. To switch clients:
-
-1. Disconnect the first client
-2. Wait for session cleanup (or manually cleanup)
-3. Connect the second client
-
-**Proposed Solution**:
-
-Investigate MCP SDK's session handling for `StreamableHTTPServerTransport`. The SDK may provide:
-
-1. Per-session transport isolation
-2. Session lifecycle callbacks for creating/destroying transport instances
-3. Multiplexing support for single transport instance
-
-Further investigation of MCP SDK documentation and source code is needed to determine the correct implementation pattern for multi-session support.
-
-**Related Files**:
-
-- [src/transport/factory.ts](../src/transport/factory.ts) - Transport creation logic
-- [src/transport/expressHttpManager.ts](../src/transport/expressHttpManager.ts) - HTTP request handling
-- [src/transport/sessionManager.ts](../src/transport/sessionManager.ts) - Session tracking (working correctly)
 
 ---
 
