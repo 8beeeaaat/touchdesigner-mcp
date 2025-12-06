@@ -51,7 +51,7 @@ flowchart LR
 
 ## インストール方法
 
-**[Installation Guide](docs/installation.md)** を参照してください。
+**[Installation Guide](docs/installation.ja.md)** を参照してください。
 
 ## MCPサーバーの機能
 
