@@ -2,9 +2,12 @@
 
 TouchDesigner MCP を各種 AI エージェントおよびプラットフォームで利用するためのインストール手順をまとめたドキュメントです。
 
+[English](installation.md) / [日本語](installation.ja.md)
+
 ## クイックスタート
 
-もっともシンプルなのは Claude Desktop + MCP バンドルの組み合わせです。[最新リリース](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest)から
+もっともシンプルなのは Claude Desktop + MCP バンドルの組み合わせです。
+[最新リリース](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest)から
 `touchdesigner-mcp-td.zip` と `touchdesigner-mcp.mcpb` をダウンロードし、TouchDesigner プロジェクトに
 `mcp_webserver_base.tox` をインポート（推奨: `project1/mcp_webserver_base`）、その後 `.mcpb` ファイルを
 ダブルクリックして Claude Desktop に追加すれば、コンポーネント起動後に自動で接続されます。
