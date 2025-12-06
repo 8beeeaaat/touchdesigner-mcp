@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { Result } from "../core/result.js";
 import { createErrorResult, createSuccessResult } from "../core/result.js";
@@ -77,25 +79,63 @@ export class TransportFactory {
 	/**
 	 * Create a streamable HTTP transport instance
 	 *
-	 * Note: This is a placeholder implementation. Full HTTP transport integration
-	 * will be completed in Phase 6 after HttpServerManager and SessionManager are implemented.
+	 * Creates a StreamableHTTPServerTransport with session management support.
+	 * The transport instance is stateful and manages session lifecycle through callbacks.
 	 *
-	 * @param _config - Streamable HTTP transport configuration
-	 * @returns Error result indicating HTTP transport is not yet fully implemented
+	 * @param config - Streamable HTTP transport configuration
+	 * @returns Result with StreamableHTTPServerTransport instance or Error
+	 *
+	 * @example
+	 * ```typescript
+	 * const config: StreamableHttpTransportConfig = {
+	 *   type: 'streamable-http',
+	 *   port: 3000,
+	 *   host: '127.0.0.1',
+	 *   endpoint: '/mcp',
+	 *   sessionConfig: { enabled: true }
+	 * };
+	 * const result = TransportFactory.createStreamableHttp(config);
+	 * ```
 	 */
 	private static createStreamableHttp(
-		_config: StreamableHttpTransportConfig,
+		config: StreamableHttpTransportConfig,
 	): Result<Transport, Error> {
-		// TODO: Phase 6 - Implement full HTTP transport creation
-		// This will require:
-		// 1. HttpServerManager instance
-		// 2. SessionManager instance
-		// 3. SecurityPolicy instance
-		// 4. StreamableHTTPServerTransport configuration
-		return createErrorResult(
-			new Error(
-				"Streamable HTTP transport not yet implemented. This will be completed in Phase 6.",
-			),
-		);
+		try {
+			// Create transport with session management
+			const transport = new StreamableHTTPServerTransport({
+				// Enable JSON responses for simple request/response scenarios
+				enableJsonResponse: false,
+
+				// Session close callback
+				// This is called when a session is terminated via DELETE request
+				onsessionclosed: config.sessionConfig?.enabled
+					? (sessionId: string) => {
+							console.log(`Session closed: ${sessionId}`);
+						}
+					: undefined,
+
+				// Session initialization callback
+				// This is called when a new session is created
+				onsessioninitialized: config.sessionConfig?.enabled
+					? (sessionId: string) => {
+							console.log(`Session initialized: ${sessionId}`);
+						}
+					: undefined,
+
+				// Retry interval for SSE polling behavior (optional)
+				retryInterval: config.retryInterval,
+				// Use randomUUID for session ID generation if sessions are enabled
+				sessionIdGenerator: config.sessionConfig?.enabled
+					? () => randomUUID()
+					: undefined,
+			});
+
+			return createSuccessResult(transport);
+		} catch (error) {
+			const err = error instanceof Error ? error : new Error(String(error));
+			return createErrorResult(
+				new Error(`Failed to create streamable HTTP transport: ${err.message}`),
+			);
+		}
 	}
 }

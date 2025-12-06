@@ -40,7 +40,7 @@ describe("TransportFactory", () => {
 	});
 
 	describe("streamable-http transport creation", () => {
-		test("should return error for HTTP transport (not yet implemented)", () => {
+		test("should create HTTP transport from valid config", () => {
 			const config: StreamableHttpTransportConfig = {
 				endpoint: "/mcp",
 				host: "127.0.0.1",
@@ -50,10 +50,11 @@ describe("TransportFactory", () => {
 
 			const result = TransportFactory.create(config);
 
-			expect(result.success).toBe(false);
-			if (!result.success) {
-				expect(result.error.message).toContain("not yet implemented");
-				expect(result.error.message).toContain("Phase 6");
+			expect(result.success).toBe(true);
+			if (result.success) {
+				expect(result.data).toBeDefined();
+				expect(result.data).toHaveProperty("start");
+				expect(result.data).toHaveProperty("close");
 			}
 		});
 
@@ -161,10 +162,14 @@ describe("TransportFactory", () => {
 
 			const result = TransportFactory.create(config);
 
-			// Should attempt HTTP transport (not yet implemented error)
-			expect(result.success).toBe(false);
-			if (!result.success) {
-				expect(result.error.message).toContain("not yet implemented");
+			// Should successfully create HTTP transport
+			expect(result.success).toBe(true);
+			if (result.success) {
+				// Verify it's a StreamableHTTPServerTransport
+				expect(result.data).toBeDefined();
+				expect(result.data).toHaveProperty("start");
+				expect(result.data).toHaveProperty("close");
+				expect(result.data).toHaveProperty("send");
 			}
 		});
 	});

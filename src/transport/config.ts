@@ -82,6 +82,12 @@ export interface StreamableHttpTransportConfig {
 	 * Security policy configuration
 	 */
 	securityConfig?: SecurityConfig;
+
+	/**
+	 * Retry interval in milliseconds for SSE polling behavior (optional)
+	 * When set, the server will send a retry field in SSE priming events
+	 */
+	retryInterval?: number;
 }
 
 /**
@@ -138,6 +144,7 @@ const StreamableHttpTransportConfigSchema = z
 			.positive()
 			.min(1)
 			.max(65535, "Port must be between 1 and 65535"),
+		retryInterval: z.number().int().positive().optional(),
 		securityConfig: SecurityConfigSchema.optional(),
 		sessionConfig: SessionConfigSchema.optional(),
 		type: z.literal("streamable-http"),

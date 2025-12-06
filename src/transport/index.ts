@@ -24,5 +24,10 @@ export {
 	TransportConfigSchema,
 } from "./config.js";
 export { TransportFactory } from "./factory.js";
+export type { ServerStatus } from "./httpServerManager.js";
+export { HttpServerManager } from "./httpServerManager.js";
+export { HttpTransportManager } from "./httpTransportManager.js";
+export type { ISessionManager, Session } from "./sessionManager.js";
+export { SessionManager } from "./sessionManager.js";
 export type { ValidationError } from "./validator.js";
 export { TransportConfigValidator } from "./validator.js";
