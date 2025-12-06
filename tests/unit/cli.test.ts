@@ -18,7 +18,7 @@ const {
 		};
 	const TouchDesignerServerMock = vi.fn(defaultTouchDesignerServerImpl);
 
-	const defaultStdioTransportImpl = function MockStdioServerTransport() { };
+	const defaultStdioTransportImpl = function MockStdioServerTransport() {};
 	const StdioServerTransportMock = vi.fn(defaultStdioTransportImpl);
 
 	return {
@@ -107,7 +107,7 @@ describe("CLI", () => {
 				.mockImplementation(() => undefined as never);
 			const mockConsoleError = vi
 				.spyOn(console, "error")
-				.mockImplementation(() => { });
+				.mockImplementation(() => {});
 
 			parseTransportConfig(["--mcp-http-port=abc"]);
 
@@ -126,7 +126,7 @@ describe("CLI", () => {
 				.mockImplementation(() => undefined as never);
 			const mockConsoleError = vi
 				.spyOn(console, "error")
-				.mockImplementation(() => { });
+				.mockImplementation(() => {});
 
 			parseTransportConfig(["--mcp-http-port=0"]);
 
@@ -145,7 +145,7 @@ describe("CLI", () => {
 				.mockImplementation(() => undefined as never);
 			const mockConsoleError = vi
 				.spyOn(console, "error")
-				.mockImplementation(() => { });
+				.mockImplementation(() => {});
 
 			parseTransportConfig(["--mcp-http-port=70000"]);
 

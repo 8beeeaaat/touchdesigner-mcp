@@ -1,7 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { randomUUID } from "node:crypto";
 import type { ILogger } from "../core/logger.js";
 import type { Result } from "../core/result.js";
 import { createErrorResult, createSuccessResult } from "../core/result.js";
@@ -140,22 +140,22 @@ export class TransportFactory {
 			let suppressCloseEvent = false;
 			const handleSessionClosed = config.sessionConfig?.enabled
 				? (sessionId: string) => {
-					if (logger) {
-						logger.sendLog({
-							data: `Session closed: ${sessionId}`,
-							level: "info",
-							logger: "TransportFactory",
-						});
+						if (logger) {
+							logger.sendLog({
+								data: `Session closed: ${sessionId}`,
+								level: "info",
+								logger: "TransportFactory",
+							});
+						}
+						// Clean up session from SessionManager
+						if (sessionManager) {
+							sessionManager.cleanup(sessionId);
+						}
+						suppressCloseEvent = true;
+						if (transport) {
+							TransportFactory.resetStreamableHttpState(transport);
+						}
 					}
-					// Clean up session from SessionManager
-					if (sessionManager) {
-						sessionManager.cleanup(sessionId);
-					}
-					suppressCloseEvent = true;
-					if (transport) {
-						TransportFactory.resetStreamableHttpState(transport);
-					}
-				}
 				: undefined;
 			// Create transport with session management only
 			// Security (DNS rebinding protection) is handled by Express middleware
@@ -171,18 +171,18 @@ export class TransportFactory {
 				// This is called when a new session is created
 				onsessioninitialized: config.sessionConfig?.enabled
 					? (sessionId: string) => {
-						if (logger) {
-							logger.sendLog({
-								data: `Session initialized: ${sessionId}`,
-								level: "info",
-								logger: "TransportFactory",
-							});
+							if (logger) {
+								logger.sendLog({
+									data: `Session initialized: ${sessionId}`,
+									level: "info",
+									logger: "TransportFactory",
+								});
+							}
+							// Register session with SessionManager
+							if (sessionManager) {
+								sessionManager.register(sessionId);
+							}
 						}
-						// Register session with SessionManager
-						if (sessionManager) {
-							sessionManager.register(sessionId);
-						}
-					}
 					: undefined,
 
 				// Retry interval for SSE polling behavior (optional)

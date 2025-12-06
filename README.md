@@ -167,7 +167,13 @@ The MCP bundle will automatically handle the connection to the TouchDesigner ser
 ### 4. Start the MCP server container
 
   ```bash
-  docker-compose up -d
+# Stdio mode
+docker-compose up -d
+
+# or
+
+# Streamable HTTP mode
+TRANSPORT=http docker-compose up -d
   ```
 
   To enable the streamable HTTP transport inside Docker, set `TRANSPORT=http`
@@ -231,10 +237,8 @@ The MCP bundle will automatically handle the connection to the TouchDesigner ser
   {
     "mcpServers": {
       "touchdesigner-http": {
-        "transport": {
-          "type": "http",
-          "url": "http://localhost:6280/mcp"
-        }
+        "type": "http",
+        "url": "http://localhost:6280/mcp"
       }
     }
   }

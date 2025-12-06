@@ -167,11 +167,17 @@ TouchDesignerのメニューからTextportを起動してサーバーの起動�
 ##### 4. MCPサーバーのコンテナを起動
 
 ```bash
+# Stdioモードで起動
 docker-compose up -d
+
+# or
+
+# Streamable HTTPモードで起動
+TRANSPORT=http docker-compose up -d
 ```
 
-Docker内部でStreamable HTTPトランスポートを有効化する場合は、起動前に`TRANSPORT=http`
-（必要に応じて `MCP_HTTP_PORT`、`MCP_HTTP_HOST`、`TD_HOST`、`TD_PORT`）を指定してください。
+Docker内部でStreamable HTTPトランスポートを有効化する場合は `TRANSPORT=http` オプションを利用してください。
+（必要に応じて `MCP_HTTP_PORT`、`MCP_HTTP_HOST`、`TD_HOST`、`TD_PORT` も利用可能）
 
 ```bash
 TRANSPORT=http \
@@ -230,10 +236,8 @@ docker compose up -d
 {
   "mcpServers": {
     "touchdesigner-http": {
-      "transport": {
-        "type": "http",
-        "url": "http://localhost:6280/mcp"
-      }
+      "type": "http",
+      "url": "http://localhost:6280/mcp"
     }
   }
 }
