@@ -9,7 +9,7 @@ services:
     ports:
       - "6274:6274" # MCP inspector
       - "6277:6277" # MCP inspector proxy
-      - "${MCP_HTTP_PORT:-6280}:${MCP_HTTP_PORT:-6280}" # Streamable HTTP (optional)
+      - "127.0.0.1:${MCP_HTTP_PORT:-6280}:${MCP_HTTP_PORT:-6280}" # Streamable HTTP (optional, loopback-only by default)
     stdin_open: true
     tty: true
     restart: unless-stopped
