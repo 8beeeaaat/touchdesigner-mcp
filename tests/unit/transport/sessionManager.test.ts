@@ -59,11 +59,10 @@ describe("SessionManager", () => {
 
 			expect(sessionId).toBeDefined();
 
-			const result = sessionManager.validate(sessionId);
-			expect(result.success).toBe(true);
-			if (result.success) {
-				expect(result.data.metadata).toEqual(metadata);
-			}
+			const sessions = sessionManager.list();
+			expect(sessions).toHaveLength(1);
+			expect(sessions[0]?.id).toBe(sessionId);
+			expect(sessions[0]?.metadata).toEqual(metadata);
 		});
 
 		test("should create unique session IDs", () => {
@@ -93,64 +92,45 @@ describe("SessionManager", () => {
 		});
 	});
 
-	describe("session validation", () => {
-		test("should validate existing session", () => {
+	describe("session listing", () => {
+		test("should list created session", () => {
 			const config: SessionConfig = { enabled: true };
 			sessionManager = new SessionManager(config, mockLogger);
 
 			const sessionId = sessionManager.create();
-			const result = sessionManager.validate(sessionId);
+			const sessions = sessionManager.list();
 
-			expect(result.success).toBe(true);
-			if (result.success) {
-				expect(result.data.id).toBe(sessionId);
-				expect(result.data.createdAt).toBeTypeOf("number");
-				expect(result.data.lastAccessedAt).toBeTypeOf("number");
-			}
+			expect(sessions).toHaveLength(1);
+			expect(sessions[0]?.id).toBe(sessionId);
+			expect(sessions[0]?.createdAt).toBeTypeOf("number");
+			expect(sessions[0]?.lastAccessedAt).toBeTypeOf("number");
 		});
 
-		test("should reject invalid session ID", () => {
+		test("should not list non-existent session", () => {
 			const config: SessionConfig = { enabled: true };
 			sessionManager = new SessionManager(config, mockLogger);
 
-			const result = sessionManager.validate("invalid-session-id");
+			const sessions = sessionManager.list();
 
-			expect(result.success).toBe(false);
-			if (!result.success) {
-				expect(result.error.message).toContain("Invalid session ID");
-			}
+			expect(sessions).toHaveLength(0);
 		});
 
-		test("should update last accessed time on validation", () => {
+		test("should list session with metadata", () => {
 			const config: SessionConfig = { enabled: true };
 			sessionManager = new SessionManager(config, mockLogger);
 
-			const sessionId = sessionManager.create();
+			const metadata = { clientVersion: "1.0", userAgent: "test" };
+			const sessionId = sessionManager.create(metadata);
+			const sessions = sessionManager.list();
 
-			// Get initial access time
-			const result1 = sessionManager.validate(sessionId);
-			expect(result1.success).toBe(true);
-			const initialAccessTime = result1.success
-				? result1.data.lastAccessedAt
-				: 0;
-
-			// Wait a bit
-			vi.useFakeTimers();
-			vi.advanceTimersByTime(100);
-
-			// Validate again
-			const result2 = sessionManager.validate(sessionId);
-			expect(result2.success).toBe(true);
-			const updatedAccessTime = result2.success
-				? result2.data.lastAccessedAt
-				: 0;
-
-			expect(updatedAccessTime).toBeGreaterThan(initialAccessTime);
+			expect(sessions).toHaveLength(1);
+			expect(sessions[0]?.id).toBe(sessionId);
+			expect(sessions[0]?.metadata).toEqual(metadata);
 		});
 	});
 
-	describe("TTL-based expiration", () => {
-		test("should expire session after TTL", () => {
+	describe("TTL-based cleanup integration", () => {
+		test("should keep session before TTL expires", () => {
 			vi.useFakeTimers();
 
 			const config: SessionConfig = {
@@ -160,42 +140,17 @@ describe("SessionManager", () => {
 			sessionManager = new SessionManager(config, mockLogger);
 
 			const sessionId = sessionManager.create();
-
-			// Session should be valid initially
-			const result1 = sessionManager.validate(sessionId);
-			expect(result1.success).toBe(true);
-
-			// Advance time beyond TTL
-			vi.advanceTimersByTime(1001);
-
-			// Session should be expired
-			const result2 = sessionManager.validate(sessionId);
-			expect(result2.success).toBe(false);
-			if (!result2.success) {
-				expect(result2.error.message).toContain("Session expired");
-			}
-		});
-
-		test("should not expire session before TTL", () => {
-			vi.useFakeTimers();
-
-			const config: SessionConfig = {
-				enabled: true,
-				ttl: 1000,
-			};
-			sessionManager = new SessionManager(config, mockLogger);
-
-			const sessionId = sessionManager.create();
+			expect(sessionManager.list()).toHaveLength(1);
 
 			// Advance time but not beyond TTL
 			vi.advanceTimersByTime(999);
 
-			// Session should still be valid
-			const result = sessionManager.validate(sessionId);
-			expect(result.success).toBe(true);
+			// Session should still exist (no cleanup yet)
+			expect(sessionManager.list()).toHaveLength(1);
+			expect(sessionManager.list()[0]?.id).toBe(sessionId);
 		});
 
-		test("should reset TTL on access", () => {
+		test("should clean up session after TTL with automatic cleanup", () => {
 			vi.useFakeTimers();
 
 			const config: SessionConfig = {
@@ -204,21 +159,19 @@ describe("SessionManager", () => {
 			};
 			sessionManager = new SessionManager(config, mockLogger);
 
-			const sessionId = sessionManager.create();
+			sessionManager.create();
+			sessionManager.startTTLCleanup();
 
-			// Advance time close to TTL
-			vi.advanceTimersByTime(900);
+			expect(sessionManager.list()).toHaveLength(1);
 
-			// Access session (resets TTL)
-			const result1 = sessionManager.validate(sessionId);
-			expect(result1.success).toBe(true);
+			// Advance time beyond TTL
+			vi.advanceTimersByTime(1001);
 
-			// Advance another 900ms (total 1800ms from creation, but only 900ms from last access)
-			vi.advanceTimersByTime(900);
+			// Trigger cleanup interval (default is TTL/2 = 500ms)
+			vi.advanceTimersByTime(500);
 
-			// Session should still be valid (TTL reset on access)
-			const result2 = sessionManager.validate(sessionId);
-			expect(result2.success).toBe(true);
+			// Session should be cleaned up
+			expect(sessionManager.list()).toHaveLength(0);
 		});
 
 		test("should work without TTL configured", () => {
@@ -230,9 +183,9 @@ describe("SessionManager", () => {
 
 			const sessionId = sessionManager.create();
 
-			// Session should be valid regardless of time
-			const result = sessionManager.validate(sessionId);
-			expect(result.success).toBe(true);
+			// Session should exist regardless of time
+			expect(sessionManager.list()).toHaveLength(1);
+			expect(sessionManager.list()[0]?.id).toBe(sessionId);
 		});
 	});
 
@@ -280,7 +233,7 @@ describe("SessionManager", () => {
 		});
 	});
 
-	describe("session listing", () => {
+	describe("multiple sessions listing", () => {
 		test("should list all active sessions", () => {
 			const config: SessionConfig = { enabled: true };
 			sessionManager = new SessionManager(config, mockLogger);
@@ -465,25 +418,8 @@ describe("SessionManager", () => {
 			const uniqueIds = new Set(ids);
 			expect(uniqueIds.size).toBe(100);
 
-			// All sessions should be valid
+			// All sessions should be created
 			expect(sessionManager.list()).toHaveLength(100);
-		});
-
-		test("should handle concurrent validations", () => {
-			const config: SessionConfig = { enabled: true };
-			sessionManager = new SessionManager(config, mockLogger);
-
-			const sessionId = sessionManager.create();
-
-			// Validate concurrently
-			const results = Array.from({ length: 10 }, () =>
-				sessionManager.validate(sessionId),
-			);
-
-			// All validations should succeed
-			results.forEach((result) => {
-				expect(result.success).toBe(true);
-			});
 		});
 
 		test("should handle concurrent cleanup operations", () => {

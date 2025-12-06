@@ -82,6 +82,9 @@ export class TransportFactory {
 	 * Creates a StreamableHTTPServerTransport with session management support.
 	 * The transport instance is stateful and manages session lifecycle through callbacks.
 	 *
+	 * Note: DNS rebinding protection is handled by Express middleware (createMcpExpressApp)
+	 * in the ExpressHttpManager, not by the transport itself.
+	 *
 	 * @param config - Streamable HTTP transport configuration
 	 * @returns Result with StreamableHTTPServerTransport instance or Error
 	 *
@@ -101,7 +104,8 @@ export class TransportFactory {
 		config: StreamableHttpTransportConfig,
 	): Result<Transport, Error> {
 		try {
-			// Create transport with session management
+			// Create transport with session management only
+			// Security (DNS rebinding protection) is handled by Express middleware
 			const transport = new StreamableHTTPServerTransport({
 				// Enable JSON responses for simple request/response scenarios
 				enableJsonResponse: false,
@@ -124,6 +128,7 @@ export class TransportFactory {
 
 				// Retry interval for SSE polling behavior (optional)
 				retryInterval: config.retryInterval,
+
 				// Use randomUUID for session ID generation if sessions are enabled
 				sessionIdGenerator: config.sessionConfig?.enabled
 					? () => randomUUID()

@@ -7,8 +7,8 @@ import type {
 	TransportConfig,
 } from "./transport/config.js";
 import { isStreamableHttpTransportConfig } from "./transport/config.js";
+import { ExpressHttpManager } from "./transport/expressHttpManager.js";
 import { TransportFactory } from "./transport/factory.js";
-import { HttpTransportManager } from "./transport/httpTransportManager.js";
 import { SessionManager } from "./transport/sessionManager.js";
 
 // Note: Environment variables should be set by the MCP Bundle runtime or CLI arguments
@@ -140,14 +140,29 @@ export async function startServer(params?: {
 		// Handle HTTP mode
 		if (isStreamableHttpTransportConfig(transportConfig)) {
 			const logger = new McpLogger(server.server);
+
+			// Create session manager if enabled
 			const sessionManager = transportConfig.sessionConfig?.enabled
 				? new SessionManager(transportConfig.sessionConfig, logger)
 				: null;
 
-			// Create HTTP transport manager
-			const httpManager = new HttpTransportManager(
+			// Create transport instance
+			const transportResult = TransportFactory.create(transportConfig);
+			if (!transportResult.success) {
+				throw transportResult.error;
+			}
+			const transport = transportResult.data;
+
+			// Connect server to transport
+			const connectResult = await server.connect(transport);
+			if (!connectResult.success) {
+				throw new Error(`Failed to connect: ${connectResult.error.message}`);
+			}
+
+			// Create Express HTTP manager
+			const httpManager = new ExpressHttpManager(
 				transportConfig,
-				() => TransportFactory.create(transportConfig),
+				transport,
 				sessionManager,
 				logger,
 			);
@@ -159,7 +174,7 @@ export async function startServer(params?: {
 			}
 
 			console.error(
-				`MCP server started in HTTP mode on ${transportConfig.host}:${transportConfig.port}`,
+				`MCP server started in HTTP mode on ${transportConfig.host}:${transportConfig.port}${transportConfig.endpoint}`,
 			);
 
 			// Start session cleanup if enabled
@@ -181,6 +196,9 @@ export async function startServer(params?: {
 				if (!stopResult.success) {
 					console.error(`Error during shutdown: ${stopResult.error.message}`);
 				}
+
+				// Close transport
+				await transport.close();
 
 				console.error("Server shutdown complete");
 				process.exit(0);

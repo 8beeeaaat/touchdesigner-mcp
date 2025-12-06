@@ -26,26 +26,6 @@ export interface SessionConfig {
 }
 
 /**
- * Security configuration for Streamable HTTP transport
- */
-export interface SecurityConfig {
-	/**
-	 * List of allowed origins for CORS (default: ['http://localhost:*', 'http://127.0.0.1:*'])
-	 */
-	allowedOrigins?: string[];
-
-	/**
-	 * List of allowed hosts for DNS rebinding protection (default: ['localhost', '127.0.0.1'])
-	 */
-	allowedHosts?: string[];
-
-	/**
-	 * Enable DNS rebinding protection (default: true)
-	 */
-	enableDnsRebindingProtection?: boolean;
-}
-
-/**
  * Configuration for stdio transport
  */
 export interface StdioTransportConfig {
@@ -79,11 +59,6 @@ export interface StreamableHttpTransportConfig {
 	sessionConfig?: SessionConfig;
 
 	/**
-	 * Security policy configuration
-	 */
-	securityConfig?: SecurityConfig;
-
-	/**
 	 * Retry interval in milliseconds for SSE polling behavior (optional)
 	 * When set, the server will send a retry field in SSE priming events
 	 */
@@ -105,17 +80,6 @@ const SessionConfigSchema = z
 		cleanupInterval: z.number().int().positive().optional(),
 		enabled: z.boolean(),
 		ttl: z.number().int().positive().optional(),
-	})
-	.strict();
-
-/**
- * Zod schema for SecurityConfig validation
- */
-const SecurityConfigSchema = z
-	.object({
-		allowedHosts: z.array(z.string()).optional(),
-		allowedOrigins: z.array(z.string()).optional(),
-		enableDnsRebindingProtection: z.boolean().optional(),
 	})
 	.strict();
 
@@ -145,7 +109,6 @@ const StreamableHttpTransportConfigSchema = z
 			.min(1)
 			.max(65535, "Port must be between 1 and 65535"),
 		retryInterval: z.number().int().positive().optional(),
-		securityConfig: SecurityConfigSchema.optional(),
 		sessionConfig: SessionConfigSchema.optional(),
 		type: z.literal("streamable-http"),
 	})
@@ -187,20 +150,10 @@ export const DEFAULT_SESSION_CONFIG: Required<SessionConfig> = {
 };
 
 /**
- * Default values for SecurityConfig
- */
-export const DEFAULT_SECURITY_CONFIG: Required<SecurityConfig> = {
-	allowedHosts: ["localhost", "127.0.0.1"],
-	allowedOrigins: ["http://localhost:*", "http://127.0.0.1:*"],
-	enableDnsRebindingProtection: true,
-};
-
-/**
  * Default values for StreamableHttpTransportConfig (excluding required fields)
  */
 export const DEFAULT_HTTP_CONFIG = {
 	endpoint: "/mcp",
 	host: "127.0.0.1",
-	securityConfig: DEFAULT_SECURITY_CONFIG,
 	sessionConfig: DEFAULT_SESSION_CONFIG,
 } as const;

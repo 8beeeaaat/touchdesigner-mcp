@@ -32,6 +32,7 @@
 		"@types/ws": "^8.18.1",
 		"@types/yargs": "^17.0.35",
 		"axios": "^1.13.2",
+		"express": "^5.2.1",
 		"mustache": "^4.2.0",
 		"semver": "^7.7.3",
 		"yaml": "^2.8.2",
@@ -40,6 +41,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.3.8",
 		"@openapitools/openapi-generator-cli": "^2.25.2",
+		"@types/express": "^5.0.6",
 		"@types/jsdom": "^27.0.0",
 		"@types/mustache": "^4.2.6",
 		"@types/node": "^24.10.1",

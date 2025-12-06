@@ -77,29 +77,21 @@ describe("TransportConfigValidator", () => {
 			}
 		});
 
-		test("should validate HTTP config with security config", () => {
+		test("should validate HTTP config without security config", () => {
+			// SecurityConfig removed - DNS rebinding protection now handled by SDK middleware
 			const config: StreamableHttpTransportConfig = {
 				endpoint: "/api/mcp",
 				host: "0.0.0.0",
 				port: 3000,
-				securityConfig: {
-					allowedHosts: ["localhost"],
-					allowedOrigins: ["http://localhost:*"],
-					enableDnsRebindingProtection: true,
-				},
 				type: "streamable-http",
 			};
 
 			const result = TransportConfigValidator.validate(config);
 
 			expect(result.success).toBe(true);
-			if (result.success) {
-				expect(result.data.securityConfig?.allowedOrigins).toEqual([
-					"http://localhost:*",
-				]);
-				expect(result.data.securityConfig?.enableDnsRebindingProtection).toBe(
-					true,
-				);
+			if (result.success && result.data.type === "streamable-http") {
+				expect(result.data.port).toBe(3000);
+				expect(result.data.endpoint).toBe("/api/mcp");
 			}
 		});
 

@@ -40,11 +40,6 @@ export interface ISessionManager {
 	create(metadata?: Record<string, unknown>): string;
 
 	/**
-	 * Validate and update session access time
-	 */
-	validate(sessionId: string): Result<Session, Error>;
-
-	/**
 	 * Clean up a session by ID
 	 */
 	cleanup(sessionId: string): Result<void, Error>;
@@ -63,6 +58,11 @@ export interface ISessionManager {
 	 * Stop automatic TTL-based cleanup
 	 */
 	stopTTLCleanup(): void;
+
+	/**
+	 * Get number of active sessions
+	 */
+	getActiveSessionCount(): number;
 }
 
 /**
@@ -71,6 +71,12 @@ export interface ISessionManager {
  * Manages client sessions for Streamable HTTP transport.
  * Provides session creation, validation, TTL-based expiration, and automatic cleanup.
  *
+ * Note: Session validation (checking if session ID exists) is now handled by
+ * StreamableHTTPServerTransport.handleRequest(). This SessionManager focuses on:
+ * - Session creation via SDK callbacks (onsessioninitialized)
+ * - Session cleanup via SDK callbacks (onsessionclosed) and TTL-based cleanup
+ * - Session tracking for health checks and monitoring
+ *
  * @example
  * ```typescript
  * const sessionManager = new SessionManager(
@@ -78,16 +84,10 @@ export interface ISessionManager {
  *   logger
  * );
  *
- * // Create session
+ * // Create session (typically called from SDK callback)
  * const sessionId = sessionManager.create({ clientVersion: '1.0' });
  *
- * // Validate session
- * const result = sessionManager.validate(sessionId);
- * if (result.success) {
- *   console.log('Session valid:', result.data);
- * }
- *
- * // Start automatic cleanup
+ * // Start automatic TTL-based cleanup
  * sessionManager.startTTLCleanup();
  *
  * // Stop cleanup when done
@@ -136,39 +136,6 @@ export class SessionManager implements ISessionManager {
 		});
 
 		return sessionId;
-	}
-
-	/**
-	 * Validate a session and update its last accessed time
-	 *
-	 * @param sessionId - Session ID to validate
-	 * @returns Result with Session data or Error
-	 */
-	validate(sessionId: string): Result<Session, Error> {
-		const session = this.sessions.get(sessionId);
-
-		if (!session) {
-			return createErrorResult(new Error(`Invalid session ID: ${sessionId}`));
-		}
-
-		// Check TTL if configured
-		if (this.config.ttl) {
-			const elapsed = Date.now() - session.lastAccessedAt;
-			if (elapsed > this.config.ttl) {
-				// Session expired, clean it up
-				this.cleanup(sessionId);
-				return createErrorResult(
-					new Error(
-						`Session expired: ${sessionId} (TTL: ${this.config.ttl}ms)`,
-					),
-				);
-			}
-		}
-
-		// Update last accessed time
-		session.lastAccessedAt = Date.now();
-
-		return createSuccessResult(session);
 	}
 
 	/**

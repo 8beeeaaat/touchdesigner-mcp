@@ -42,11 +42,13 @@ This document outlines the **Clean Architecture** implementation plan for adding
 ### Why Clean Architecture?
 
 After evaluating three architectural approaches:
+
 1. **Minimal Changes** (~278 LOC, 1-2 days)
 2. **Pragmatic Balance** (~330 LOC, 3-5 days)
 3. **Clean Architecture** (~600+ LOC, 10-15 days) ⭐ **SELECTED**
 
 **Decision Rationale**:
+
 - Anticipates future transport additions (WebSocket, gRPC)
 - Maximizes long-term maintainability and code quality
 - Provides clear migration path for evolving requirements
@@ -72,10 +74,12 @@ The following design decisions were confirmed:
 ### Existing Implementation
 
 **Transport Layer**: [src/cli.ts:3](../src/cli.ts#L3)
+
 - Currently uses `StdioServerTransport` only
 - Mode detection at [src/cli.ts:52-56](../src/cli.ts#L52-L56) rejects non-stdio requests
 
 **Server Architecture**: [src/server/touchDesignerServer.ts:50](../src/server/touchDesignerServer.ts#L50)
+
 - Already designed with `Transport` interface abstraction
 - Transport-agnostic `ConnectionManager` at [src/server/connectionManager.ts:10-79](../src/server/connectionManager.ts#L10-L79)
 
@@ -84,6 +88,7 @@ The following design decisions were confirmed:
 **Current MCP SDK**: `@modelcontextprotocol/sdk@^1.24.3` ([package.json:29](../package.json#L29))
 
 **No Additional Dependencies Required**:
+
 - ❌ Express: Not needed (using Node.js `http` module + SDK's `StreamableHTTPServerTransport`)
 - ❌ CORS library: Not needed (manual CORS headers)
 - ✅ All required functionality provided by MCP SDK
@@ -91,6 +96,7 @@ The following design decisions were confirmed:
 ### Existing Patterns to Follow
 
 **Result Pattern**: [src/core/result.ts:5-7](../src/core/result.ts#L5-L7)
+
 ```typescript
 type Result<T, E = Error> =
   | { success: true; data: T }
@@ -98,6 +104,7 @@ type Result<T, E = Error> =
 ```
 
 **Logger Pattern**: [src/core/logger.ts](../src/core/logger.ts)
+
 ```typescript
 interface ILogger {
   sendLog(params: { level: string; data: string; logger: string }): void;
@@ -222,6 +229,7 @@ sequenceDiagram
 #### Files to Create
 
 **1. `src/transport/config.ts`**
+
 - Transport configuration type definitions
 - Zod schemas for validation
 - Default configuration values
@@ -267,6 +275,7 @@ export const streamableHttpConfigSchema = z.object({
 ```
 
 **2. `src/transport/validator.ts`**
+
 - Configuration validation logic
 - Port range validation
 - Security policy validation
@@ -280,6 +289,7 @@ export class TransportConfigValidator implements IConfigValidator<TransportConfi
 ```
 
 **3. `src/transport/index.ts`**
+
 - Public API exports for transport layer
 
 #### Checklist
@@ -300,6 +310,7 @@ export class TransportConfigValidator implements IConfigValidator<TransportConfi
 #### Files to Create
 
 **4. `src/transport/factory.ts`**
+
 - Transport instance creation
 - Transport type detection
 - Configuration validation
@@ -364,6 +375,7 @@ export class TransportFactory {
 #### Files to Create
 
 **5. `src/transport/httpServerManager.ts`**
+
 - HTTP server lifecycle management
 - Endpoint registration
 - Server status monitoring
@@ -457,6 +469,7 @@ export class HttpServerManager implements IServerLifecycle {
 #### Files to Create
 
 **6. `src/transport/sessionManager.ts`**
+
 - Session creation and validation
 - TTL-based cleanup
 - Session metadata management
@@ -577,6 +590,7 @@ export class SessionManager implements ISessionManager {
 #### Files to Create
 
 **7. `src/transport/security.ts`**
+
 - Origin validation
 - CORS header application
 - Session header validation
@@ -883,11 +897,13 @@ export { SecurityPolicy } from './transport/security.js';
 #### Files to Create/Update
 
 **12. `docs/architecture/transport-layer.md`**
+
 - Architecture documentation
 - Component interaction diagrams
 - Extension guide for new transports
 
 **13. Update `README.md`**
+
 ```markdown
 ### HTTP Transport Mode
 
@@ -903,15 +919,18 @@ touchdesigner-mcp-server \
 ```
 
 **Configuration Options**:
+
 - `--mcp-http-port`: HTTP server port (required for HTTP mode)
 - `--mcp-http-host`: Bind address (default: 127.0.0.1)
 - `--host`: TouchDesigner WebServer host
 - `--port`: TouchDesigner WebServer port (default: 9981)
 
 **Health Check Endpoint**:
+
 ```bash
 curl http://localhost:3000/health
 ```
+
 ```
 
 **14. Update `README.ja.md`** (Japanese version)
@@ -967,6 +986,7 @@ See `docs/architecture/transport-layer.md` for detailed architecture.
 #### Transport Layer Tests
 
 **`tests/unit/transport/factory.test.ts`**
+
 ```typescript
 describe('TransportFactory', () => {
   it('should create stdio transport', () => {
@@ -996,6 +1016,7 @@ describe('TransportFactory', () => {
 ```
 
 **`tests/unit/transport/sessionManager.test.ts`**
+
 ```typescript
 describe('SessionManager', () => {
   it('should create session with UUID', () => {
@@ -1032,6 +1053,7 @@ describe('SessionManager', () => {
 ```
 
 **`tests/unit/transport/httpServerManager.test.ts`**
+
 ```typescript
 describe('HttpServerManager', () => {
   it('should start HTTP server', async () => {
@@ -1057,6 +1079,7 @@ describe('HttpServerManager', () => {
 ```
 
 **`tests/unit/transport/security.test.ts`**
+
 ```typescript
 describe('SecurityPolicy', () => {
   it('should validate allowed origins', () => {
@@ -1077,6 +1100,7 @@ describe('SecurityPolicy', () => {
 #### CLI Tests
 
 **`tests/unit/cli.test.ts`** (Enhanced)
+
 ```typescript
 describe('CLI - Transport Config Parsing', () => {
   it('should parse HTTP transport config', () => {
@@ -1096,6 +1120,7 @@ describe('CLI - Transport Config Parsing', () => {
 ### Integration Tests
 
 **`tests/integration/httpTransport.test.ts`**
+
 ```typescript
 describe('HTTP Transport Integration', () => {
   let server: TouchDesignerServer;
@@ -1194,6 +1219,7 @@ describe('HTTP Transport Integration', () => {
 ### Manual Testing with MCP Inspector
 
 **Test Script**: `scripts/test-http-manual.sh`
+
 ```bash
 #!/bin/bash
 
@@ -1317,6 +1343,7 @@ static create(config: TransportConfig): Result<Transport, Error> {
 2. **Dependency Inversion**: High-level modules depend on abstractions
 3. **Interface Segregation**: Clients depend only on interfaces they use
 4. **Single Responsibility**: Each component has one reason to change
+
 ```
 
 ---
@@ -1349,11 +1376,13 @@ process.on('SIGINT', async () => {
 ### 2. Security Hardening
 
 **Requirements**:
+
 - Origin header validation against whitelist
 - Localhost-only binding by default
 - Security headers on all responses
 
 **Implementation**:
+
 ```typescript
 const securityPolicy = new SecurityPolicy({
   allowedOrigins: ['http://localhost:*', 'http://127.0.0.1:*'],
@@ -1375,6 +1404,7 @@ const headers = securityPolicy.applySecurityHeaders({
 ### 3. Error Handling Strategy
 
 **Error Response Format** (JSON-RPC 2.0):
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -1387,6 +1417,7 @@ const headers = securityPolicy.applySecurityHeaders({
 ```
 
 **HTTP Status Codes**:
+
 - `200 OK`: Successful request
 - `202 Accepted`: Notification received
 - `400 Bad Request`: Invalid session or malformed request
@@ -1396,6 +1427,7 @@ const headers = securityPolicy.applySecurityHeaders({
 - `500 Internal Server Error`: Server-side errors
 
 **Logging Strategy**:
+
 - All errors logged at `error` level
 - Session lifecycle logged at `info` level
 - Debug logs available in development mode
@@ -1403,12 +1435,14 @@ const headers = securityPolicy.applySecurityHeaders({
 ### 4. Performance Considerations
 
 **Optimizations**:
+
 1. Use `Map` for session storage (O(1) lookup)
 2. Limit maximum concurrent sessions (configurable, default: 100)
 3. Connection pooling for TouchDesigner WebServer client (already implemented)
 4. Avoid unnecessary session validation on every request
 
 **Monitoring**:
+
 - Track active session count
 - Monitor session creation/cleanup rate
 - Log slow requests (>1s)
@@ -1416,16 +1450,19 @@ const headers = securityPolicy.applySecurityHeaders({
 ### 5. Compatibility with Existing stdio Mode
 
 **Requirements**:
+
 - Zero breaking changes to existing CLI
 - Both transports work independently
 - Shared codebase for server logic
 
 **Implementation Strategy**:
+
 - `TransportFactory` handles all transport types
 - `TouchDesignerServer` remains transport-agnostic
 - CLI detects mode based on arguments
 
 **Verification**:
+
 ```bash
 # Stdio mode (existing)
 touchdesigner-mcp-server --stdio
@@ -1439,6 +1476,7 @@ touchdesigner-mcp-server --mcp-http-port=3000
 ## Implementation Checklist
 
 ### Phase 1: Foundation (1-2 days)
+
 - [ ] Create `src/transport/config.ts` with type definitions
 - [ ] Implement Zod schemas for validation
 - [ ] Create `src/transport/validator.ts`
@@ -1447,6 +1485,7 @@ touchdesigner-mcp-server --mcp-http-port=3000
 - [ ] Document configuration options
 
 ### Phase 2: Factory (1 day)
+
 - [ ] Implement `src/transport/factory.ts`
 - [ ] Add `createStdio()` method
 - [ ] Add `createStreamableHttp()` method
@@ -1455,6 +1494,7 @@ touchdesigner-mcp-server --mcp-http-port=3000
 - [ ] Test error handling
 
 ### Phase 3: HTTP Server (2-3 days)
+
 - [ ] Implement `src/transport/httpServerManager.ts`
 - [ ] Add lifecycle methods
 - [ ] Implement endpoint registration
@@ -1463,6 +1503,7 @@ touchdesigner-mcp-server --mcp-http-port=3000
 - [ ] Test port conflicts
 
 ### Phase 4: Session Manager (1-2 days)
+
 - [ ] Implement `src/transport/sessionManager.ts`
 - [ ] Add CRUD operations
 - [ ] Implement TTL expiration
@@ -1471,6 +1512,7 @@ touchdesigner-mcp-server --mcp-http-port=3000
 - [ ] Test concurrent access
 
 ### Phase 5: Security (1 day)
+
 - [ ] Implement `src/transport/security.ts`
 - [ ] Add origin validation
 - [ ] Implement header validation
@@ -1479,6 +1521,7 @@ touchdesigner-mcp-server --mcp-http-port=3000
 - [ ] Document security practices
 
 ### Phase 6: Integration (2-3 days)
+
 - [ ] Update `TransportFactory`
 - [ ] Integrate `SessionManager`
 - [ ] Implement endpoint routing
@@ -1487,6 +1530,7 @@ touchdesigner-mcp-server --mcp-http-port=3000
 - [ ] Write integration tests
 
 ### Phase 7: CLI & Server (1-2 days)
+
 - [ ] Modify `cli.ts` with config parsing
 - [ ] Enhance `TouchDesignerServer`
 - [ ] Enhance `ConnectionManager`
@@ -1495,6 +1539,7 @@ touchdesigner-mcp-server --mcp-http-port=3000
 - [ ] Test end-to-end
 
 ### Phase 8: Documentation (1 day)
+
 - [ ] Create architecture docs
 - [ ] Update README.md
 - [ ] Update README.ja.md
@@ -1508,6 +1553,7 @@ touchdesigner-mcp-server --mcp-http-port=3000
 ## Success Criteria
 
 ### Functional Requirements
+
 1. ✅ HTTP transport mode works without breaking stdio mode
 2. ✅ Session management is robust (no memory leaks, proper cleanup)
 3. ✅ Security requirements met (Origin validation, security headers)
@@ -1516,6 +1562,7 @@ touchdesigner-mcp-server --mcp-http-port=3000
 6. ✅ No regression in existing functionality
 
 ### Non-Functional Requirements
+
 1. ✅ Code follows existing patterns (Result, Logger, Zod)
 2. ✅ All public APIs have JSDoc comments
 3. ✅ Type safety maintained (no `any` types)
@@ -1523,6 +1570,7 @@ touchdesigner-mcp-server --mcp-http-port=3000
 5. ✅ Extensible for future transports (WebSocket, gRPC)
 
 ### Acceptance Testing
+
 - [ ] stdio mode works as before (`touchdesigner-mcp-server --stdio`)
 - [ ] HTTP mode starts successfully (`touchdesigner-mcp-server --mcp-http-port=3000`)
 - [ ] MCP Inspector connects to HTTP endpoint
@@ -1584,15 +1632,18 @@ touchdesigner-mcp-server --mcp-http-port=3000
 ## References
 
 ### MCP Specification
+
 - [MCP Specification - Transports](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports)
 - [Streamable HTTP Transport Spec](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#http-with-sse)
 
 ### MCP TypeScript SDK
+
 - [GitHub Repository](https://github.com/modelcontextprotocol/typescript-sdk)
 - [Streamable HTTP Examples](https://github.com/modelcontextprotocol/typescript-sdk/tree/main/src/examples/server)
 - [SDK Documentation](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/server.md)
 
 ### Related Resources
+
 - [Why MCP Deprecated SSE](https://blog.fka.dev/blog/2025-06-06-why-mcp-deprecated-sse-and-go-with-streamable-http/)
 - [MCP with Streamable HTTP Tutorial](https://medium.com/@itsuki.enjoy/mcp-server-and-client-with-sse-the-new-streamable-http-d860850d9d9d)
 - [Cloudflare MCP Servers](https://blog.cloudflare.com/streamable-http-mcp-servers-python/)
@@ -1602,22 +1653,27 @@ touchdesigner-mcp-server --mcp-http-port=3000
 ## Appendix: Design Decisions Log
 
 ### Decision 1: Use Clean Architecture over Minimal Changes
+
 **Date**: 2025-12-06
 **Rationale**: Long-term maintainability and extensibility outweigh short-term implementation speed. The project anticipates future transport additions (WebSocket, gRPC), making upfront abstraction investment worthwhile.
 
 ### Decision 2: No External HTTP Framework
+
 **Date**: 2025-12-06
 **Rationale**: MCP SDK's `StreamableHTTPServerTransport` already handles HTTP protocol details. Adding Express would introduce unnecessary dependency and complexity.
 
 ### Decision 3: Zod for Runtime Validation
+
 **Date**: 2025-12-06
 **Rationale**: User requirement for maximum type safety. Zod provides both compile-time and runtime validation, catching configuration errors early.
 
 ### Decision 4: Map-based Session Storage
+
 **Date**: 2025-12-06
 **Rationale**: Sufficient for initial implementation. Redis integration can be added later if multi-server support is needed.
 
 ### Decision 5: Error Level Logging
+
 **Date**: 2025-12-06
 **Rationale**: User requirement for maximum visibility. All errors (including client errors) logged at `error` level for easy debugging.
 

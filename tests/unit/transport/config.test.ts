@@ -6,7 +6,6 @@ import type {
 } from "../../../src/transport/config.js";
 import {
 	DEFAULT_HTTP_CONFIG,
-	DEFAULT_SECURITY_CONFIG,
 	DEFAULT_SESSION_CONFIG,
 	isStdioTransportConfig,
 	isStreamableHttpTransportConfig,
@@ -66,25 +65,10 @@ describe("Transport Configuration", () => {
 			expect(DEFAULT_SESSION_CONFIG.cleanupInterval).toBe(5 * 60 * 1000); // 5 minutes
 		});
 
-		test("DEFAULT_SECURITY_CONFIG should have correct values", () => {
-			expect(DEFAULT_SECURITY_CONFIG.allowedOrigins).toEqual([
-				"http://localhost:*",
-				"http://127.0.0.1:*",
-			]);
-			expect(DEFAULT_SECURITY_CONFIG.allowedHosts).toEqual([
-				"localhost",
-				"127.0.0.1",
-			]);
-			expect(DEFAULT_SECURITY_CONFIG.enableDnsRebindingProtection).toBe(true);
-		});
-
 		test("DEFAULT_HTTP_CONFIG should have correct values", () => {
 			expect(DEFAULT_HTTP_CONFIG.host).toBe("127.0.0.1");
 			expect(DEFAULT_HTTP_CONFIG.endpoint).toBe("/mcp");
 			expect(DEFAULT_HTTP_CONFIG.sessionConfig).toEqual(DEFAULT_SESSION_CONFIG);
-			expect(DEFAULT_HTTP_CONFIG.securityConfig).toEqual(
-				DEFAULT_SECURITY_CONFIG,
-			);
 		});
 
 		test("default values should be immutable (readonly)", () => {
