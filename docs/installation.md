@@ -118,7 +118,7 @@ Edit your `claude_desktop_config.json`:
 }
 ```
 
-*Optional: Add `--host` / `--port` arguments if TouchDesigner is not running on the defaults (`http://127.0.0.1:9981`).*
+_Optional:_ Add `--host` / `--port` arguments if TouchDesigner is not running on the defaults (`http://127.0.0.1:9981`).
 
 #### For Claude Code
 
@@ -214,18 +214,36 @@ Choose a transport configuration:
    docker compose up -d
    ```
 
-3. Point your MCP client to the HTTP endpoint (Claude Desktop example):
+3. Point your MCP client to the HTTP endpoint. For example:
 
-   ```json
-   {
-     "mcpServers": {
-       "touchdesigner-http": {
-         "type": "http",
-         "url": "http://localhost:6280/mcp"
+   - **Claude Code (native HTTP entry):**
+
+     ```json
+     {
+       "mcpServers": {
+         "touchdesigner-http": {
+           "type": "http",
+           "url": "http://localhost:6280/mcp"
+         }
        }
      }
-   }
-   ```
+     ```
+
+   - **Claude Desktop (via `mcp-remote`):**
+
+     ```json
+     {
+       "mcpServers": {
+         "touchdesigner-http": {
+           "command": "npx",
+           "args": [
+             "mcp-remote",
+             "http://localhost:6280/mcp"
+           ]
+         }
+       }
+     }
+     ```
 
 4. Confirm the container is healthy:
 
