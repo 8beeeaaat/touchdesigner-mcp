@@ -95,7 +95,7 @@ For a deeper look at how the MCP server enforces these rules, see [Version Compa
 
 ### Troubleshooting connection errors
 
-- `TouchDesignerClient` caches failed connection checks for **5 seconds**. Subsequent tool calls reuse the cached error to avoid spamming TouchDesigner and automatically retry after the TTL expires.
+- `TouchDesignerClient` caches failed connection checks for **60 seconds**. Subsequent tool calls reuse the cached error to avoid spamming TouchDesigner and automatically retry after the TTL expires.
 - When the MCP server cannot reach TouchDesigner, you now get guided error messages with concrete fixes:
   - `ECONNREFUSED` / "connect refused": start TouchDesigner, ensure the WebServer DAT from `mcp_webserver_base.tox` is running, and confirm the configured port (default `9981`).
   - `ETIMEDOUT` / "timeout": TouchDesigner is responding slowly or the network is blocked. Restart TouchDesigner/WebServer DAT or check your network connection.
