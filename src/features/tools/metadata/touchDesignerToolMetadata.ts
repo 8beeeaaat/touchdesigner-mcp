@@ -402,6 +402,36 @@ console.log(renderStatus.result);`,
 		tool: TOOL_NAMES.EXECUTE_NODE_METHOD,
 	},
 	{
+		category: "state",
+		description:
+			"Returns an MCP-UI resource for browsing nodes and editing parameters interactively.",
+		example: `import { uiTdNodeBrowser } from './servers/touchdesigner/uiTdNodeBrowser';
+
+const resource = await uiTdNodeBrowser({
+  parentPath: '/project1',
+  pattern: '*',
+});`,
+		functionName: "uiTdNodeBrowser",
+		modulePath: `${MODULE_ROOT}/uiTdNodeBrowser.ts`,
+		parameters: [
+			{
+				description: "Initial root path for node listing (e.g. /project1).",
+				name: "parentPath",
+				required: false,
+				type: "string",
+			},
+			{
+				description: "Glob pattern for node names (default '*').",
+				name: "pattern",
+				required: false,
+				type: "string",
+			},
+		],
+		returns:
+			"UIResource payload (ui://td/node-browser) embedding the dashboard.",
+		tool: TOOL_NAMES.UI_TD_NODE_BROWSER,
+	},
+	{
 		category: "classes",
 		description: "List TouchDesigner Python classes/modules",
 		example: `import { getTdClasses } from './servers/touchdesigner/getTdClasses';

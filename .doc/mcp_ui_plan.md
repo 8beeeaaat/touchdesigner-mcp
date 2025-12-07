@@ -74,6 +74,11 @@ sequenceDiagram
 6. ステート管理: 選択ノード・パラメータ・実行ログを iframe 内 state で保持。messageId で非同期結果を紐付け。
 7. テスト: Vitest で UIResource 生成のスナップショット + onUIAction 経路のパラメータ検証を追加。
 
+実装メモ（進行中）
+------------------
+- 依存: `@mcp-ui/server` を追加。
+- ツール: `ui_td_node_browser` を追加（UIResource `ui://td/node-browser` を返却）。rawHtml でノードリストとパラメータ編集を提供し、`get_td_nodes`/`get_td_node_parameters`/`update_td_node_parameters` を `onUIAction.type: 'tool'` で呼び出す。
+
 留意点
 ------
 
