@@ -77,6 +77,7 @@ function createMockTdClient(): TouchDesignerClient {
 			},
 			success: true,
 		})) as TouchDesignerClient["getClasses"],
+		getCompatibilityNotice: () => null,
 		getModuleHelp: (async (_params: unknown) => ({
 			data: {
 				helpText: `Help on module noiseCHOP:

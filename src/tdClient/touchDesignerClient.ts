@@ -125,6 +125,11 @@ function handleApiResponse<T>(response: TdResponse<T>): Result<T> {
  * TouchDesigner client implementation with dependency injection
  * for better testability and separation of concerns
  */
+type CompatibilityNotice = {
+	level: "warning" | "info";
+	message: string;
+};
+
 export class TouchDesignerClient {
 	private readonly logger: ILogger;
 	private readonly api: ITouchDesignerApi;
@@ -132,6 +137,7 @@ export class TouchDesignerClient {
 	private cachedCompatibilityCheck: boolean;
 	private errorCacheTimestamp: number | null;
 	private successCacheTimestamp: number | null;
+	private compatibilityNotice: CompatibilityNotice | null;
 
 	/**
 	 * Initialize TouchDesigner client with optional dependencies
@@ -148,6 +154,7 @@ export class TouchDesignerClient {
 		this.cachedCompatibilityCheck = false;
 		this.errorCacheTimestamp = null;
 		this.successCacheTimestamp = null;
+		this.compatibilityNotice = null;
 	}
 
 	/**
@@ -196,6 +203,11 @@ export class TouchDesignerClient {
 		this.successCacheTimestamp = null;
 		this.verifiedCompatibilityError = null;
 		this.errorCacheTimestamp = null;
+		this.compatibilityNotice = null;
+	}
+
+	getCompatibilityNotice(): CompatibilityNotice | null {
+		return this.compatibilityNotice;
 	}
 
 	/**
@@ -246,10 +258,19 @@ export class TouchDesignerClient {
 
 		const result = await this.verifyVersionCompatibility();
 		if (result.success) {
+			const compatibilityInfo = result.data;
 			this.verifiedCompatibilityError = null;
 			this.errorCacheTimestamp = null;
 			this.cachedCompatibilityCheck = true;
 			this.successCacheTimestamp = Date.now();
+			if (compatibilityInfo.level === "warning" && compatibilityInfo.message) {
+				this.compatibilityNotice = {
+					level: compatibilityInfo.level,
+					message: compatibilityInfo.message,
+				};
+			} else {
+				this.compatibilityNotice = null;
+			}
 			this.logDebug("Compatibility verified successfully");
 			return;
 		}
@@ -265,6 +286,7 @@ export class TouchDesignerClient {
 		this.errorCacheTimestamp = Date.now();
 		this.cachedCompatibilityCheck = false;
 		this.successCacheTimestamp = null;
+		this.compatibilityNotice = null;
 		throw result.error;
 	}
 
@@ -485,7 +507,10 @@ export class TouchDesignerClient {
 			return createErrorResult(new Error(result.message));
 		}
 
-		return createSuccessResult(undefined);
+		return createSuccessResult({
+			level: result.level,
+			message: result.message,
+		});
 	}
 
 	/**

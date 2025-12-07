@@ -578,6 +578,7 @@ MCP tool implementations categorized as follows:
 - `verifyVersionCompatibility()` fetches `/api/td/server/td` (`getTdInfo`) and compares `mcpApiVersion` with the MCP server version using the rules in `core/compatibility.ts`.
 - Compatibility failures are cached through `verifiedCompatibilityError` for 60 seconds (`ERROR_CACHE_TTL_MS`) so repeated tool calls surface the same guidance without spamming TouchDesigner.
 - Manual version checks such as `get_td_info` call `invalidateCompatibilityCache()` to bypass the success cache and always re-verify.
+- When the API is still usable but versions differ (warning level), a **compatibility notice** is stored and appended to every tool response so users see upgrade prompts inline, not just in transport-level notifications.
 
 ```mermaid
 sequenceDiagram
@@ -596,6 +597,7 @@ sequenceDiagram
             Client-->>Tool: throw compatibility error (cached 60s)
         else compatible
             Client-->>Tool: proceed with original request<br/>and store success timestamp
+            Note over Client,Tool: If result is warning-level,<br>an inline compatibility notice<br>is appended to the tool response
         end
     end
 ```

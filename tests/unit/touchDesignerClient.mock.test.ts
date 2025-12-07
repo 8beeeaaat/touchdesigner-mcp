@@ -178,6 +178,35 @@ describe("TouchDesignerClient with mocks", () => {
 			expect(result.success).toBe(true);
 		});
 
+		test("should expose compatibility notice for warnings", async () => {
+			vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
+				data: {
+					mcpApiVersion: "1.3.5",
+					osName: "macOS",
+					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11050",
+				},
+				error: null,
+				success: true,
+			});
+
+			const client = new TouchDesignerClient({ logger: nullLogger });
+			const result = await client.getTdInfo();
+
+			expect(result.success).toBe(true);
+			expect(client.getCompatibilityNotice()).not.toBeNull();
+			expect(client.getCompatibilityNotice()?.message).toContain(
+				"Patch Version Mismatch",
+			);
+
+			vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(
+				compatibilityResponse,
+			);
+			await client.getTdInfo();
+			expect(client.getCompatibilityNotice()).toBeNull();
+		});
+
 		test("should reject different MAJOR version", async () => {
 			vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
 				data: {

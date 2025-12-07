@@ -112,6 +112,22 @@ export function registerTdTools(
 	tdClient: TouchDesignerClient,
 ): void {
 	const toolMetadataEntries = getTouchDesignerToolMetadata();
+	const createTextResponse = (text: string) => {
+		const content = [
+			{
+				text,
+				type: "text" as const,
+			},
+		];
+		const notice = tdClient.getCompatibilityNotice();
+		if (notice && notice.level === "warning") {
+			content.push({
+				text: `⚠️ Version compatibility warning\n${notice.message}`,
+				type: "text" as const,
+			});
+		}
+		return { content };
+	};
 
 	server.tool(
 		TOOL_NAMES.DESCRIBE_TD_TOOLS,
@@ -176,14 +192,7 @@ export function registerTdTools(
 					detailLevel: detailLevel ?? "summary",
 					responseFormat,
 				});
-				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
-				};
+				return createTextResponse(formattedText);
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.GET_TD_INFO);
 			}
@@ -213,14 +222,7 @@ export function registerTdTools(
 					responseFormat,
 				});
 
-				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
-				};
+				return createTextResponse(formattedText);
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.EXECUTE_PYTHON_SCRIPT);
 			}
@@ -242,14 +244,7 @@ export function registerTdTools(
 					detailLevel: detailLevel ?? "summary",
 					responseFormat,
 				});
-				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
-				};
+				return createTextResponse(formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -276,14 +271,7 @@ export function registerTdTools(
 					detailLevel: detailLevel ?? "summary",
 					responseFormat,
 				});
-				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
-				};
+				return createTextResponse(formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -317,14 +305,7 @@ export function registerTdTools(
 					responseFormat,
 				});
 
-				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
-				};
+				return createTextResponse(formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -355,14 +336,7 @@ export function registerTdTools(
 					responseFormat,
 				});
 
-				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
-				};
+				return createTextResponse(formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -393,14 +367,7 @@ export function registerTdTools(
 					responseFormat,
 				});
 
-				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
-				};
+				return createTextResponse(formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -427,14 +394,7 @@ export function registerTdTools(
 					detailLevel: detailLevel ?? "summary",
 					responseFormat,
 				});
-				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
-				};
+				return createTextResponse(formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -464,14 +424,7 @@ export function registerTdTools(
 					{ args, kwargs, method, nodePath },
 					{ detailLevel: detailLevel ?? "summary", responseFormat },
 				);
-				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
-				};
+				return createTextResponse(formattedText);
 			} catch (error) {
 				logger.sendLog({
 					data: error,
@@ -505,14 +458,7 @@ export function registerTdTools(
 					responseFormat: params.responseFormat,
 				});
 
-				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
-				};
+				return createTextResponse(formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -543,14 +489,7 @@ export function registerTdTools(
 					responseFormat,
 				});
 
-				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
-				};
+				return createTextResponse(formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -577,14 +516,7 @@ export function registerTdTools(
 					detailLevel: detailLevel ?? "summary",
 					responseFormat,
 				});
-				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
-				};
+				return createTextResponse(formattedText);
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.GET_TD_MODULE_HELP);
 			}
