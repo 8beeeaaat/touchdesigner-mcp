@@ -12,7 +12,7 @@ TouchDesigner MCP × mcp-ui 設計メモ
 ------------
 
 - mcp-ui 公式ドキュメント: <https://github.com/MCP-UI-Org/mcp-ui/tree/main/docs>
-- 実装例: <https://github.com/MCP-UI-Org/mcp-ui/tree/main/examples>
+- 実装例: <https://github.com/MCP-UI-Org/mcp-ui/tree/main/examples> / ./mcp_ui_example.md
 - TypeScript SDK: <https://github.com/MCP-UI-Org/mcp-ui/tree/main/sdks/typescript>
 
 想定ユースケース
