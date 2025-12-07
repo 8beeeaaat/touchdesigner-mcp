@@ -58,6 +58,7 @@ function createMockTdClient(): TouchDesignerClient {
 			data: { result: { value: ["geo1", "text1"] } },
 			success: true,
 		})) as TouchDesignerClient["execPythonScript"],
+		getAdditionalToolResultContents: () => null,
 		getClassDetails: async (_className: unknown) => ({
 			data: {
 				description: "Base operator",
@@ -77,7 +78,6 @@ function createMockTdClient(): TouchDesignerClient {
 			},
 			success: true,
 		})) as TouchDesignerClient["getClasses"],
-		getCompatibilityNotice: () => null,
 		getModuleHelp: (async (_params: unknown) => ({
 			data: {
 				helpText: `Help on module noiseCHOP:
