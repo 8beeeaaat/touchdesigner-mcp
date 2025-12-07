@@ -16,10 +16,9 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
 
 ## Installation
 
-Read the **[Installation Guide](docs/installation.md)**.
+Please refer to the **[Installation Guide](docs/installation.md)**.
 
-The guide includes the required TouchDesigner preparation, per-agent setup, verification steps, and
-troubleshooting tips.
+If you are updating, please refer to the procedure in the **[Latest Release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)**.
 
 ## MCP Server Features
 
@@ -91,9 +90,11 @@ The MCP server uses **semantic versioning** for flexible compatibility checks
 
 - **For developers:** When developing locally, run `npm run version` after editing `package.json` (or simply use `npm version ...`). This keeps the Python API (`pyproject.toml` + `td/modules/utils/version.py`), MCP bundle manifest, and registry metadata in sync so that the runtime compatibility check succeeds.
 
+For a deeper look at how the MCP server enforces these rules, see [Version Compatibility Verification](docs/architecture.md#version-compatibility-verification).
+
 ### Troubleshooting connection errors
 
-- `TouchDesignerClient` caches failed connection checks for **5 seconds**. Subsequent tool calls reuse the cached error to avoid spamming TouchDesigner and automatically retry after the TTL expires.
+- `TouchDesignerClient` caches failed connection checks for **60 seconds**. Subsequent tool calls reuse the cached error to avoid spamming TouchDesigner and automatically retry after the TTL expires.
 - When the MCP server cannot reach TouchDesigner, you now get guided error messages with concrete fixes:
   - `ECONNREFUSED` / "connect refused": start TouchDesigner, ensure the WebServer DAT from `mcp_webserver_base.tox` is running, and confirm the configured port (default `9981`).
   - `ETIMEDOUT` / "timeout": TouchDesigner is responding slowly or the network is blocked. Restart TouchDesigner/WebServer DAT or check your network connection.

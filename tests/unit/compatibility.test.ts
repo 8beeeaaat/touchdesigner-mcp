@@ -8,6 +8,7 @@ import {
 	generateMajorMismatchMessage,
 	generateMinVersionMessage,
 	generateNewerMinorMessage,
+	generateNoVersionMessage,
 	generateOlderMinorMessage,
 	generatePatchDiffMessage,
 	getCompatibilityPolicy,
@@ -374,5 +375,50 @@ describe("Compatibility policy message generation", () => {
 		});
 		expect(message).toContain("1.3.0");
 		expect(message).toContain("Fully Compatible");
+	});
+
+	test("generates message for NO_VERSION with both versions present", () => {
+		const message = generateNoVersionMessage({
+			apiVersion: "1.3.0",
+			mcpVersion: "1.3.0",
+		});
+		expect(message).toContain("Version Information Missing");
+		expect(message).toContain("1.3.0");
+		expect(message).toContain("1.3.0");
+		expect(message).not.toContain("old tox file");
+		expect(message).not.toContain("outdated MCP server");
+	});
+
+	test("generates message for NO_VERSION with both versions missing", () => {
+		const message = generateNoVersionMessage({
+			apiVersion: "",
+			mcpVersion: "",
+		});
+		expect(message).toContain("Version Information Missing");
+		expect(message).toContain("Unknown");
+		expect(message).toContain("old tox file");
+		expect(message).toContain("outdated MCP server");
+	});
+
+	test("generates message for NO_VERSION with only API version missing", () => {
+		const message = generateNoVersionMessage({
+			apiVersion: "",
+			mcpVersion: "1.3.0",
+		});
+		expect(message).toContain("Version Information Missing");
+		expect(message).toContain("1.3.0");
+		expect(message).toContain("Unknown");
+		expect(message).toContain("old tox file");
+	});
+
+	test("generates message for NO_VERSION with only MCP version missing", () => {
+		const message = generateNoVersionMessage({
+			apiVersion: "1.3.0",
+			mcpVersion: "",
+		});
+		expect(message).toContain("Version Information Missing");
+		expect(message).toContain("1.3.0");
+		expect(message).toContain("Unknown");
+		expect(message).toContain("outdated MCP server");
 	});
 });

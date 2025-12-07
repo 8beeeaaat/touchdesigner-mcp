@@ -22,6 +22,7 @@ component is running.
   - [Method 1: MCP Bundle (Claude Desktop only)](#method-1-mcp-bundle-claude-desktop-only)
   - [Method 2: NPM Package (Claude Code, Codex, and other MCP clients)](#method-2-npm-package-claude-code-codex-and-other-mcp-clients)
   - [Method 3: Docker Container](#method-3-docker-container)
+- [For Updates from Previous Versions](#for-updates-from-previous-versions)
 - [HTTP Transport Mode](#http-transport-mode)
 - [Verification](#verification)
 - [Troubleshooting](#troubleshooting)
@@ -43,7 +44,7 @@ component is running.
 
 <https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
 
-**⚠️ Critical**: Do not delete or modify the directory structure. The `mcp_webserver_base.tox` component uses relative paths to locate the `modules/` directory.
+**⚠️ Most Important:** Do not change the folder structure or move files within the folder. `mcp_webserver_base.tox` references the contents of `modules/` using relative paths.
 
 **Directory Structure**:
 
@@ -283,6 +284,10 @@ Choose a transport configuration:
    ```
 
    _On Windows include the drive letter (for example `C:\\path\\to\\touchdesigner-mcp\\docker-compose.yml`)._
+
+## For Updates from Previous Versions
+
+If you are updating, please refer to the procedure in the **[Latest Release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)**.
 
 ## HTTP Transport Mode
 

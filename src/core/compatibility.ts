@@ -140,14 +140,15 @@ export const getCompatibilityPolicy = (type: CompatibilityPolicyType) => {
  * Update guide template
  */
 const updateGuide = `
-Update Guide:
-  1. Download the latest release: https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest
+Update Guide: https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions
+  1. Download the latest release files from the releases page
   2. Replace TouchDesigner components:
-     - Delete the existing touchdesigner-mcp-td folder
-     - Extract and import the new mcp_webserver_base.tox
+     1. Delete the existing touchdesigner-mcp-td folder from your system
+     2. Delete old mcp_webserver_base node from your TouchDesigner project
+     3. Extract and import the new mcp_webserver_base.tox to your TouchDesigner project
   3. Restart TouchDesigner and the MCP client (e.g., Claude Desktop)
 
-For more details, see: https://github.com/8beeeaaat/touchdesigner-mcp#troubleshooting-version-compatibility
+For more details on compatibility, see: https://github.com/8beeeaaat/touchdesigner-mcp#troubleshooting-version-compatibility
 `.trim();
 
 /**
@@ -163,8 +164,11 @@ export function generateNoVersionMessage(args: {
 MCP Server:  ${args.mcpVersion || "Unknown"}
 API Server:  ${args.apiVersion || "Unknown"}
 
+${args.apiVersion ? "" : "You might be using an old tox file from before v1.3.0 released on December 1, 2025, or the TouchDesigner setup might not be done correctly."}
+${args.mcpVersion ? "" : "The MCP server version could not be determined. You might be using an outdated MCP server."}
+
 Version information is required to ensure compatibility between the MCP server and TouchDesigner components.
-Please ensure both components are updated to compatible versions.
+Please ensure both components are updated to latest versions.
 
 ${updateGuide}
 `.trim();
@@ -184,7 +188,7 @@ MCP Server:  ${args.mcpVersion}
 API Server:  ${args.apiVersion}
 
 MAJOR version mismatch indicates breaking changes.
-Both components must be updated to compatible versions.
+Please ensure both components are updated to compatible versions.
 
 ${updateGuide}
 `.trim();
