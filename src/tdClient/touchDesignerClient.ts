@@ -1,5 +1,5 @@
+import type { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
-import type { CallToolResultSchema } from "node_modules/@modelcontextprotocol/sdk/dist/esm/types.js";
 import type { z } from "zod";
 import {
 	getCompatibilityPolicy,
