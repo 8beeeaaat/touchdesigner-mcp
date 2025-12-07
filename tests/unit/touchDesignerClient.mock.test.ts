@@ -561,47 +561,48 @@ describe("TouchDesignerClient with mocks", () => {
 
 	test("should re-check compatibility when success cache TTL expires", async () => {
 		vi.useFakeTimers();
+		try {
+			const mockGetTdInfo = vi.fn().mockResolvedValue({
+				data: {
+					mcpApiVersion: "1.3.1",
+					osName: "macOS",
+					osVersion: "12.6.1",
+					server: "TouchDesigner",
+					version: "2023.11050",
+				},
+				error: null,
+				success: true,
+			});
 
-		const mockGetTdInfo = vi.fn().mockResolvedValue({
-			data: {
-				mcpApiVersion: "1.3.1",
-				osName: "macOS",
-				osVersion: "12.6.1",
-				server: "TouchDesigner",
-				version: "2023.11050",
-			},
-			error: null,
-			success: true,
-		});
+			const mockGetNodes = vi.fn().mockResolvedValue({
+				data: { nodes: [] },
+				error: null,
+				success: true,
+			});
 
-		const mockGetNodes = vi.fn().mockResolvedValue({
-			data: { nodes: [] },
-			error: null,
-			success: true,
-		});
+			const mockHttpClient = {
+				getNodes: mockGetNodes,
+				getTdInfo: mockGetTdInfo,
+			};
 
-		const mockHttpClient = {
-			getNodes: mockGetNodes,
-			getTdInfo: mockGetTdInfo,
-		};
+			const client = new TouchDesignerClient({
+				httpClient: mockHttpClient as unknown as ITouchDesignerApi,
+				logger: nullLogger,
+			});
 
-		const client = new TouchDesignerClient({
-			httpClient: mockHttpClient as unknown as ITouchDesignerApi,
-			logger: nullLogger,
-		});
+			await client.getNodes({ parentPath: "/" });
+			expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
 
-		await client.getNodes({ parentPath: "/" });
-		expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
+			vi.advanceTimersByTime(SUCCESS_CACHE_TTL_MS - 1000);
+			await client.getNodes({ parentPath: "/project1" });
+			expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
 
-		vi.advanceTimersByTime(SUCCESS_CACHE_TTL_MS - 1000);
-		await client.getNodes({ parentPath: "/project1" });
-		expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
-
-		vi.advanceTimersByTime(2000);
-		await client.getNodes({ parentPath: "/project1" });
-		expect(mockGetTdInfo).toHaveBeenCalledTimes(2);
-
-		vi.useRealTimers();
+			vi.advanceTimersByTime(2000);
+			await client.getNodes({ parentPath: "/project1" });
+			expect(mockGetTdInfo).toHaveBeenCalledTimes(2);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	test("should re-check compatibility after error", async () => {
