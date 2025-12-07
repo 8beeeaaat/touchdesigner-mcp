@@ -253,16 +253,6 @@ Choose a transport configuration:
    curl http://localhost:6280/health
    ```
 
-###### started using npm commands
-
-```bash
-# Start HTTP server
-# 127.0.0.1:6280/mcp
-npm run http
-```
-
-<https://github.com/user-attachments/assets/5447e4da-eb5a-4ebd-bbbe-3ba347d1f6fb>
-
 ##### Option B: Stdio Passthrough
 
 1. Start the container in stdio mode:
@@ -309,6 +299,24 @@ follow it if you need HTTP/SSE access instead of stdio. You can start HTTP mode 
 from the Node.js CLI or inside the Docker container.
 
 ### Starting in HTTP Mode
+
+#### Start the container with HTTP transport
+
+```bash
+TRANSPORT=http docker-compose up -d
+```
+
+<https://github.com/user-attachments/assets/4025f9cd-b19c-42f0-8274-7609650abd34>
+
+#### Using npm command
+
+```bash
+# Start HTTP server
+# 127.0.0.1:6280/mcp
+npm run http
+```
+
+<https://github.com/user-attachments/assets/5447e4da-eb5a-4ebd-bbbe-3ba347d1f6fb>
 
 ```bash
 touchdesigner-mcp-server \
