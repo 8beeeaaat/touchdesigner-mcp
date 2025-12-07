@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { CallToolResultSchema } from "node_modules/@modelcontextprotocol/sdk/dist/esm/types.js";
 import { z } from "zod";
 import { REFERENCE_COMMENT, TOOL_NAMES } from "../../../core/constants.js";
 import { handleToolError } from "../../../core/errorHandling.js";
@@ -112,22 +113,6 @@ export function registerTdTools(
 	tdClient: TouchDesignerClient,
 ): void {
 	const toolMetadataEntries = getTouchDesignerToolMetadata();
-	const createTextResponse = (text: string) => {
-		const content = [
-			{
-				text,
-				type: "text" as const,
-			},
-		];
-		const notice = tdClient.getCompatibilityNotice();
-		if (notice && notice.level === "warning") {
-			content.push({
-				text: `⚠️ Version compatibility warning\n${notice.message}`,
-				type: "text" as const,
-			});
-		}
-		return { content };
-	};
 
 	server.tool(
 		TOOL_NAMES.DESCRIBE_TD_TOOLS,
@@ -192,7 +177,7 @@ export function registerTdTools(
 					detailLevel: detailLevel ?? "summary",
 					responseFormat,
 				});
-				return createTextResponse(formattedText);
+				return createToolResult(tdClient, formattedText);
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.GET_TD_INFO);
 			}
@@ -222,7 +207,7 @@ export function registerTdTools(
 					responseFormat,
 				});
 
-				return createTextResponse(formattedText);
+				return createToolResult(tdClient, formattedText);
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.EXECUTE_PYTHON_SCRIPT);
 			}
@@ -244,7 +229,7 @@ export function registerTdTools(
 					detailLevel: detailLevel ?? "summary",
 					responseFormat,
 				});
-				return createTextResponse(formattedText);
+				return createToolResult(tdClient, formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -271,7 +256,7 @@ export function registerTdTools(
 					detailLevel: detailLevel ?? "summary",
 					responseFormat,
 				});
-				return createTextResponse(formattedText);
+				return createToolResult(tdClient, formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -305,7 +290,7 @@ export function registerTdTools(
 					responseFormat,
 				});
 
-				return createTextResponse(formattedText);
+				return createToolResult(tdClient, formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -336,7 +321,7 @@ export function registerTdTools(
 					responseFormat,
 				});
 
-				return createTextResponse(formattedText);
+				return createToolResult(tdClient, formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -367,7 +352,7 @@ export function registerTdTools(
 					responseFormat,
 				});
 
-				return createTextResponse(formattedText);
+				return createToolResult(tdClient, formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -394,7 +379,7 @@ export function registerTdTools(
 					detailLevel: detailLevel ?? "summary",
 					responseFormat,
 				});
-				return createTextResponse(formattedText);
+				return createToolResult(tdClient, formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -424,7 +409,7 @@ export function registerTdTools(
 					{ args, kwargs, method, nodePath },
 					{ detailLevel: detailLevel ?? "summary", responseFormat },
 				);
-				return createTextResponse(formattedText);
+				return createToolResult(tdClient, formattedText);
 			} catch (error) {
 				logger.sendLog({
 					data: error,
@@ -458,7 +443,7 @@ export function registerTdTools(
 					responseFormat: params.responseFormat,
 				});
 
-				return createTextResponse(formattedText);
+				return createToolResult(tdClient, formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -489,7 +474,7 @@ export function registerTdTools(
 					responseFormat,
 				});
 
-				return createTextResponse(formattedText);
+				return createToolResult(tdClient, formattedText);
 			} catch (error) {
 				return handleToolError(
 					error,
@@ -516,13 +501,37 @@ export function registerTdTools(
 					detailLevel: detailLevel ?? "summary",
 					responseFormat,
 				});
-				return createTextResponse(formattedText);
+				return createToolResult(tdClient, formattedText);
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.GET_TD_MODULE_HELP);
 			}
 		},
 	);
 }
+
+const createToolResult = (
+	tdClient: TouchDesignerClient,
+	text: string,
+): z.infer<typeof CallToolResultSchema> => {
+	const content: z.infer<typeof CallToolResultSchema>["content"] = [
+		{
+			text,
+			type: "text" as const,
+		},
+	];
+	const notice = tdClient.getCompatibilityNotice();
+	if (notice && notice.level === "warning") {
+		content.push({
+			annotations: {
+				audience: ["user", "assistant"],
+				priority: 0.5,
+			},
+			text: `⚠️ Version compatibility warning\n${notice.message}`,
+			type: "text" as const,
+		});
+	}
+	return { content };
+};
 
 function matchesMetadataFilter(entry: ToolMetadata, keyword: string): boolean {
 	const normalizedKeyword = keyword.toLowerCase();
