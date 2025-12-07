@@ -822,10 +822,8 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
      --port=9981
 
    # Health check
-
-  curl <http://localhost:6280/health>
-
-# Response: {"status":"ok","sessions":0,"timestamp":"2025-12-06T..."}
+   curl http://localhost:6280/health
+   # Response: {"status":"ok","sessions":0,"timestamp":"2025-12-06T..."}
 
    ```
 
@@ -833,7 +831,7 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
 
    ```javascript
    // Browser-based MCP client
-  const eventSource = new EventSource('http://localhost:6280/mcp');
+   const eventSource = new EventSource('http://localhost:6280/mcp');
 
    eventSource.onmessage = (event) => {
      const response = JSON.parse(event.data);
@@ -841,7 +839,7 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
    };
 
    // Send JSON-RPC request
-  fetch('http://localhost:6280/mcp', {
+   fetch('http://localhost:6280/mcp', {
      method: 'POST',
      headers: { 'Content-Type': 'application/json' },
      body: JSON.stringify({
@@ -849,9 +847,9 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
        method: 'tools/call',
        params: {
          name: 'get_td_nodes',
-         arguments: { parentPath: '/project1' }
+         arguments: { parentPath: '/project1' },
        }
-     })
+     }),
    });
    ```
 
@@ -869,12 +867,9 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
 
    ```bash
    # Prometheus metrics scraping
-
-  curl <http://localhost:6280/health>
-
-# Load balancer health check
-
-# Configure ALB/NLB to check /health endpoint
+   curl http://localhost:6280/health
+   # Load balancer health check
+   # Configure ALB/NLB to check /health endpoint
 
    ```
 
