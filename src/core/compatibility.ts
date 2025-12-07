@@ -140,15 +140,15 @@ export const getCompatibilityPolicy = (type: CompatibilityPolicyType) => {
  * Update guide template
  */
 const updateGuide = `
-Update Guide:
-  1. Download the latest release: https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest
+Update Guide: https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions
+  1. Download the latest release files from the releases page
   2. Replace TouchDesigner components:
      1. Delete the existing touchdesigner-mcp-td folder from your system
      2. Delete old mcp_webserver_base node from your TouchDesigner project
      3. Extract and import the new mcp_webserver_base.tox to your TouchDesigner project
   3. Restart TouchDesigner and the MCP client (e.g., Claude Desktop)
 
-For more details, see: https://github.com/8beeeaaat/touchdesigner-mcp#troubleshooting-version-compatibility
+For more details on compatibility, see: https://github.com/8beeeaaat/touchdesigner-mcp#troubleshooting-version-compatibility
 `.trim();
 
 /**

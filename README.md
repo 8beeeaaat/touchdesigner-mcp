@@ -16,10 +16,9 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
 
 ## Installation
 
-Read the **[Installation Guide](docs/installation.md)**.
+Please refer to the **[Installation Guide](docs/installation.md)**.
 
-The guide includes the required TouchDesigner preparation, per-agent setup, verification steps, and
-troubleshooting tips.
+If you are updating, please refer to the procedure in the **[Latest Release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)**.
 
 ## MCP Server Features
 
