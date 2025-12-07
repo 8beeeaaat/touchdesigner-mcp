@@ -91,6 +91,8 @@ The MCP server uses **semantic versioning** for flexible compatibility checks
 
 - **For developers:** When developing locally, run `npm run version` after editing `package.json` (or simply use `npm version ...`). This keeps the Python API (`pyproject.toml` + `td/modules/utils/version.py`), MCP bundle manifest, and registry metadata in sync so that the runtime compatibility check succeeds.
 
+For a deeper look at how the MCP server enforces these rules, see [Version Compatibility Verification](docs/architecture.md#version-compatibility-verification).
+
 ### Troubleshooting connection errors
 
 - `TouchDesignerClient` caches failed connection checks for **5 seconds**. Subsequent tool calls reuse the cached error to avoid spamming TouchDesigner and automatically retry after the TTL expires.

@@ -572,7 +572,7 @@ MCP tool implementations categorized as follows:
 
 #### Version Compatibility Verification
 
-`TouchDesignerClient` includes a built-in compatibility gate in [src/tdClient/touchDesignerClient.ts](../src/tdClient/touchDesignerClient.ts) that protects every tool call from running against outdated TouchDesigner `.tox` files.
+`TouchDesignerClient` includes a built-in compatibility gate in [src/tdClient/touchDesignerClient.ts](../src/tdClient/touchDesignerClient.ts) that protects every tool call from running against outdated TouchDesigner `.tox` files. Without this guard the MCP server might call APIs that no longer exist (or behaved differently) in older `.tox` packages, which would lead to silent TouchDesigner errors. By failing fast with structured guidance, agents can prompt users to update their TouchDesigner components before any destructive action is taken.
 
 - `verifyCompatibility()` runs before any API call. It first checks the **success cache** (valid for 5 minutes) via `hasValidSuccessCache()`; if expired it forces a new handshake.
 - `verifyVersionCompatibility()` fetches `/api/td/server/td` (`getTdInfo`) and compares `mcpApiVersion` with the MCP server version using the rules in `core/compatibility.ts`.
@@ -600,7 +600,7 @@ sequenceDiagram
     end
 ```
 
-This mechanism balances safety and performance: normal operations reuse cached verdicts, but users still see timely upgrade prompts when their TouchDesigner API server is too old.
+This mechanism balances safety and performance: normal operations reuse cached verdicts, but users still see timely upgrade prompts when their TouchDesigner API server is too old. For user-facing guidance see the ["Troubleshooting version compatibility" section](../README.md#troubleshooting-version-compatibility).
 
 ---
 
