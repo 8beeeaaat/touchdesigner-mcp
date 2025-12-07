@@ -845,6 +845,61 @@ describe("TouchDesignerClient with mocks", () => {
 			vi.useRealTimers();
 		});
 
+		test("should clear cached error when compatibility cache is invalidated", async () => {
+			const mockGetTdInfo = vi
+				.fn()
+				.mockResolvedValueOnce({
+					data: {
+						mcpApiVersion: "",
+						osName: "macOS",
+						osVersion: "12.6.1",
+						server: "TouchDesigner",
+						version: "2023.11050",
+					},
+					error: null,
+					success: true,
+				})
+				.mockResolvedValue({
+					data: {
+						mcpApiVersion: "1.3.1",
+						osName: "macOS",
+						osVersion: "12.6.1",
+						server: "TouchDesigner",
+						version: "2023.11050",
+					},
+					error: null,
+					success: true,
+				});
+
+			const mockCreateNode = vi.fn().mockResolvedValue({
+				data: { result: { name: "test" } },
+				error: null,
+				success: true,
+			});
+
+			const client = new TouchDesignerClient({
+				httpClient: {
+					createNode: mockCreateNode,
+					getTdInfo: mockGetTdInfo,
+				} as unknown as ITouchDesignerApi,
+				logger: nullLogger,
+			});
+
+			await expect(
+				client.createNode({
+					nodeName: "test",
+					nodeType: "null",
+					parentPath: "/",
+				}),
+			).rejects.toThrow("Version Information Missing");
+
+			expect(mockCreateNode).not.toHaveBeenCalled();
+
+			const infoResult = await client.getTdInfo();
+			expect(infoResult.success).toBe(true);
+			expect(mockGetTdInfo).toHaveBeenCalledTimes(3);
+		});
+
 		test("should not retry before error cache TTL expires", async () => {
 			vi.useFakeTimers();
 

@@ -194,6 +194,8 @@ export class TouchDesignerClient {
 		}
 		this.cachedCompatibilityCheck = false;
 		this.successCacheTimestamp = null;
+		this.verifiedCompatibilityError = null;
+		this.errorCacheTimestamp = null;
 	}
 
 	/**
