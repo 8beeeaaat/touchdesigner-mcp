@@ -195,8 +195,8 @@ describe("TouchDesignerClient with mocks", () => {
 			const result = await client.getTdInfo();
 
 			expect(result.success).toBe(true);
-			expect(client.getCompatibilityNotices()).not.toBeNull();
-			expect(client.getCompatibilityNotices()?.[0].text).toContain(
+			expect(client.getAdditionalToolResultContents()).not.toBeNull();
+			expect(client.getAdditionalToolResultContents()?.[0].text).toContain(
 				"Patch Version Mismatch",
 			);
 
@@ -204,7 +204,7 @@ describe("TouchDesignerClient with mocks", () => {
 				compatibilityResponse,
 			);
 			await client.getTdInfo();
-			expect(client.getCompatibilityNotices()).toBeNull();
+			expect(client.getAdditionalToolResultContents()).toBeNull();
 		});
 
 		test("should reject different MAJOR version", async () => {

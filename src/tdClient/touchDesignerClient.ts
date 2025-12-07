@@ -208,7 +208,7 @@ export class TouchDesignerClient {
 		this.compatibilityNotice = null;
 	}
 
-	getCompatibilityNotices():
+	getAdditionalToolResultContents():
 		| z.infer<typeof CallToolResultSchema>["content"]
 		| null {
 		if (!this.compatibilityNotice) {

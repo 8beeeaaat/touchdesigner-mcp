@@ -519,9 +519,9 @@ const createToolResult = (
 			type: "text" as const,
 		},
 	];
-	const notices = tdClient.getCompatibilityNotices();
-	if (notices) {
-		content.push(...notices);
+	const additionalContents = tdClient.getAdditionalToolResultContents();
+	if (additionalContents) {
+		content.push(...additionalContents);
 	}
 	return { content };
 };
