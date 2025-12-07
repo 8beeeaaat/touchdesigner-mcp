@@ -241,16 +241,6 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
    curl http://localhost:6280/health
    ```
 
-##### npmコマンドでも起動可能です
-
-<https://github.com/user-attachments/assets/5447e4da-eb5a-4ebd-bbbe-3ba347d1f6fb>
-
-```bash
-# HTTP サーバーを起動
-# 127.0.0.1:6280/mcp
-npm run http
-```
-
 ##### オプションB: Stdio パススルー
 
 1. コンテナを stdio モードで起動します。
@@ -292,6 +282,26 @@ npm run http
 ## HTTP トランスポートモード
 
 TouchDesigner MCP Server は stdio だけでなく HTTP/SSE でも動作します。リモートエージェントやブラウザ統合など、必要な場合のみ本節を参照してください（Node.js CLI または Docker から起動可能）。
+
+### HTTP モードの起動
+
+#### コンテナを HTTP トランスポートで起動
+
+```bash
+TRANSPORT=http docker-compose up -d
+```
+
+<https://github.com/user-attachments/assets/4025f9cd-b19c-42f0-8274-7609650abd34>
+
+#### npm コマンドで起動
+
+```bash
+# HTTP サーバーを起動
+# 127.0.0.1:6280/mcp
+npm run http
+```
+
+<https://github.com/user-attachments/assets/5447e4da-eb5a-4ebd-bbbe-3ba347d1f6fb>
 
 ### 設定オプション
 
