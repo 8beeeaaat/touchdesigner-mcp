@@ -80,7 +80,8 @@ export type SuccessResult<T> = { success: true; data: NonNullable<T> };
 
 export type Result<T, E = Error> = SuccessResult<T> | ErrorResult<E>;
 
-export const ERROR_CACHE_TTL_MS = 5000; // 5 seconds
+export const ERROR_CACHE_TTL_MS = 60 * 1000; // 60 seconds
+export const SUCCESS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Null logger implementation that discards all logs
@@ -130,6 +131,7 @@ export class TouchDesignerClient {
 	private verifiedCompatibilityError: Error | null;
 	private cachedCompatibilityCheck: boolean;
 	private errorCacheTimestamp: number | null;
+	private successCacheTimestamp: number | null;
 
 	/**
 	 * Initialize TouchDesigner client with optional dependencies
@@ -145,6 +147,7 @@ export class TouchDesignerClient {
 		this.verifiedCompatibilityError = null;
 		this.cachedCompatibilityCheck = false;
 		this.errorCacheTimestamp = null;
+		this.successCacheTimestamp = null;
 	}
 
 	/**
@@ -171,12 +174,39 @@ export class TouchDesignerClient {
 	}
 
 	/**
+	 * Check whether the cached successful compatibility check is still valid
+	 */
+	private hasValidSuccessCache(): boolean {
+		if (!this.cachedCompatibilityCheck || !this.successCacheTimestamp) {
+			return false;
+		}
+		const now = Date.now();
+		return now - this.successCacheTimestamp < SUCCESS_CACHE_TTL_MS;
+	}
+
+	/**
+	 * Force the next API call to re-run compatibility verification.
+	 * Useful when the user explicitly requests version information.
+	 */
+	private invalidateCompatibilityCache(reason?: string) {
+		if (this.cachedCompatibilityCheck) {
+			this.logDebug("Invalidating cached compatibility check", { reason });
+		}
+		this.cachedCompatibilityCheck = false;
+		this.successCacheTimestamp = null;
+	}
+
+	/**
 	 * Verify compatibility with the TouchDesigner server
 	 */
 	private async verifyCompatibility() {
 		// If we've already verified compatibility successfully, skip re-verification
 		if (this.cachedCompatibilityCheck && !this.verifiedCompatibilityError) {
-			return;
+			if (this.hasValidSuccessCache()) {
+				return;
+			}
+			this.logDebug("Compatibility cache expired, re-verifying...");
+			this.invalidateCompatibilityCache("success cache expired");
 		}
 
 		// Clear cached error if TTL has expired
@@ -217,6 +247,7 @@ export class TouchDesignerClient {
 			this.verifiedCompatibilityError = null;
 			this.errorCacheTimestamp = null;
 			this.cachedCompatibilityCheck = true;
+			this.successCacheTimestamp = Date.now();
 			this.logDebug("Compatibility verified successfully");
 			return;
 		}
@@ -231,6 +262,7 @@ export class TouchDesignerClient {
 		this.verifiedCompatibilityError = result.error;
 		this.errorCacheTimestamp = Date.now();
 		this.cachedCompatibilityCheck = false;
+		this.successCacheTimestamp = null;
 		throw result.error;
 	}
 
@@ -286,6 +318,7 @@ export class TouchDesignerClient {
 	 * Get TouchDesigner server information
 	 */
 	async getTdInfo() {
+		this.invalidateCompatibilityCache("tdInfo request");
 		return this.apiCall("Getting server info", () => this.api.getTdInfo());
 	}
 

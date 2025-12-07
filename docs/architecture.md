@@ -570,6 +570,38 @@ MCP tool implementations categorized as follows:
 - Type safety with Zod schemas
 - Connection pooling
 
+#### Version Compatibility Verification
+
+`TouchDesignerClient` includes a built-in compatibility gate in [src/tdClient/touchDesignerClient.ts](../src/tdClient/touchDesignerClient.ts) that protects every tool call from running against outdated TouchDesigner `.tox` files.
+
+- `verifyCompatibility()` runs before any API call. It first checks the **success cache** (valid for 5 minutes) via `hasValidSuccessCache()`; if expired it forces a new handshake.
+- `verifyVersionCompatibility()` fetches `/api/td/server/td` (`getTdInfo`) and compares `mcpApiVersion` with the MCP server version using the rules in `core/compatibility.ts`.
+- Compatibility failures are cached through `verifiedCompatibilityError` for 60 seconds (`ERROR_CACHE_TTL_MS`) so repeated tool calls surface the same guidance without spamming TouchDesigner.
+- Manual version checks such as `get_td_info` call `invalidateCompatibilityCache()` to bypass the success cache and always re-verify.
+
+```mermaid
+sequenceDiagram
+    participant Tool as MCP Tool Call
+    participant Client as TouchDesignerClient
+    participant TD as TouchDesigner API
+
+    Tool->>Client: any tool request
+    alt success cache valid ( < 5 min )
+        Client-->>Tool: reuse last compatibility verdict
+    else cache expired
+        Client->>TD: GET /api/td/server/td
+        TD-->>Client: { mcpApiVersion, ... }
+        Client->>Client: compare via compatibility rules
+        alt incompatible
+            Client-->>Tool: throw compatibility error (cached 60s)
+        else compatible
+            Client-->>Tool: proceed with original request<br/>and store success timestamp
+        end
+    end
+```
+
+This mechanism balances safety and performance: normal operations reuse cached verdicts, but users still see timely upgrade prompts when their TouchDesigner API server is too old.
+
 ---
 
 ## TouchDesigner Integration Layer

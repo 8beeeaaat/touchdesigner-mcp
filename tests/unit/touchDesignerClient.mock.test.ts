@@ -7,6 +7,7 @@ import * as touchDesignerAPI from "../../src/gen/endpoints/TouchDesignerAPI";
 import {
 	ERROR_CACHE_TTL_MS,
 	type ITouchDesignerApi,
+	SUCCESS_CACHE_TTL_MS,
 	TouchDesignerClient,
 } from "../../src/tdClient/touchDesignerClient";
 
@@ -120,6 +121,41 @@ describe("TouchDesignerClient with mocks", () => {
 		}
 		expect(result.error).toBeInstanceOf(Error);
 		expect(result.error.message).toBe("No data received");
+	});
+
+	test("should re-check compatibility when getTdInfo is called after cache warmup", async () => {
+		const legacyResponse = {
+			data: {
+				mcpApiVersion: "",
+				osName: "macOS",
+				osVersion: "12.6.1",
+				server: "TouchDesigner",
+				version: "2023.11050",
+			},
+			error: null,
+			success: true,
+		};
+
+		const getTdInfoMock = vi.mocked(touchDesignerAPI.getTdInfo);
+		getTdInfoMock.mockReset();
+
+		try {
+			getTdInfoMock
+				.mockResolvedValueOnce(compatibilityResponse) // Initial compatibility check
+				.mockResolvedValueOnce(compatibilityResponse) // First getTdInfo call
+				.mockResolvedValueOnce(legacyResponse) // Revalidation triggered by second getTdInfo
+				.mockResolvedValueOnce(legacyResponse); // Actual second call should never execute after revalidation fails
+
+			const client = new TouchDesignerClient({ logger: nullLogger });
+			await client.getTdInfo();
+
+			await expect(client.getTdInfo()).rejects.toThrow(
+				"Version Information Missing",
+			);
+		} finally {
+			getTdInfoMock.mockReset();
+			getTdInfoMock.mockResolvedValue(compatibilityResponse);
+		}
 	});
 
 	describe("Semantic Version Compatibility", () => {
@@ -521,6 +557,51 @@ describe("TouchDesignerClient with mocks", () => {
 		expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
 		// createNode should be called twice
 		expect(mockCreateNode).toHaveBeenCalledTimes(2);
+	});
+
+	test("should re-check compatibility when success cache TTL expires", async () => {
+		vi.useFakeTimers();
+
+		const mockGetTdInfo = vi.fn().mockResolvedValue({
+			data: {
+				mcpApiVersion: "1.3.1",
+				osName: "macOS",
+				osVersion: "12.6.1",
+				server: "TouchDesigner",
+				version: "2023.11050",
+			},
+			error: null,
+			success: true,
+		});
+
+		const mockGetNodes = vi.fn().mockResolvedValue({
+			data: { nodes: [] },
+			error: null,
+			success: true,
+		});
+
+		const mockHttpClient = {
+			getNodes: mockGetNodes,
+			getTdInfo: mockGetTdInfo,
+		};
+
+		const client = new TouchDesignerClient({
+			httpClient: mockHttpClient as unknown as ITouchDesignerApi,
+			logger: nullLogger,
+		});
+
+		await client.getNodes({ parentPath: "/" });
+		expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
+
+		vi.advanceTimersByTime(SUCCESS_CACHE_TTL_MS - 1000);
+		await client.getNodes({ parentPath: "/project1" });
+		expect(mockGetTdInfo).toHaveBeenCalledTimes(1);
+
+		vi.advanceTimersByTime(2000);
+		await client.getNodes({ parentPath: "/project1" });
+		expect(mockGetTdInfo).toHaveBeenCalledTimes(2);
+
+		vi.useRealTimers();
 	});
 
 	test("should re-check compatibility after error", async () => {
