@@ -519,16 +519,9 @@ const createToolResult = (
 			type: "text" as const,
 		},
 	];
-	const notice = tdClient.getCompatibilityNotice();
-	if (notice && notice.level === "warning") {
-		content.push({
-			annotations: {
-				audience: ["user", "assistant"],
-				priority: 0.5,
-			},
-			text: `⚠️ Version compatibility warning\n${notice.message}`,
-			type: "text" as const,
-		});
+	const notices = tdClient.getCompatibilityNotices();
+	if (notices) {
+		content.push(...notices);
 	}
 	return { content };
 };

@@ -1,4 +1,6 @@
 import axios from "axios";
+import type { CallToolResultSchema } from "node_modules/@modelcontextprotocol/sdk/dist/esm/types.js";
+import type { z } from "zod";
 import {
 	getCompatibilityPolicy,
 	getCompatibilityPolicyType,
@@ -206,8 +208,22 @@ export class TouchDesignerClient {
 		this.compatibilityNotice = null;
 	}
 
-	getCompatibilityNotice(): CompatibilityNotice | null {
-		return this.compatibilityNotice;
+	getCompatibilityNotices():
+		| z.infer<typeof CallToolResultSchema>["content"]
+		| null {
+		if (!this.compatibilityNotice) {
+			return null;
+		}
+		return [
+			{
+				annotations: {
+					audience: ["user", "assistant"],
+					priority: this.compatibilityNotice.level === "warning" ? 0.2 : 0.1,
+				},
+				text: this.compatibilityNotice.message,
+				type: "text" as const,
+			},
+		];
 	}
 
 	/**
