@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2025-12-07
+
+### Added
+
+- Implemented a mechanism to insert update guidance as an additional message to tool responses when compatibility warnings occur, enabling direct notification within the chat. (#141)
+
+### Changed
+
+- Extended compatibility check caching (60 seconds on failure, 5 minutes on success) and enforced re-verification upon `get_td_info` execution to reduce load while returning the latest determination. (#141)
+- Added update procedures from older versions to the README, installation guide, and release notes, and detailed the compatibility verification flow in the architecture documentation. (#141)
+- Improved guidance for missing version information, revising the message to explicitly indicate outdated `.tox` files or insufficient updates on MCP servers. (#141)
+- Relaxed the compatibility policy so PATCH version differences are allowed without logging, and ensured TouchDesigner client tests do not surface notices for patch-only mismatches. (#144)
+
+### Fixed
+
+- Modified tool handlers to use a unified format `createToolResult` for returning additional content for compatibility warnings, improving response consistency. (#141)
+
+### Technical
+
+- Added unit and integration tests to verify compatibility message generation, cache TTL, and content with warning attachments, preventing regressions in the version warning flow. (#141)
+
 ## [1.4.1] - 2025-12-07
 
 ### Changed
