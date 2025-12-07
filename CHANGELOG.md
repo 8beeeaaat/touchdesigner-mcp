@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2025-12-07
+
+### Changed
+
+- Adjusted the API server version to be updated and matched, as it was prompting for an update of mcp_webserver_base.tox even when using the latest NPM packages.
+
+### Technical
+
+- Aligned the versions of the Python module and OpenAPI schema (MCP_API_VERSION/info.version) to 1.4.1, and updated the compatibility check and client generation to report the new version.
+
 ## [1.4.0] - 2025-12-07
 
 ### Added
