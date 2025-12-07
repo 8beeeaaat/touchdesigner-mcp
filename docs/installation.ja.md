@@ -187,6 +187,8 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
 
 ##### オプションA: [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
 
+<https://github.com/user-attachments/assets/4025f9cd-b19c-42f0-8274-7609650abd34>
+
 1. `TRANSPORT=http` でコンテナを起動します。
 
    ```bash
@@ -238,6 +240,16 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
    ```bash
    curl http://localhost:6280/health
    ```
+
+##### npmコマンドでも起動可能です
+
+<https://github.com/user-attachments/assets/5447e4da-eb5a-4ebd-bbbe-3ba347d1f6fb>
+
+```bash
+# HTTP サーバーを起動
+# 127.0.0.1:6280/mcp
+npm run http
+```
 
 ##### オプションB: Stdio パススルー
 
@@ -306,14 +318,6 @@ curl http://localhost:6280/health
 | 用途 | ローカル CLI / デスクトップツール | リモートエージェント、ブラウザ統合 |
 | セッション管理 | 単一接続 | TTL 付き複数セッション |
 | ポート要件 | 不要 | 必須 |
-
-### 開発ショートカット
-
-```bash
-# MCP Inspector と同時に HTTP サーバーを起動
-# 127.0.0.1:6280/mcp
-npm run http
-```
 
 ## 動作確認
 
