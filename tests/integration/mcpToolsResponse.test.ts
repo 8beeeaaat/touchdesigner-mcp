@@ -58,6 +58,7 @@ function createMockTdClient(): TouchDesignerClient {
 			data: { result: { value: ["geo1", "text1"] } },
 			success: true,
 		})) as TouchDesignerClient["execPythonScript"],
+		getAdditionalToolResultContents: () => null,
 		getClassDetails: async (_className: unknown) => ({
 			data: {
 				description: "Base operator",

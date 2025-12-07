@@ -91,7 +91,7 @@ jobs:
 
             ## Installation
 
-            For complete installation instructions, see the **[Installation Guide](https://github.com/${{ github.repository }}/blob/main/docs/installation.md)**.
+            For complete installation instructions, see the **[Installation Guide](https://github.com/${{ github.repository }}/blob/main/docs/installation.md)**. _[日本語](https://github.com/${{ github.repository }}/blob/main/docs/installation.ja.md)_
 
             ### Quick Start (Claude Desktop)
             1. Download `TouchDesigner Components` and the `MCP Bundle` from the Downloads section above
@@ -99,11 +99,21 @@ jobs:
             3. Double-click `touchdesigner-mcp.mcpb` to install in Claude Desktop
 
             ### Other AI Agents
-            See the [Installation Guide](https://github.com/${{ github.repository }}/blob/main/docs/installation.md) for:
+            See the [Installation Guide](https://github.com/${{ github.repository }}/blob/main/docs/installation.md) _[日本語](https://github.com/${{ github.repository }}/blob/main/docs/installation.ja.md)_ for:
             - Claude Code
             - Codex
             - Docker deployment
             - Developer setup
+
+            ## For Updates from Previous Versions
+            1. Download `TouchDesigner Components` from the Downloads section above
+            2. Replace TouchDesigner components:
+              1. Delete the existing touchdesigner-mcp-td folder from your system
+              2. Delete old mcp_webserver_base node from your TouchDesigner project
+              3. Extract and import the new mcp_webserver_base.tox to your TouchDesigner project
+            3. Restart TouchDesigner and the MCP client (e.g., Claude Desktop)
+
+            For more details, see: https://github.com/8beeeaaat/touchdesigner-mcp#troubleshooting-version-compatibility
 
             ## Changes
             See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for a detailed history of changes.

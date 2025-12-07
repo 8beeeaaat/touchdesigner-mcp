@@ -20,6 +20,7 @@ TouchDesigner MCP を各種 AI エージェントおよびプラットフォー�
   - [方法1: MCP Bundle（Claude Desktop 推奨）](#方法1-mcp-bundleclaude-desktop-推奨)
   - [方法2: NPM パッケージ（Claude Code / Codex / その他 MCP クライアント）](#方法2-npm-パッケージclaude-code--codex--その他-mcp-クライアント)
   - [方法3: Docker コンテナ](#方法3-docker-コンテナ)
+- [アップデート方法](#アップデート方法)
 - [HTTP トランスポートモード](#http-トランスポートモード)
 - [動作確認](#動作確認)
 - [トラブルシューティング](#トラブルシューティング)
@@ -41,7 +42,7 @@ TouchDesigner MCP を各種 AI エージェントおよびプラットフォー�
 
 <https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
 
-**⚠️ 最重要:** フォルダ構成を変更したりファイルを移動しないでください。`mcp_webserver_base.tox` は `modules/` 以下を相対パスで参照しています。
+**⚠️ 最重要:** フォルダ構成を変更したりフォルダ内のファイルを移動しないでください。`mcp_webserver_base.tox` は `modules/` 以下を相対パスで参照しています。
 
 **構成例:**
 
@@ -271,6 +272,10 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
 ```
 
 ※Windows の場合は `C:\path\to\...` のようにドライブレターを含めてください。
+
+## アップデート方法
+
+アップデートする場合は **[最新リリース](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)** の手順を参照してください。
 
 ## HTTP トランスポートモード
 

@@ -18,6 +18,8 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 
 **[インストールガイド](docs/installation.ja.md)** を参照してください。
 
+アップデートする場合は **[最新リリース](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)** の手順を参照してください。
+
 ## MCPサーバーの機能
 
 このサーバーは、Model Context Protocol (MCP) を通じてTouchDesigner への操作、および各種実装ドキュメントへの参照を可能にします。
@@ -87,9 +89,11 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 
 - **開発者向け：** ローカルで開発している場合は、`package.json` を編集した後に `npm run version` を実行してください（または単に `npm version ...` を使用してください）。これにより、Python API（`pyproject.toml` + `td/modules/utils/version.py`）、MCPバンドルマニフェスト、およびレジストリメタデータが同期され、ランタイム互換性チェックが成功するようになります。
 
+互換性チェックの内部動作については [Version Compatibility Verification](docs/architecture.md#version-compatibility-verification) も参照してください。
+
 ### 接続エラーのトラブルシューティング
 
-- `TouchDesignerClient` は接続に失敗した互換性チェック結果を **最大5秒間キャッシュ**し、その間のツール呼び出しでは同じエラーを再利用して TouchDesigner への無駄な負荷を避けます。TTL が切れると自動的に再試行します。
+- `TouchDesignerClient` は接続に失敗した互換性チェック結果を **最大60秒間キャッシュ**し、その間のツール呼び出しでは同じエラーを再利用して TouchDesigner への無駄な負荷を避けます。TTL が切れると自動的に再試行します。
 - MCP サーバーが TouchDesigner に接続できない場合は、次のようなガイド付きメッセージが表示されます：
   - `ECONNREFUSED` / "connect refused": TouchDesigner を起動し、`mcp_webserver_base.tox` からインポートした WebServer DAT がアクティブか、ポート設定（デフォルト `9981`）が正しいか確認してください。
   - `ETIMEDOUT` / "timeout": TouchDesigner の応答が遅い、またはネットワークが詰まっています。TouchDesigner/ WebServer DAT の再起動やネットワーク状況の確認を行ってください。
