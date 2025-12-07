@@ -79,11 +79,11 @@ const COMPATIBILITY_POLICY = {
 
 	/**
 	 * Behavior when PATCH versions differ
-	 * - 'warning': Continue with warning
+	 * - 'allow': Allow without logging
 	 */
 	[COMPATIBILITY_POLICY_TYPES.PATCH_DIFF]: {
 		compatible: true,
-		level: COMPATIBILITY_POLICY_ERROR_LEVELS.WARNING,
+		level: COMPATIBILITY_POLICY_ERROR_LEVELS.ALLOW,
 		message: generatePatchDiffMessage,
 	} as const,
 

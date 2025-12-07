@@ -303,7 +303,7 @@ describe("getCompatibilityPolicy", () => {
 			COMPATIBILITY_POLICY_TYPES.PATCH_DIFF,
 		);
 		expect(policy.compatible).toBe(true);
-		expect(policy.level).toBe(COMPATIBILITY_POLICY_ERROR_LEVELS.WARNING);
+		expect(policy.level).toBe(COMPATIBILITY_POLICY_ERROR_LEVELS.ALLOW);
 		expect(policy.message).toBeDefined();
 	});
 
