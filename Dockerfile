@@ -1,4 +1,4 @@
-FROM node:24-slim AS build
+FROM node:24-slim AS base
 
 WORKDIR /app
 
@@ -8,15 +8,27 @@ RUN apt-get update && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 
-# Copy package files and install dependencies
+# Install dependencies separately for better Docker cache reuse
+FROM base AS deps
 COPY package*.json ./
 RUN npm ci
 
-# Copy source code and build the application
+# Build stage
+FROM deps AS build
 COPY . .
 RUN npm run build
-
-# Prepare startup helper for stdio/http selection
 RUN chmod +x docker/start.sh
 
+# Development stage with watch mode
+FROM deps AS dev
+COPY . .
+RUN chmod +x docker/start.sh
+ENV NODE_ENV=development
+CMD ["npm", "run", "dev:docker"]
+
+# Runtime image
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app ./
 CMD ["./docker/start.sh"]

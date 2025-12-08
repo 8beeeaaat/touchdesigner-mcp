@@ -30,6 +30,25 @@
 
 **注意:** コードを更新した場合は、MCP サーバーと TouchDesigner の両方を再起動してください。
 
+## Docker ホットリロード開発（推奨）
+
+```bash
+# 初回または古いコンテナを消したいときだけ
+docker compose down
+
+# ソース変更を自動ビルド・再起動（前面でログ表示）
+make dev
+# Ctrl+C で停止（コンテナも停止）
+
+# バックグラウンド起動したい場合
+make dev -d && make dev-logs   # -d で detach、ログは別ターミナルで make dev-logs
+
+# 後片付け
+make dev-down
+```
+
+`docker-compose.dev.yml` でローカルソースをマウントし、`tsc --watch` + `node --watch dist/cli.js` でホットリロードします。キャッシュした依存を流用するのでビルド時間も短縮されます。
+
 ## ローカル MCP クライアント設定
 
 ローカルビルドした MCP サーバーへ接続するための設定例です。

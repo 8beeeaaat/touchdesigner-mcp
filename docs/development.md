@@ -33,6 +33,25 @@ high-level view of components and data flow, see **[Architecture](./architecture
 **Note:** When you update the code, restart both the MCP server and TouchDesigner to apply
 changes.
 
+## Docker hot-reload workflow (recommended)
+
+```bash
+# Optional: clean old containers
+docker compose down
+
+# Start dev with live reload (foreground logs)
+make dev
+# Stop with Ctrl+C (containers stop together)
+
+# If you prefer detached mode
+make dev -d && make dev-logs   # detach, then tail logs in another terminal
+
+# Cleanup
+make dev-down
+```
+
+`docker-compose.dev.yml` mounts the local source and runs `tsc --watch` plus `node --watch dist/cli.js` for hot reload, reusing cached dependencies to keep rebuilds fast.
+
 ## Local MCP Client Configuration
 
 Use these snippets to point your preferred MCP client at a local build of the server.
