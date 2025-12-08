@@ -7,7 +7,6 @@ import type {
 	Resource,
 } from "@modelcontextprotocol/sdk/types.js";
 import { useCallback, useEffect, useState } from "react";
-import "./App.css";
 
 const DEFAULT_HTTP =
 	typeof import.meta.env.VITE_MCP_HTTP_URL === "string"
@@ -15,6 +14,17 @@ const DEFAULT_HTTP =
 		: "/mcp";
 
 type ConnectState = "idle" | "connecting" | "connected" | "error";
+
+const panelClass =
+	"rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 shadow-2xl backdrop-blur-md";
+const inputClass =
+	"w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 focus:border-blue-500/60 focus:outline-none focus:ring focus:ring-blue-600/40";
+const buttonClass =
+	"rounded-xl border border-slate-700 bg-gradient-to-br from-blue-600 to-blue-500 px-3 py-2.5 font-semibold text-slate-50 shadow-sm transition hover:-translate-y-px hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60";
+const labelClass = "text-xs text-slate-400";
+const badgeClass =
+	"rounded-xl border border-blue-900/60 bg-blue-500/10 px-3 py-1.5 text-xs text-blue-100";
+const statusClass = "text-xs text-slate-300";
 
 export default function App() {
 	const [endpoint, setEndpoint] = useState(DEFAULT_HTTP);
@@ -91,44 +101,50 @@ export default function App() {
 	}
 
 	return (
-		<div className="page">
-			<header className="header">
-				<div>
-					<h1 className="title">TD Node Browser (React + SDK)</h1>
-					<p className="subtitle">
+		<div className="mx-auto flex max-w-5xl flex-col gap-4 px-5 pb-12 pt-8">
+			<header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+				<div className="space-y-1">
+					<h1 className="text-xl font-bold text-slate-50">
+						TD Node Browser (React + SDK)
+					</h1>
+					<p className="text-sm text-slate-400">
 						MCP SDKで `ui_td_node_browser` を呼び出し、UIResource を
 						`UIResourceRenderer` で表示するサンプルです。
 					</p>
 				</div>
-				<div className="badge-row">
-					<span className="badge">@modelcontextprotocol/sdk</span>
-					<span className="badge">@mcp-ui/client</span>
+				<div className="flex flex-wrap gap-2">
+					<span className={badgeClass}>@modelcontextprotocol/sdk</span>
+					<span className={badgeClass}>@mcp-ui/client</span>
 				</div>
 			</header>
 
-			<section className="glass panel" style={{ display: "flex", gap: 12 }}>
-				<div style={{ flex: 1 }}>
-					<div className="label">MCP HTTP Endpoint</div>
-					<input
-						className="input"
-						value={endpoint}
-						onChange={(e) => setEndpoint(e.target.value)}
-						placeholder="http://127.0.0.1:6280/mcp"
-					/>
-					<div className="label" style={{ marginTop: 10 }}>
-						Parent Path
+			<section
+				className={`${panelClass} flex flex-col gap-4 md:flex-row md:items-start`}
+			>
+				<div className="flex-1 space-y-3">
+					<div className="flex flex-col gap-1">
+						<div className={labelClass}>MCP HTTP Endpoint</div>
+						<input
+							className={inputClass}
+							value={endpoint}
+							onChange={(e) => setEndpoint(e.target.value)}
+							placeholder="http://127.0.0.1:6280/mcp"
+						/>
 					</div>
-					<input
-						className="input"
-						value={parentPath}
-						onChange={(e) => setParentPath(e.target.value)}
-						placeholder="/project1"
-					/>
+					<div className="flex flex-col gap-1">
+						<div className={labelClass}>Parent Path</div>
+						<input
+							className={inputClass}
+							value={parentPath}
+							onChange={(e) => setParentPath(e.target.value)}
+							placeholder="/project1"
+						/>
+					</div>
 				</div>
-				<div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+				<div className="flex w-full flex-col gap-2 md:w-52">
 					<button
 						type="button"
-						className="button"
+						className={buttonClass}
 						onClick={handleConnect}
 						disabled={connectState === "connecting"}
 					>
@@ -140,35 +156,26 @@ export default function App() {
 					</button>
 					<button
 						type="button"
-						className="button"
+						className={buttonClass}
 						onClick={runUiTool}
 						disabled={!canRun || loadingTool}
 					>
 						{loadingTool ? "取得中…" : "ui_td_node_browser 実行"}
 					</button>
-					<div className="status">
+					<div className={`${statusClass} mt-1`}>
 						状態: {connectState}
 						{error ? ` / ${error}` : ""}
 					</div>
 				</div>
 			</section>
 
-			<section className="glass panel" style={{ minHeight: 320 }}>
-				<div className="label">UIResource Renderer</div>
+			<section className={`${panelClass} min-h-[320px] space-y-3`}>
+				<div className={labelClass}>UIResource Renderer</div>
 				{resource ? (
-					<div
-						style={{
-							border: "1px solid #1f2a44",
-							borderRadius: 12,
-							minHeight: "inherit",
-							overflowY: "scroll",
-						}}
-					>
+					<div className="min-h-full overflow-y-auto rounded-xl border border-slate-800">
 						<UIResourceRenderer
 							htmlProps={{
-								style: {
-									minHeight: "inherit",
-								},
+								className: "min-h-full",
 							}}
 							// eslint-disable-next-line @typescript-eslint/no-explicit-any
 							resource={resource as any}
@@ -186,7 +193,7 @@ export default function App() {
 						/>
 					</div>
 				) : (
-					<p className="status">UIResource を取得してください。</p>
+					<p className={statusClass}>UIResource を取得してください。</p>
 				)}
 			</section>
 		</div>

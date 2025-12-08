@@ -12,6 +12,7 @@
   "dependencies": {
     "@mcp-ui/client": "^5.17.1",
     "@modelcontextprotocol/sdk": "^1.24.3",
+    "@tailwindcss/postcss": "^4.1.17",
     "@tailwindcss/vite": "^4.1.17",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",

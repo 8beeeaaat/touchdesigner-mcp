@@ -1,35 +1,16 @@
 @import "tailwindcss";
 
-:root {
-	font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-	line-height: 1.5;
-	color: #e5e7eb;
-	background-color: #0a0f1f;
-	text-rendering: optimizeLegibility;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-}
+@layer base {
+	:root {
+		@apply font-['Inter','Segoe_UI',system-ui,-apple-system,sans-serif] leading-[1.5] bg-[#0a0f1f] text-slate-200 antialiased;
+		text-rendering: optimizeLegibility;
+	}
 
-*,
-*::before,
-*::after {
-	box-sizing: border-box;
-}
+	body {
+		@apply m-0 min-h-screen bg-[radial-gradient(circle_at_20%_20%,rgba(69,103,206,0.15),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.12),transparent_25%),#0a0f1f];
+	}
 
-body {
-	margin: 0;
-	min-height: 100vh;
-	background:
-		radial-gradient(
-			circle at 20% 20%,
-			rgba(69, 103, 206, 0.15),
-			transparent 35%
-		),
-		radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.12), transparent 25%),
-		#0a0f1f;
-}
-
-a {
-	color: inherit;
-	text-decoration: none;
+	a {
+		@apply text-current no-underline;
+	}
 }
