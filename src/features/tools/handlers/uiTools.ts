@@ -65,73 +65,59 @@ function buildNodeBrowserHtml(parentPath: string, pattern: string): string {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TD Node Browser</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root { color-scheme: light; }
-    * { box-sizing: border-box; }
-    body { font-family: "Segoe UI", sans-serif; margin: 0; padding: 16px; background: #0b1021; color: #e5e7eb; }
-    h1 { font-size: 20px; margin: 0 0 12px; }
-    .panel { background: #11162a; border: 1px solid #1f2a44; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
-    .row { display: flex; gap: 12px; }
-    .column { flex: 1; min-width: 0; }
-    label { display: block; font-size: 12px; color: #9ca3af; margin-bottom: 4px; }
-    input[type="text"], input[type="number"] { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #253150; background: #0f152b; color: #e5e7eb; }
-    input[type="range"] { width: 100%; }
-    button { padding: 8px 12px; border: 1px solid #2f3c5f; background: #1a2450; color: #e5e7eb; border-radius: 6px; cursor: pointer; }
-    button:hover { background: #223061; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    .list { max-height: 240px; overflow: auto; border: 1px solid #1f2a44; border-radius: 8px; background: #0f152b; }
-    .list-item { padding: 8px 10px; border-bottom: 1px solid #1f2a44; cursor: pointer; }
-    .list-item:last-child { border-bottom: none; }
-    .list-item:hover { background: #1a2450; }
-    .list-item.active { background: #223061; border-left: 3px solid #58a6ff; }
-    .pill { display: inline-block; padding: 2px 8px; border-radius: 9999px; background: #1f2a44; color: #a5b4fc; font-size: 11px; margin-left: 6px; }
-    .small { font-size: 12px; color: #9ca3af; }
-    .muted { color: #6b7280; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .param-row { border: 1px solid #1f2a44; border-radius: 8px; padding: 10px; background: #0f152b; }
-    .param-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-    .param-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-    .status { margin-top: 8px; font-size: 12px; color: #93c5fd; }
-    .error { color: #fca5a5; }
-    .success { color: #86efac; }
+    :root { color-scheme: dark; }
   </style>
 </head>
-<body>
-  <h1>TouchDesigner Node Browser</h1>
-  <div class="panel">
-    <div class="row" style="align-items:flex-end; gap: 8px;">
-      <div class="column">
-        <label>Parent Path</label>
-        <input id="parentPath" type="text" value="${escapedParent}" />
+<body class="min-h-screen bg-slate-950 bg-[radial-gradient(circle_at_20%_20%,rgba(69,103,206,0.15),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.12),transparent_25%),#0a0f1f] text-slate-100 antialiased">
+  <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6">
+    <header class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold text-slate-50">TouchDesigner Node Browser</h1>
+        <p class="text-sm text-slate-400">UIResource iframe + TailwindCSS</p>
       </div>
-      <div class="column">
-        <label>Pattern</label>
-        <input id="pattern" type="text" value="${escapedPattern}" />
-      </div>
-      <div style="display:flex; gap: 8px;">
-        <button id="loadNodes">ノード取得</button>
-      </div>
-    </div>
-    <div id="nodesStatus" class="status muted"></div>
-    <div class="list" id="nodesList"></div>
-  </div>
+      <span class="inline-flex items-center rounded-full border border-blue-900/60 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-100">Tailwind Ready</span>
+    </header>
 
-  <div class="panel">
-    <div class="row" style="gap: 12px;">
-      <div class="column">
-        <h2 style="margin:0 0 8px;">パラメータ</h2>
-        <div id="selectedNode" class="small muted">ノードを選択してください</div>
+    <section class="space-y-3 rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 shadow-xl backdrop-blur">
+      <div class="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+        <div class="space-y-1">
+          <label class="text-xs text-slate-400">Parent Path</label>
+          <input id="parentPath" type="text" value="${escapedParent}" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-blue-500/70 focus:ring focus:ring-blue-600/30" />
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs text-slate-400">Pattern</label>
+          <input id="pattern" type="text" value="${escapedPattern}" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-blue-500/70 focus:ring focus:ring-blue-600/30" />
+        </div>
+        <div class="flex gap-2 md:justify-end">
+          <button id="loadNodes" class="rounded-xl border border-slate-700 bg-gradient-to-br from-blue-600 to-blue-500 px-3 py-2 text-sm font-semibold text-slate-50 shadow-sm transition hover:-translate-y-px hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60">ノード取得</button>
+        </div>
       </div>
-      <div class="column" style="text-align:right;">
-        <button id="refreshNode" disabled>再取得</button>
+      <div id="nodesStatus" class="text-xs text-slate-400"></div>
+      <div id="nodesList" class="max-h-64 overflow-auto rounded-xl border border-slate-800 bg-slate-950/80"></div>
+    </section>
+
+    <section class="space-y-4 rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 shadow-xl backdrop-blur">
+      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="space-y-1">
+          <h2 class="m-0 text-lg font-semibold text-slate-50">パラメータ</h2>
+          <div id="selectedNode" class="text-sm text-slate-400">ノードを選択してください</div>
+        </div>
+        <button id="refreshNode" disabled class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-100 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50">再取得</button>
       </div>
-    </div>
-    <div id="paramsStatus" class="status muted"></div>
-    <div id="paramsContainer" class="grid"></div>
+      <div id="paramsStatus" class="text-xs text-slate-400"></div>
+      <div id="paramsContainer" class="grid gap-3 md:grid-cols-2"></div>
+    </section>
   </div>
 
   <script>
     (function() {
+      const buttonClass = "rounded-xl border border-slate-700 bg-gradient-to-br from-blue-600 to-blue-500 px-3 py-2 text-sm font-semibold text-slate-50 shadow-sm transition hover:-translate-y-px hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60";
+      const inputClass = "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-blue-500/70 focus:ring focus:ring-blue-600/30";
+      const listItemBase = "border-b border-slate-800/70 px-3 py-2 text-sm text-slate-100 transition hover:bg-blue-900/20 cursor-pointer";
+      const badgeClass = "ml-2 inline-flex items-center rounded-full border border-blue-900/50 bg-blue-500/10 px-2 py-0.5 text-[11px] font-semibold text-blue-100";
+
       const nodesList = document.getElementById("nodesList");
       const nodesStatus = document.getElementById("nodesStatus");
       const paramsContainer = document.getElementById("paramsContainer");
@@ -214,13 +200,14 @@ function buildNodeBrowserHtml(parentPath: string, pattern: string): string {
       function renderNodeList() {
         nodesList.innerHTML = "";
         if (!nodes.length) {
-          nodesList.innerHTML = '<div class="list-item muted">ノードなし</div>';
+          nodesList.innerHTML = '<div class="px-3 py-2 text-sm text-slate-500">ノードなし</div>';
           return;
         }
         nodes.forEach((node) => {
           const item = document.createElement("div");
-          item.className = "list-item" + (selectedNode && selectedNode.path === node.path ? " active" : "");
-          item.innerHTML = \`<div><strong>\${node.name}</strong> <span class="pill">\${node.opType}</span></div><div class="small muted">\${node.path}</div>\`;
+          const active = selectedNode && selectedNode.path === node.path;
+          item.className = listItemBase + (active ? " bg-blue-900/25 border-l-4 border-blue-500" : "");
+          item.innerHTML = \`<div class="flex items-center gap-2 text-sm font-semibold">\${node.name}<span class="\${badgeClass}">\${node.opType}</span></div><div class="text-xs text-slate-400">\${node.path}</div>\`;
           item.onclick = () => {
             selectNode(node);
           };
@@ -270,26 +257,27 @@ function buildNodeBrowserHtml(parentPath: string, pattern: string): string {
         paramsContainer.innerHTML = "";
         const entries = Object.entries(properties);
         if (!entries.length) {
-          paramsContainer.innerHTML = '<div class="muted">パラメータがありません</div>';
+          paramsContainer.innerHTML = '<div class="text-sm text-slate-400">パラメータがありません</div>';
           return;
         }
         entries.slice(0, 40).forEach(([key, value]) => {
           const row = document.createElement("div");
-          row.className = "param-row";
+          row.className = "rounded-xl border border-slate-800/70 bg-slate-950/70 p-4 shadow-inner shadow-black/20 space-y-3";
 
           const header = document.createElement("div");
-          header.className = "param-header";
-          header.innerHTML = \`<div><strong>\${key}</strong></div><div class="small muted">\${typeOf(value)}</div>\`;
+          header.className = "flex items-center justify-between gap-3";
+          header.innerHTML = \`<div class="text-sm font-semibold text-slate-50">\${key}</div><div class="text-[11px] uppercase tracking-wide text-slate-400">\${typeOf(value)}</div>\`;
           row.appendChild(header);
 
           const controls = document.createElement("div");
-          controls.className = "param-controls";
+          controls.className = "flex flex-col gap-2 md:flex-row md:items-center";
 
           const { inputEl, getValue } = createInputForValue(value);
           controls.appendChild(inputEl);
 
           const applyBtn = document.createElement("button");
           applyBtn.textContent = "更新";
+          applyBtn.className = buttonClass + " w-full md:w-auto";
           applyBtn.onclick = async () => {
             if (!selectedNode) return;
             applyBtn.disabled = true;
@@ -327,6 +315,7 @@ function buildNodeBrowserHtml(parentPath: string, pattern: string): string {
           const checkbox = document.createElement("input");
           checkbox.type = "checkbox";
           checkbox.checked = Boolean(value);
+          checkbox.className = "h-5 w-5 accent-blue-500";
           return {
             inputEl: checkbox,
             getValue: () => checkbox.checked,
@@ -335,7 +324,7 @@ function buildNodeBrowserHtml(parentPath: string, pattern: string): string {
 
         if (typeof value === "number" && Number.isFinite(value)) {
           const wrapper = document.createElement("div");
-          wrapper.style.flex = "1";
+          wrapper.className = "flex w-full flex-col gap-2";
 
           const range = document.createElement("input");
           range.type = "range";
@@ -344,12 +333,13 @@ function buildNodeBrowserHtml(parentPath: string, pattern: string): string {
           range.max = String(value + span);
           range.step = String(span / 50);
           range.value = String(value);
-          range.style.width = "100%";
+          range.className = "w-full accent-blue-500";
 
           const numberInput = document.createElement("input");
           numberInput.type = "number";
           numberInput.value = String(value);
           numberInput.step = String(span / 50);
+          numberInput.className = inputClass;
 
           range.oninput = () => {
             numberInput.value = range.value;
@@ -370,6 +360,7 @@ function buildNodeBrowserHtml(parentPath: string, pattern: string): string {
         const textInput = document.createElement("input");
         textInput.type = "text";
         textInput.value = value === undefined || value === null ? "" : String(value);
+        textInput.className = inputClass;
         return {
           inputEl: textInput,
           getValue: () => textInput.value,
