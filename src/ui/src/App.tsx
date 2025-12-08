@@ -177,8 +177,7 @@ export default function App() {
 							htmlProps={{
 								className: "min-h-full",
 							}}
-							// eslint-disable-next-line @typescript-eslint/no-explicit-any
-							resource={resource as any}
+							resource={resource}
 							onUIAction={async (action) => {
 								// デモ用: そのままホストへツール呼び出しを転送
 								if (!client) return;
