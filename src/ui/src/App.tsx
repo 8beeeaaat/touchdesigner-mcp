@@ -160,15 +160,15 @@ export default function App() {
 						style={{
 							border: "1px solid #1f2a44",
 							borderRadius: 12,
-							minHeight: 1200,
-							overflow: "hidden",
+							minHeight: "inherit",
+							overflowY: "scroll",
 						}}
 					>
 						<UIResourceRenderer
 							htmlProps={{
 								style: {
-									minHeight: "inherit"
-								}
+									minHeight: "inherit",
+								},
 							}}
 							// eslint-disable-next-line @typescript-eslint/no-explicit-any
 							resource={resource as any}

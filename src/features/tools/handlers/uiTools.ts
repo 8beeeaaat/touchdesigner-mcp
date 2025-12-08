@@ -1,4 +1,4 @@
-import { UIMetadataKey, createUIResource } from "@mcp-ui/server";
+import { createUIResource } from "@mcp-ui/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { TOOL_NAMES } from "../../../core/constants.js";
@@ -43,7 +43,7 @@ export function registerUiTools(
 				},
 				encoding: "text",
 				uiMetadata: {
-					[UIMetadataKey.PREFERRED_FRAME_SIZE]: ["100%", "1200px"],
+					"preferred-frame-size": ["100%", "1200px"],
 				},
 				uri: "ui://td/node-browser",
 			});
