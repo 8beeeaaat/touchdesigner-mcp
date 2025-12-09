@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { TOOL_NAMES } from "../../../../../core/constants";
+import { TOOL_NAMES } from "../../../../../../core/constants";
 
 const buttonClass =
 	"rounded-xl border border-slate-700 bg-gradient-to-br from-blue-600 to-blue-500 px-3 py-2 text-sm font-semibold text-slate-50 shadow-sm transition hover:-translate-y-px hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60";

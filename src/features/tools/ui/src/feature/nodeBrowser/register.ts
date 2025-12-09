@@ -1,10 +1,10 @@
 import { createUIResource } from "@mcp-ui/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { TOOL_NAMES } from "../../../../../core/constants.js";
-import type { ILogger } from "../../../../../core/logger.js";
-import type { TouchDesignerClient } from "../../../../../tdClient/touchDesignerClient.js";
-import { buildHtmlDocument, escapeHtml } from "../templates/html.js";
+import { TOOL_NAMES } from "../../../../../../core/constants.js";
+import type { ILogger } from "../../../../../../core/logger.js";
+import type { TouchDesignerClient } from "../../../../../../tdClient/touchDesignerClient.js";
+import { buildHtmlDocument, escapeHtml } from "../../templates/html.js";
 
 const nodeBrowserSchema = z
 	.object({

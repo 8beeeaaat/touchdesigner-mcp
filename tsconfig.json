@@ -16,5 +16,11 @@
 		}
 	},
 	"include": ["src/**/*", "tests"],
-	"exclude": ["node_modules","src/gen/**/*.ts","**/*/*.test.ts", "src/ui"]
+	"exclude": [
+		"node_modules",
+		"src/gen/**/*.ts",
+		"**/*/*.test.ts",
+		"src/ui",
+		"src/features/tools/ui/src/**/*"
+	]
 }
