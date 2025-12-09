@@ -11,9 +11,8 @@
 		"forceConsistentCasingInFileNames": true,
 		"allowSyntheticDefaultImports": true,
 		"resolveJsonModule": true,
-		"baseUrl": ".",
 		"paths": {
-			"*": ["*", "*.js"]
+			"*": ["./*", "./*.js"]
 		}
 	},
 	"include": ["src/**/*", "tests"],
