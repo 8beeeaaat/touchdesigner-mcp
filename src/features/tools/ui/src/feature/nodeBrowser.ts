@@ -4,7 +4,6 @@ import { z } from "zod";
 import { TOOL_NAMES } from "../../../../../core/constants.js";
 import type { ILogger } from "../../../../../core/logger.js";
 import type { TouchDesignerClient } from "../../../../../tdClient/touchDesignerClient.js";
-import { loadScriptBundle } from "../components/scriptBundle.js";
 import { buildHtmlDocument, escapeHtml } from "../templates/html.js";
 
 const nodeBrowserSchema = z
@@ -23,8 +22,6 @@ const nodeBrowserSchema = z
 	.strict();
 
 type NodeBrowserParams = z.input<typeof nodeBrowserSchema>;
-
-const NODE_BROWSER_BUNDLE_PATH = "dist/feature/ui/nodeBrowser.js";
 
 export function registerNodeBrowserTool(
 	server: McpServer,
@@ -81,14 +78,10 @@ function buildNodeBrowserHtml(parentPath: string, pattern: string): string {
 	const escapedParent = escapeHtml(parentPath);
 	const escapedPattern = escapeHtml(pattern);
 
-	const bundleScript = loadScriptBundle({
-		relativePath: NODE_BROWSER_BUNDLE_PATH,
-		replacements: {
-			__GET_TD_NODE_PARAMETERS__: TOOL_NAMES.GET_TD_NODE_PARAMETERS,
-			__GET_TD_NODES__: TOOL_NAMES.GET_TD_NODES,
-			__UPDATE_TD_NODE_PARAMETERS__: TOOL_NAMES.UPDATE_TD_NODE_PARAMETERS,
-		},
-	});
+	// Build script URL from environment variables
+	const httpHost = process.env.MCP_HTTP_HOST || "127.0.0.1";
+	const httpPort = process.env.MCP_HTTP_PORT || "6280";
+	const scriptUrl = `http://${httpHost}:${httpPort}/static/feature/ui/nodeBrowser.js`;
 
 	return buildHtmlDocument({
 		bodyAttributes: [
@@ -97,7 +90,7 @@ function buildNodeBrowserHtml(parentPath: string, pattern: string): string {
 		bodyContent: `<div id="td-node-browser-root" data-parent="${escapedParent}" data-pattern="${escapedPattern}"></div>`,
 		head: [
 			"<style>:root { color-scheme: dark; }</style>",
-			`<script>${bundleScript}</script>`,
+			`<script src="${scriptUrl}"></script>`,
 		],
 		title: "TD Node Browser",
 	});

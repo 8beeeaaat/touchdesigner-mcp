@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-
-const TOOL_GET_NODES = "__GET_TD_NODES__";
-const TOOL_GET_NODE_PARAMS = "__GET_TD_NODE_PARAMETERS__";
-const TOOL_UPDATE_NODE_PARAMS = "__UPDATE_TD_NODE_PARAMETERS__";
+import { TOOL_NAMES } from "../../../../../core/constants";
 
 const buttonClass =
 	"rounded-xl border border-slate-700 bg-gradient-to-br from-blue-600 to-blue-500 px-3 py-2 text-sm font-semibold text-slate-50 shadow-sm transition hover:-translate-y-px hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60";
@@ -38,7 +35,7 @@ function useToolCaller(): ToolCaller {
 	const pendingRef = useRef(
 		new Map<
 			string,
-			{ resolve: (value: unknown) => void; reject: () => void }
+			{ resolve: (value: ToolResponse | undefined) => void; reject: () => void }
 		>(),
 	);
 	const counterRef = useRef(0);
@@ -90,7 +87,7 @@ function useToolCaller(): ToolCaller {
 
 function extractTextFromResponse(response?: ToolResponse): string {
 	if (!response || !Array.isArray(response.content)) return "";
-	const item = response.content.find((c) => c && c.text);
+	const item = response.content.find((c) => c?.text);
 	return item?.text ?? "";
 }
 
@@ -141,7 +138,7 @@ function ParamRow({ name, value, onUpdate, disabled }: ParamRowProps) {
 			<input
 				className="h-5 w-5 accent-blue-500"
 				checked={Boolean(draft)}
-				onChange={(e: any) => setDraft(Boolean(e.target.checked))}
+				onChange={(e) => setDraft(Boolean(e.target.checked))}
 				type="checkbox"
 			/>
 		) : typeof draft === "number" && Number.isFinite(draft) ? (
@@ -149,7 +146,7 @@ function ParamRow({ name, value, onUpdate, disabled }: ParamRowProps) {
 		) : (
 			<input
 				className={inputClass}
-				onChange={(e: any) => setDraft(e.target.value)}
+				onChange={(e) => setDraft(e.target.value)}
 				type="text"
 				value={draft === undefined || draft === null ? "" : String(draft)}
 			/>
@@ -192,13 +189,13 @@ function NumberInput({ value, onChange }: NumberInputProps) {
 				defaultValue={value}
 				max={value + span}
 				min={value - span}
-				onChange={(e: any) => onChange(Number(e.target.value || "0"))}
+				onChange={(e) => onChange(Number(e.target.value || "0"))}
 				step={span / 50}
 				type="range"
 			/>
 			<input
 				className={inputClass}
-				onChange={(e: any) => onChange(Number(e.target.value || "0"))}
+				onChange={(e) => onChange(Number(e.target.value || "0"))}
 				type="number"
 				value={value}
 				step={span / 50}
@@ -267,7 +264,7 @@ function NodeBrowserApp({
 		setSelectedNode(null);
 		setParamsStatus("");
 		try {
-			const response = await callTool(TOOL_GET_NODES, {
+			const response = await callTool(TOOL_NAMES.GET_TD_NODES, {
 				detailLevel: "detailed",
 				parentPath: parentPath.trim() || "/project1",
 				pattern: pattern.trim() || "*",
@@ -288,7 +285,7 @@ function NodeBrowserApp({
 	async function loadNodeDetails(path: string) {
 		setParamsStatus("パラメータ取得中...");
 		try {
-			const response = await callTool(TOOL_GET_NODE_PARAMS, {
+			const response = await callTool(TOOL_NAMES.GET_TD_NODE_PARAMETERS, {
 				detailLevel: "detailed",
 				nodePath: path,
 				responseFormat: "json",
@@ -309,7 +306,7 @@ function NodeBrowserApp({
 		setBusyKey(key);
 		setParamsStatus(`${key} 更新中...`);
 		try {
-			await callTool(TOOL_UPDATE_NODE_PARAMS, {
+			await callTool(TOOL_NAMES.UPDATE_TD_NODE_PARAMETERS, {
 				detailLevel: "summary",
 				nodePath: selectedNode.path,
 				properties: { [key]: value },
@@ -357,7 +354,7 @@ function NodeBrowserApp({
 							<input
 								className={inputClass}
 								value={parentPath}
-								onChange={(e: any) => setParentPath(e.target.value)}
+								onChange={(e) => setParentPath(e.target.value)}
 								placeholder="/project1"
 							/>
 						</label>
@@ -368,7 +365,7 @@ function NodeBrowserApp({
 							<input
 								className={inputClass}
 								value={pattern}
-								onChange={(e: any) => setPattern(e.target.value)}
+								onChange={(e) => setPattern(e.target.value)}
 								placeholder="*"
 							/>
 						</label>

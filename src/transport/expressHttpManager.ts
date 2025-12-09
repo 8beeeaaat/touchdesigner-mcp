@@ -1,7 +1,7 @@
 import type { Server as HttpServer } from "node:http";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { RequestHandler } from "express";
+import express, { type RequestHandler } from "express";
 import type { ILogger } from "../core/logger.js";
 import type { Result } from "../core/result.js";
 import { createErrorResult, createSuccessResult } from "../core/result.js";
@@ -152,6 +152,9 @@ export class ExpressHttpManager {
 				});
 			});
 
+			// 🔬 Experiment: Static file serving for UI bundles
+			app.use("/static", express.static("dist"));
+
 			// Start HTTP server
 			await new Promise<void>((resolve, reject) => {
 				try {
@@ -168,6 +171,11 @@ export class ExpressHttpManager {
 						});
 						this.logger.sendLog({
 							data: "Health check: GET /health",
+							level: "info",
+							logger: "ExpressHttpManager",
+						});
+						this.logger.sendLog({
+							data: "Static files: GET /static/*",
 							level: "info",
 							logger: "ExpressHttpManager",
 						});
