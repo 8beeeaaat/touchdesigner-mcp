@@ -24,12 +24,19 @@ If you are updating, please refer to the procedure in the **[Latest Release](htt
 
 ### Data-Driven Generative Art Portfolio Project
 
-Learn to create a stunning portfolio project that combines data science with generative art:
+Learn to create a stunning portfolio project that combines data science with generative art. This comprehensive tutorial suite teaches you to build "The Pulse of Data" - a real-time visualization that transforms cryptocurrency market data into mesmerizing generative art.
 
-- **[Quick Start Guide](docs/tutorial-data-art-quickstart.md)** - Build your first data art project in 30 minutes
-- **[Complete Tutorial](docs/tutorial-data-art-portfolio.md)** - In-depth guide covering data processing, visualization, and statistical analysis
-- **[MCP Commands Reference](docs/tutorial-data-art-mcp-commands.md)** - Exact prompts and commands to use with your AI assistant
-- **[Code Examples](docs/tutorial-data-art-code-examples.md)** - Python scripts for data fetching, processing, and analysis
+**[📖 Start Here: Tutorial Overview](docs/tutorial-data-art-overview.md)** - Complete guide to the tutorial suite
+
+#### Tutorial Components:
+
+- **[⚡ Quick Start](docs/tutorial-data-art-quickstart.md)** - Build your first data art project in 30 minutes
+- **[📚 Complete Tutorial](docs/tutorial-data-art-portfolio.md)** - In-depth guide covering data processing, visualization, and statistical analysis
+- **[💻 Code Examples](docs/tutorial-data-art-code-examples.md)** - Python scripts for data fetching, processing, and analysis
+- **[🎯 MCP Commands](docs/tutorial-data-art-mcp-commands.md)** - Exact prompts and commands to use with your AI assistant
+- **[🎨 Portfolio Example](docs/tutorial-data-art-portfolio-example.md)** - Professional presentation template
+
+**Skills Demonstrated:** API integration • Statistical analysis • Real-time graphics • GPU computing • Creative coding
 
 Perfect for showcasing technical skills on LinkedIn and GitHub!
 
