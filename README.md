@@ -20,6 +20,19 @@ Please refer to the **[Installation Guide](docs/installation.md)**.
 
 If you are updating, please refer to the procedure in the **[Latest Release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)**.
 
+## Tutorials
+
+### Data-Driven Generative Art Portfolio Project
+
+Learn to create a stunning portfolio project that combines data science with generative art:
+
+- **[Quick Start Guide](docs/tutorial-data-art-quickstart.md)** - Build your first data art project in 30 minutes
+- **[Complete Tutorial](docs/tutorial-data-art-portfolio.md)** - In-depth guide covering data processing, visualization, and statistical analysis
+- **[MCP Commands Reference](docs/tutorial-data-art-mcp-commands.md)** - Exact prompts and commands to use with your AI assistant
+- **[Code Examples](docs/tutorial-data-art-code-examples.md)** - Python scripts for data fetching, processing, and analysis
+
+Perfect for showcasing technical skills on LinkedIn and GitHub!
+
 ## MCP Server Features
 
 This server enables AI agents to perform operations in TouchDesigner using the Model Context Protocol (MCP).
