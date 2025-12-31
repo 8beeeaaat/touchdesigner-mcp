@@ -296,6 +296,39 @@ describe("TouchDesigner Client E2E Tests", () => {
 		await tdClient.deleteNode({ nodePath });
 	});
 
+	test("Python script execution should support multi-line variables", async () => {
+		const nodeName = `exec_text_${Date.now()}`;
+		const nodePath = `${SANDBOX_PATH}/${nodeName}`;
+		const createResponse = await tdClient.createNode({
+			nodeName,
+			nodeType: "textDAT",
+			parentPath: SANDBOX_PATH,
+		});
+		if (!createResponse.success) {
+			throw new Error(`failed: ${createResponse.error}`);
+		}
+
+		const script = [
+			`config = op('${nodePath}')`,
+			"config.text = 'Hello World'",
+			"config.text",
+		].join("\n");
+
+		const execResponse = await tdClient.execPythonScript<{
+			result: string;
+		}>({ script });
+
+		expect(execResponse).toBeDefined();
+		if (!execResponse.success) {
+			throw new Error(`failed: ${execResponse.error}`);
+		}
+		expect(execResponse.success).toBe(true);
+		expect(execResponse.data).toBeDefined();
+		expect(execResponse.data.result).toBe("Hello World");
+
+		await tdClient.deleteNode({ nodePath });
+	});
+
 	test("Can catch errors", async () => {
 		const nodeName = `exec_test_${Date.now()}`;
 		const nodePath = `${SANDBOX_PATH}/${nodeName}`;
