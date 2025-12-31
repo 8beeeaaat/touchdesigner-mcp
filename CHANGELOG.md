@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3] - 2025-12-31
+
+### Added
+
+- Added version and download badges to README files for better visibility of current release status and npm package downloads. ([#149](https://github.com/8beeeaaat/touchdesigner-mcp/pull/149))
+- Added AGENTS.md file documenting repository guidelines and development commands for AI agents working with the codebase. ([#146](https://github.com/8beeeaaat/touchdesigner-mcp/pull/146))
+
+### Changed
+
+- Enhanced installation documentation with development shortcuts for starting HTTP server mode more easily. ([#145](https://github.com/8beeeaaat/touchdesigner-mcp/pull/145), [#146](https://github.com/8beeeaaat/touchdesigner-mcp/pull/146))
+- Updated HTTP mode instructions in installation guides with npm commands and removed outdated commands for better clarity. ([#147](https://github.com/8beeeaaat/touchdesigner-mcp/pull/147))
+- Improved transport configuration documentation with clearer setup steps for both English and Japanese guides. ([#145](https://github.com/8beeeaaat/touchdesigner-mcp/pull/145))
+
+### Fixed
+
+- Fixed Python script execution for multi-line scripts by enhancing `exec_python_script` to properly handle newlines and complex script structures. ([#151](https://github.com/8beeeaaat/touchdesigner-mcp/pull/151))
+  - Resolved issue #150 where multi-line Python scripts would fail to execute correctly
+  - Added comprehensive integration tests to verify multi-line script execution
+
+### Technical
+
+- **Dependency Updates**: Updated multiple runtime and development dependencies to latest versions for improved security and performance
+  - Updated @modelcontextprotocol/sdk from ^1.24.3 to ^1.25.1 for latest MCP protocol features
+  - Updated zod from 4.1.13 to 4.3.2 for enhanced schema validation
+  - Updated @biomejs/biome from 2.3.8 to 2.3.10 for improved code formatting and linting
+  - Updated @openapitools/openapi-generator-cli from ^2.25.2 to ^2.27.0
+  - Updated @types/node from ^24.10.1 to ^25.0.3 for latest Node.js type definitions
+  - Updated @vitest/coverage-v8 from ^4.0.15 to ^4.0.16
+  - Updated msw from ^2.12.4 to ^2.12.7 for enhanced testing capabilities
+  - Updated orval from ^7.17.0 to ^7.17.2
+  - Updated vitest from ^4.0.15 to ^4.0.16
+- Code cleanup: Removed unused sessionId assignment in TransportFactory
+- Updated mockServiceWorker.js package version to match msw dependency (2.12.7)
+
 ## [1.4.2] - 2025-12-07
 
 ### Added
