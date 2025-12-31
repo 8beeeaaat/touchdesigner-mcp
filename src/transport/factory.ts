@@ -34,7 +34,6 @@ export class TransportFactory {
 	private static resetStreamableHttpState(
 		transport: StreamableHTTPServerTransport,
 	): void {
-		transport.sessionId = undefined;
 		Reflect.set(transport, "_initialized", false);
 	}
 	/**

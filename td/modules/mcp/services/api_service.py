@@ -378,6 +378,7 @@ class TouchDesignerApiService(IApiService):
 		    Result: Success result with execution output or error result with message
 		"""
 
+		no_result_sentinel = object()
 		local_vars = {
 			"op": td.op,
 			"ops": td.ops,
@@ -385,8 +386,10 @@ class TouchDesignerApiService(IApiService):
 			"parent": (td.op("..").path if hasattr(td, "op") and td.op("..") else None),
 			"project": td.project if hasattr(td, "project") else None,
 			"td": td,
-			"result": None,
+			"result": no_result_sentinel,
 		}
+		namespace = dict(globals())
+		namespace.update(local_vars)
 
 		stdout_capture = io.StringIO()
 		stderr_capture = io.StringIO()
@@ -397,8 +400,8 @@ class TouchDesignerApiService(IApiService):
 		):
 			if "\n" not in script and ";" not in script:
 				try:
-					result = eval(script, globals(), local_vars)
-					local_vars["result"] = result
+					result = eval(script, namespace, namespace)
+					namespace["result"] = result
 					processed_result = self._process_method_result(result)
 
 					log_message(
@@ -420,9 +423,9 @@ class TouchDesignerApiService(IApiService):
 					pass
 
 			try:
-				exec(script, globals(), local_vars)
+				exec(script, namespace, namespace)
 
-				if "result" not in local_vars:
+				if namespace.get("result") is no_result_sentinel:
 					lines = script.strip().split("\n")
 					if lines:
 						last_expr = lines[-1].strip()
@@ -439,8 +442,8 @@ class TouchDesignerApiService(IApiService):
 							)
 						):
 							try:
-								local_vars["result"] = eval(
-									last_expr, globals(), local_vars
+								namespace["result"] = eval(
+									last_expr, namespace, namespace
 								)
 								log_message(
 									f"Extracted result from last line: {last_expr}",
@@ -449,7 +452,9 @@ class TouchDesignerApiService(IApiService):
 							except Exception:
 								pass
 
-				result = local_vars.get("result")
+				result = namespace.get("result")
+				if result is no_result_sentinel:
+					result = None
 				processed_result = self._process_method_result(result)
 
 				stdout_val = stdout_capture.getvalue()
