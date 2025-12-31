@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed Python script execution for multi-line scripts by enhancing `exec_python_script` to properly handle newlines and complex script structures. ([#151](https://github.com/8beeeaaat/touchdesigner-mcp/pull/151))
-  - Resolved issue #150 where multi-line Python scripts would fail to execute correctly
+  - Resolved [issue #150](https://github.com/8beeeaaat/touchdesigner-mcp/issues/150) where multi-line Python scripts would fail to execute correctly
+    - Thanks to @saramaebee for reporting and detailing the issue 👍
   - Added comprehensive integration tests to verify multi-line script execution
 
 ### Technical
