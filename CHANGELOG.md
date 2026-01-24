@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.4] - 2026-01-24
+
+### Changed
+
+- Updated MCP bundle metadata to 1.4.4 and refreshed server registry entries, including the download URL and checksum for the MCPB package.
+- Enhanced `syncMcpServerVersions` to compute and validate the MCPB SHA-256 before updating registry metadata, preventing mismatched release artifacts.
+
+### Technical
+
+- **Dependency Updates**: Updated runtime and development dependencies to latest patch releases
+  - Updated @modelcontextprotocol/sdk from ^1.25.1 to ^1.25.3
+  - Updated zod from 4.3.2 to 4.3.6
+  - Updated @biomejs/biome from 2.3.10 to 2.3.12
+  - Updated @openapitools/openapi-generator-cli from ^2.27.0 to ^2.28.0
+  - Updated @types/node from ^25.0.3 to ^25.0.10
+  - Updated @vitest/coverage-v8 from ^4.0.16 to ^4.0.18
+  - Updated prettier from ^3.7.4 to ^3.8.1
+  - Updated vitest from ^4.0.16 to ^4.0.18
+
 ## [1.4.3] - 2025-12-31
 
 ### Added
