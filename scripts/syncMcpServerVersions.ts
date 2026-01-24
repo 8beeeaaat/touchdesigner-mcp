@@ -1,4 +1,5 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -15,6 +16,23 @@ if (!packageVersion) {
 }
 
 const updatedFiles: string[] = [];
+
+const mcpbPath = join(rootDir, "touchdesigner-mcp.mcpb");
+const mcpbSha256 = (() => {
+	if (!existsSync(mcpbPath)) {
+		throw new Error(
+			"touchdesigner-mcp.mcpb not found. Run `npm run build:mcpb` before `npm run version:mcp`.",
+		);
+	}
+	const output = execFileSync("openssl", ["dgst", "-sha256", mcpbPath], {
+		encoding: "utf8",
+	}).trim();
+	const match = output.match(/=\s*([0-9a-fA-F]{64})$/);
+	if (!match) {
+		throw new Error(`Failed to parse SHA-256 from openssl output: ${output}`);
+	}
+	return match[1].toLowerCase();
+})();
 
 const writeJsonFile = <T extends Record<string, unknown>>(
 	relativePath: string,
@@ -60,12 +78,13 @@ writeJsonFile<ServerConfig>("server.json", (serverConfig) => {
 			const updatedIdentifier =
 				typeof pkg.identifier === "string"
 					? pkg.identifier.replace(
-							/\/download\/v[^/]+\//,
-							`/download/v${packageVersion}/`,
-						)
+						/\/download\/v[^/]+\//,
+						`/download/v${packageVersion}/`,
+					)
 					: pkg.identifier;
 			return {
 				...pkg,
+				fileSha256: mcpbSha256,
 				identifier: updatedIdentifier,
 				version: packageVersion,
 			};
