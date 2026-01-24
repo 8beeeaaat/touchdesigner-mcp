@@ -78,9 +78,9 @@ writeJsonFile<ServerConfig>("server.json", (serverConfig) => {
 			const updatedIdentifier =
 				typeof pkg.identifier === "string"
 					? pkg.identifier.replace(
-						/\/download\/v[^/]+\//,
-						`/download/v${packageVersion}/`,
-					)
+							/\/download\/v[^/]+\//,
+							`/download/v${packageVersion}/`,
+						)
 					: pkg.identifier;
 			return {
 				...pkg,
