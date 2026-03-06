@@ -34,6 +34,7 @@ export default defineConfig({
 			client: "zod",
 			fileExtension: ".zod.ts",
 			mode: "single",
+			namingConvention: "camelCase",
 			target: "src/gen/mcp",
 		},
 	},
