@@ -5,16 +5,16 @@ import { REFERENCE_COMMENT, TOOL_NAMES } from "../../../core/constants.js";
 import { handleToolError } from "../../../core/errorHandling.js";
 import type { ILogger } from "../../../core/logger.js";
 import {
-	createNodeBody,
-	deleteNodeQueryParams,
-	execNodeMethodBody,
-	execPythonScriptBody,
-	getModuleHelpQueryParams,
-	getNodeDetailQueryParams,
-	getNodeErrorsQueryParams,
-	getNodesQueryParams,
-	getTdPythonClassDetailsParams,
-	updateNodeBody,
+	CreateNodeBody,
+	DeleteNodeQueryParams,
+	ExecNodeMethodBody,
+	ExecPythonScriptBody,
+	GetModuleHelpQueryParams,
+	GetNodeDetailQueryParams,
+	GetNodeErrorsQueryParams,
+	GetNodesQueryParams,
+	GetTdPythonClassDetailsParams,
+	UpdateNodeBody,
 } from "../../../gen/mcp/touchDesignerAPI.zod.js";
 import type { TouchDesignerClient } from "../../../tdClient/touchDesignerClient.js";
 import type { ToolMetadata } from "../metadata/touchDesignerToolMetadata.js";
@@ -40,7 +40,7 @@ import {
 	formattingOptionsSchema,
 } from "../types.js";
 
-const execPythonScriptToolSchema = execPythonScriptBody.extend(
+const execPythonScriptToolSchema = ExecPythonScriptBody.extend(
 	detailOnlyFormattingSchema.shape,
 );
 type ExecPythonScriptToolParams = z.input<typeof execPythonScriptToolSchema>;
@@ -48,32 +48,32 @@ type ExecPythonScriptToolParams = z.input<typeof execPythonScriptToolSchema>;
 const tdInfoToolSchema = detailOnlyFormattingSchema;
 type TdInfoToolParams = z.input<typeof tdInfoToolSchema>;
 
-const getNodesToolSchema = getNodesQueryParams.extend(
+const getNodesToolSchema = GetNodesQueryParams.extend(
 	formattingOptionsSchema.shape,
 );
 type GetNodesToolParams = z.input<typeof getNodesToolSchema>;
 
-const getNodeDetailToolSchema = getNodeDetailQueryParams.extend(
+const getNodeDetailToolSchema = GetNodeDetailQueryParams.extend(
 	formattingOptionsSchema.shape,
 );
 type GetNodeDetailToolParams = z.input<typeof getNodeDetailToolSchema>;
 
-const getNodeErrorsToolSchema = getNodeErrorsQueryParams.extend(
+const getNodeErrorsToolSchema = GetNodeErrorsQueryParams.extend(
 	formattingOptionsSchema.shape,
 );
 type GetNodeErrorsToolParams = z.input<typeof getNodeErrorsToolSchema>;
 
-const createNodeToolSchema = createNodeBody.extend(
+const createNodeToolSchema = CreateNodeBody.extend(
 	detailOnlyFormattingSchema.shape,
 );
 type CreateNodeToolParams = z.input<typeof createNodeToolSchema>;
 
-const updateNodeToolSchema = updateNodeBody.extend(
+const updateNodeToolSchema = UpdateNodeBody.extend(
 	detailOnlyFormattingSchema.shape,
 );
 type UpdateNodeToolParams = z.input<typeof updateNodeToolSchema>;
 
-const deleteNodeToolSchema = deleteNodeQueryParams.extend(
+const deleteNodeToolSchema = DeleteNodeQueryParams.extend(
 	detailOnlyFormattingSchema.shape,
 );
 type DeleteNodeToolParams = z.input<typeof deleteNodeToolSchema>;
@@ -81,17 +81,17 @@ type DeleteNodeToolParams = z.input<typeof deleteNodeToolSchema>;
 const classListToolSchema = formattingOptionsSchema;
 type ClassListToolParams = FormattingOptionsParams;
 
-const classDetailToolSchema = getTdPythonClassDetailsParams.extend(
+const classDetailToolSchema = GetTdPythonClassDetailsParams.extend(
 	formattingOptionsSchema.shape,
 );
 type ClassDetailToolParams = z.input<typeof classDetailToolSchema>;
 
-const moduleHelpToolSchema = getModuleHelpQueryParams.extend(
+const moduleHelpToolSchema = GetModuleHelpQueryParams.extend(
 	detailOnlyFormattingSchema.shape,
 );
 type ModuleHelpToolParams = z.input<typeof moduleHelpToolSchema>;
 
-const execNodeMethodToolSchema = execNodeMethodBody.extend(
+const execNodeMethodToolSchema = ExecNodeMethodBody.extend(
 	detailOnlyFormattingSchema.shape,
 );
 type ExecNodeMethodToolParams = z.input<typeof execNodeMethodToolSchema>;
