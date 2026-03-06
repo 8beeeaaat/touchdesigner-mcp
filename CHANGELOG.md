@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.5] - 2026-03-06
+
+### Added
+
+- Added a custom OpenAPI generator template (`src/templates/python-flask/setup.mustache`) and wired `gen:webserver` to use it, so generated Python server packages include consistent setup metadata and installation configuration.
+
+### Changed
+
+- Released version `1.4.5` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), and server registry metadata (`server.json`) to keep published artifacts and registry resolution in sync.
+- Updated code generation settings in `orval.config.ts` to use `namingConvention: "camelCase"` for stable generated schema naming and easier maintenance of typed tool handlers.
+
+### Fixed
+
+- Updated `tdTools` schema imports/usages to match generated Zod schema naming (`CreateNodeBody`, `GetNodesQueryParams`, etc.), preventing handler/schema mismatches after code generation updates.
+- Corrected the Biome schema path in `biome.json` to the local package schema (`node_modules/@biomejs/biome/configuration_schema.json`), improving local linting/editor schema resolution.
+- Corrected the MCPB `fileSha256` value in `server.json` for the `v1.4.5` bundle, preventing checksum mismatches during package verification.
+
+### Technical
+
+- **Dependency Updates**: Updated runtime and development dependencies to latest patch/minor releases for compatibility and tooling stability
+  - Updated `@modelcontextprotocol/sdk` from `^1.25.3` to `^1.27.1`
+  - Updated `axios` from `^1.13.2` to `^1.13.6`
+  - Updated `semver` from `^7.7.3` to `^7.7.4`
+  - Updated `@biomejs/biome` from `2.3.12` to `2.4.6`
+  - Updated `@openapitools/openapi-generator-cli` from `^2.28.0` to `^2.30.2`
+  - Updated `@types/jsdom` from `^27.0.0` to `^28.0.0`
+  - Updated `@types/node` from `^25.0.10` to `^25.3.5`
+  - Updated `msw` from `^2.12.7` to `^2.12.10` and synchronized `public/mockServiceWorker.js` `PACKAGE_VERSION` accordingly
+  - Updated `orval` from `^7.17.2` to `^8.5.2`
+
 ## [1.4.4] - 2026-01-24
 
 ### Changed
