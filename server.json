@@ -21,7 +21,7 @@
       "registryType": "mcpb",
       "identifier": "https://github.com/8beeeaaat/touchdesigner-mcp/releases/download/v1.4.5/touchdesigner-mcp.mcpb",
       "version": "1.4.5",
-      "fileSha256": "308f4c4e539e0a416a9af238b3d99a91cc73320889c06ee053558491e7fcc0a4",
+      "fileSha256": "302cbcc82625058828628e89eb87af92e80580eed1d775028cccc30687b6865d",
       "transport": {
         "type": "stdio"
       }
