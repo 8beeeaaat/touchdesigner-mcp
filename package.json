@@ -91,7 +91,7 @@
 		"version:api": "node ./scripts/syncApiServerVersions.ts",
 		"version:mcp": "node ./scripts/syncMcpServerVersions.ts",
 		"gen": "run-s gen:*",
-		"gen:webserver": "openapi-generator-cli generate -i ./src/api/index.yml -g python-flask -o ./td/modules/td_server",
+		"gen:webserver": "openapi-generator-cli generate -i ./src/api/index.yml -g python-flask -o ./td/modules/td_server -t ./src/templates/python-flask",
 		"gen:handlers": "node td/genHandlers.js",
 		"gen:mcp": "orval --config ./orval.config.ts"
 	},
