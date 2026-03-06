@@ -128,10 +128,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4.1.1
-      - uses: actions/setup-node@v4.0.0
+      - uses: actions/setup-node@v4
         with:
           node-version: "24.x"
           registry-url: "https://registry.npmjs.org"
@@ -141,10 +141,8 @@ jobs:
         run: |
           if [[ "${{ needs.build.outputs.is_prerelease }}" == "true" ]]; then
             echo "Publishing prerelease version with 'prerelease' tag..."
-            npm publish --access public --tag prerelease
+            npm publish --access public --tag prerelease --provenance
           else
             echo "Publishing production version with 'latest' tag..."
-            npm publish --access public
+            npm publish --access public --provenance
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
