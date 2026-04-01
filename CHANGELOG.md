@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.6] - 2026-04-01
+
+### Security
+
+- Pinned `axios` to exact version `1.13.6` (removed caret range `^1.13.6`) in both `dependencies` and `overrides` to mitigate the [axios supply chain attack](https://socket.dev/npm/package/axios/overview/1.14.1). The malicious `axios@1.14.1` was published to npm in late March 2026 and has since been removed. Users who ran `npx touchdesigner-mcp-server` during the compromise window (late March 2026) should check for the presence of `plain-crypto-js` in their `node_modules` and reinstall if found.
+
+<https://github.com/8beeeaaat/touchdesigner-mcp/issues/167> @annsts thx!
+
+#### For users who may have been affected
+
+If you ran npx touchdesigner-mcp-server during late March 2026, please refer to the remediation guidance in the references below. Key steps include checking for the presence of plain-crypto-js in your node_modules, removing and reinstalling if found, and rotating any secrets or credentials that may have been exposed.
+
+##### References
+
+[Axios Supply Chain Attack Pushes Cross-Platform RAT via Compromised npm Account — The Hacker News](https://thehackernews.com/2026/03/axios-supply-chain-attack-pushes-cross.html)
+
+[axios Compromised on npm — StepSecurity](https://www.stepsecurity.io/blog/axios-compromised-on-npm-malicious-versions-drop-remote-access-trojan)
+
+[North Korea-Nexus Threat Actor Compromises Axios NPM Package — Google Cloud Blog](https://cloud.google.com/blog/topics/threat-intelligence/north-korea-threat-actor-targets-axios-npm-package?hl=en)
+
 ## [1.4.5] - 2026-03-06
 
 ### Added
