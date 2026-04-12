@@ -83,7 +83,7 @@ export function formatClassDetails(
 ): string {
 	const opts = mergeFormatterOptions(options);
 
-	if (!data || !data.name) {
+	if (!data?.name) {
 		return "No class details available.";
 	}
 
