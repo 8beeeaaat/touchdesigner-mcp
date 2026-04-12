@@ -28,7 +28,6 @@
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.29.0",
 		"@mozilla/readability": "^0.6.0",
-		"@types/axios": "^0.14.4",
 		"@types/ws": "^8.18.1",
 		"@types/yargs": "^17.0.35",
 		"axios": "1.15.0",
