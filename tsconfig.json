@@ -10,11 +10,7 @@
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
 		"allowSyntheticDefaultImports": true,
-		"resolveJsonModule": true,
-		"baseUrl": ".",
-		"paths": {
-			"*": ["*", "*.js"]
-		}
+		"resolveJsonModule": true
 	},
 	"include": ["src/**/*", "tests"],
 	"exclude": ["node_modules","src/gen/**/*.ts","**/*/*.test.ts"]
