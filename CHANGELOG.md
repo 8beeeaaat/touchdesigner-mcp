@@ -11,15 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Released version `1.4.7` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), and server registry metadata (`server.json`), including the updated MCPB download URL and checksum so npm and MCPB installations resolve the same release.
 - Upgraded `axios` from the temporary `1.13.6` hold to the safe upstream release `1.15.0`, keeping installs on a patched version without relying on the earlier emergency pin.
+- Switched Node.js version management from `.nvmrc` to `.node-version` for broader compatibility with version managers (`fnm`, `volta`, `mise`, etc.).
+- CI workflows (`development.yml`, `release.yml`) now read the pinned Node.js version from `.node-version` instead of using a floating `24.x` matrix, preventing lock file drift between local and CI environments.
 
 ### Fixed
 
 - Updated `public/mockServiceWorker.js` `PACKAGE_VERSION` to `2.13.2` to match the upgraded `msw` dependency, preventing local test and development mismatches between the generated worker script and the installed package.
 - Removed deprecated `baseUrl` and `paths` settings from `tsconfig.json`, preventing `TS5101` failures and keeping `npm run build:dist` compatible with TypeScript `6.0`.
+- Used optional chaining (`data?.name`) in `classListFormatter.ts` for safer class details data validation.
+- Regenerated `package-lock.json` for npm `11.11.0` compatibility, fixing missing top-level entries for `@emnapi/core` and `@emnapi/runtime` that caused `npm ci` failures in CI.
 
 ### Removed
 
 - Removed the temporary `overrides.axios` entry introduced during the March 2026 npm supply-chain mitigation now that the project has moved to a safe upstream axios release.
+- Removed unnecessary `@types/axios` from dependencies — axios `1.x` ships its own TypeScript type definitions.
 
 ### Technical
 
