@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.7] - 2026-04-12
+
+### Changed
+
+- Released version `1.4.7` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), and server registry metadata (`server.json`), including the updated MCPB download URL and checksum so npm and MCPB installations resolve the same release.
+- Upgraded `axios` from the temporary `1.13.6` hold to the safe upstream release `1.15.0`, keeping installs on a patched version without relying on the earlier emergency pin.
+
+### Fixed
+
+- Updated `public/mockServiceWorker.js` `PACKAGE_VERSION` to `2.13.2` to match the upgraded `msw` dependency, preventing local test and development mismatches between the generated worker script and the installed package.
+- Removed deprecated `baseUrl` and `paths` settings from `tsconfig.json`, preventing `TS5101` failures and keeping `npm run build:dist` compatible with TypeScript `6.0`.
+
+### Removed
+
+- Removed the temporary `overrides.axios` entry introduced during the March 2026 npm supply-chain mitigation now that the project has moved to a safe upstream axios release.
+
+### Technical
+
+- **Dependency Updates**: Updated runtime and development dependencies for compatibility with the latest TypeScript, testing, and code generation toolchain
+  - Updated `@modelcontextprotocol/sdk` from `^1.27.1` to `^1.29.0`
+  - Updated `axios` from `1.13.6` to `1.15.0`
+  - Updated `yaml` from `^2.8.2` to `^2.8.3`
+  - Updated `@biomejs/biome` from `2.4.6` to `2.4.11`
+  - Updated `@openapitools/openapi-generator-cli` from `^2.30.2` to `^2.31.1`
+  - Updated `@types/jsdom` from `^28.0.0` to `^28.0.1`
+  - Updated `@types/node` from `^25.3.5` to `^25.6.0`
+  - Updated `@vitest/coverage-v8` from `^4.0.18` to `^4.1.4`
+  - Updated `msw` from `^2.12.10` to `^2.13.2`
+  - Updated `orval` from `^8.5.2` to `^8.7.0`
+  - Updated `prettier` from `^3.8.1` to `^3.8.2`
+  - Updated `typescript` from `^5.9.3` to `^6.0.2`
+  - Updated `vitest` from `^4.0.18` to `^4.1.4`
+
 ## [1.4.6] - 2026-04-01
 
 ### Security
