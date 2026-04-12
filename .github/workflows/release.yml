@@ -133,7 +133,7 @@ jobs:
       - uses: actions/checkout@v4.1.1
       - uses: actions/setup-node@v4
         with:
-          node-version: "24.x"
+          node-version-file: ".nvmrc"
           registry-url: "https://registry.npmjs.org"
       - run: npm ci
       - run: npm run build
