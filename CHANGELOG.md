@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Released version `1.4.8` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), server registry metadata (`server.json`), OpenAPI schema (`src/api/index.yml`), and Python API version (`td/modules/utils/version.py`, `pyproject.toml`), including the updated MCPB download URL and checksum so npm and MCPB installations resolve the same release.
+- Released version `1.4.8` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), and server registry metadata (`server.json`), including the updated MCPB download URL and checksum so npm and MCPB installations resolve the same release. The MCP API version (`src/api/index.yml`, `td/modules/utils/version.py`) stays at `1.4.3` since this release contains no server/API changes.
 - Pinned all dependencies and devDependencies to exact versions (removed caret ranges) so local and CI installs always resolve identical dependency trees.
 
 ### Fixed
