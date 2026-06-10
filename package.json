@@ -1,6 +1,6 @@
 {
 	"name": "touchdesigner-mcp-server",
-	"version": "1.4.7",
+	"version": "1.4.8",
 	"description": "MCP server for TouchDesigner",
 	"repository": {
 		"type": "git",
@@ -26,34 +26,33 @@
 		"touchdesigner-mcp-server": "dist/cli.js"
 	},
 	"dependencies": {
-		"@modelcontextprotocol/sdk": "^1.29.0",
-		"@mozilla/readability": "^0.6.0",
-		"@types/ws": "^8.18.1",
-		"@types/yargs": "^17.0.35",
-		"axios": "1.15.0",
-		"express": "^5.2.1",
-		"mustache": "^4.2.0",
-		"semver": "^7.7.4",
-		"yaml": "^2.8.3",
-		"zod": "4.3.6"
+		"@modelcontextprotocol/sdk": "1.29.0",
+		"@mozilla/readability": "0.6.0",
+		"@types/ws": "8.18.1",
+		"@types/yargs": "17.0.35",
+		"axios": "1.17.0",
+		"express": "5.2.1",
+		"mustache": "4.2.0",
+		"semver": "7.8.4",
+		"yaml": "2.9.0",
+		"zod": "4.4.3"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.4.11",
-		"@openapitools/openapi-generator-cli": "^2.31.1",
-		"@types/express": "^5.0.6",
-		"@types/jsdom": "^28.0.1",
-		"@types/mustache": "^4.2.6",
-		"@types/node": "^25.6.0",
-		"@types/semver": "^7.7.1",
-		"@vitest/coverage-v8": "^4.1.4",
-		"archiver": "^7.0.1",
-		"msw": "^2.13.2",
-		"npm-run-all": "^4.1.5",
-		"orval": "^8.7.0",
-		"prettier": "^3.8.2",
-		"shx": "^0.4.0",
-		"typescript": "^6.0.2",
-		"vitest": "^4.1.4"
+		"@biomejs/biome": "2.4.16",
+		"@openapitools/openapi-generator-cli": "2.35.0",
+		"@types/express": "5.0.6",
+		"@types/jsdom": "28.0.3",
+		"@types/mustache": "4.2.6",
+		"@types/node": "25.9.3",
+		"@types/semver": "7.7.1",
+		"@vitest/coverage-v8": "4.1.8",
+		"msw": "2.14.6",
+		"npm-run-all": "4.1.5",
+		"orval": "8.16.0",
+		"prettier": "3.8.4",
+		"shx": "0.4.0",
+		"typescript": "6.0.3",
+		"vitest": "4.1.8"
 	},
 	"type": "module",
 	"exports": {
@@ -97,6 +96,11 @@
 	"files": [
 		"dist/**/*"
 	],
+	"overrides": {
+		"concurrently": {
+			"shell-quote": "1.8.4"
+		}
+	},
 	"msw": {
 		"workerDirectory": [
 			"public"

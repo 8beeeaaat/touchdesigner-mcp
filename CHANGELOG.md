@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.8] - 2026-06-11
+
+### Changed
+
+- Released version `1.4.8` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), and server registry metadata (`server.json`), including the updated MCPB download URL and checksum so npm and MCPB installations resolve the same release. The MCP API version (`src/api/index.yml`, `td/modules/utils/version.py`) stays at `1.4.3` since this release contains no server/API changes.
+- Pinned all dependencies and devDependencies to exact versions (removed caret ranges) so local and CI installs always resolve identical dependency trees.
+
+### Fixed
+
+- Updated `public/mockServiceWorker.js` `PACKAGE_VERSION` to `2.14.6` to match the upgraded `msw` dependency, keeping the generated worker script in sync with the installed package.
+
+### Removed
+
+- Removed unused `archiver` devDependency — MCP Bundle packaging has been handled by `npx @anthropic-ai/mcpb pack` since the packaging flow was reworked, leaving `archiver` unreferenced.
+
+### Security
+
+- Added an `overrides` entry forcing `shell-quote` to the patched `1.8.4` release under `concurrently`, fixing a critical advisory (GHSA-w7jw-789q-3m8p) without downgrading `@openapitools/openapi-generator-cli`. The override can be removed once `@openapitools/openapi-generator-cli` ships with `concurrently@10` or newer.
+- Resolved all remaining `npm audit` findings (including a high-severity `fast-uri` path traversal advisory) by refreshing transitive dependencies via `npm audit fix`.
+
+### Technical
+
+- **Dependency Updates**: Updated runtime and development dependencies for compatibility with the latest TypeScript, testing, and code generation toolchain
+  - Updated `axios` from `1.15.0` to `1.17.0`
+  - Updated `semver` from `^7.7.4` to `7.8.4`
+  - Updated `yaml` from `^2.8.3` to `2.9.0`
+  - Updated `zod` from `4.3.6` to `4.4.3`
+  - Updated `@biomejs/biome` from `2.4.11` to `2.4.16`
+  - Updated `@openapitools/openapi-generator-cli` from `^2.31.1` to `2.35.0`
+  - Updated `@types/jsdom` from `^28.0.1` to `28.0.3`
+  - Updated `@types/node` from `^25.6.0` to `25.9.3`
+  - Updated `@vitest/coverage-v8` from `^4.1.4` to `4.1.8`
+  - Updated `msw` from `^2.13.2` to `2.14.6`
+  - Updated `orval` from `^8.7.0` to `8.16.0`
+  - Updated `prettier` from `^3.8.2` to `3.8.4`
+  - Updated `typescript` from `^6.0.2` to `6.0.3`
+  - Updated `vitest` from `^4.1.4` to `4.1.8`
+
 ## [1.4.7] - 2026-04-12
 
 ### Changed
