@@ -27,9 +27,6 @@
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "1.29.0",
-		"@mozilla/readability": "0.6.0",
-		"@types/ws": "8.18.1",
-		"@types/yargs": "17.0.35",
 		"axios": "1.17.0",
 		"express": "5.2.1",
 		"mustache": "4.2.0",
@@ -38,17 +35,15 @@
 		"zod": "4.4.3"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.4.16",
-		"@openapitools/openapi-generator-cli": "2.35.0",
+		"@biomejs/biome": "2.5.0",
+		"@redocly/cli": "2.32.2",
 		"@types/express": "5.0.6",
-		"@types/jsdom": "28.0.3",
 		"@types/mustache": "4.2.6",
 		"@types/node": "25.9.3",
 		"@types/semver": "7.7.1",
 		"@vitest/coverage-v8": "4.1.8",
-		"msw": "2.14.6",
 		"npm-run-all": "4.1.5",
-		"orval": "8.16.0",
+		"orval": "8.17.0",
 		"prettier": "3.8.4",
 		"shx": "0.4.0",
 		"typescript": "6.0.3",
@@ -89,21 +84,11 @@
 		"version:api": "node ./scripts/syncApiServerVersions.ts",
 		"version:mcp": "node ./scripts/syncMcpServerVersions.ts",
 		"gen": "run-s gen:*",
-		"gen:webserver": "openapi-generator-cli generate -i ./src/api/index.yml -g python-flask -o ./td/modules/td_server -t ./src/templates/python-flask",
+		"gen:openapi": "redocly bundle ./src/api/index.yml -o ./td/modules/td_server/openapi_server/openapi/openapi.yaml",
 		"gen:handlers": "node td/genHandlers.js",
 		"gen:mcp": "orval --config ./orval.config.ts"
 	},
 	"files": [
 		"dist/**/*"
-	],
-	"overrides": {
-		"concurrently": {
-			"shell-quote": "1.8.4"
-		}
-	},
-	"msw": {
-		"workerDirectory": [
-			"public"
-		]
-	}
+	]
 }

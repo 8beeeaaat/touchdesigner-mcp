@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { TOOL_NAMES } from "../../src/core/constants.js";
 import type { ILogger } from "../../src/core/logger.js";
 import { registerTools } from "../../src/features/tools/register.js";
-import type { ExecNodeMethodRequest } from "../../src/gen/endpoints/TouchDesignerAPI";
+import type { ExecNodeMethodBody } from "../../src/gen/endpoints/TouchDesignerAPI";
 import type { TouchDesignerClient } from "../../src/tdClient/index.js";
 
 type ToolHandler = (params?: Record<string, unknown>) => Promise<unknown>;
@@ -33,7 +33,7 @@ function createMockTdClient(): TouchDesignerClient {
 	const execNodeMethod: TouchDesignerClient["execNodeMethod"] = async <
 		DATA extends NonNullable<{ result: unknown }>,
 	>(
-		_params: ExecNodeMethodRequest,
+		_params: ExecNodeMethodBody,
 	) => ({ data: { result: [] } as DATA, success: true });
 
 	const mock = {

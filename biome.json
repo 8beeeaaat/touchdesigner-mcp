@@ -37,7 +37,7 @@
 			"complexity": {
 				"noStaticOnlyClass": "off"
 			},
-			"recommended": true,
+			"preset": "recommended",
 			"style": {
 				"noInferrableTypes": "error",
 				"noParameterAssign": "error",
