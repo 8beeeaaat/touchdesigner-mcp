@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.9] - 2026-06-13
+
+### Changed
+
+- Released version `1.4.9` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), and server registry metadata (`server.json`), including the updated MCPB download URL and checksum so npm and MCPB installations resolve the same release. The MCP API version (`src/api/index.yml`, `td/modules/utils/version.py`) stays at `1.4.3` since this release contains no server/API contract changes.
+- Replaced the `@openapitools/openapi-generator-cli` (Java-based python-flask generator) with `@redocly/cli` for OpenAPI bundling. The python-flask generator was only used for its bundled `openapi.yaml` side effect; the rest of its output (Flask skeleton, models, CI artifacts) was dead code. The schema is now bundled directly via `redocly bundle` (`gen:webserver` renamed to `gen:openapi`), and `td/genHandlers.js` switched from the phantom `fs-extra` dependency to `node:fs/promises`.
+- Generated type names now follow the source schema (`CreateNode200Data`, `CreateNodeBody`) instead of generator-normalized names (`CreateNode200ResponseData`, `CreateNodeRequest`); consuming code updated accordingly. Python `operationId`s are snake_case in the source schema, so the TouchDesigner side is unchanged.
+- Centralized MCP tool definitions in a new `src/features/tools/toolDefinitions.ts` as the single source of truth (name, description, input schema, handler). `handlers/tdTools.ts` now registers them in a loop, and the `describe_td_tools` manifest derives its parameter metadata from each tool's Zod schema via introspection, keeping registration and documentation consistent.
+
+### Removed
+
+- Removed dead code surfaced by the codegen migration: the Flask skeleton and models under `td/modules/td_server/`, the unused `msw` dependency together with `public/mockServiceWorker.js` and its config field, the unreferenced `@mozilla/readability`, `@types/ws`, `@types/yargs`, and `@types/jsdom` devDependencies, and the stale `overrides` entry for `concurrently` (it targeted a transitive dependency of the now-removed `@openapitools/openapi-generator-cli`).
+- Dropped the Java runtime from the Docker image, since the `@redocly/cli` bundling step no longer requires it.
+- Removed the obsolete planning documents `plans/agent-interface-direction.md` and `plans/code-execution-design.md`.
+
+### Technical
+
+- Replaced `@openapitools/openapi-generator-cli` with `@redocly/cli` in the code generation toolchain (`gen:openapi`).
+- No dependency version bumps in this release: all direct dependencies were already at their latest published versions and `npm audit` reported 0 vulnerabilities.
+
 ## [1.4.8] - 2026-06-11
 
 ### Changed
