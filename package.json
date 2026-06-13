@@ -39,7 +39,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.16",
-		"@openapitools/openapi-generator-cli": "2.35.0",
+		"@redocly/cli": "2.32.2",
 		"@types/express": "5.0.6",
 		"@types/jsdom": "28.0.3",
 		"@types/mustache": "4.2.6",
@@ -89,7 +89,7 @@
 		"version:api": "node ./scripts/syncApiServerVersions.ts",
 		"version:mcp": "node ./scripts/syncMcpServerVersions.ts",
 		"gen": "run-s gen:*",
-		"gen:webserver": "openapi-generator-cli generate -i ./src/api/index.yml -g python-flask -o ./td/modules/td_server -t ./src/templates/python-flask",
+		"gen:openapi": "redocly bundle ./src/api/index.yml -o ./td/modules/td_server/openapi_server/openapi/openapi.yaml",
 		"gen:handlers": "node td/genHandlers.js",
 		"gen:mcp": "orval --config ./orval.config.ts"
 	},

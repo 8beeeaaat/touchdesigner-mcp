@@ -1,10 +1,10 @@
 import { MCP_SERVER_VERSION } from "../../../core/version.js";
 import type {
-	CreateNode200ResponseData,
-	DeleteNode200ResponseData,
-	ExecNodeMethod200ResponseData,
-	GetTdInfo200ResponseData,
-	UpdateNode200ResponseData,
+	CreateNode200Data,
+	DeleteNode200Data,
+	ExecNodeMethod200Data,
+	GetTdInfo200Data,
+	UpdateNode200Data,
 } from "../../../gen/endpoints/TouchDesignerAPI.js";
 import type { FormatterOptions } from "./responseFormatter.js";
 import {
@@ -15,7 +15,7 @@ import {
 type FormatterOpts = Pick<FormatterOptions, "detailLevel" | "responseFormat">;
 
 export function formatTdInfo(
-	data: GetTdInfo200ResponseData,
+	data: GetTdInfo200Data,
 	options?: FormatterOpts,
 ): string {
 	const opts = mergeFormatterOptions(options);
@@ -47,7 +47,7 @@ export function formatTdInfo(
 }
 
 export function formatCreateNodeResult(
-	data: CreateNode200ResponseData,
+	data: CreateNode200Data,
 	options?: FormatterOpts,
 ): string {
 	const opts = mergeFormatterOptions(options);
@@ -81,7 +81,7 @@ export function formatCreateNodeResult(
 }
 
 export function formatUpdateNodeResult(
-	data: UpdateNode200ResponseData,
+	data: UpdateNode200Data,
 	options?: FormatterOpts,
 ): string {
 	const opts = mergeFormatterOptions(options);
@@ -108,7 +108,7 @@ export function formatUpdateNodeResult(
 }
 
 export function formatDeleteNodeResult(
-	data: DeleteNode200ResponseData,
+	data: DeleteNode200Data,
 	options?: FormatterOpts,
 ): string {
 	const opts = mergeFormatterOptions(options);
@@ -127,7 +127,7 @@ export function formatDeleteNodeResult(
 }
 
 export function formatExecNodeMethodResult(
-	data: ExecNodeMethod200ResponseData | { result?: unknown } | null | undefined,
+	data: ExecNodeMethod200Data | { result?: unknown } | null | undefined,
 	context: {
 		nodePath: string;
 		method: string;

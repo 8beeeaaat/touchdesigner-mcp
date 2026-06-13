@@ -1,5 +1,5 @@
+import fs from "node:fs/promises";
 import path from "node:path";
-import fs from "fs-extra";
 import mustache from "mustache";
 import yaml from "yaml";
 
@@ -35,7 +35,8 @@ async function generateHandlers() {
 			operations,
 		});
 
-		await fs.outputFile(outputPath, rendered);
+		await fs.mkdir(path.dirname(outputPath), { recursive: true });
+		await fs.writeFile(outputPath, rendered);
 
 		console.log("✅ generated_handlers.py created successfully!");
 	} catch (error) {
