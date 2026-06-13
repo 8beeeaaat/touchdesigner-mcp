@@ -24,15 +24,15 @@ import {
 	getTdPythonClassDetails as apiGetTdPythonClassDetails,
 	getTdPythonClasses as apiGetTdPythonClasses,
 	updateNode as apiUpdateNode,
-	type CreateNodeRequest,
+	type CreateNodeBody,
 	type DeleteNodeParams,
-	type ExecNodeMethodRequest,
-	type ExecPythonScriptRequest,
+	type ExecNodeMethodBody,
+	type ExecPythonScriptBody,
 	type GetModuleHelpParams,
 	type GetNodeDetailParams,
 	type GetNodeErrorsParams,
 	type GetNodesParams,
-	type UpdateNodeRequest,
+	type UpdateNodeBody,
 } from "../gen/endpoints/TouchDesignerAPI.js";
 
 /**
@@ -328,7 +328,7 @@ export class TouchDesignerClient {
 		DATA extends NonNullable<{
 			result: unknown;
 		}>,
-	>(params: ExecNodeMethodRequest) {
+	>(params: ExecNodeMethodBody) {
 		return this.apiCall(
 			"Executing node method",
 			() => this.api.execNodeMethod(params),
@@ -346,7 +346,7 @@ export class TouchDesignerClient {
 		DATA extends {
 			result: unknown;
 		},
-	>(params: ExecPythonScriptRequest) {
+	>(params: ExecPythonScriptBody) {
 		return this.apiCall(
 			"Executing Python script",
 			() => this.api.execPythonScript(params),
@@ -398,7 +398,7 @@ export class TouchDesignerClient {
 	/**
 	 * Create a new node
 	 */
-	async createNode(params: CreateNodeRequest) {
+	async createNode(params: CreateNodeBody) {
 		return this.apiCall("Creating node", () => this.api.createNode(params), {
 			nodeName: params.nodeName,
 			nodeType: params.nodeType,
@@ -409,7 +409,7 @@ export class TouchDesignerClient {
 	/**
 	 * Update node properties
 	 */
-	async updateNode(params: UpdateNodeRequest) {
+	async updateNode(params: UpdateNodeBody) {
 		return this.apiCall("Updating node", () => this.api.updateNode(params), {
 			nodePath: params.nodePath,
 		});

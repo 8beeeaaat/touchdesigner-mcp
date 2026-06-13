@@ -539,7 +539,9 @@ class ConnectionManager {
 
 ### Tool Handlers
 
-**Implementation**: [src/features/tools/handlers/tdTools.ts](../src/features/tools/handlers/tdTools.ts)
+**Definitions**: [src/features/tools/toolDefinitions.ts](../src/features/tools/toolDefinitions.ts) — the `TOOL_DEFINITIONS` table is the single source of truth for each tool's name, description, input schema, and handler.
+
+**Registration**: [src/features/tools/handlers/tdTools.ts](../src/features/tools/handlers/tdTools.ts) — registers every `TOOL_DEFINITIONS` entry in a loop plus the `describe_td_tools` meta tool, whose manifest (parameter metadata) is derived from each tool's Zod schema by introspection ([metadata/touchDesignerToolMetadata.ts](../src/features/tools/metadata/touchDesignerToolMetadata.ts)).
 
 MCP tool implementations categorized as follows:
 
@@ -1161,14 +1163,15 @@ interface ILogger {
 Code generation from OpenAPI schema:
 
 - **Schema-First**: [src/api/index.yml](../src/api/index.yml)
-- **Python Server**: Generated with `openapi-generator-cli`
+- **Bundled Schema**: Generated with `@redocly/cli` (single YAML consumed by all downstream steps)
+- **Python Handlers**: Generated with a custom Mustache-based script (`td/genHandlers.js`)
 - **TypeScript Client**: Generated with Orval
 - **Zod Schemas**: Generated with Orval
 
 Generation Process:
 
 ```bash
-npm run gen:webserver  # Python server generation
+npm run gen:openapi    # Bundle OpenAPI schema into a single YAML
 npm run gen:handlers   # Python handlers generation
 npm run gen:mcp        # TypeScript client + Zod schemas
 npm run gen            # Run all generation steps

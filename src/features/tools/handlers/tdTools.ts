@@ -1,100 +1,17 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { REFERENCE_COMMENT, TOOL_NAMES } from "../../../core/constants.js";
+import { TOOL_NAMES } from "../../../core/constants.js";
 import { handleToolError } from "../../../core/errorHandling.js";
 import type { ILogger } from "../../../core/logger.js";
-import {
-	CreateNodeBody,
-	DeleteNodeQueryParams,
-	ExecNodeMethodBody,
-	ExecPythonScriptBody,
-	GetModuleHelpQueryParams,
-	GetNodeDetailQueryParams,
-	GetNodeErrorsQueryParams,
-	GetNodesQueryParams,
-	GetTdPythonClassDetailsParams,
-	UpdateNodeBody,
-} from "../../../gen/mcp/touchDesignerAPI.zod.js";
 import type { TouchDesignerClient } from "../../../tdClient/touchDesignerClient.js";
-import type { ToolMetadata } from "../metadata/touchDesignerToolMetadata.js";
-import { getTouchDesignerToolMetadata } from "../metadata/touchDesignerToolMetadata.js";
 import {
-	formatClassDetails,
-	formatClassList,
-	formatCreateNodeResult,
-	formatDeleteNodeResult,
-	formatExecNodeMethodResult,
-	formatModuleHelp,
-	formatNodeDetails,
-	formatNodeErrors,
-	formatNodeList,
-	formatScriptResult,
-	formatTdInfo,
-	formatToolMetadata,
-	formatUpdateNodeResult,
-} from "../presenter/index.js";
-import {
-	detailOnlyFormattingSchema,
-	type FormattingOptionsParams,
-	formattingOptionsSchema,
-} from "../types.js";
-
-const execPythonScriptToolSchema = ExecPythonScriptBody.extend(
-	detailOnlyFormattingSchema.shape,
-);
-type ExecPythonScriptToolParams = z.input<typeof execPythonScriptToolSchema>;
-
-const tdInfoToolSchema = detailOnlyFormattingSchema;
-type TdInfoToolParams = z.input<typeof tdInfoToolSchema>;
-
-const getNodesToolSchema = GetNodesQueryParams.extend(
-	formattingOptionsSchema.shape,
-);
-type GetNodesToolParams = z.input<typeof getNodesToolSchema>;
-
-const getNodeDetailToolSchema = GetNodeDetailQueryParams.extend(
-	formattingOptionsSchema.shape,
-);
-type GetNodeDetailToolParams = z.input<typeof getNodeDetailToolSchema>;
-
-const getNodeErrorsToolSchema = GetNodeErrorsQueryParams.extend(
-	formattingOptionsSchema.shape,
-);
-type GetNodeErrorsToolParams = z.input<typeof getNodeErrorsToolSchema>;
-
-const createNodeToolSchema = CreateNodeBody.extend(
-	detailOnlyFormattingSchema.shape,
-);
-type CreateNodeToolParams = z.input<typeof createNodeToolSchema>;
-
-const updateNodeToolSchema = UpdateNodeBody.extend(
-	detailOnlyFormattingSchema.shape,
-);
-type UpdateNodeToolParams = z.input<typeof updateNodeToolSchema>;
-
-const deleteNodeToolSchema = DeleteNodeQueryParams.extend(
-	detailOnlyFormattingSchema.shape,
-);
-type DeleteNodeToolParams = z.input<typeof deleteNodeToolSchema>;
-
-const classListToolSchema = formattingOptionsSchema;
-type ClassListToolParams = FormattingOptionsParams;
-
-const classDetailToolSchema = GetTdPythonClassDetailsParams.extend(
-	formattingOptionsSchema.shape,
-);
-type ClassDetailToolParams = z.input<typeof classDetailToolSchema>;
-
-const moduleHelpToolSchema = GetModuleHelpQueryParams.extend(
-	detailOnlyFormattingSchema.shape,
-);
-type ModuleHelpToolParams = z.input<typeof moduleHelpToolSchema>;
-
-const execNodeMethodToolSchema = ExecNodeMethodBody.extend(
-	detailOnlyFormattingSchema.shape,
-);
-type ExecNodeMethodToolParams = z.input<typeof execNodeMethodToolSchema>;
+	buildToolMetadata,
+	type ToolMetadata,
+} from "../metadata/touchDesignerToolMetadata.js";
+import { formatToolMetadata } from "../presenter/index.js";
+import { TOOL_DEFINITIONS } from "../toolDefinitions.js";
+import { detailOnlyFormattingSchema } from "../types.js";
 
 const describeToolsSchema = detailOnlyFormattingSchema.extend({
 	filter: z
@@ -112,8 +29,31 @@ export function registerTdTools(
 	logger: ILogger,
 	tdClient: TouchDesignerClient,
 ): void {
-	const toolMetadataEntries = getTouchDesignerToolMetadata();
+	// Register every TouchDesigner operation from the single source of truth.
+	for (const definition of TOOL_DEFINITIONS) {
+		server.tool(
+			definition.name,
+			definition.description,
+			definition.schema.strict().shape,
+			async (params: Record<string, unknown> = {}) => {
+				try {
+					const text = await definition.run({ logger, params, tdClient });
+					return createToolResult(tdClient, text);
+				} catch (error) {
+					return handleToolError(
+						error,
+						logger,
+						definition.name,
+						definition.errorComment,
+					);
+				}
+			},
+		);
+	}
 
+	// `describe_td_tools` is the meta tool: it documents the tools above rather
+	// than calling TouchDesigner, so it is registered on its own.
+	const toolMetadataEntries = buildToolMetadata(TOOL_DEFINITIONS);
 	server.tool(
 		TOOL_NAMES.DESCRIBE_TD_TOOLS,
 		"Generate a filesystem-oriented manifest of available TouchDesigner tools",
@@ -133,12 +73,7 @@ export function registerTdTools(
 						? `No TouchDesigner tools matched filter "${filter}".`
 						: "No TouchDesigner tools are registered.";
 					return {
-						content: [
-							{
-								text: message,
-								type: "text" as const,
-							},
-						],
+						content: [{ text: message, type: "text" as const }],
 					};
 				}
 
@@ -149,361 +84,10 @@ export function registerTdTools(
 				});
 
 				return {
-					content: [
-						{
-							text: formattedText,
-							type: "text" as const,
-						},
-					],
+					content: [{ text: formattedText, type: "text" as const }],
 				};
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.DESCRIBE_TD_TOOLS);
-			}
-		},
-	);
-
-	server.tool(
-		TOOL_NAMES.GET_TD_INFO,
-		"Get server information from TouchDesigner",
-		tdInfoToolSchema.strict().shape,
-		async (params: TdInfoToolParams = {}) => {
-			try {
-				const { detailLevel, responseFormat } = params;
-				const result = await tdClient.getTdInfo();
-				if (!result.success) {
-					throw result.error;
-				}
-				const formattedText = formatTdInfo(result.data, {
-					detailLevel: detailLevel ?? "summary",
-					responseFormat,
-				});
-				return createToolResult(tdClient, formattedText);
-			} catch (error) {
-				return handleToolError(error, logger, TOOL_NAMES.GET_TD_INFO);
-			}
-		},
-	);
-
-	server.tool(
-		TOOL_NAMES.EXECUTE_PYTHON_SCRIPT,
-		"Execute a Python script in TouchDesigner (detailLevel=minimal|summary|detailed, responseFormat=json|yaml|markdown)",
-		execPythonScriptToolSchema.strict().shape,
-		async (params: ExecPythonScriptToolParams) => {
-			try {
-				const { detailLevel, responseFormat, ...scriptParams } = params;
-				logger.sendLog({
-					data: `Executing script: ${scriptParams.script}`,
-					level: "debug",
-				});
-
-				const result = await tdClient.execPythonScript(scriptParams);
-				if (!result.success) {
-					throw result.error;
-				}
-
-				// Use formatter for token-optimized response
-				const formattedText = formatScriptResult(result, scriptParams.script, {
-					detailLevel: detailLevel ?? "summary",
-					responseFormat,
-				});
-
-				return createToolResult(tdClient, formattedText);
-			} catch (error) {
-				return handleToolError(error, logger, TOOL_NAMES.EXECUTE_PYTHON_SCRIPT);
-			}
-		},
-	);
-	server.tool(
-		TOOL_NAMES.CREATE_TD_NODE,
-		"Create a new node in TouchDesigner",
-		createNodeToolSchema.strict().shape,
-		async (params: CreateNodeToolParams) => {
-			try {
-				const { detailLevel, responseFormat, ...createParams } = params;
-
-				const result = await tdClient.createNode(createParams);
-				if (!result.success) {
-					throw result.error;
-				}
-				const formattedText = formatCreateNodeResult(result.data, {
-					detailLevel: detailLevel ?? "summary",
-					responseFormat,
-				});
-				return createToolResult(tdClient, formattedText);
-			} catch (error) {
-				return handleToolError(
-					error,
-					logger,
-					TOOL_NAMES.CREATE_TD_NODE,
-					REFERENCE_COMMENT,
-				);
-			}
-		},
-	);
-
-	server.tool(
-		TOOL_NAMES.DELETE_TD_NODE,
-		"Delete an existing node in TouchDesigner",
-		deleteNodeToolSchema.strict().shape,
-		async (params: DeleteNodeToolParams) => {
-			try {
-				const { detailLevel, responseFormat, ...deleteParams } = params;
-				const result = await tdClient.deleteNode(deleteParams);
-				if (!result.success) {
-					throw result.error;
-				}
-				const formattedText = formatDeleteNodeResult(result.data, {
-					detailLevel: detailLevel ?? "summary",
-					responseFormat,
-				});
-				return createToolResult(tdClient, formattedText);
-			} catch (error) {
-				return handleToolError(
-					error,
-					logger,
-					TOOL_NAMES.DELETE_TD_NODE,
-					REFERENCE_COMMENT,
-				);
-			}
-		},
-	);
-
-	server.tool(
-		TOOL_NAMES.GET_TD_NODES,
-		"List nodes under a path with token-optimized output (detailLevel+limit supported)",
-		getNodesToolSchema.strict().shape,
-		async (params: GetNodesToolParams) => {
-			try {
-				const { detailLevel, limit, responseFormat, ...queryParams } = params;
-				const result = await tdClient.getNodes(queryParams);
-				if (!result.success) {
-					throw result.error;
-				}
-
-				// Use formatter for token-optimized response
-				const fallbackMode = queryParams.includeProperties
-					? "detailed"
-					: "summary";
-				const formattedText = formatNodeList(result.data, {
-					detailLevel: detailLevel ?? fallbackMode,
-					limit,
-					responseFormat,
-				});
-
-				return createToolResult(tdClient, formattedText);
-			} catch (error) {
-				return handleToolError(
-					error,
-					logger,
-					TOOL_NAMES.GET_TD_NODES,
-					REFERENCE_COMMENT,
-				);
-			}
-		},
-	);
-
-	server.tool(
-		TOOL_NAMES.GET_TD_NODE_PARAMETERS,
-		"Get node parameters with concise/detailed formatting (detailLevel+limit supported)",
-		getNodeDetailToolSchema.strict().shape,
-		async (params: GetNodeDetailToolParams) => {
-			try {
-				const { detailLevel, limit, responseFormat, ...queryParams } = params;
-				const result = await tdClient.getNodeDetail(queryParams);
-				if (!result.success) {
-					throw result.error;
-				}
-
-				// Use formatter for token-optimized response
-				const formattedText = formatNodeDetails(result.data, {
-					detailLevel: detailLevel ?? "summary",
-					limit,
-					responseFormat,
-				});
-
-				return createToolResult(tdClient, formattedText);
-			} catch (error) {
-				return handleToolError(
-					error,
-					logger,
-
-					TOOL_NAMES.GET_TD_NODE_PARAMETERS,
-					REFERENCE_COMMENT,
-				);
-			}
-		},
-	);
-
-	server.tool(
-		TOOL_NAMES.GET_TD_NODE_ERRORS,
-		"Check node and descendant errors reported by TouchDesigner",
-		getNodeErrorsToolSchema.strict().shape,
-		async (params: GetNodeErrorsToolParams) => {
-			try {
-				const { detailLevel, limit, responseFormat, ...queryParams } = params;
-				const result = await tdClient.getNodeErrors(queryParams);
-				if (!result.success) {
-					throw result.error;
-				}
-
-				const formattedText = formatNodeErrors(result.data, {
-					detailLevel: detailLevel ?? "summary",
-					limit,
-					responseFormat,
-				});
-
-				return createToolResult(tdClient, formattedText);
-			} catch (error) {
-				return handleToolError(
-					error,
-					logger,
-					TOOL_NAMES.GET_TD_NODE_ERRORS,
-					REFERENCE_COMMENT,
-				);
-			}
-		},
-	);
-
-	server.tool(
-		TOOL_NAMES.UPDATE_TD_NODE_PARAMETERS,
-		"Update parameters of a specific node in TouchDesigner",
-		updateNodeToolSchema.strict().shape,
-		async (params: UpdateNodeToolParams) => {
-			try {
-				const { detailLevel, responseFormat, ...updateParams } = params;
-				const result = await tdClient.updateNode(updateParams);
-				if (!result.success) {
-					throw result.error;
-				}
-				const formattedText = formatUpdateNodeResult(result.data, {
-					detailLevel: detailLevel ?? "summary",
-					responseFormat,
-				});
-				return createToolResult(tdClient, formattedText);
-			} catch (error) {
-				return handleToolError(
-					error,
-					logger,
-					TOOL_NAMES.UPDATE_TD_NODE_PARAMETERS,
-					REFERENCE_COMMENT,
-				);
-			}
-		},
-	);
-
-	server.tool(
-		TOOL_NAMES.EXECUTE_NODE_METHOD,
-		"Execute a method on a specific node in TouchDesigner",
-		execNodeMethodToolSchema.strict().shape,
-		async (params: ExecNodeMethodToolParams) => {
-			try {
-				const { detailLevel, responseFormat, ...execParams } = params;
-				const { nodePath, method, args, kwargs } = execParams;
-
-				const result = await tdClient.execNodeMethod(execParams);
-				if (!result.success) {
-					throw result.error;
-				}
-				const formattedText = formatExecNodeMethodResult(
-					result.data,
-					{ args, kwargs, method, nodePath },
-					{ detailLevel: detailLevel ?? "summary", responseFormat },
-				);
-				return createToolResult(tdClient, formattedText);
-			} catch (error) {
-				logger.sendLog({
-					data: error,
-					level: "error",
-				});
-				return handleToolError(
-					error,
-					logger,
-					TOOL_NAMES.EXECUTE_NODE_METHOD,
-					REFERENCE_COMMENT,
-				);
-			}
-		},
-	);
-
-	server.tool(
-		TOOL_NAMES.GET_TD_CLASSES,
-		"List TouchDesigner Python classes/modules (detailLevel+limit supported)",
-		classListToolSchema.strict().shape,
-		async (params: ClassListToolParams = {}) => {
-			try {
-				const result = await tdClient.getClasses();
-				if (!result.success) {
-					throw result.error;
-				}
-
-				// Use formatter for token-optimized response
-				const formattedText = formatClassList(result.data, {
-					detailLevel: params.detailLevel ?? "summary",
-					limit: params.limit ?? 50,
-					responseFormat: params.responseFormat,
-				});
-
-				return createToolResult(tdClient, formattedText);
-			} catch (error) {
-				return handleToolError(
-					error,
-					logger,
-					TOOL_NAMES.GET_TD_CLASSES,
-					REFERENCE_COMMENT,
-				);
-			}
-		},
-	);
-
-	server.tool(
-		TOOL_NAMES.GET_TD_CLASS_DETAILS,
-		"Get information about a TouchDesigner class/module (detailLevel+limit supported)",
-		classDetailToolSchema.strict().shape,
-		async (params: ClassDetailToolParams) => {
-			try {
-				const { className, detailLevel, limit, responseFormat } = params;
-				const result = await tdClient.getClassDetails(className);
-				if (!result.success) {
-					throw result.error;
-				}
-
-				// Use formatter for token-optimized response
-				const formattedText = formatClassDetails(result.data, {
-					detailLevel: detailLevel ?? "summary",
-					limit: limit ?? 30,
-					responseFormat,
-				});
-
-				return createToolResult(tdClient, formattedText);
-			} catch (error) {
-				return handleToolError(
-					error,
-					logger,
-					TOOL_NAMES.GET_TD_CLASS_DETAILS,
-					REFERENCE_COMMENT,
-				);
-			}
-		},
-	);
-
-	server.tool(
-		TOOL_NAMES.GET_TD_MODULE_HELP,
-		"Retrieve Python help() text for a TouchDesigner module or class",
-		moduleHelpToolSchema.strict().shape,
-		async (params: ModuleHelpToolParams) => {
-			try {
-				const { detailLevel, moduleName, responseFormat } = params;
-				const result = await tdClient.getModuleHelp({ moduleName });
-				if (!result.success) {
-					throw result.error;
-				}
-				const formattedText = formatModuleHelp(result.data, {
-					detailLevel: detailLevel ?? "summary",
-					responseFormat,
-				});
-				return createToolResult(tdClient, formattedText);
-			} catch (error) {
-				return handleToolError(error, logger, TOOL_NAMES.GET_TD_MODULE_HELP);
 			}
 		},
 	);
@@ -514,10 +98,7 @@ const createToolResult = (
 	text: string,
 ): z.infer<typeof CallToolResultSchema> => {
 	const content: z.infer<typeof CallToolResultSchema>["content"] = [
-		{
-			text,
-			type: "text" as const,
-		},
+		{ text, type: "text" as const },
 	];
 	const additionalContents = tdClient.getAdditionalToolResultContents();
 	if (additionalContents) {

@@ -152,7 +152,7 @@ See `CLAUDE.md` for additional developer-focused commands.
 │   ├── features/             # MCP feature implementations
 │   │   ├── prompts/         # Prompt handlers
 │   │   ├── resources/       # Resource handlers
-│   │   └── tools/           # Tool handlers (e.g., tdTools.ts)
+│   │   └── tools/           # Tool definitions & handlers (toolDefinitions.ts, tdTools.ts)
 │   ├── gen/                  # Code generated from the OpenAPI schema for the MCP server
 │   ├── server/               # MCP server logic (connections, main server class)
 │   ├── tdClient/             # TouchDesigner connection API client
@@ -177,27 +177,25 @@ See `CLAUDE.md` for additional developer-focused commands.
 
 ## API Code Generation Workflow
 
-This project uses OpenAPI-based code generation tools (Orval and openapi-generator-cli).
+This project uses OpenAPI-based code generation tools (Orval and `@redocly/cli`).
 
 **API Definition:** The API contract between the Node.js MCP server and the Python server
 running inside TouchDesigner is defined in `src/api/index.yml`.
 
-1. **Python server generation (`npm run gen:webserver`):**
-    - Uses `openapi-generator-cli` via Docker.
-    - Reads `src/api/index.yml`.
-    - Generates a Python server skeleton (`td/modules/td_server/`) based on the API definition.
-      This code runs inside TouchDesigner's WebServer DAT.
-    - **Requires Docker to be installed and running.**
+1. **OpenAPI schema bundling (`npm run gen:openapi`):**
+    - Uses `@redocly/cli` to resolve all `$ref` references in `src/api/index.yml`.
+    - Outputs a single bundled YAML to
+      `td/modules/td_server/openapi_server/openapi/openapi.yaml`, which is loaded by the
+      Python `OpenAPIRouter` inside TouchDesigner and consumed by the following two steps.
 2. **Python handler generation (`npm run gen:handlers`):**
     - Uses a custom Node.js script (`td/genHandlers.js`) and Mustache templates (`td/templates/`).
-    - Reads the generated Python server code or OpenAPI spec.
+    - Reads the bundled OpenAPI spec.
     - Generates handler implementations (`td/modules/mcp/controllers/generated_handlers.py`)
       that connect to the business logic in `td/modules/mcp/services/api_service.py`.
 3. **TypeScript client generation (`npm run gen:mcp`):**
-    - Uses `Orval` to generate an API client and Zod schemas for tool validation from the schema
-      YAML, which is bundled by `openapi-generator-cli`.
-    - Generates a typed TypeScript client (`src/tdClient/`) used by the Node.js server to make
-      requests to the WebServer DAT.
+    - Uses `Orval` to generate an API client (`src/gen/endpoints/`) and Zod schemas
+      (`src/gen/mcp/`) for tool validation from the bundled schema YAML.
+    - The generated client is consumed by `src/tdClient/` to make requests to the WebServer DAT.
 
 The build process (`npm run build`) runs all necessary generation steps (`npm run gen`), followed
 by TypeScript compilation (`tsc`).
@@ -206,7 +204,7 @@ by TypeScript compilation (`tsc`).
 
 - `package.json` is the single source of truth for every component version (Node.js MCP server,
   TouchDesigner Python API, MCP bundle, and `server.json` metadata).
-- Run `npm version <patch|minor|major>` (or the underlying `npm run gen:version`) whenever you
+- Run `npm version <patch|minor|major>` (or the underlying `npm run version`) whenever you
   bump the version. The script rewrites `pyproject.toml`, `td/modules/utils/version.py`,
   `mcpb/manifest.json`, and `server.json` so that the release workflow can trust the tag value.
 - The GitHub release workflow (`.github/workflows/release.yml`) tags the commit as `v${version}`

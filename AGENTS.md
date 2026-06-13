@@ -17,7 +17,7 @@
 - Test: `npm test` (all), `npm run test:unit`, `npm run test:integration`, `npm run coverage`
 - Lint/Format: `npm run lint` (biome + tsc + ruff + prettier), `npm run format` (with fix)
 - Synchronize versions: `npm run version` (synchronizes API/Python/MCP)
-- Generate code: `npm run gen:webserver` (requires Docker), `npm run gen:handlers`, `npm run gen:mcp`
+- Generate code: `npm run gen` (runs `gen:openapi` → `gen:handlers` → `gen:mcp`; no Docker/Java required)
 - MCP bundle: `npm run build:mcpb`
 
 ## Coding Style and Naming
@@ -29,7 +29,7 @@
 
 ## Testing Guidelines
 
-- Framework: Vitest (unit/integration). MSW mocks are available.
+- Framework: Vitest (unit/integration). Mock with `vi.mock` / in-memory fakes (no MSW).
 - For compatibility or TD client related issues, please update or add existing test cases.
 - For new tests, name them in `tests/unit/*.test.ts` or `tests/integration/*.test.ts`.
 

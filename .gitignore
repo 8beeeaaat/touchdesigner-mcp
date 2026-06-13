@@ -153,7 +153,6 @@ td/modules/td_server
 
 # coding agents
 .claude
-CLAUDE.md
 .mcpregistry_github_token
 .mcpregistry_registry_token
 .serena

@@ -149,7 +149,7 @@ args = ["mcp-remote", "http://localhost:6280/mcp"]
 │   ├── features/             # MCP 機能実装
 │   │   ├── prompts/         # プロンプトハンドラ
 │   │   ├── resources/       # リソースハンドラ
-│   │   └── tools/           # ツールハンドラ (例: tdTools.ts)
+│   │   └── tools/           # ツール定義・ハンドラ (toolDefinitions.ts, tdTools.ts)
 │   ├── gen/                  # OpenAPI スキーマから生成されたコード
 │   ├── server/               # MCP サーバーロジック
 │   ├── tdClient/             # TouchDesigner 接続 API クライアント
@@ -174,25 +174,24 @@ args = ["mcp-remote", "http://localhost:6280/mcp"]
 
 ## API コード生成ワークフロー
 
-このプロジェクトは OpenAPI ベースのコード生成ツール（Orval / openapi-generator-cli）を使用します。
+このプロジェクトは OpenAPI ベースのコード生成ツール（Orval / `@redocly/cli`）を使用します。
 
 **API 定義:** Node.js MCP サーバーと TouchDesigner 内の Python サーバー間の契約は `src/api/index.yml` に定義されています。
 
-1. **Python サーバー生成 (`npm run gen:webserver`):**
-    - Docker 経由で `openapi-generator-cli` を実行。
-    - `src/api/index.yml` を読み込み、`td/modules/td_server/` に Python サーバーのスケルトンを生成。
-    - WebServer DAT 内で動作するコードであり、Docker が必要です。
+1. **OpenAPI スキーマバンドル (`npm run gen:openapi`):**
+    - `@redocly/cli` で `src/api/index.yml` の `$ref` をすべて解決。
+    - 単一の YAML を `td/modules/td_server/openapi_server/openapi/openapi.yaml` に出力。TouchDesigner 内の Python `OpenAPIRouter` が読み込むほか、以降の 2 ステップの入力になります。
 2. **Python ハンドラ生成 (`npm run gen:handlers`):**
     - `td/genHandlers.js` と Mustache テンプレート (`td/templates/`) を使用。
-    - 生成された Python サーバーコードまたは OpenAPI 仕様を読み込み、`td/modules/mcp/controllers/generated_handlers.py` を生成。
+    - バンドル済み OpenAPI 仕様を読み込み、`td/modules/mcp/controllers/generated_handlers.py` を生成。
 3. **TypeScript クライアント生成 (`npm run gen:mcp`):**
-    - `openapi-generator-cli` がバンドルしたスキーマを元に Orval が API クライアントと Zod スキーマを生成。
-    - Node.js サーバーが WebServer DAT にアクセスするための型付きクライアント (`src/tdClient/`) を作ります。
+    - バンドル済みスキーマを元に Orval が API クライアント (`src/gen/endpoints/`) と Zod スキーマ (`src/gen/mcp/`) を生成。
+    - Node.js サーバーが WebServer DAT にアクセスするための型付きクライアント (`src/tdClient/`) から利用されます。
 
 `npm run build` は必要なコード生成 (`npm run gen`) をすべて実行し、その後 TypeScript コンパイル (`tsc`) を行います。
 
 ## バージョン管理
 
 - `package.json` が Node.js MCP サーバー / TouchDesigner Python API / MCP バンドル / `server.json` のバージョン情報の単一ソースです。
-- `npm version <patch|minor|major>`（または `npm run gen:version`）を使用してバージョンを上げると、`pyproject.toml`、`td/modules/utils/version.py`、`mcpb/manifest.json`、`server.json` が同期されます。
+- `npm version <patch|minor|major>`（または `npm run version`）を使用してバージョンを上げると、`pyproject.toml`、`td/modules/utils/version.py`、`mcpb/manifest.json`、`server.json` が同期されます。
 - GitHub のリリースワークフロー（`.github/workflows/release.yml`）は `v${version}` でタグ付けし、同じバージョンから `touchdesigner-mcp-td.zip` / `touchdesigner-mcp.mcpb` を公開します。リリース前に必ず同期ステップを実行し、すべての成果物が一致するようにしてください。
