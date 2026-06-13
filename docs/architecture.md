@@ -539,7 +539,9 @@ class ConnectionManager {
 
 ### Tool Handlers
 
-**Implementation**: [src/features/tools/handlers/tdTools.ts](../src/features/tools/handlers/tdTools.ts)
+**Definitions**: [src/features/tools/toolDefinitions.ts](../src/features/tools/toolDefinitions.ts) — the `TOOL_DEFINITIONS` table is the single source of truth for each tool's name, description, input schema, and handler.
+
+**Registration**: [src/features/tools/handlers/tdTools.ts](../src/features/tools/handlers/tdTools.ts) — registers every `TOOL_DEFINITIONS` entry in a loop plus the `describe_td_tools` meta tool, whose manifest (parameter metadata) is derived from each tool's Zod schema by introspection ([metadata/touchDesignerToolMetadata.ts](../src/features/tools/metadata/touchDesignerToolMetadata.ts)).
 
 MCP tool implementations categorized as follows:
 

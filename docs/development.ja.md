@@ -149,7 +149,7 @@ args = ["mcp-remote", "http://localhost:6280/mcp"]
 │   ├── features/             # MCP 機能実装
 │   │   ├── prompts/         # プロンプトハンドラ
 │   │   ├── resources/       # リソースハンドラ
-│   │   └── tools/           # ツールハンドラ (例: tdTools.ts)
+│   │   └── tools/           # ツール定義・ハンドラ (toolDefinitions.ts, tdTools.ts)
 │   ├── gen/                  # OpenAPI スキーマから生成されたコード
 │   ├── server/               # MCP サーバーロジック
 │   ├── tdClient/             # TouchDesigner 接続 API クライアント

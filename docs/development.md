@@ -152,7 +152,7 @@ See `CLAUDE.md` for additional developer-focused commands.
 │   ├── features/             # MCP feature implementations
 │   │   ├── prompts/         # Prompt handlers
 │   │   ├── resources/       # Resource handlers
-│   │   └── tools/           # Tool handlers (e.g., tdTools.ts)
+│   │   └── tools/           # Tool definitions & handlers (toolDefinitions.ts, tdTools.ts)
 │   ├── gen/                  # Code generated from the OpenAPI schema for the MCP server
 │   ├── server/               # MCP server logic (connections, main server class)
 │   ├── tdClient/             # TouchDesigner connection API client
