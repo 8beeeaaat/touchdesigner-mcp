@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.10] - 2026-06-18
+
+### Fixed
+
+- Enabled TypeScript declaration emit (`declaration: true` in `tsconfig.json`) so the published package actually ships the `.d.ts` files it already advertises through `types: dist/index.d.ts` and the typed `exports` map. Previously `build:dist` emitted only JavaScript, so TypeScript consumers installing `touchdesigner-mcp-server` got `Could not find a declaration file` errors despite the package metadata promising declarations ([#176](https://github.com/8beeeaaat/touchdesigner-mcp/pull/176)).
+
+### Changed
+
+- Released version `1.4.10` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), and server registry metadata (`server.json`), including the updated MCPB checksum so npm and MCPB installations resolve the same release. The MCP API version (`src/api/index.yml`, `td/modules/utils/version.py`, `pyproject.toml`) stays at `1.4.3` since this release contains no server/API contract changes.
+
 ## [1.4.9] - 2026-06-13
 
 ### Changed
