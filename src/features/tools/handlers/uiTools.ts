@@ -1,58 +1,84 @@
+import {
+	RESOURCE_MIME_TYPE,
+	RESOURCE_URI_META_KEY,
+	registerAppResource,
+	registerAppTool,
+} from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
-import type { z } from "zod";
 import { TOOL_NAMES } from "../../../core/constants.js";
 import { handleToolError } from "../../../core/errorHandling.js";
 import type { ILogger } from "../../../core/logger.js";
 import { GetNodesQueryParams } from "../../../gen/mcp/touchDesignerAPI.zod.js";
 import type { TouchDesignerClient } from "../../../tdClient/touchDesignerClient.js";
-import { renderNodeBrowserHtml } from "../../ui/nodeBrowserHtml.js";
-import { htmlUiResource } from "../../ui/uiResource.js";
+import {
+	loadNodeBrowserHtml,
+	NODE_BROWSER_URI,
+	toNodeBrowserData,
+} from "../../ui/nodeBrowserResource.js";
 
 /**
- * MCP Apps tools.
+ * MCP Apps tools (MCP Apps / mcp-ui, spec 2026-01-26).
  *
- * Unlike the text-returning tools in `registerTdTools`, these tools return an
- * interactive UI as an embedded `ui://` resource (MCP Apps / mcp-ui). A host
- * that supports MCP Apps renders the resource in a sandboxed iframe; hosts that
- * don't simply ignore the resource content block.
+ * A host that supports MCP Apps fetches the tool's `ui://` resource (declared via
+ * `_meta["ui/resourceUri"]`) and renders it in a sandboxed iframe, forwarding the
+ * tool's `structuredContent` to the guest UI. Hosts that don't support MCP Apps
+ * still get the text summary and can ignore the UI.
  */
 export function registerUiTools(
 	server: McpServer,
 	logger: ILogger,
 	tdClient: TouchDesignerClient,
 ): void {
-	server.tool(
+	// 1) The UI shell: a single prebuilt HTML document served as a ui:// resource.
+	registerAppResource(
+		server,
+		"TouchDesigner Node Browser",
+		NODE_BROWSER_URI,
+		{
+			description: "Interactive browser for TouchDesigner nodes under a path.",
+			mimeType: RESOURCE_MIME_TYPE,
+		},
+		async () => ({
+			contents: [
+				{
+					mimeType: RESOURCE_MIME_TYPE,
+					text: loadNodeBrowserHtml(),
+					uri: NODE_BROWSER_URI,
+				},
+			],
+		}),
+	);
+
+	// 2) The tool: returns node data as structuredContent and points at the UI.
+	registerAppTool(
+		server,
 		TOOL_NAMES.UI_TD_NODE_BROWSER,
-		"Browse nodes under a path as an interactive panel (MCP Apps UI). Returns the same data as get_td_nodes plus a rendered ui:// resource grouped by operator type.",
-		GetNodesQueryParams.strict().shape,
-		async (params: Record<string, unknown> = {}) => {
+		{
+			_meta: { [RESOURCE_URI_META_KEY]: NODE_BROWSER_URI },
+			description:
+				"Browse nodes under a path as an interactive panel (MCP Apps UI). Returns the same data as get_td_nodes; a supporting host renders it as a UI.",
+			inputSchema: GetNodesQueryParams.strict().shape,
+		},
+		async (params) => {
 			try {
-				// The MCP SDK validates against the registered shape, but parse again
-				// to recover the precise GetNodesParams type for the client call.
 				const queryParams = GetNodesQueryParams.parse(params);
 				const result = await tdClient.getNodes(queryParams);
 				if (!result.success) {
 					throw result.error;
 				}
-
-				const nodes = result.data.nodes ?? [];
-				const parentPath = queryParams.parentPath;
-
-				const html = renderNodeBrowserHtml(nodes, parentPath);
-				const uiResource = htmlUiResource(
-					"ui://touchdesigner/node-browser",
-					html,
+				const data = toNodeBrowserData(
+					result.data.nodes ?? [],
+					queryParams.parentPath,
 				);
-
-				const content: z.infer<typeof CallToolResultSchema>["content"] = [
-					{
-						text: `Rendered ${nodes.length} node(s) under ${parentPath}.`,
-						type: "text" as const,
-					},
-					uiResource,
-				];
-				return { content };
+				return {
+					content: [
+						{
+							text: `Found ${data.nodes.length} node(s) under ${data.parentPath}.`,
+							type: "text" as const,
+						},
+					],
+					structuredContent: data as unknown as Record<string, unknown>,
+				};
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.UI_TD_NODE_BROWSER);
 			}

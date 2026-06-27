@@ -142,6 +142,10 @@ __pycache__/
 dist
 tmp
 src/gen
+src/ui-app/node_modules
+src/features/ui/nodeBrowser.html
+harness/node_modules
+harness/dist
 **/generated_handlers.py
 .github/copilot-instructions.md
 .venv

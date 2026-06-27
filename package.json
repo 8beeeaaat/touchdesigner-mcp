@@ -26,7 +26,7 @@
 		"touchdesigner-mcp-server": "dist/cli.js"
 	},
 	"dependencies": {
-		"@mcp-ui/server": "^6.1.0",
+		"@modelcontextprotocol/ext-apps": "^1.7.4",
 		"@modelcontextprotocol/sdk": "1.29.0",
 		"axios": "1.18.1",
 		"express": "5.2.1",
@@ -62,9 +62,10 @@
 		}
 	},
 	"scripts": {
-		"build": "run-s build:*",
+		"build": "run-s build:gen build:ui-app build:dist build:mcpb",
 		"build:gen": "npm run gen",
-		"build:dist": "tsc && shx chmod +x dist/*.js && shx cp -r src/features/tools/presenter/templates dist/features/tools/presenter/",
+		"build:dist": "tsc && shx chmod +x dist/*.js && shx cp -r src/features/tools/presenter/templates dist/features/tools/presenter/ && shx cp src/features/ui/nodeBrowser.html dist/features/ui/nodeBrowser.html",
+		"build:ui-app": "npm --prefix src/ui-app install --no-audit --no-fund && npm --prefix src/ui-app run build && shx cp src/ui-app/dist/index.html src/features/ui/nodeBrowser.html",
 		"build:mcpb": "npx @anthropic-ai/mcpb pack mcpb/ touchdesigner-mcp.mcpb",
 		"lint": "run-p lint:*",
 		"lint:biome": "biome check",
