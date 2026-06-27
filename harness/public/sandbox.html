@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MCP App Sandbox Proxy</title>
+  </head>
+  <body style="margin: 0">
+    <!--
+      Minimal sandbox-proxy for the verification harness only.
+
+      Implements the MCP Apps double-iframe handshake (spec 2026-01-26):
+      1. On load, tell the host the proxy is ready.
+      2. When the host sends sandbox-resource-ready, load the guest HTML into an
+         inner sandboxed iframe (srcdoc).
+      3. Relay JSON-RPC messages both ways (host <-> guest) verbatim.
+
+      Same-origin is fine for local verification; production hosts should serve
+      this from a dedicated origin.
+    -->
+    <script>
+      (function () {
+        var SANDBOX_READY = "ui/notifications/sandbox-proxy-ready";
+        var RESOURCE_READY = "ui/notifications/sandbox-resource-ready";
+
+        var host = window.parent;
+        var guestWindow = null;
+        var pendingFromGuest = [];
+
+        function send(target, msg) {
+          if (target) target.postMessage(msg, "*");
+        }
+
+        // 2 + 3: receive resource from host, relay everything else.
+        window.addEventListener("message", function (event) {
+          var data = event.data;
+
+          // From host: load guest HTML.
+          if (data && data.method === RESOURCE_READY) {
+            var iframe = document.createElement("iframe");
+            iframe.setAttribute(
+              "sandbox",
+              data.params && data.params.sandbox
+                ? data.params.sandbox
+                : "allow-scripts allow-forms allow-modals",
+            );
+            iframe.style.cssText = "border:0;width:100%;height:100vh;display:block";
+            iframe.srcdoc = data.params.html;
+            iframe.addEventListener("load", function () {
+              guestWindow = iframe.contentWindow;
+              // flush anything the guest tried to send before it was tracked
+              pendingFromGuest.forEach(function (m) { send(host, m); });
+              pendingFromGuest = [];
+            });
+            document.body.appendChild(iframe);
+            return;
+          }
+
+          // From guest (inner iframe) → forward up to host.
+          if (guestWindow && event.source === guestWindow) {
+            send(host, data);
+            return;
+          }
+          // Guest message arriving before load handler captured the window.
+          if (!guestWindow && event.source !== host) {
+            pendingFromGuest.push(data);
+            return;
+          }
+
+          // From host → forward down to guest.
+          if (event.source === host && guestWindow) {
+            send(guestWindow, data);
+          }
+        });
+
+        // 1: announce readiness to the host.
+        send(host, { jsonrpc: "2.0", method: SANDBOX_READY, params: {} });
+      })();
+    </script>
+  </body>
+</html>
