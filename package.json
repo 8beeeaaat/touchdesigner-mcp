@@ -64,8 +64,8 @@
 	"scripts": {
 		"build": "run-s build:gen build:ui-app build:dist build:mcpb",
 		"build:gen": "npm run gen",
-		"build:dist": "tsc && shx chmod +x dist/*.js && shx cp -r src/features/tools/presenter/templates dist/features/tools/presenter/ && shx cp src/features/ui/nodeBrowser.html dist/features/ui/nodeBrowser.html",
-		"build:ui-app": "npm --prefix src/ui-app install --no-audit --no-fund && npm --prefix src/ui-app run build && shx cp src/ui-app/dist/index.html src/features/ui/nodeBrowser.html",
+		"build:dist": "tsc && shx chmod +x dist/*.js && shx cp -r src/features/tools/presenter/templates dist/features/tools/presenter/ && shx cp src/features/ui/nodeBrowser.html dist/features/ui/nodeBrowser.html && shx cp src/features/ui/paramEditor.html dist/features/ui/paramEditor.html",
+		"build:ui-app": "npm --prefix src/ui-app install --no-audit --no-fund && npm --prefix src/ui-app run build && UI_ENTRY=paramEditor npm --prefix src/ui-app run build:vite && shx cp src/ui-app/dist/index/index.html src/features/ui/nodeBrowser.html && shx cp src/ui-app/dist/paramEditor/paramEditor.html src/features/ui/paramEditor.html",
 		"build:mcpb": "npx @anthropic-ai/mcpb pack mcpb/ touchdesigner-mcp.mcpb",
 		"lint": "run-p lint:*",
 		"lint:biome": "biome check",

@@ -21,6 +21,7 @@ export const TOOL_NAMES = {
 	GET_TD_NODE_PARAMETERS: "get_td_node_parameters",
 	GET_TD_NODES: "get_td_nodes",
 	UI_TD_NODE_BROWSER: "ui_td_node_browser",
+	UI_TD_PARAM_EDITOR: "ui_td_param_editor",
 	UPDATE_TD_NODE_PARAMETERS: "update_td_node_parameters",
 } as const;
 

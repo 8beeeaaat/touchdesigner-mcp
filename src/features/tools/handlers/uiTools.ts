@@ -8,13 +8,21 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TOOL_NAMES } from "../../../core/constants.js";
 import { handleToolError } from "../../../core/errorHandling.js";
 import type { ILogger } from "../../../core/logger.js";
-import { GetNodesQueryParams } from "../../../gen/mcp/touchDesignerAPI.zod.js";
+import {
+	GetNodeDetailQueryParams,
+	GetNodesQueryParams,
+} from "../../../gen/mcp/touchDesignerAPI.zod.js";
 import type { TouchDesignerClient } from "../../../tdClient/touchDesignerClient.js";
 import {
 	loadNodeBrowserHtml,
 	NODE_BROWSER_URI,
 	toNodeBrowserData,
 } from "../../ui/nodeBrowserResource.js";
+import {
+	loadParamEditorHtml,
+	PARAM_EDITOR_URI,
+	toParamEditorData,
+} from "../../ui/paramEditorResource.js";
 
 /**
  * MCP Apps tools (MCP Apps / mcp-ui, spec 2026-01-26).
@@ -81,6 +89,61 @@ export function registerUiTools(
 				};
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.UI_TD_NODE_BROWSER);
+			}
+		},
+	);
+
+	// --- Parameter editor ---------------------------------------------------
+
+	// 1) The UI shell for the parameter editor.
+	registerAppResource(
+		server,
+		"TouchDesigner Parameter Editor",
+		PARAM_EDITOR_URI,
+		{
+			description: "Interactive form to view and edit a node's parameters.",
+			mimeType: RESOURCE_MIME_TYPE,
+		},
+		async () => ({
+			contents: [
+				{
+					mimeType: RESOURCE_MIME_TYPE,
+					text: loadParamEditorHtml(),
+					uri: PARAM_EDITOR_URI,
+				},
+			],
+		}),
+	);
+
+	// 2) The tool: returns a node's scalar parameters as structuredContent.
+	registerAppTool(
+		server,
+		TOOL_NAMES.UI_TD_PARAM_EDITOR,
+		{
+			_meta: { [RESOURCE_URI_META_KEY]: PARAM_EDITOR_URI },
+			description:
+				"Edit a node's parameters as an interactive form (MCP Apps UI). Returns the node's scalar parameters; a supporting host renders an editable panel that writes back via update_td_node_parameters.",
+			inputSchema: GetNodeDetailQueryParams.strict().shape,
+		},
+		async (params) => {
+			try {
+				const queryParams = GetNodeDetailQueryParams.parse(params);
+				const result = await tdClient.getNodeDetail(queryParams);
+				if (!result.success) {
+					throw result.error;
+				}
+				const data = toParamEditorData(result.data);
+				return {
+					content: [
+						{
+							text: `Node ${data.nodePath} has ${data.params.length} editable parameter(s).`,
+							type: "text" as const,
+						},
+					],
+					structuredContent: data as unknown as Record<string, unknown>,
+				};
+			} catch (error) {
+				return handleToolError(error, logger, TOOL_NAMES.UI_TD_PARAM_EDITOR);
 			}
 		},
 	);

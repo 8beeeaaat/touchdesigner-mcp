@@ -6,6 +6,7 @@
   "description": "Guest UI (MCP App) for the ui_td_node_browser tool. Built into a single inlined HTML consumed by the MCP server's ui:// resource.",
   "scripts": {
     "build": "tsc -b && vite build",
+    "build:vite": "vite build",
     "dev": "vite"
   },
   "dependencies": {

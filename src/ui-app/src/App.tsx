@@ -1,7 +1,7 @@
 import { useApp } from "@modelcontextprotocol/ext-apps/react";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { BrowserNode, NodeBrowserData } from "./types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { BrowserNode, NodeBrowserData, Theme } from "./types";
 
 // Tool names the UI calls back on the host. Must match the server's TOOL_NAMES.
 const TOOLS = {
@@ -10,10 +10,61 @@ const TOOLS = {
 	detail: "get_td_node_parameters",
 } as const;
 
-function extractData(result: CallToolResult | undefined): NodeBrowserData | null {
+function extractData(
+	result: CallToolResult | undefined,
+): NodeBrowserData | null {
 	const sc = result?.structuredContent as NodeBrowserData | undefined;
 	if (!sc || !Array.isArray(sc.nodes)) return null;
 	return sc;
+}
+
+/**
+ * Inline delete confirmation, shown in place of the Delete button while a node
+ * is pending confirmation. Replaces window.confirm(), which the sandboxed iframe
+ * may block. Rendered inside li.node — keep it compact (it shares the row).
+ *
+ * TODO(you): implement the confirmation UI. Render inside a
+ * <span className="confirm-inline"> wrapper so it picks up the row layout.
+ * Decide what this should contain — at minimum a way to confirm and a way to
+ * cancel. Consider:
+ *   - How explicit should the warning be? Deleting a TD node is irreversible.
+ *     A short "Delete?" vs. spelling out the node path (props.nodePath).
+ *   - Which action is visually dominant? The safe default in destructive flows
+ *     is to make Cancel the easy/prominent choice and Confirm the deliberate one
+ *     (e.g. className="danger" on the confirm button).
+ *   - Keyboard affordance: wiring Escape → onCancel mirrors the create form and
+ *     helps users who opened the confirm by accident.
+ * Call props.onConfirm() to delete, props.onCancel() to back out.
+ */
+function DeleteConfirm(props: {
+	nodePath: string;
+	onConfirm: () => void;
+	onCancel: () => void;
+}) {
+	const onEscape = (e: { key: string }) => {
+		if (e.key === "Escape") props.onCancel();
+	};
+	return (
+		<span className="confirm-inline">
+			<span className="confirm-msg">Delete this node?</span>
+			<button
+				type="button"
+				className="secondary"
+				onClick={props.onCancel}
+				onKeyDown={onEscape}
+			>
+				Cancel
+			</button>
+			<button
+				type="button"
+				className="danger"
+				onClick={props.onConfirm}
+				onKeyDown={onEscape}
+			>
+				Delete
+			</button>
+		</span>
+	);
 }
 
 function groupByType(nodes: BrowserNode[]): Map<string, BrowserNode[]> {
@@ -26,10 +77,20 @@ function groupByType(nodes: BrowserNode[]): Map<string, BrowserNode[]> {
 	return map;
 }
 
+function applyTheme(theme: Theme) {
+	document.documentElement.classList.toggle("dark", theme === "dark");
+}
+
 export function App() {
 	const [data, setData] = useState<NodeBrowserData | null>(null);
 	const [filter, setFilter] = useState("");
 	const [status, setStatus] = useState<string>("");
+	// Inline create form state (replaces window.prompt).
+	const [creating, setCreating] = useState(false);
+	const [newType, setNewType] = useState("");
+	const [newName, setNewName] = useState("");
+	// Path of the node awaiting an inline delete confirmation (replaces window.confirm).
+	const [confirmPath, setConfirmPath] = useState<string | null>(null);
 	const appRef = useRef<ReturnType<typeof useApp>["app"]>(null);
 
 	const { app, isConnected, error } = useApp({
@@ -44,6 +105,16 @@ export function App() {
 			};
 		},
 	});
+
+	// Follow the host color theme (light/dark), updating live.
+	useEffect(() => {
+		if (!app) return;
+		const initial = app.getHostContext()?.theme;
+		if (initial) applyTheme(initial as Theme);
+		app.onhostcontextchanged = (ctx) => {
+			if (ctx?.theme) applyTheme(ctx.theme as Theme);
+		};
+	}, [app]);
 
 	const callTool = useCallback(
 		async (name: string, args: Record<string, unknown>) => {
@@ -72,18 +143,29 @@ export function App() {
 
 	const groups = useMemo(() => groupByType(filtered), [filtered]);
 
-	const onCreate = useCallback(() => {
+	const submitCreate = useCallback(() => {
 		if (!data) return;
-		const nodeType = window.prompt("Operator type (e.g. textTOP)")?.trim();
+		const nodeType = newType.trim();
 		if (!nodeType) return;
-		const nodeName = window.prompt("Node name (optional)")?.trim();
+		const nodeName = newName.trim();
 		const args: Record<string, unknown> = {
 			nodeType,
 			parentPath: data.parentPath,
 		};
 		if (nodeName) args.nodeName = nodeName;
 		callTool(TOOLS.create, args);
-	}, [callTool, data]);
+		setNewType("");
+		setNewName("");
+		setCreating(false);
+	}, [callTool, data, newName, newType]);
+
+	const confirmDelete = useCallback(
+		(path: string) => {
+			callTool(TOOLS.delete, { nodePath: path });
+			setConfirmPath(null);
+		},
+		[callTool],
+	);
 
 	if (error) return <p className="status">Connection error: {error.message}</p>;
 	if (!isConnected) return <p className="status">Connecting to host…</p>;
@@ -106,9 +188,52 @@ export function App() {
 					value={filter}
 					onChange={(e) => setFilter(e.target.value)}
 				/>
-				<button type="button" className="secondary" onClick={onCreate}>
-					+ Create node
-				</button>
+				{creating ? (
+					<div className="create-row">
+						<input
+							type="text"
+							placeholder="Operator type (e.g. textTOP)"
+							value={newType}
+							onChange={(e) => setNewType(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") submitCreate();
+								if (e.key === "Escape") setCreating(false);
+							}}
+						/>
+						<input
+							type="text"
+							placeholder="Name (optional)"
+							value={newName}
+							onChange={(e) => setNewName(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") submitCreate();
+								if (e.key === "Escape") setCreating(false);
+							}}
+						/>
+						<button
+							type="button"
+							onClick={submitCreate}
+							disabled={!newType.trim()}
+						>
+							Create
+						</button>
+						<button
+							type="button"
+							className="secondary"
+							onClick={() => setCreating(false)}
+						>
+							Cancel
+						</button>
+					</div>
+				) : (
+					<button
+						type="button"
+						className="secondary"
+						onClick={() => setCreating(true)}
+					>
+						+ Create node
+					</button>
+				)}
 				{status && <span className="status">{status}</span>}
 			</div>
 
@@ -126,26 +251,30 @@ export function App() {
 						</h2>
 						<ul className="nodes">
 							{nodes.map((n) => (
-								<li
-									className="node"
-									key={n.path}
-									title={n.path}
-									onClick={() => callTool(TOOLS.detail, { nodePath: n.path })}
-								>
-									<span className="node-name">{n.name}</span>
-									<span className="node-path">{n.path}</span>
+								<li className="node" key={n.path} title={n.path}>
 									<button
 										type="button"
-										className="danger"
-										onClick={(e) => {
-											e.stopPropagation();
-											if (window.confirm(`Delete node ${n.path} ?`)) {
-												callTool(TOOLS.delete, { nodePath: n.path });
-											}
-										}}
+										className="node-open"
+										onClick={() => callTool(TOOLS.detail, { nodePath: n.path })}
 									>
-										Delete
+										<span className="node-name">{n.name}</span>
+										<span className="node-path">{n.path}</span>
 									</button>
+									{confirmPath === n.path ? (
+										<DeleteConfirm
+											nodePath={n.path}
+											onConfirm={() => confirmDelete(n.path)}
+											onCancel={() => setConfirmPath(null)}
+										/>
+									) : (
+										<button
+											type="button"
+											className="danger"
+											onClick={() => setConfirmPath(n.path)}
+										>
+											Delete
+										</button>
+									)}
 								</li>
 							))}
 						</ul>

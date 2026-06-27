@@ -144,6 +144,7 @@ tmp
 src/gen
 src/ui-app/node_modules
 src/features/ui/nodeBrowser.html
+src/features/ui/paramEditor.html
 harness/node_modules
 harness/dist
 **/generated_handlers.py
