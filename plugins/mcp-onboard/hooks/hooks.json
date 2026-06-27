@@ -1,0 +1,17 @@
+{
+  "description": "mcp-onboard: validate .mcp.json edits before they are written (block invalid JSON, warn on structural/secret issues).",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/validate-mcp-json.mjs",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "mcp-onboard",
+  "version": "0.1.0",
+  "description": "Support for implementation, configuration, utilization, and troubleshooting for MCP server users. Covers server discovery, .mcp.json configuration, tool inventory, connection diagnostics, and enabling MCP Apps.",
+  "author": {
+    "name": "8beeeaaat"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "onboarding",
+    "configuration",
+    "troubleshooting",
+    "mcp-apps"
+  ]
+}

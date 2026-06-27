@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "touchdesigner-mcp-marketplace",
+  "version": "0.1.0",
+  "description": "Plugins published from the touchdesigner-mcp repository.",
+  "owner": {
+    "name": "8beeeaaat"
+  },
+  "plugins": [
+    {
+      "name": "mcp-onboard",
+      "description": "Find, install, configure, use, and troubleshoot MCP servers (including MCP Apps) from the consumer side. Provides setup/tools skills, scout/doctor agents, and a .mcp.json validation hook.",
+      "source": "./plugins/mcp-onboard",
+      "category": "development",
+      "keywords": [
+        "mcp",
+        "model-context-protocol",
+        "onboarding",
+        "configuration",
+        "troubleshooting",
+        "mcp-apps"
+      ]
+    }
+  ]
+}
