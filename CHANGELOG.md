@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.11] - 2026-06-27
+
+### Changed
+
+- Released version `1.4.11` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), and server registry metadata (`server.json`), including the updated MCPB checksum so npm and MCPB installations resolve the same release. The MCP API version (`src/api/index.yml`, `td/modules/utils/version.py`, `pyproject.toml`) stays at `1.4.3` since this release contains no server/API contract changes.
+
+### Security
+
+- Resolved all 18 `npm audit` advisories (15 moderate, 3 high) down to 0. Upgrading `@redocly/cli` to `2.35.1` cleared the `markdown-it` and `undici` transitive advisories, and `npm audit fix` lifted `form-data`, `linkify-it`, and `markdown-it` in the lockfile only (no direct dependency changes). No `overrides` were needed.
+
+### Technical
+
+- **Dependency Updates**: Updated runtime and development dependencies. No server/API contract changes; code generation output (`src/gen`, `td/modules`) is unchanged after the `orval` and `@redocly/cli` upgrades.
+  - `axios` 1.17.0 → 1.18.1
+  - `semver` 7.8.4 → 7.8.5
+  - `@biomejs/biome` 2.5.0 → 2.5.1
+  - `@redocly/cli` 2.32.2 → 2.35.1
+  - `@types/node` 25.9.3 → 26.0.1
+  - `@vitest/coverage-v8` 4.1.8 → 4.1.9
+  - `orval` 8.17.0 → 8.19.0
+  - `prettier` 3.8.4 → 3.8.5
+  - `vitest` 4.1.8 → 4.1.9
+
 ## [1.4.10] - 2026-06-18
 
 ### Fixed
