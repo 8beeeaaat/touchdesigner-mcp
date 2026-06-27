@@ -1,0 +1,123 @@
+:root {
+	color-scheme: dark;
+}
+* {
+	box-sizing: border-box;
+}
+body {
+	margin: 0;
+	font: 13px/1.5 -apple-system, system-ui, sans-serif;
+	color: #e2e8f0;
+	background: #0f172a;
+	padding: 16px;
+}
+header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+h1 {
+	font-size: 15px;
+	margin: 0;
+}
+.subtitle {
+	color: #94a3b8;
+	font-size: 12px;
+}
+.spacer {
+	flex: 1;
+}
+input,
+button {
+	font: inherit;
+}
+input[type="search"],
+input[type="text"] {
+	background: #0b1220;
+	color: #e2e8f0;
+	border: 1px solid #334155;
+	border-radius: 8px;
+	padding: 6px 10px;
+}
+input[type="search"] {
+	width: 220px;
+}
+button {
+	background: #1d4ed8;
+	color: #fff;
+	border: 0;
+	border-radius: 8px;
+	padding: 6px 12px;
+	cursor: pointer;
+}
+button.secondary {
+	background: #1e293b;
+}
+button.danger {
+	background: #7f1d1d;
+}
+button:hover {
+	opacity: 0.9;
+}
+.toolbar {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 14px;
+	flex-wrap: wrap;
+}
+.group {
+	margin-bottom: 14px;
+}
+.group-title {
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #93c5fd;
+	margin: 0 0 6px;
+}
+.count {
+	color: #64748b;
+	font-weight: 400;
+}
+ul.nodes {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+li.node {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 6px 8px;
+	border-radius: 8px;
+	background: #1e293b;
+	margin-bottom: 4px;
+	cursor: pointer;
+}
+li.node:hover {
+	background: #273449;
+}
+.node-name {
+	font-weight: 600;
+}
+.node-path {
+	color: #64748b;
+	font-family: ui-monospace, monospace;
+	font-size: 11px;
+	flex: 1;
+}
+.empty {
+	color: #94a3b8;
+	padding: 8px 0;
+}
+.status {
+	color: #94a3b8;
+	font-size: 12px;
+}
+.create-row {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
