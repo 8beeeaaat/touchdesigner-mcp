@@ -26,6 +26,7 @@
 		"touchdesigner-mcp-server": "dist/cli.js"
 	},
 	"dependencies": {
+		"@mcp-ui/server": "^6.1.0",
 		"@modelcontextprotocol/sdk": "1.29.0",
 		"axios": "1.18.1",
 		"express": "5.2.1",
