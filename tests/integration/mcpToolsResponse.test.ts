@@ -344,6 +344,23 @@ describe("MCP tool responses", () => {
 		expect(text).toContain("servers/touchdesigner");
 	});
 
+	it("includes the MCP Apps UI tools in the DESCRIBE_TD_TOOLS manifest", async () => {
+		const handler = server.getTool(TOOL_NAMES.DESCRIBE_TD_TOOLS);
+		const result = (await handler({
+			detailLevel: "summary",
+			filter: "ui_td",
+			responseFormat: "markdown",
+		})) as {
+			content?: Array<{ type: string; text?: string }>;
+		};
+
+		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+		// All three UI tools must be discoverable through the manifest.
+		expect(text).toContain("uiTdNodeBrowser");
+		expect(text).toContain("uiTdParamEditor");
+		expect(text).toContain("uiTdErrorDashboard");
+	});
+
 	it("returns formatted module help preview for GET_TD_MODULE_HELP", async () => {
 		const handler = server.getTool(TOOL_NAMES.GET_TD_MODULE_HELP);
 		const result = (await handler({
@@ -432,6 +449,36 @@ describe("MCP tool responses", () => {
 		// The inlined build must carry the editor shell, not an empty page.
 		expect(doc?.text).toContain("<!doctype html>");
 		expect(doc?.text.length ?? 0).toBeGreaterThan(1000);
+	});
+
+	it("returns aggregated error report for UI_TD_ERROR_DASHBOARD", async () => {
+		const handler = server.getTool(TOOL_NAMES.UI_TD_ERROR_DASHBOARD);
+		const result = (await handler({ nodePath: "/project1/mockNode" })) as {
+			content?: Array<{ type: string; text?: string }>;
+			structuredContent?: {
+				nodePath: string;
+				hasErrors: boolean;
+				errorCount: number;
+				errors: Array<{ message: string }>;
+			};
+		};
+
+		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+		expect(text).toContain("Found 1 error(s)");
+
+		expect(result.structuredContent?.hasErrors).toBe(true);
+		expect(result.structuredContent?.errorCount).toBe(1);
+		expect(result.structuredContent?.errors[0]?.message).toBe(
+			"Mock error detected",
+		);
+	});
+
+	it("wires UI_TD_ERROR_DASHBOARD to its ui:// resource via _meta", () => {
+		const meta = server.toolMeta.get(TOOL_NAMES.UI_TD_ERROR_DASHBOARD) ?? {};
+		expect(Object.values(meta)).toContain("ui://touchdesigner/error-dashboard");
+		expect(() =>
+			server.getResource("ui://touchdesigner/error-dashboard"),
+		).not.toThrow();
 	});
 
 	it("returns an error response when GET_TD_MODULE_HELP fails", async () => {

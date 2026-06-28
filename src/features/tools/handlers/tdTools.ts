@@ -9,6 +9,7 @@ import {
 	buildToolMetadata,
 	type ToolMetadata,
 } from "../metadata/touchDesignerToolMetadata.js";
+import { UI_TOOL_METADATA } from "../metadata/uiToolMetadata.js";
 import { formatToolMetadata } from "../presenter/index.js";
 import { TOOL_DEFINITIONS } from "../toolDefinitions.js";
 import { detailOnlyFormattingSchema } from "../types.js";
@@ -53,7 +54,12 @@ export function registerTdTools(
 
 	// `describe_td_tools` is the meta tool: it documents the tools above rather
 	// than calling TouchDesigner, so it is registered on its own.
-	const toolMetadataEntries = buildToolMetadata(TOOL_DEFINITIONS);
+	// UI tools are registered elsewhere (registerUiTools) but still belong in the
+	// manifest so an agent can discover them alongside the regular tools.
+	const toolMetadataEntries = [
+		...buildToolMetadata(TOOL_DEFINITIONS),
+		...UI_TOOL_METADATA,
+	];
 	server.tool(
 		TOOL_NAMES.DESCRIBE_TD_TOOLS,
 		"Generate a filesystem-oriented manifest of available TouchDesigner tools",

@@ -103,10 +103,27 @@ export function ParamEditor() {
 		};
 	}, [app]);
 
-	const dirty = Object.keys(edits).length > 0;
+	const changedCount = Object.keys(edits).length;
+	const dirty = changedCount > 0;
 
 	const setEdit = useCallback((name: string, raw: string) => {
 		setEdits((s) => ({ ...s, [name]: raw }));
+	}, []);
+
+	// Discard a single row's pending edit (revert to the server value).
+	const revertEdit = useCallback((name: string) => {
+		setEdits((s) => {
+			if (!(name in s)) return s;
+			const next = { ...s };
+			delete next[name];
+			return next;
+		});
+	}, []);
+
+	// Discard all pending edits without saving.
+	const resetAll = useCallback(() => {
+		setEdits({});
+		setStatus("Reverted unsaved changes.");
 	}, []);
 
 	const onSave = useCallback(async () => {
@@ -186,7 +203,15 @@ export function ParamEditor() {
 					onChange={(e) => setFilter(e.target.value)}
 				/>
 				<button type="button" onClick={onSave} disabled={!dirty}>
-					Save changes
+					{dirty ? `Save changes (${changedCount})` : "Save changes"}
+				</button>
+				<button
+					type="button"
+					className="secondary"
+					onClick={resetAll}
+					disabled={!dirty}
+				>
+					Reset
 				</button>
 				{status && <span className="status">{status}</span>}
 			</div>
@@ -210,6 +235,11 @@ export function ParamEditor() {
 									spec={p}
 									edited={edits[p.name]}
 									onChange={(raw) => setEdit(p.name, raw)}
+									onRevert={() => revertEdit(p.name)}
+									onResetDefault={() =>
+										p.default !== undefined &&
+										setEdit(p.name, String(p.default))
+									}
 									onPulse={() => onPulse(p.name)}
 								/>
 							))}
@@ -226,14 +256,19 @@ function ParamRow(props: {
 	spec: ParSpec;
 	edited: string | undefined;
 	onChange: (raw: string) => void;
+	onRevert: () => void;
+	onResetDefault: () => void;
 	onPulse: () => void;
 }) {
-	const { spec, edited, onChange, onPulse } = props;
+	const { spec, edited, onChange, onRevert, onResetDefault, onPulse } = props;
 	const kind = inputKindFor(spec);
 	const current = edited ?? String(spec.value);
 	const changed = edited !== undefined;
 	const disabled = spec.readOnly || spec.enabled === false;
 	const id = `p-${spec.name}`;
+	// Offer "default" only when the spec carries one and we'd actually change.
+	const canResetDefault =
+		!disabled && spec.default !== undefined && current !== String(spec.default);
 
 	return (
 		<li className={changed ? "param changed" : "param"} title={spec.name}>
@@ -252,6 +287,28 @@ function ParamRow(props: {
 				onChange={onChange}
 				onPulse={onPulse}
 			/>
+			<span className="param-actions">
+				{changed && (
+					<button
+						type="button"
+						className="row-action"
+						title="Revert unsaved change"
+						onClick={onRevert}
+					>
+						↺
+					</button>
+				)}
+				{canResetDefault && (
+					<button
+						type="button"
+						className="row-action"
+						title={`Reset to default (${String(spec.default)})`}
+						onClick={onResetDefault}
+					>
+						⌂
+					</button>
+				)}
+			</span>
 		</li>
 	);
 }

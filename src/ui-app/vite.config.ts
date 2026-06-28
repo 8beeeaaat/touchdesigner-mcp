@@ -10,7 +10,10 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 // inputs in one build. We therefore build ONE entry per invocation, selected by
 // the UI_ENTRY env var (see build:ui-app in package.json). Defaults to the node
 // browser so `vite dev` / a bare build still work.
-const ENTRY = process.env.UI_ENTRY === "paramEditor" ? "paramEditor" : "index";
+const ENTRIES = ["paramEditor", "errorDashboard"] as const;
+const ENTRY = ENTRIES.includes(process.env.UI_ENTRY as (typeof ENTRIES)[number])
+	? (process.env.UI_ENTRY as string)
+	: "index";
 
 export default defineConfig({
 	build: {

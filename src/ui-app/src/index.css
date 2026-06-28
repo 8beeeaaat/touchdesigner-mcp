@@ -185,6 +185,42 @@ button.node-open:hover {
 	color: var(--subtle);
 	font-size: 11px;
 }
+.empty.ok {
+	color: #15803d;
+}
+:root.dark .empty.ok {
+	color: #4ade80;
+}
+.error-node {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	text-transform: none;
+	letter-spacing: 0;
+}
+.danger-count {
+	background: var(--danger);
+	color: #fff;
+	border-radius: 10px;
+	padding: 1px 8px;
+	font-size: 11px;
+	font-weight: 600;
+}
+ul.errors {
+	list-style: none;
+	margin: 0 0 4px;
+	padding: 0;
+}
+li.error-item {
+	padding: 6px 10px;
+	border-left: 3px solid var(--danger);
+	background: var(--surface);
+	border-radius: 0 8px 8px 0;
+	margin-bottom: 4px;
+	font-family: ui-monospace, monospace;
+	font-size: 12px;
+	white-space: pre-wrap;
+}
 ul.params {
 	list-style: none;
 	margin: 0;
@@ -219,6 +255,26 @@ li.param input[type="text"],
 li.param input[type="number"],
 li.param select {
 	width: 220px;
+}
+.param-actions {
+	display: flex;
+	gap: 4px;
+	min-width: 44px;
+	justify-content: flex-end;
+}
+button.row-action {
+	background: transparent;
+	color: var(--subtle);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 2px 7px;
+	font-size: 12px;
+	line-height: 1;
+}
+button.row-action:hover {
+	color: var(--fg);
+	border-color: var(--accent);
+	opacity: 1;
 }
 .slider-row {
 	display: flex;

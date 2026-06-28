@@ -46,6 +46,20 @@ Tools allow AI agents to perform actions in TouchDesigner.
 | `get_td_nodes`          | Gets nodes under a parent path, with optional filtering.           |
 | `update_td_node_parameters` | Updates the parameters of a specific node.                     |
 
+#### Interactive UI Tools (MCP Apps)
+
+These tools return the same data as their non-UI counterparts but declare an
+interactive widget. A host that supports [MCP Apps](https://modelcontextprotocol.io)
+renders the widget inline; hosts without the apps surface fall back to the text
+summary automatically. The widgets call each other back (e.g. clicking a node in
+the browser opens the parameter editor), so they form a connected editing flow.
+
+| Tool Name               | Widget                                                          |
+| :---------------------- | :-------------------------------------------------------------- |
+| `ui_td_node_browser`    | Node browser (filter, create, delete; click a node -> editor).  |
+| `ui_td_param_editor`    | Parameter editor with style-aware inputs grouped by page.       |
+| `ui_td_error_dashboard` | Error dashboard grouping a node tree's errors; click -> editor. |
+
 ### Prompts
 
 Prompts provide instructions for AI agents to perform specific actions in TouchDesigner.

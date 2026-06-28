@@ -16,6 +16,24 @@ export interface BrowserNode {
 /** Host color theme, mirrored from getHostContext().theme. */
 export type Theme = "light" | "dark";
 
+/** A single error entry, mirrors the server's TdNodeError. */
+export interface NodeError {
+	nodePath: string;
+	nodeName: string;
+	opType: string;
+	message: string;
+}
+
+/** Shape of the structuredContent the ui_td_error_dashboard tool returns. */
+export interface ErrorDashboardData {
+	nodePath: string;
+	nodeName: string;
+	opType: string;
+	errorCount: number;
+	hasErrors: boolean;
+	errors: NodeError[];
+}
+
 /**
  * A single parameter spec the editor renders. Mirrors the server's TdParSpec
  * (src/api/components/schemas/TdParSpec.yml); ui-app is a separate package so

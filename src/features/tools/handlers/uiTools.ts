@@ -9,10 +9,16 @@ import { TOOL_NAMES } from "../../../core/constants.js";
 import { handleToolError } from "../../../core/errorHandling.js";
 import type { ILogger } from "../../../core/logger.js";
 import {
+	GetNodeErrorsQueryParams,
 	GetNodeParSpecsQueryParams,
 	GetNodesQueryParams,
 } from "../../../gen/mcp/touchDesignerAPI.zod.js";
 import type { TouchDesignerClient } from "../../../tdClient/touchDesignerClient.js";
+import {
+	ERROR_DASHBOARD_URI,
+	loadErrorDashboardHtml,
+	toErrorDashboardData,
+} from "../../ui/errorDashboardResource.js";
 import {
 	loadNodeBrowserHtml,
 	NODE_BROWSER_URI,
@@ -144,6 +150,63 @@ export function registerUiTools(
 				};
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.UI_TD_PARAM_EDITOR);
+			}
+		},
+	);
+
+	// --- Error dashboard ----------------------------------------------------
+
+	// 1) The UI shell for the error dashboard.
+	registerAppResource(
+		server,
+		"TouchDesigner Error Dashboard",
+		ERROR_DASHBOARD_URI,
+		{
+			description: "Interactive dashboard of node errors under a path.",
+			mimeType: RESOURCE_MIME_TYPE,
+		},
+		async () => ({
+			contents: [
+				{
+					mimeType: RESOURCE_MIME_TYPE,
+					text: loadErrorDashboardHtml(),
+					uri: ERROR_DASHBOARD_URI,
+				},
+			],
+		}),
+	);
+
+	// 2) The tool: returns a node's aggregated error report as structuredContent.
+	registerAppTool(
+		server,
+		TOOL_NAMES.UI_TD_ERROR_DASHBOARD,
+		{
+			_meta: { [RESOURCE_URI_META_KEY]: ERROR_DASHBOARD_URI },
+			description:
+				"Inspect a node and its children for errors as an interactive dashboard (MCP Apps UI). Returns the same data as get_td_node_errors; a supporting host renders a grouped, clickable error list that links to the parameter editor.",
+			inputSchema: GetNodeErrorsQueryParams.strict().shape,
+		},
+		async (params) => {
+			try {
+				const queryParams = GetNodeErrorsQueryParams.parse(params);
+				const result = await tdClient.getNodeErrors(queryParams);
+				if (!result.success) {
+					throw result.error;
+				}
+				const data = toErrorDashboardData(result.data);
+				return {
+					content: [
+						{
+							text: data.hasErrors
+								? `Found ${data.errorCount} error(s) under ${data.nodePath}.`
+								: `No errors found under ${data.nodePath}.`,
+							type: "text" as const,
+						},
+					],
+					structuredContent: data as unknown as Record<string, unknown>,
+				};
+			} catch (error) {
+				return handleToolError(error, logger, TOOL_NAMES.UI_TD_ERROR_DASHBOARD);
 			}
 		},
 	);
