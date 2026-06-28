@@ -3,15 +3,14 @@ import {
 	PARAM_EDITOR_URI,
 	toParamEditorData,
 } from "../../src/features/ui/paramEditorResource.js";
-import type { TdNode } from "../../src/gen/endpoints/TouchDesignerAPI.js";
+import type { TdNodeParSpecs } from "../../src/gen/endpoints/TouchDesignerAPI.js";
 
-function node(overrides: Partial<TdNode> = {}): TdNode {
+function specs(overrides: Partial<TdNodeParSpecs> = {}): TdNodeParSpecs {
 	return {
-		id: 1,
-		name: "text1",
+		nodeName: "text1",
+		nodePath: "/project1/text1",
 		opType: "textTOP",
-		path: "/project1/text1",
-		properties: {},
+		pars: [],
 		...overrides,
 	};
 }
@@ -23,40 +22,42 @@ describe("PARAM_EDITOR_URI", () => {
 });
 
 describe("toParamEditorData", () => {
-	it("keeps the node path", () => {
-		const data = toParamEditorData(node());
+	it("keeps node identity", () => {
+		const data = toParamEditorData(specs());
 		expect(data.nodePath).toBe("/project1/text1");
+		expect(data.nodeName).toBe("text1");
+		expect(data.opType).toBe("textTOP");
 	});
 
-	it("classifies scalar params by kind", () => {
+	it("passes parameter specs through verbatim", () => {
 		const data = toParamEditorData(
-			node({ properties: { active: true, scale: 2, text: "hi" } }),
-		);
-		expect(data.params).toEqual(
-			expect.arrayContaining([
-				{ kind: "string", name: "text", value: "hi" },
-				{ kind: "number", name: "scale", value: 2 },
-				{ kind: "boolean", name: "active", value: true },
-			]),
-		);
-	});
-
-	it("drops non-scalar properties (objects, arrays, null)", () => {
-		const data = toParamEditorData(
-			node({
-				properties: {
-					empty: null,
-					keep: "ok",
-					list: [1, 2],
-					nested: { a: 1 },
-				},
+			specs({
+				pars: [
+					{
+						label: "Scale",
+						max: 10,
+						min: 0,
+						name: "scale",
+						page: "Transform",
+						style: "Float",
+						value: 2,
+					},
+				],
 			}),
 		);
-		expect(data.params.map((p) => p.name)).toEqual(["keep"]);
+		expect(data.pars).toHaveLength(1);
+		expect(data.pars[0]).toMatchObject({
+			max: 10,
+			min: 0,
+			name: "scale",
+			page: "Transform",
+			style: "Float",
+			value: 2,
+		});
 	});
 
-	it("returns an empty list when there are no scalar params", () => {
-		const data = toParamEditorData(node({ properties: {} }));
-		expect(data.params).toEqual([]);
+	it("handles a node with no parameters", () => {
+		const data = toParamEditorData(specs({ pars: [] }));
+		expect(data.pars).toEqual([]);
 	});
 });

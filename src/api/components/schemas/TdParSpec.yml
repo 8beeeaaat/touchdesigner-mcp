@@ -1,0 +1,68 @@
+type: object
+description: Specification and current value of a single TouchDesigner parameter
+required:
+  - name
+  - label
+  - page
+  - style
+  - value
+properties:
+  name:
+    type: string
+    description: Parameter name (e.g. "tx", "resolutionw")
+  label:
+    type: string
+    description: Human-readable label shown in the TD parameter dialog
+  page:
+    type: string
+    description: Parameter page this parameter belongs to (e.g. "Transform")
+  style:
+    type: string
+    description: >-
+      TouchDesigner parameter style, drives the editor input type. Common
+      values: Float, Int, Toggle, Pulse, Menu, StrMenu, Str, File, Folder,
+      RGB, RGBA, XY, XYZ, UV, UVW, WH, Python.
+  value:
+    description: Current evaluated value of the parameter (scalar)
+    oneOf:
+      - type: string
+      - type: number
+      - type: boolean
+  default:
+    description: Default value of the parameter
+    oneOf:
+      - type: string
+      - type: number
+      - type: boolean
+  min:
+    type: number
+    nullable: true
+    description: Soft minimum for numeric parameters (normMin), null if unbounded
+  max:
+    type: number
+    nullable: true
+    description: Soft maximum for numeric parameters (normMax), null if unbounded
+  clampMin:
+    type: boolean
+    description: Whether the value is hard-clamped at min
+  clampMax:
+    type: boolean
+    description: Whether the value is hard-clamped at max
+  menuNames:
+    type: array
+    nullable: true
+    description: Internal menu keys for Menu/StrMenu styles, null otherwise
+    items:
+      type: string
+  menuLabels:
+    type: array
+    nullable: true
+    description: Display labels for Menu/StrMenu styles, null otherwise
+    items:
+      type: string
+  readOnly:
+    type: boolean
+    description: Whether the parameter is read-only
+  enabled:
+    type: boolean
+    description: Whether the parameter is currently enabled (editable)

@@ -9,7 +9,7 @@ import { TOOL_NAMES } from "../../../core/constants.js";
 import { handleToolError } from "../../../core/errorHandling.js";
 import type { ILogger } from "../../../core/logger.js";
 import {
-	GetNodeDetailQueryParams,
+	GetNodeParSpecsQueryParams,
 	GetNodesQueryParams,
 } from "../../../gen/mcp/touchDesignerAPI.zod.js";
 import type { TouchDesignerClient } from "../../../tdClient/touchDesignerClient.js";
@@ -122,13 +122,13 @@ export function registerUiTools(
 		{
 			_meta: { [RESOURCE_URI_META_KEY]: PARAM_EDITOR_URI },
 			description:
-				"Edit a node's parameters as an interactive form (MCP Apps UI). Returns the node's scalar parameters; a supporting host renders an editable panel that writes back via update_td_node_parameters.",
-			inputSchema: GetNodeDetailQueryParams.strict().shape,
+				"Edit a node's parameters as an interactive form (MCP Apps UI). Returns the node's full parameter specs (style, page, range, menu, value); a supporting host renders an editable panel that writes back via update_td_node_parameters.",
+			inputSchema: GetNodeParSpecsQueryParams.strict().shape,
 		},
 		async (params) => {
 			try {
-				const queryParams = GetNodeDetailQueryParams.parse(params);
-				const result = await tdClient.getNodeDetail(queryParams);
+				const queryParams = GetNodeParSpecsQueryParams.parse(params);
+				const result = await tdClient.getNodeParSpecs(queryParams);
 				if (!result.success) {
 					throw result.error;
 				}
@@ -136,7 +136,7 @@ export function registerUiTools(
 				return {
 					content: [
 						{
-							text: `Node ${data.nodePath} has ${data.params.length} editable parameter(s).`,
+							text: `Node ${data.nodePath} has ${data.pars.length} parameter(s).`,
 							type: "text" as const,
 						},
 					],

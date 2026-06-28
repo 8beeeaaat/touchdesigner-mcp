@@ -63,12 +63,20 @@ button {
 	font: inherit;
 }
 input[type="search"],
-input[type="text"] {
+input[type="text"],
+input[type="number"],
+select {
 	background: var(--field-bg);
 	color: var(--fg);
 	border: 1px solid var(--border);
 	border-radius: 8px;
 	padding: 6px 10px;
+}
+input:disabled,
+select:disabled,
+button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 input[type="search"] {
 	width: 220px;
@@ -197,8 +205,29 @@ li.param.changed {
 .param-label {
 	flex: 1;
 	font-weight: 600;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+.param-name {
+	color: var(--muted);
+	font-family: ui-monospace, monospace;
+	font-size: 10px;
+	font-weight: 400;
 }
 li.param input[type="text"],
-li.param input[type="number"] {
+li.param input[type="number"],
+li.param select {
 	width: 220px;
+}
+.slider-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.slider-row input[type="range"] {
+	width: 140px;
+}
+.slider-row input[type="number"] {
+	width: 72px;
 }

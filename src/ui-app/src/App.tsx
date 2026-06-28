@@ -7,7 +7,9 @@ import type { BrowserNode, NodeBrowserData, Theme } from "./types";
 const TOOLS = {
 	create: "create_td_node",
 	delete: "delete_td_node",
-	detail: "get_td_node_parameters",
+	// Open the interactive parameter editor (MCP App) for the picked node.
+	edit: "ui_td_param_editor",
+	errors: "get_td_node_errors",
 } as const;
 
 function extractData(
@@ -94,7 +96,8 @@ export function App() {
 	const appRef = useRef<ReturnType<typeof useApp>["app"]>(null);
 
 	const { app, isConnected, error } = useApp({
-		appInfo: { name: "td-node-browser", version: "0.1.0" },
+		appInfo: { name: "td-node-browser", version: "0.2.0" },
+		autoResize: true,
 		capabilities: {},
 		onAppCreated: (a) => {
 			appRef.current = a;
@@ -255,10 +258,19 @@ export function App() {
 									<button
 										type="button"
 										className="node-open"
-										onClick={() => callTool(TOOLS.detail, { nodePath: n.path })}
+										onClick={() => callTool(TOOLS.edit, { nodePath: n.path })}
+										title="Edit parameters"
 									>
 										<span className="node-name">{n.name}</span>
 										<span className="node-path">{n.path}</span>
+									</button>
+									<button
+										type="button"
+										className="secondary"
+										onClick={() => callTool(TOOLS.errors, { nodePath: n.path })}
+										title="Check errors"
+									>
+										!
 									</button>
 									{confirmPath === n.path ? (
 										<DeleteConfirm

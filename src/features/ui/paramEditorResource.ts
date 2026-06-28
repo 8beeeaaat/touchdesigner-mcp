@@ -12,7 +12,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { TdNode } from "../../gen/endpoints/TouchDesignerAPI.js";
+import type { TdNodeParSpecs } from "../../gen/endpoints/TouchDesignerAPI.js";
 
 /** Stable identifier the tool's `_meta` points at and the host fetches. */
 export const PARAM_EDITOR_URI = "ui://touchdesigner/param-editor";
@@ -32,42 +32,22 @@ export function loadParamEditorHtml(): string {
 	return cachedHtml;
 }
 
-/** A single editable parameter the guest UI renders as a form field. */
-export interface EditorParam {
-	name: string;
-	/** "string" | "number" | "boolean" — drives the input type in the UI. */
-	kind: "string" | "number" | "boolean";
-	value: string | number | boolean;
-}
-
-/** Structured data the tool returns; the host forwards it to the guest UI. */
-export interface ParamEditorData {
-	nodePath: string;
-	params: EditorParam[];
-}
-
-/** Classify a raw property value into an editor field kind. */
-function kindOf(value: unknown): EditorParam["kind"] {
-	if (typeof value === "boolean") return "boolean";
-	if (typeof value === "number") return "number";
-	return "string";
-}
+/**
+ * Structured data the tool returns; the host forwards it to the guest UI.
+ * This is the full Par specification report from `get_node_par_specs` — the
+ * editor renders an input per parameter based on its `style`/range/menu.
+ */
+export type ParamEditorData = TdNodeParSpecs;
 
 /**
- * Project a full node record down to the editor payload. Only scalar
- * properties (string/number/boolean) become editable fields — nested objects
- * and arrays are skipped because there is no single-field editor for them.
+ * Pass the Par specs through to the guest UI. The server-side projection lives
+ * in Python (`_par_spec`); this layer only narrows the type for the tool result.
  */
-export function toParamEditorData(node: TdNode): ParamEditorData {
-	const params: EditorParam[] = [];
-	for (const [name, value] of Object.entries(node.properties ?? {})) {
-		if (
-			typeof value === "string" ||
-			typeof value === "number" ||
-			typeof value === "boolean"
-		) {
-			params.push({ kind: kindOf(value), name, value });
-		}
-	}
-	return { nodePath: node.path, params };
+export function toParamEditorData(specs: TdNodeParSpecs): ParamEditorData {
+	return {
+		nodeName: specs.nodeName,
+		nodePath: specs.nodePath,
+		opType: specs.opType,
+		pars: specs.pars,
+	};
 }

@@ -20,6 +20,7 @@ vi.mock("../../src/gen/endpoints/TouchDesignerAPI", async () => {
 		getModuleHelp: vi.fn(),
 		getNodeDetail: vi.fn(),
 		getNodeErrors: vi.fn(),
+		getNodeParSpecs: vi.fn(),
 		getNodes: vi.fn(),
 		getTdInfo: vi.fn(),
 		getTdPythonClassDetails: vi.fn(),

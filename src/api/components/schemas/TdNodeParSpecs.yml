@@ -1,0 +1,22 @@
+type: object
+description: All editable parameter specifications for a node, grouped metadata
+required:
+  - nodePath
+  - nodeName
+  - opType
+  - pars
+properties:
+  nodePath:
+    type: string
+    description: Absolute path of the inspected node
+  nodeName:
+    type: string
+    description: Name of the inspected node
+  opType:
+    type: string
+    description: Operator type of the inspected node
+  pars:
+    type: array
+    description: Parameter specifications in TD parameter-dialog order
+    items:
+      $ref: ./TdParSpec.yml

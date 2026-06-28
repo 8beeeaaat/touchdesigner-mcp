@@ -14,6 +14,8 @@ paths:
     $ref: ./paths/api/nodes/list.yml
   /api/nodes/detail:
     $ref: ./paths/api/nodes/detail.yml
+  /api/nodes/parSpecs:
+    $ref: ./paths/api/nodes/parSpecs.yml
   /api/nodes/errors:
     $ref: ./paths/api/nodes/errors.yml
   /api/td/classes:
@@ -39,6 +41,10 @@ components:
       $ref: ./components/schemas/TdNodeError.yml
     TdNodeErrorReport:
       $ref: ./components/schemas/TdNodeErrorReport.yml
+    TdParSpec:
+      $ref: ./components/schemas/TdParSpec.yml
+    TdNodeParSpecs:
+      $ref: ./components/schemas/TdNodeParSpecs.yml
     TdPythonClassDetails:
       $ref: ./components/schemas/TdPythonClassDetails.yml
     TdPythonClassInfo:

@@ -19,6 +19,7 @@ import {
 	getModuleHelp as apiGetModuleHelp,
 	getNodeDetail as apiGetNodeDetail,
 	getNodeErrors as apiGetNodeErrors,
+	getNodeParSpecs as apiGetNodeParSpecs,
 	getNodes as apiGetNodes,
 	getTdInfo as apiGetTdInfo,
 	getTdPythonClassDetails as apiGetTdPythonClassDetails,
@@ -31,6 +32,7 @@ import {
 	type GetModuleHelpParams,
 	type GetNodeDetailParams,
 	type GetNodeErrorsParams,
+	type GetNodeParSpecsParams,
 	type GetNodesParams,
 	type UpdateNodeBody,
 } from "../gen/endpoints/TouchDesignerAPI.js";
@@ -45,6 +47,7 @@ export interface ITouchDesignerApi {
 	getNodes: typeof apiGetNodes;
 	getNodeDetail: typeof apiGetNodeDetail;
 	getNodeErrors: typeof apiGetNodeErrors;
+	getNodeParSpecs: typeof apiGetNodeParSpecs;
 	createNode: typeof apiCreateNode;
 	updateNode: typeof apiUpdateNode;
 	deleteNode: typeof apiDeleteNode;
@@ -64,6 +67,7 @@ const defaultApiClient: ITouchDesignerApi = {
 	getModuleHelp: apiGetModuleHelp,
 	getNodeDetail: apiGetNodeDetail,
 	getNodeErrors: apiGetNodeErrors,
+	getNodeParSpecs: apiGetNodeParSpecs,
 	getNodes: apiGetNodes,
 	getTdInfo: apiGetTdInfo,
 	getTdPythonClassDetails: apiGetTdPythonClassDetails,
@@ -380,6 +384,17 @@ export class TouchDesignerClient {
 		return this.apiCall(
 			"Getting properties for node",
 			() => this.api.getNodeDetail(params),
+			{ nodePath: params.nodePath },
+		);
+	}
+
+	/**
+	 * Get full parameter specifications (style, page, range, menu, value) for a node
+	 */
+	async getNodeParSpecs(params: GetNodeParSpecsParams) {
+		return this.apiCall(
+			"Getting parameter specs for node",
+			() => this.api.getNodeParSpecs(params),
 			{ nodePath: params.nodePath },
 		);
 	}

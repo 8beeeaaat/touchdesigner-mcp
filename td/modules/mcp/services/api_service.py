@@ -26,6 +26,7 @@ class IApiService(Protocol):
 	def get_td_python_class_details(self, class_name: str) -> Result: ...
 	def get_module_help(self, module_name: str) -> Result: ...
 	def get_node_detail(self, node_path: str) -> Result: ...
+	def get_node_par_specs(self, node_path: str) -> Result: ...
 	def get_node_errors(self, node_path: str) -> Result: ...
 	def update_node(self, node_path: str, properties: dict[str, Any]) -> Result: ...
 	def exec_node_method(
@@ -555,6 +556,77 @@ class TouchDesignerApiService(IApiService):
 				params_dict[par.name] = f"<Error: {str(e)}>"
 
 		return params_dict
+
+	def _scalar(self, value):
+		"""Coerce a parameter value to a JSON scalar (str/number/bool)."""
+		if isinstance(value, td.OP):
+			return value.path
+		if isinstance(value, (str, int, float, bool)):
+			return value
+		return str(value)
+
+	def _par_spec(self, par) -> dict:
+		"""Project a single TD Par into a serializable spec dict.
+
+		Each attribute is read defensively: TD raises on some combinations
+		(e.g. menuNames on a non-menu par), so a failure on one field must not
+		drop the whole parameter.
+		"""
+
+		def safe(getter, fallback=None):
+			try:
+				return getter()
+			except Exception:
+				return fallback
+
+		spec = {
+			"name": par.name,
+			"label": safe(lambda: par.label, par.name) or par.name,
+			"page": safe(lambda: par.page.name, "") or "",
+			"style": safe(lambda: par.style, "") or "",
+			"value": safe(lambda: self._scalar(par.eval())),
+			"default": safe(lambda: self._scalar(par.default)),
+			"min": safe(lambda: float(par.normMin)),
+			"max": safe(lambda: float(par.normMax)),
+			"clampMin": bool(safe(lambda: par.clampMin, False)),
+			"clampMax": bool(safe(lambda: par.clampMax, False)),
+			"readOnly": bool(safe(lambda: par.readOnly, False)),
+			"enabled": bool(safe(lambda: par.enable, True)),
+		}
+
+		menu_names = safe(lambda: list(par.menuNames) if par.menuNames else None)
+		menu_labels = safe(lambda: list(par.menuLabels) if par.menuLabels else None)
+		spec["menuNames"] = menu_names
+		spec["menuLabels"] = menu_labels
+
+		return spec
+
+	def get_node_par_specs(self, node_path: str) -> Result:
+		"""Collect full parameter specifications for the node at node_path."""
+
+		node = td.op(node_path)
+
+		if node is None or not node.valid:
+			raise error_result(f"Node not found at path: {node_path}")
+
+		pars = []
+		for par in node.pars("*"):
+			try:
+				pars.append(self._par_spec(par))
+			except Exception as e:
+				log_message(
+					f"Error reading parameter spec {getattr(par, 'name', '?')}: {str(e)}",
+					LogLevel.DEBUG,
+				)
+
+		return success_result(
+			{
+				"nodePath": node.path,
+				"nodeName": node.name,
+				"opType": node.OPType,
+				"pars": pars,
+			}
+		)
 
 	def _get_node_summary_light(self, node) -> dict:
 		"""Get lightweight information about a node (without properties for better performance)"""

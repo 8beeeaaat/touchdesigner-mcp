@@ -16,15 +16,33 @@ export interface BrowserNode {
 /** Host color theme, mirrored from getHostContext().theme. */
 export type Theme = "light" | "dark";
 
-/** A single editable parameter the param editor renders as a form field. */
-export interface EditorParam {
+/**
+ * A single parameter spec the editor renders. Mirrors the server's TdParSpec
+ * (src/api/components/schemas/TdParSpec.yml); ui-app is a separate package so
+ * the type is re-declared here rather than imported.
+ */
+export interface ParSpec {
 	name: string;
-	kind: "string" | "number" | "boolean";
+	label: string;
+	page: string;
+	/** TD parameter style: Float, Int, Toggle, Pulse, Menu, StrMenu, Str, … */
+	style: string;
 	value: string | number | boolean;
+	default?: string | number | boolean;
+	min?: number | null;
+	max?: number | null;
+	clampMin?: boolean;
+	clampMax?: boolean;
+	menuNames?: string[] | null;
+	menuLabels?: string[] | null;
+	readOnly?: boolean;
+	enabled?: boolean;
 }
 
 /** Shape of the structuredContent the ui_td_param_editor tool returns. */
 export interface ParamEditorData {
 	nodePath: string;
-	params: EditorParam[];
+	nodeName: string;
+	opType: string;
+	pars: ParSpec[];
 }

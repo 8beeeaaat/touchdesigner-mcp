@@ -15,6 +15,7 @@
 			"tests/**/*",
 			"!**/public",
 			"!**/*.json",
+			"!**/*.html",
 			"!**/dist/**/*",
 			"!**/node_modules/**/*",
 			"!**/src/gen/**/*",

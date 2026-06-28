@@ -175,6 +175,79 @@ describe("TouchDesigner Client E2E Tests", () => {
 		await tdClient.deleteNode({ nodePath });
 	});
 
+	test("Get node par specs should return rich parameter metadata", async () => {
+		const parentPath = SANDBOX_PATH;
+		const nodeName = `test_parspecs_${Date.now()}`;
+		const nodePath = `${parentPath}/${nodeName}`;
+
+		const createResponse = await tdClient.createNode({
+			nodeName,
+			nodeType: "textTOP",
+			parentPath,
+		});
+		if (!createResponse.success) {
+			throw new Error(`failed: ${createResponse.error}`);
+		}
+
+		const specsResponse = await tdClient.getNodeParSpecs({ nodePath });
+		expect(specsResponse).toBeDefined();
+		if (!specsResponse.success) {
+			throw new Error(`failed: ${specsResponse.error}`);
+		}
+
+		const data = specsResponse.data;
+		expect(data?.nodePath).toBe(nodePath);
+		expect(data?.opType).toBe("textTOP");
+		expect(Array.isArray(data?.pars)).toBe(true);
+		expect(data?.pars.length ?? 0).toBeGreaterThan(0);
+
+		// Every spec must carry the fields the editor UI relies on.
+		for (const par of data?.pars ?? []) {
+			expect(typeof par.name).toBe("string");
+			expect(typeof par.style).toBe("string");
+			expect(typeof par.page).toBe("string");
+			expect(par).toHaveProperty("value");
+		}
+
+		// resolution mode is a menu parameter on textTOP — it should expose menus.
+		const menuPar = (data?.pars ?? []).find(
+			(p) => p.menuNames != null && p.menuNames.length > 0,
+		);
+		expect(menuPar).toBeDefined();
+		expect(menuPar?.menuLabels?.length).toBe(menuPar?.menuNames?.length);
+
+		await tdClient.deleteNode({ nodePath });
+	});
+
+	test("Par spec value should reflect an edit round-trip", async () => {
+		const parentPath = SANDBOX_PATH;
+		const nodeName = `test_parspec_edit_${Date.now()}`;
+		const nodePath = `${parentPath}/${nodeName}`;
+
+		const createResponse = await tdClient.createNode({
+			nodeName,
+			nodeType: "textTOP",
+			parentPath,
+		});
+		if (!createResponse.success) {
+			throw new Error(`failed: ${createResponse.error}`);
+		}
+
+		await tdClient.updateNode({
+			nodePath,
+			properties: { text: "spec round-trip" },
+		});
+
+		const specsResponse = await tdClient.getNodeParSpecs({ nodePath });
+		if (!specsResponse.success) {
+			throw new Error(`failed: ${specsResponse.error}`);
+		}
+		const textPar = specsResponse.data?.pars.find((p) => p.name === "text");
+		expect(textPar?.value).toBe("spec round-trip");
+
+		await tdClient.deleteNode({ nodePath });
+	});
+
 	test("Get nodes should return filtered nodes by pattern", async () => {
 		const parentPath = SANDBOX_PATH;
 

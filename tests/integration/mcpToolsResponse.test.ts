@@ -6,9 +6,14 @@ import type { ExecNodeMethodBody } from "../../src/gen/endpoints/TouchDesignerAP
 import type { TouchDesignerClient } from "../../src/tdClient/index.js";
 
 type ToolHandler = (params?: Record<string, unknown>) => Promise<unknown>;
+type ResourceReader = () => Promise<unknown>;
 
 class MockMcpServer {
 	public tools = new Map<string, ToolHandler>();
+	// UI resources keyed by uri; populated via registerResource (ext-apps path).
+	public resources = new Map<string, ResourceReader>();
+	// _meta captured per tool so tests can assert the ui/resourceUri wiring.
+	public toolMeta = new Map<string, Record<string, unknown>>();
 
 	tool(name: string, ...rest: unknown[]): void {
 		const args = [...rest];
@@ -18,10 +23,37 @@ class MockMcpServer {
 		}
 	}
 
+	// ext-apps' registerAppTool calls server.registerTool(name, config, handler).
+	registerTool(
+		name: string,
+		config: { _meta?: Record<string, unknown> },
+		handler: ToolHandler,
+	): void {
+		this.tools.set(name, handler);
+		if (config?._meta) this.toolMeta.set(name, config._meta);
+	}
+
+	// ext-apps' registerAppResource calls
+	// server.registerResource(name, uri, meta, reader).
+	registerResource(
+		_name: string,
+		uri: string,
+		_meta: unknown,
+		reader: ResourceReader,
+	): void {
+		this.resources.set(uri, reader);
+	}
+
 	getTool(name: string): ToolHandler {
 		const tool = this.tools.get(name);
 		if (!tool) throw new Error(`Tool ${name} not registered`);
 		return tool;
+	}
+
+	getResource(uri: string): ResourceReader {
+		const reader = this.resources.get(uri);
+		if (!reader) throw new Error(`Resource ${uri} not registered`);
+		return reader;
 	}
 }
 
@@ -122,6 +154,58 @@ DATA DESCRIPTORS
 				nodeName: "mockNode",
 				nodePath: "/project1/mockNode",
 				opType: "textTOP",
+			},
+			success: true,
+		}),
+		getNodeParSpecs: async (_params: unknown) => ({
+			data: {
+				nodeName: "text1",
+				nodePath: "/project1/text1",
+				opType: "textTOP",
+				pars: [
+					{
+						clampMax: false,
+						clampMin: false,
+						default: 0,
+						label: "Translate X",
+						max: 10,
+						min: -10,
+						name: "tx",
+						page: "Transform",
+						style: "Float",
+						value: 1.5,
+					},
+					{
+						label: "Active",
+						name: "active",
+						page: "Common",
+						style: "Toggle",
+						value: true,
+					},
+					{
+						label: "Extension",
+						menuLabels: ["PNG", "JPEG"],
+						menuNames: ["png", "jpg"],
+						name: "fileformat",
+						page: "Common",
+						style: "Menu",
+						value: "png",
+					},
+					{
+						label: "Reset",
+						name: "reset",
+						page: "Common",
+						style: "Pulse",
+						value: 0,
+					},
+					{
+						label: "Text",
+						name: "text",
+						page: "Text",
+						style: "Str",
+						value: "hello",
+					},
+				],
 			},
 			success: true,
 		}),
@@ -274,6 +358,80 @@ describe("MCP tool responses", () => {
 		expect(text).toContain("✓ Help information for noiseCHOP");
 		expect(text).toContain("Sections:");
 		expect(text).toContain("METHODS");
+	});
+
+	it("returns node browser structuredContent for UI_TD_NODE_BROWSER", async () => {
+		const handler = server.getTool(TOOL_NAMES.UI_TD_NODE_BROWSER);
+		const result = (await handler({ parentPath: "/project1" })) as {
+			content?: Array<{ type: string; text?: string }>;
+			structuredContent?: {
+				parentPath: string;
+				nodes: Array<{ name: string; path: string; opType: string }>;
+			};
+		};
+
+		// Host-fallback text summary must still be present.
+		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+		expect(text).toContain("under /project1");
+
+		// Widget payload: projected node records.
+		expect(result.structuredContent?.parentPath).toBe("/project1");
+		expect(result.structuredContent?.nodes.map((n) => n.name)).toEqual([
+			"geo1",
+			"text1",
+		]);
+	});
+
+	it("wires UI_TD_NODE_BROWSER to its ui:// resource via _meta", () => {
+		const meta = server.toolMeta.get(TOOL_NAMES.UI_TD_NODE_BROWSER) ?? {};
+		// ext-apps stores the resource uri under the ui/resourceUri meta key.
+		expect(Object.values(meta)).toContain("ui://touchdesigner/node-browser");
+		// And the resource itself must be registered for the host to fetch.
+		expect(() =>
+			server.getResource("ui://touchdesigner/node-browser"),
+		).not.toThrow();
+	});
+
+	it("returns full par specs structuredContent for UI_TD_PARAM_EDITOR", async () => {
+		const handler = server.getTool(TOOL_NAMES.UI_TD_PARAM_EDITOR);
+		const result = (await handler({ nodePath: "/project1/text1" })) as {
+			content?: Array<{ type: string; text?: string }>;
+			structuredContent?: {
+				nodePath: string;
+				pars: Array<{ name: string; style: string }>;
+			};
+		};
+
+		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+		expect(text).toContain("/project1/text1");
+		expect(text).toContain("5 parameter(s)");
+
+		const styles = (result.structuredContent?.pars ?? []).map((p) => p.style);
+		// All TD parameter styles the editor must render are forwarded verbatim.
+		expect(styles).toEqual(["Float", "Toggle", "Menu", "Pulse", "Str"]);
+		const tx = result.structuredContent?.pars.find((p) => p.name === "tx");
+		expect(tx).toMatchObject({ style: "Float", name: "tx" });
+	});
+
+	it("wires UI_TD_PARAM_EDITOR to its ui:// resource via _meta", () => {
+		const meta = server.toolMeta.get(TOOL_NAMES.UI_TD_PARAM_EDITOR) ?? {};
+		expect(Object.values(meta)).toContain("ui://touchdesigner/param-editor");
+		expect(() =>
+			server.getResource("ui://touchdesigner/param-editor"),
+		).not.toThrow();
+	});
+
+	it("serves self-contained HTML from the param-editor ui:// resource", async () => {
+		const reader = server.getResource("ui://touchdesigner/param-editor");
+		const result = (await reader()) as {
+			contents?: Array<{ uri: string; mimeType: string; text: string }>;
+		};
+		const doc = result.contents?.[0];
+		expect(doc?.mimeType).toBe("text/html;profile=mcp-app");
+		expect(doc?.uri).toBe("ui://touchdesigner/param-editor");
+		// The inlined build must carry the editor shell, not an empty page.
+		expect(doc?.text).toContain("<!doctype html>");
+		expect(doc?.text.length ?? 0).toBeGreaterThan(1000);
 	});
 
 	it("returns an error response when GET_TD_MODULE_HELP fails", async () => {
