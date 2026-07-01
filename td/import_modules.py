@@ -8,13 +8,28 @@ def setup():
 	externaltox = parent().par.externaltox.eval()
 	tox_dir_path = os.path.dirname(externaltox)
 	modules_path = os.path.join(tox_dir_path, "modules")
-
-	if modules_path not in sys.path:
-		sys.path.append(modules_path)
-
 	td_server_path = os.path.join(modules_path, "td_server")
-	if td_server_path not in sys.path:
-		sys.path.append(td_server_path)
+
+	# If a same-named package is present in TouchDesigner's Python (e.g. the
+	# Anthropic MCP SDK, PyPI name `mcp`, pip-installed into the bundled
+	# interpreter, or any generic `utils` package), it shadows this project's
+	# local `modules/mcp` / `modules/utils` packages and imports such as
+	# `import mcp.controllers` or `from utils.error_handling import ...` fail
+	# with ModuleNotFoundError. sys.modules caching takes precedence over
+	# sys.path, so inserting the project paths below is not enough on its own:
+	# drop any already-imported `mcp*` / `utils*` modules so those imports
+	# re-resolve against the project paths inserted at the front of sys.path.
+	shadowed_roots = ("mcp", "utils")
+	for mod_name in list(sys.modules.keys()):
+		if mod_name.split(".", 1)[0] in shadowed_roots:
+			del sys.modules[mod_name]
+
+	# Insert project paths at the START of sys.path so the local packages win
+	# over any same-named package in site-packages.
+	for path in [td_server_path, modules_path]:
+		while path in sys.path:
+			sys.path.remove(path)
+		sys.path.insert(0, path)
 
 	schema_path = find_openapi_schema_path(modules_path)
 	try:
