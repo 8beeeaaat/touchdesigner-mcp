@@ -10,14 +10,18 @@ def setup():
 	modules_path = os.path.join(tox_dir_path, "modules")
 	td_server_path = os.path.join(modules_path, "td_server")
 
-	# If a same-named `mcp` package is present in TouchDesigner's Python
-	# (e.g. the Anthropic MCP SDK, PyPI name `mcp`, pip-installed into the
-	# bundled interpreter), it shadows this project's local `modules/mcp`
-	# package and `import mcp.controllers` fails with ModuleNotFoundError.
-	# Drop any already-imported `mcp` modules so the `import mcp` below
-	# re-resolves against the project paths inserted at the front of sys.path.
+	# If a same-named package is present in TouchDesigner's Python (e.g. the
+	# Anthropic MCP SDK, PyPI name `mcp`, pip-installed into the bundled
+	# interpreter, or any generic `utils` package), it shadows this project's
+	# local `modules/mcp` / `modules/utils` packages and imports such as
+	# `import mcp.controllers` or `from utils.error_handling import ...` fail
+	# with ModuleNotFoundError. sys.modules caching takes precedence over
+	# sys.path, so inserting the project paths below is not enough on its own:
+	# drop any already-imported `mcp*` / `utils*` modules so those imports
+	# re-resolve against the project paths inserted at the front of sys.path.
+	shadowed_roots = ("mcp", "utils")
 	for mod_name in list(sys.modules.keys()):
-		if mod_name == "mcp" or mod_name.startswith("mcp."):
+		if mod_name.split(".", 1)[0] in shadowed_roots:
 			del sys.modules[mod_name]
 
 	# Insert project paths at the START of sys.path so the local packages win
