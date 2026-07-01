@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.12] - 2026-07-02
+
+### Fixed
+
+- Fixed the TouchDesigner WebServer component failing to initialize with `ModuleNotFoundError: No module named 'mcp.controllers'` (and the same failure for `utils.error_handling`) when TouchDesigner's Python already contains same-named `mcp` / `utils` packages (e.g. the Anthropic MCP SDK, PyPI name `mcp`). Corrected `import_modules` so the project `modules/` paths take priority in `sys.path` and any cached `mcp*` entries are evicted from `sys.modules`, added the missing `__init__.py` files so `modules/mcp/` and `modules/utils/` are regular packages instead of shadowable namespace packages, and re-synced the `import_modules` DAT embedded in `mcp_webserver_base.tox` so the released `.tox` runs the fixed logic ([#173](https://github.com/8beeeaaat/touchdesigner-mcp/issues/173), [#181](https://github.com/8beeeaaat/touchdesigner-mcp/pull/181)).
+
+### Changed
+
+- Released version `1.4.12` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), and server registry metadata (`server.json`), including the updated MCPB download URL and checksum so npm and MCPB installations resolve the same release. The MCP API version (`src/api/index.yml`, `td/modules/utils/version.py`, `pyproject.toml`) stays at `1.4.3` since this release contains no server/API contract changes. No dependency updates are included.
+
 ## [1.4.11] - 2026-06-27
 
 ### Changed
