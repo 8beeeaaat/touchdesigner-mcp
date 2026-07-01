@@ -8,13 +8,24 @@ def setup():
 	externaltox = parent().par.externaltox.eval()
 	tox_dir_path = os.path.dirname(externaltox)
 	modules_path = os.path.join(tox_dir_path, "modules")
-
-	if modules_path not in sys.path:
-		sys.path.append(modules_path)
-
 	td_server_path = os.path.join(modules_path, "td_server")
-	if td_server_path not in sys.path:
-		sys.path.append(td_server_path)
+
+	# If a same-named `mcp` package is present in TouchDesigner's Python
+	# (e.g. the Anthropic MCP SDK, PyPI name `mcp`, pip-installed into the
+	# bundled interpreter), it shadows this project's local `modules/mcp`
+	# package and `import mcp.controllers` fails with ModuleNotFoundError.
+	# Drop any already-imported `mcp` modules so the `import mcp` below
+	# re-resolves against the project paths inserted at the front of sys.path.
+	for mod_name in list(sys.modules.keys()):
+		if mod_name == "mcp" or mod_name.startswith("mcp."):
+			del sys.modules[mod_name]
+
+	# Insert project paths at the START of sys.path so the local packages win
+	# over any same-named package in site-packages.
+	for path in [td_server_path, modules_path]:
+		while path in sys.path:
+			sys.path.remove(path)
+		sys.path.insert(0, path)
 
 	schema_path = find_openapi_schema_path(modules_path)
 	try:
