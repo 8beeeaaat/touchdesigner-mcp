@@ -9,7 +9,16 @@
 ```
 
 {{#outputPreview}}
+Output:
+
 ```text
 {{{outputPreview}}}
 ```
 {{/outputPreview}}
+{{#stderrPreview}}
+Stderr:
+
+```text
+{{{stderrPreview}}}
+```
+{{/stderrPreview}}
