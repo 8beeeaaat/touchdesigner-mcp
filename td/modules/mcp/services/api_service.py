@@ -8,6 +8,7 @@ import importlib
 import inspect
 import io
 import pydoc
+import traceback
 from typing import Any, Optional, Protocol
 
 from mcp.services.node_layout import first_free_cell
@@ -498,7 +499,9 @@ class TouchDesignerApiService(IApiService):
 					}
 				)
 			except Exception as exec_error:
-				raise Exception(f"Script execution failed: {str(exec_error)}")
+				raise Exception(
+					f"Script execution failed: {exec_error}\n{traceback.format_exc()}"
+				) from exec_error
 
 	def update_node(self, node_path: str, properties: dict[str, Any]) -> Result:
 		"""Update properties of the node at the specified path"""
