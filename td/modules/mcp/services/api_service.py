@@ -8,6 +8,7 @@ import importlib
 import inspect
 import io
 import pydoc
+import sys
 from typing import Any, Optional, Protocol
 
 from mcp.services.node_layout import first_free_cell
@@ -418,7 +419,18 @@ class TouchDesignerApiService(IApiService):
 			"td": td,
 			"result": no_result_sentinel,
 		}
+		# Mirror the Textport/DAT execution environment: TouchDesigner keeps
+		# all of its globals (absTime, OP type names such as noiseTOP, ParMode,
+		# tdu, ui, ...) in the __main__ module namespace. Merging them makes
+		# scripts behave the same as Python written inside a DAT or the
+		# Textport, so code can be copy-pasted between both contexts.
+		td_globals = {
+			name: value
+			for name, value in vars(sys.modules["__main__"]).items()
+			if not name.startswith("_")
+		}
 		namespace = dict(globals())
+		namespace.update(td_globals)
 		namespace.update(local_vars)
 
 		stdout_capture = io.StringIO()
