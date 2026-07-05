@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/integration-test-guard.sh\""
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/integration-test-guard.mjs\""
           }
         ]
       }

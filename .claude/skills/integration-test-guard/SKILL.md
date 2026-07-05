@@ -76,4 +76,4 @@ push with `SKIP_ITEST_GUARD=1 git push ...` and say why.
 ## Related
 
 - `touchdesigner-self-debug` — start TD, load the `.tox`, verify TD-side Python.
-- Hook: `.claude/hooks/integration-test-guard.sh` (PreToolUse on `git push`).
+- Hook: `.claude/hooks/integration-test-guard.mjs` (Node; PreToolUse on `git push`).
