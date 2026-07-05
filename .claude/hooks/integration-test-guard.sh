@@ -9,13 +9,19 @@
 # when the change genuinely needs no integration test.
 #
 # Exit codes: 0 = allow, 2 = block and feed stderr back to Claude.
+#
+# Portability: requires a POSIX shell + coreutils (grep/sed/printf) and `node`
+# on PATH. macOS/Linux run it natively; on Windows it runs under the Git Bash
+# that Claude Code uses for Bash tool commands. It does not run under native
+# cmd.exe / PowerShell.
 set -euo pipefail
 
 input=$(cat)
 
-# Extract the bash command being run from the PreToolUse payload.
-cmd=$(printf '%s' "$input" | /usr/bin/python3 -c \
-  'import json,sys; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' \
+# Extract the bash command from the PreToolUse payload. Uses node (always
+# present for this repo, and cross-platform) rather than a hardcoded python path.
+cmd=$(printf '%s' "$input" | node -e \
+  'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String((JSON.parse(s).tool_input||{}).command||""))}catch(e){}})' \
   2>/dev/null || true)
 
 # Only act on git push.
