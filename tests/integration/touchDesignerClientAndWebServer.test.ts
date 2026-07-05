@@ -487,4 +487,82 @@ describe("TouchDesigner Client E2E Tests", () => {
 		}
 		// Error is available on ErrorResult type
 	});
+
+	test("Auto-created nodes are placed on a non-overlapping grid", async () => {
+		const container = `align_grid_${Date.now()}`;
+		const containerPath = `${SANDBOX_PATH}/${container}`;
+		await tdClient.createNode({
+			nodeName: container,
+			nodeType: "baseCOMP",
+			parentPath: SANDBOX_PATH,
+		});
+
+		const nodeCount = 8;
+		for (let i = 0; i < nodeCount; i++) {
+			const res = await tdClient.createNode({
+				nodeName: `n${i}`,
+				nodeType: "circleTOP",
+				parentPath: containerPath,
+			});
+			if (!res.success) {
+				throw new Error(`create failed: ${res.error}`);
+			}
+		}
+
+		// Read back real node boxes from TD and reconcile: total overlap area must be 0.
+		const script = [
+			`c = op('${containerPath}')`,
+			"b = [(x.nodeX, x.nodeY, x.nodeWidth, x.nodeHeight) for x in c.children]",
+			"ov = lambda a,z: max(0, min(a[0]+a[2],z[0]+z[2])-max(a[0],z[0])) * max(0, min(a[1]+a[3],z[1]+z[3])-max(a[1],z[1]))",
+			"tot = sum(ov(b[i],b[j]) for i in range(len(b)) for j in range(i+1,len(b)))",
+			"[len(b), tot]",
+		].join("\n");
+		const exec = await tdClient.execPythonScript<{ result: number[] }>({
+			script,
+		});
+		if (!exec.success) {
+			throw new Error(`exec failed: ${exec.error}`);
+		}
+		expect(exec.data.result[0]).toBe(nodeCount);
+		expect(exec.data.result[1]).toBe(0);
+
+		await tdClient.deleteNode({ nodePath: containerPath });
+	});
+
+	test("Explicit nodeX/nodeY are respected over auto-alignment", async () => {
+		const container = `align_explicit_${Date.now()}`;
+		const containerPath = `${SANDBOX_PATH}/${container}`;
+		await tdClient.createNode({
+			nodeName: container,
+			nodeType: "baseCOMP",
+			parentPath: SANDBOX_PATH,
+		});
+
+		// Pre-populate a node so the auto-grid cell (0,0) would differ from the explicit coords.
+		await tdClient.createNode({
+			nodeName: "occupied",
+			nodeType: "circleTOP",
+			parentPath: containerPath,
+		});
+
+		// nodeX/nodeY are supplied via api_service parameters (not exposed on the HTTP create body).
+		const explicitX = 777;
+		const explicitY = -333;
+		const script = [
+			"from mcp.services.api_service import api_service",
+			`api_service.create_node('${containerPath}', 'circleTOP', 'explicit', {'nodeX': ${explicitX}, 'nodeY': ${explicitY}})`,
+			`n = op('${containerPath}/explicit')`,
+			"[n.nodeX, n.nodeY]",
+		].join("\n");
+		const exec = await tdClient.execPythonScript<{ result: number[] }>({
+			script,
+		});
+		if (!exec.success) {
+			throw new Error(`exec failed: ${exec.error}`);
+		}
+		expect(exec.data.result[0]).toBe(explicitX);
+		expect(exec.data.result[1]).toBe(explicitY);
+
+		await tdClient.deleteNode({ nodePath: containerPath });
+	});
 });
