@@ -45,6 +45,12 @@ post:
                     properties:
                       value:
                         description: Return value of the executed script, can be any serializable value
+                  stdout:
+                    type: string
+                    description: Captured standard output (e.g. print statements) emitted while the script ran
+                  stderr:
+                    type: string
+                    description: Captured standard error output emitted while the script ran
               error:
                 nullable: true
                 type: string

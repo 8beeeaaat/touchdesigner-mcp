@@ -72,8 +72,8 @@ describe("scriptResultFormatter", () => {
 		it("should format successful execution with result and output in summary mode", () => {
 			const data: ScriptResultData = {
 				data: {
-					output: "Debug message",
 					result: { value: 123 },
+					stdout: "Debug message",
 				},
 				success: true,
 			};
@@ -89,6 +89,42 @@ describe("scriptResultFormatter", () => {
 			expect(result).toContain("Return type: object");
 			expect(result).toContain('"value": 123');
 			expect(result).toContain("Debug message");
+		});
+
+		it("should show captured stdout from print statements in summary mode", () => {
+			const data: ScriptResultData = {
+				data: {
+					result: "done",
+					stdout: "HELLO\n",
+				},
+				success: true,
+			};
+
+			const result = formatScriptResult(data, "print('HELLO')", {
+				detailLevel: "summary",
+			});
+
+			expect(result).toContain("Output:");
+			expect(result).toContain("HELLO");
+		});
+
+		it("should show captured stderr in summary mode", () => {
+			const data: ScriptResultData = {
+				data: {
+					result: "done",
+					stderr: "warning: something happened\n",
+					stdout: "",
+				},
+				success: true,
+			};
+
+			const result = formatScriptResult(data, undefined, {
+				detailLevel: "summary",
+			});
+
+			expect(result).toContain("Stderr:");
+			expect(result).toContain("warning: something happened");
+			expect(result).not.toContain("Output:");
 		});
 
 		it("should truncate long script snippets in summary mode", () => {
@@ -111,8 +147,8 @@ describe("scriptResultFormatter", () => {
 		it("should truncate long output in summary mode", () => {
 			const data: ScriptResultData = {
 				data: {
-					output: "x".repeat(250),
 					result: "ok",
+					stdout: "x".repeat(250),
 				},
 				success: true,
 			};
@@ -162,8 +198,8 @@ describe("scriptResultFormatter", () => {
 		it("should return full JSON in detailed mode", () => {
 			const data: ScriptResultData = {
 				data: {
-					output: "Some output",
 					result: { complex: "data", nested: { value: 123 } },
+					stdout: "Some output",
 				},
 				success: true,
 			};
@@ -176,7 +212,7 @@ describe("scriptResultFormatter", () => {
 			expect(result).toContain('"success": true');
 			expect(result).toContain('"complex": "data"');
 			expect(result).toContain('"nested"');
-			expect(result).toContain('"output": "Some output"');
+			expect(result).toContain('"stdout": "Some output"');
 		});
 
 		it("should handle undefined data", () => {
@@ -188,8 +224,8 @@ describe("scriptResultFormatter", () => {
 		it("should handle empty output string", () => {
 			const data: ScriptResultData = {
 				data: {
-					output: "",
 					result: "ok",
+					stdout: "",
 				},
 				success: true,
 			};
@@ -204,8 +240,8 @@ describe("scriptResultFormatter", () => {
 		it("should handle whitespace-only output", () => {
 			const data: ScriptResultData = {
 				data: {
-					output: "   \n\t  ",
 					result: "ok",
+					stdout: "   \n\t  ",
 				},
 				success: true,
 			};
