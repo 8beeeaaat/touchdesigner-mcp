@@ -350,6 +350,65 @@ describe("TouchDesigner Client E2E Tests", () => {
 		await tdClient.deleteNode({ nodePath });
 	});
 
+	test("Python script execution captures stdout and stderr", async () => {
+		const execResponse = await tdClient.execPythonScript<{
+			result: unknown;
+			stdout: string;
+			stderr: string;
+		}>({
+			script: [
+				"import sys",
+				"print('hello stdout')",
+				"sys.stderr.write('oops stderr')",
+				"'done'",
+			].join("\n"),
+		});
+
+		expect(execResponse).toBeDefined();
+		if (!execResponse.success) {
+			throw new Error(`failed: ${execResponse.error}`);
+		}
+		expect(execResponse.data.result).toBe("done");
+		expect(execResponse.data.stdout).toContain("hello stdout");
+		expect(execResponse.data.stderr).toContain("oops stderr");
+	});
+
+	test("Python script execution includes traceback in error message", async () => {
+		const execResponse = await tdClient.execPythonScript({
+			script: ["x = 1", "y = x / 0", "y"].join("\n"),
+		});
+
+		expect(execResponse).toBeDefined();
+		if (execResponse.success) {
+			throw new Error(
+				`expected failure but succeeded: ${JSON.stringify(execResponse.data)}`,
+			);
+		}
+		expect(execResponse.success).toBe(false);
+		const message = String(execResponse.error);
+		expect(message).toContain("Traceback");
+		expect(message).toContain("ZeroDivisionError");
+	});
+
+	test("Python script execution exposes TouchDesigner globals (tdu)", async () => {
+		// tdu lives in the __main__ namespace, not in the base exec bindings
+		// (op/ops/me/parent/project/td). Referencing it proves the __main__
+		// globals merge — before that fix this raised NameError('tdu').
+		const execResponse = await tdClient.execPythonScript<{
+			result: number;
+		}>({
+			script: "tdu.Position(1, 2, 3).x",
+		});
+
+		expect(execResponse).toBeDefined();
+		if (!execResponse.success) {
+			throw new Error(
+				`failed (tdu should resolve as a global): ${execResponse.error}`,
+			);
+		}
+		expect(execResponse.data.result).toBe(1);
+	});
+
 	test("Node error check should return error lists", async () => {
 		const response = await tdClient.getNodeErrors({
 			nodePath: SANDBOX_PATH,
