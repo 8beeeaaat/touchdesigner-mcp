@@ -316,18 +316,23 @@ class TouchDesignerApiService(IApiService):
 						LogLevel.WARNING,
 					)
 
-		self._align_new_node(parent_node, new_node)
+		self._align_new_node(parent_node, new_node, parameters)
 
 		node_info = self._get_node_summary(new_node)
 		return success_result({"result": node_info})
 
-	def _align_new_node(self, parent_node, new_node) -> None:
+	def _align_new_node(self, parent_node, new_node, parameters=None) -> None:
 		"""Position a freshly created node on a non-overlapping grid cell.
 
 		Reads the current children of ``parent_node`` (excluding ``new_node``) and
 		places ``new_node`` at the first free grid cell. Existing nodes are never
 		moved. Failures here must not fail node creation, so they are logged only.
+
+		If the caller supplied an explicit ``nodeX``/``nodeY`` via ``parameters``,
+		that deliberate position is respected and auto-alignment is skipped.
 		"""
+		if parameters and ("nodeX" in parameters or "nodeY" in parameters):
+			return
 		try:
 			existing = [
 				(child.nodeX, child.nodeY, child.nodeWidth, child.nodeHeight)
