@@ -1,59 +1,59 @@
 ---
 name: touchdesigner-self-debug
 description: >
-  TouchDesigner を computer-use で自己起動し、mcp_webserver_base.tox をロードして
-  TD 側 Python 機能(api_service のノード操作等)を Textport から直接検証するワークフロー。
-  touchdesigner-mcp リポジトリで TD 側コード(td/modules/**)を変更した後、
-  実 TD での E2E 検証・セルフデバッグが必要なとき、
-  「TD を起動して確認」「実機で検証」「.tox を import して動かす」と言われたときに使う。
-  HTTP/WebServer/OpenAPI スキーマを経由せず textport 直呼びで検証する近道を含む。
+  A workflow for self-starting TouchDesigner via computer-use, loading mcp_webserver_base.tox, 
+  and directly verifying TD-side Python functions (such as api_service node operations) via the Textport. 
+  Used when changes are made to TD-side code (td/modules/**) in the touchdesigner-mcp repository 
+  and E2E verification/self-debugging in an actual TD environment is required—specifically when 
+  instructed to "start TD and check," "verify on actual machine," or "import and run the .tox." 
+  Includes a shortcut for verification by calling the textport directly without going through 
+  HTTP/WebServer/OpenAPI schemas.
 ---
 
-# TouchDesigner 起動＋機能セルフデバッグ
+# TouchDesigner Startup + Functional Self-Debugging
 
-TD 側 Python（`td/modules/**` の `api_service` など）の変更を、**実 TouchDesigner** で
-検証するための再現手順。HTTP WebServer を立てずに Textport から直接叩くのが最短経路。
+Reproduction steps for verifying changes to TD-side Python (e.g., `api_service` in `td/modules/**`) 
+within **actual TouchDesigner**. Calling functions directly from the Textport without setting 
+up an HTTP WebServer is the shortest path.
 
-## いつ実行するか
+## When to Execute
 
-- `td/modules/mcp/services/*.py` など TD 側ロジックを変更し、実機挙動を確認したい
-- ユニット/オフライン検証だけでは足りず、実ノードの座標・寸法など TD ランタイム値で照合したい
-- CI にも統合テスト(9981 接続前提)にも頼れない新規 worktree で動作確認したい
+- You have modified TD-side logic, such as `td/modules/mcp/services/*.py`, and want to check behavior on the actual machine.
+- Unit/offline verification is insufficient, and you need to reconcile values against TD runtime data (node coordinates, dimensions, etc.).
+- You are working in a new worktree that cannot rely on CI or integration tests (which assume a 9981 connection).
 
-## 前提と落とし穴（先に知っておく）
+## Prerequisites and Pitfalls (Read First)
 
-1. **`.tox` は実行時にディスクの `td/modules/` を読む**。
-   よって `.py` の変更に **`.tox` 再オーサリングは不要**。モジュール再読込 or TD 再起動で反映。
-2. **`loadTox()` は `externaltox` パラメータを空にする** → `import_modules.setup()` が
-   `No module named 'mcp'` で失敗。→ 手動で setup を再現する（下記 Step 3）。
-3. **新規 worktree は生成物が無い** → OpenAPI スキーマ空・`node_modules` 無しで
-   HTTP routing は動かない。→ **HTTP を使わず textport 直呼び**で回避（下記 Step 4）。
-4. **computer-use のスクショが黒くなる**のは TD が最前面から外れたとき。
-   → `open_application("TouchDesigner")` ＋ `switch_display` で復帰。
-5. **REPL への複数行ペーストは行分断で壊れる** → 必ず `exec("""...""")` で1文にまとめる。
+1. **The `.tox` reads `td/modules/` from disk at runtime**. 
+   Therefore, **re-authoring the `.tox` is not required** for `.py` changes. Reflect changes by reloading modules or restarting TD.
+2. **`loadTox()` clears the `externaltox` parameter** → This causes `import_modules.setup()` to fail with `No module named 'mcp'`. → Replicate the setup manually (see Step 3 below).
+3. **New worktrees lack generated artifacts** → HTTP routing will not work if the OpenAPI schema is empty or `node_modules` is missing. → Bypass this by **calling the textport directly** instead of using HTTP (see Step 4 below).
+4. **Computer-use screenshots may turn black** if TD loses focus. 
+   → Recover using `open_application("TouchDesigner")` + `switch_display`.
+5. **Multi-line pastes into the REPL fail due to line breaks** → Always wrap code in `exec("""...""")` to execute as a single statement.
 
-## Step 1: TD を起動
+## Step 1: Start TD
 
 ```
 computer-use: request_access(["TouchDesigner"])
-computer-use: open_application("TouchDesigner")   # 数秒待つ
-computer-use: screenshot                           # 起動確認
+computer-use: open_application("TouchDesigner")   # Wait a few seconds
+computer-use: screenshot                           # Confirm startup
 ```
 
-## Step 2: Textport を開く
+## Step 2: Open Textport
 
-macOS メニューバー **Dialogs → "Textport and DATs"** をクリック。
-（`Alt+T` は Palette トグルで不確実。メニュー経由が確実）
+Click **Dialogs -> "Textport and DATs"** in the menu bar.
+(Avoid `Alt+T` as it toggles the Palette and is unreliable; the menu path is certain.)
 
-## Step 3: .tox ロード＋モジュール setup を手動再現
+## Step 3: Load .tox + Manually Replicate Module Setup
 
-Textport にフォーカスして（`exec("""...""")` で1文化）:
+Focus the Textport and execute as a single block using `exec("""...""")`:
 
 ```python
-# 3a. ロード
+# 3a. Load
 p = op('/project1').loadTox('<ABS_REPO>/td/mcp_webserver_base.tox'); print('LOADED', p)
 
-# 3b. externaltox が空なので手動 setup（import_modules.setup() の中身を再現）
+# 3b. Manually setup since externaltox is empty (replicates import_modules.setup())
 exec("""
 import sys, os, yaml
 b = op('/project1/mcp_webserver_base')
@@ -69,12 +69,12 @@ print('SETUP_OK', mcp.__file__, 'schema', bool(mcp.openapi_schema))
 """)
 ```
 
-`SETUP_OK .../td/modules/mcp/__init__.py` が出れば `mcp` はローカルから import 成功。
-（`schema False` でも textport 直呼び検証には問題なし）
+If `SETUP_OK .../td/modules/mcp/__init__.py` appears, `mcp` has been successfully imported from the local path. 
+(Verification via direct textport calls works even if `schema` is `False`.)
 
-## Step 4: 機能を Textport から直接検証（HTTP 不要）
+## Step 4: Direct Verification via Textport (No HTTP required)
 
-`api_service` を直接呼び、**実ノードの TD ランタイム値**を読み戻して照合する:
+Call `api_service` directly and reconcile by reading back **TD runtime values** from actual nodes:
 
 ```python
 exec("""
@@ -92,33 +92,32 @@ print('E2E_JUDGE', 'PASS' if tot==0 and len(boxes)==12 else 'FAIL')
 """)
 ```
 
-- `node_type` は **文字列**（例 `'circleTOP'`）を `create_node` に渡せば TD が解決する。
-- 判定は**アサーションでなく照合**（reconciliation）で書く: 実座標から overlap 面積を計算し `==0`。
-- 既存回避などの追加挙動は、同じコンテナへ追記して `after == before + N` で確認。
+- TD resolves the `node_type` if you pass a **string** (e.g., `'circleTOP'`) to `create_node`.
+- Write logic as **reconciliation** rather than pure assertions: calculate overlap area from actual coordinates and check if it is `==0`.
+- For additional behaviors like collision avoidance, append to the same container and verify with `after == before + N`.
 
-## Step 5: 併走させる「オフライン judge」（TD 不要・決定論）
+## Step 5: Concurrent "Offline Judge" (No TD required, deterministic)
 
-TD ランタイムに依存しない判定核は、**`td` を import しない純モジュール**に切り出し、
-`importlib` でファイル直読みして system python3 で検証する（追加依存ゼロ）:
+For logic kernels that do not depend on the TD runtime, extract them into **pure modules that do not import `td`**. 
+Verify using system python3 by loading the file directly via `importlib` (zero extra dependencies):
 
 ```python
-# judge.py — node_layout.py を importlib でパス直読み（mcp パッケージ __init__ を回避）
+# judge.py — Load node_layout.py directly via importlib to bypass mcp package __init__
 import importlib.util, os, sys
 spec = importlib.util.spec_from_file_location(
     "mod", os.path.join(sys.argv[1], "td/modules/mcp/services/node_layout.py"))
 mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
-# ... 純関数を叩いて overlap==0 等を数値照合し PASS/FAIL を exit code に
+# ... Call pure functions, reconcile overlaps numerically, and set exit code based on PASS/FAIL
 ```
 
-TD 側 judge は「統合の確認」、オフライン judge は「不変条件の証明」。二段で回す。
+TD-side judging confirms integration; offline judging proves invariants. Use both.
 
-## 後片付け
+## Cleanup
 
-- 検証コンテナ（例 `/project1/align_test`）は**未保存の NewProject.toe 上**なら
-  保存せず TD を閉じれば破棄される。明示削除は `op('/project1/align_test').destroy()`。
-- TD は開いたままでよい（次の検証で再利用可能）。
+- Verification containers (e.g., `/project1/align_test`) will be discarded if you close TD without saving the **unsaved NewProject.toe**. Use `op('/project1/align_test').destroy()` for explicit deletion.
+- You may leave TD open for reuse in the next verification.
 
-## 関連
+## Related
 
-- グローバル memory: `loadtox-externaltox-gotcha` / `fresh-worktree-needs-gen-for-schema` / `tox-embeds-import-modules-dat`
-- 生成パイプライン: `npm run gen`（HTTP 経由の検証が必要なときのみ）
+- Global memory: `loadtox-externaltox-gotcha` / `fresh-worktree-needs-gen-for-schema` / `tox-embeds-import-modules-dat`
+- Generation pipeline: `npm run gen` (Only when verification via HTTP is necessary)
