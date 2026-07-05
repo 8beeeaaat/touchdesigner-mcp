@@ -23,7 +23,8 @@ export interface ScriptResultData {
 	success?: boolean;
 	data?: {
 		result?: unknown;
-		output?: string;
+		stdout?: string;
+		stderr?: string;
 		error?: string;
 	};
 	[key: string]: unknown;
@@ -36,6 +37,8 @@ interface ScriptSummaryContext {
 	hasOutput: boolean;
 	outputType: string;
 	outputPreview?: string;
+	hasStderr: boolean;
+	stderrPreview?: string;
 }
 
 /**
@@ -54,7 +57,8 @@ export function formatScriptResult(
 
 	const success = data.success ?? true;
 	const result = data.data?.result;
-	const output = data.data?.output;
+	const stdout = data.data?.stdout;
+	const stderr = data.data?.stderr;
 	const error = data.data?.error;
 
 	// Error case - always show full details
@@ -72,10 +76,10 @@ export function formatScriptResult(
 	switch (opts.detailLevel) {
 		case "minimal":
 			formattedText = formatMinimal(result);
-			context = buildScriptContext(scriptSnippet, result, output);
+			context = buildScriptContext(scriptSnippet, result, stdout, stderr);
 			break;
 		case "summary": {
-			const summary = formatSummary(result, output, scriptSnippet);
+			const summary = formatSummary(result, stdout, stderr, scriptSnippet);
 			formattedText = summary.text;
 			context = summary.context;
 			break;
@@ -134,7 +138,8 @@ function formatMinimal(result: unknown): string {
  */
 function formatSummary(
 	result: unknown,
-	output?: string,
+	stdout?: string,
+	stderr?: string,
 	scriptSnippet?: string,
 ): { text: string; context: ScriptSummaryContext } {
 	let formatted = "✓ Script executed successfully\n\n";
@@ -147,20 +152,24 @@ function formatSummary(
 		resultPreview = formatResultValue(result, 500);
 		formatted += `Result: ${resultPreview}\n`;
 	}
-	let outputPreview: string | undefined;
-	if (output?.trim()) {
-		outputPreview =
-			output.length > 200 ? `${output.substring(0, 200)}...` : output;
+	const outputPreview = truncateOutput(stdout);
+	if (outputPreview) {
 		formatted += `\nOutput:\n${outputPreview}`;
+	}
+	const stderrPreview = truncateOutput(stderr);
+	if (stderrPreview) {
+		formatted += `\nStderr:\n${stderrPreview}`;
 	}
 	return {
 		context: {
 			hasOutput: Boolean(outputPreview),
+			hasStderr: Boolean(stderrPreview),
 			outputPreview,
-			outputType: getValueType(output),
+			outputType: getValueType(stdout),
 			resultPreview,
 			resultType: getValueType(result),
 			snippet,
+			stderrPreview,
 		},
 		text: formatted,
 	};
@@ -169,16 +178,29 @@ function formatSummary(
 function buildScriptContext(
 	scriptSnippet: string | undefined,
 	result: unknown,
-	output?: string,
+	stdout?: string,
+	stderr?: string,
 ): ScriptSummaryContext {
 	return {
-		hasOutput: Boolean(output?.trim()),
-		outputPreview: output,
-		outputType: getValueType(output),
+		hasOutput: Boolean(stdout?.trim()),
+		hasStderr: Boolean(stderr?.trim()),
+		outputPreview: stdout,
+		outputType: getValueType(stdout),
 		resultPreview: formatResultValue(result ?? "", 200),
 		resultType: getValueType(result),
 		snippet: scriptSnippet ? truncateScript(scriptSnippet) : "",
+		stderrPreview: stderr,
 	};
+}
+
+/**
+ * Truncate captured stdout/stderr for display
+ */
+function truncateOutput(output?: string): string | undefined {
+	if (!output?.trim()) {
+		return undefined;
+	}
+	return output.length > 200 ? `${output.substring(0, 200)}...` : output;
 }
 
 /**
