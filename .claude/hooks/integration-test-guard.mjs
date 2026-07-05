@@ -16,35 +16,35 @@
 import { execFileSync } from "node:child_process";
 
 const API_RE =
-  /^(src\/api\/|src\/features\/tools\/|src\/server\/|src\/tdClient\/|src\/transport\/|td\/modules\/mcp\/)/;
+	/^(src\/api\/|src\/features\/tools\/|src\/server\/|src\/tdClient\/|src\/transport\/|td\/modules\/mcp\/)/;
 const ITEST_RE = /^tests\/integration\//;
 
 function readStdin() {
-  return new Promise((resolve) => {
-    if (process.stdin.isTTY) return resolve("");
-    let s = "";
-    process.stdin.on("data", (d) => (s += d));
-    process.stdin.on("end", () => resolve(s));
-    process.stdin.on("error", () => resolve(s));
-  });
+	return new Promise((resolve) => {
+		if (process.stdin.isTTY) return resolve("");
+		let s = "";
+		process.stdin.on("data", (d) => (s += d));
+		process.stdin.on("end", () => resolve(s));
+		process.stdin.on("error", () => resolve(s));
+	});
 }
 
 function git(args, cwd) {
-  try {
-    return execFileSync("git", args, {
-      cwd,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-  } catch {
-    return "";
-  }
+	try {
+		return execFileSync("git", args, {
+			cwd,
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "ignore"],
+		}).trim();
+	} catch {
+		return "";
+	}
 }
 
 const raw = await readStdin();
 let cmd = "";
 try {
-  cmd = String((JSON.parse(raw).tool_input || {}).command || "");
+	cmd = String((JSON.parse(raw).tool_input || {}).command || "");
 } catch {}
 
 // Only act on git push.
@@ -58,39 +58,39 @@ const cwd = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
 // Determine the base of the outgoing range (what this push will add).
 let base = git(
-  ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
-  cwd,
+	["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
+	cwd,
 );
 if (!base) {
-  // New branch with no upstream: compare against origin/main.
-  if (git(["rev-parse", "--verify", "-q", "origin/main"], cwd)) {
-    base = git(["merge-base", "origin/main", "HEAD"], cwd);
-  }
+	// New branch with no upstream: compare against origin/main.
+	if (git(["rev-parse", "--verify", "-q", "origin/main"], cwd)) {
+		base = git(["merge-base", "origin/main", "HEAD"], cwd);
+	}
 }
 // Can't determine what's outgoing → don't block.
 if (!base) process.exit(0);
 
 const changed = git(["diff", "--name-only", `${base}..HEAD`], cwd)
-  .split("\n")
-  .filter(Boolean);
+	.split("\n")
+	.filter(Boolean);
 if (changed.length === 0) process.exit(0);
 
 const apiFiles = changed.filter((f) => API_RE.test(f));
 const hasTest = changed.some((f) => ITEST_RE.test(f));
 
 if (apiFiles.length > 0 && !hasTest) {
-  const lines = [
-    "⛔ integration-test-guard: outgoing commits change MCP/API source without an integration test.",
-    "",
-    "Changed API/MCP files in this push:",
-    ...apiFiles.map((f) => `  - ${f}`),
-    "",
-    "Add or update a test under tests/integration/ (run the integration-test-guard skill),",
-    "commit it, and push again — or, if this change truly needs no integration test,",
-    "re-run the push with SKIP_ITEST_GUARD=1 prefixed.",
-  ];
-  process.stderr.write(`${lines.join("\n")}\n`);
-  process.exit(2);
+	const lines = [
+		"⛔ integration-test-guard: outgoing commits change MCP/API source without an integration test.",
+		"",
+		"Changed API/MCP files in this push:",
+		...apiFiles.map((f) => `  - ${f}`),
+		"",
+		"Add or update a test under tests/integration/ (run the integration-test-guard skill),",
+		"commit it, and push again — or, if this change truly needs no integration test,",
+		"re-run the push with SKIP_ITEST_GUARD=1 prefixed.",
+	];
+	process.stderr.write(`${lines.join("\n")}\n`);
+	process.exit(2);
 }
 
 process.exit(0);
