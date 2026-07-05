@@ -10,6 +10,7 @@ import io
 import pydoc
 from typing import Any, Optional, Protocol
 
+from mcp.services.node_layout import first_free_cell
 import td
 from utils.logging import log_message
 from utils.result import error_result, success_result
@@ -315,8 +316,37 @@ class TouchDesignerApiService(IApiService):
 						LogLevel.WARNING,
 					)
 
+		self._align_new_node(parent_node, new_node, parameters)
+
 		node_info = self._get_node_summary(new_node)
 		return success_result({"result": node_info})
+
+	def _align_new_node(self, parent_node, new_node, parameters=None) -> None:
+		"""Position a freshly created node on a non-overlapping grid cell.
+
+		Reads the current children of ``parent_node`` (excluding ``new_node``) and
+		places ``new_node`` at the first free grid cell. Existing nodes are never
+		moved. Failures here must not fail node creation, so they are logged only.
+
+		If the caller supplied an explicit ``nodeX``/``nodeY`` via ``parameters``,
+		that deliberate position is respected and auto-alignment is skipped.
+		"""
+		if parameters and ("nodeX" in parameters or "nodeY" in parameters):
+			return
+		try:
+			existing = [
+				(child.nodeX, child.nodeY, child.nodeWidth, child.nodeHeight)
+				for child in parent_node.children
+				if child.path != new_node.path
+			]
+			x, y = first_free_cell(existing, new_node.nodeWidth, new_node.nodeHeight)
+			new_node.nodeX = x
+			new_node.nodeY = y
+		except Exception as e:
+			log_message(
+				f"Failed to align new node {new_node.path}: {str(e)}",
+				LogLevel.WARNING,
+			)
 
 	def delete_node(self, node_path: str) -> Result:
 		"""Delete the node at the specified path"""
