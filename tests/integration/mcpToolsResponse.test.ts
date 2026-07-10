@@ -244,6 +244,65 @@ describe("MCP tool responses", () => {
 		expect(text).toContain("Return type");
 	});
 
+	it("returns an image content block for GET_TOP_IMAGE", async () => {
+		const imageServer = new MockMcpServer();
+		const imageClient = createMockTdClient();
+		imageClient.execPythonScript = (async (_params: unknown) => ({
+			data: { result: "ZmFrZS1qcGVnLWJ5dGVz" },
+			success: true,
+		})) as TouchDesignerClient["execPythonScript"];
+
+		registerTools(
+			imageServer as unknown as import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
+			logger,
+			imageClient,
+		);
+
+		const handler = imageServer.getTool(TOOL_NAMES.GET_TOP_IMAGE);
+		const result = (await handler({
+			maxSize: 256,
+			nodePath: "/project1/top1",
+		})) as {
+			content?: Array<{
+				type: string;
+				data?: string;
+				mimeType?: string;
+				text?: string;
+			}>;
+		};
+
+		const image = result.content?.find((c) => c.type === "image");
+		expect(image?.data).toBe("ZmFrZS1qcGVnLWJ5dGVz");
+		expect(image?.mimeType).toBe("image/jpeg");
+		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+		expect(text).toContain("/project1/top1");
+	});
+
+	it("returns an error response when GET_TOP_IMAGE targets a non-existent node", async () => {
+		const failingServer = new MockMcpServer();
+		const failingClient = createMockTdClient();
+		failingClient.execPythonScript = (async (_params: unknown) => ({
+			error: new Error("Node not found at path: /project1/missing"),
+			success: false,
+		})) as TouchDesignerClient["execPythonScript"];
+
+		registerTools(
+			failingServer as unknown as import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
+			logger,
+			failingClient,
+		);
+
+		const handler = failingServer.getTool(TOOL_NAMES.GET_TOP_IMAGE);
+		const result = (await handler({ nodePath: "/project1/missing" })) as {
+			content?: Array<{ type: string; text?: string }>;
+			isError?: boolean;
+		};
+
+		expect(result.isError).toBe(true);
+		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+		expect(text).toContain("Node not found at path: /project1/missing");
+	});
+
 	it("returns filesystem manifest for DESCRIBE_TD_TOOLS", async () => {
 		const handler = server.getTool(TOOL_NAMES.DESCRIBE_TD_TOOLS);
 		const result = (await handler({

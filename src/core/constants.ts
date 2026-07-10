@@ -20,6 +20,7 @@ export const TOOL_NAMES = {
 	GET_TD_NODE_ERRORS: "get_td_node_errors",
 	GET_TD_NODE_PARAMETERS: "get_td_node_parameters",
 	GET_TD_NODES: "get_td_nodes",
+	GET_TOP_IMAGE: "get_top_image",
 	UPDATE_TD_NODE_PARAMETERS: "update_td_node_parameters",
 } as const;
 
