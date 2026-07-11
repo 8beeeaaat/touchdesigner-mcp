@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-07-11
+
+### Added
+
+- Added a new `get_top_image` MCP tool that captures the current output of any TOP node as a JPEG and returns it as an MCP image content block, so AI agents can actually see what a TOP is rendering instead of reasoning blind about visual output. An optional `maxSize` parameter downscales the longer side while preserving aspect ratio; when a downscale is needed, a temporary `resolutionTOP` is created next to the node and always destroyed afterward, leaving the project unmodified. The capture is routed through the same Python execution channel as `execute_python_script`, so no new HTTP endpoint is required ([#186](https://github.com/8beeeaaat/touchdesigner-mcp/issues/186), [#195](https://github.com/8beeeaaat/touchdesigner-mcp/pull/195)).
+- Newly created nodes are now automatically placed on a non-overlapping grid instead of stacking at TouchDesigner's default position, so networks built through repeated `create_td_node` calls stay readable. Existing nodes are never moved, an explicit `nodeX`/`nodeY` supplied by the caller is respected over auto-alignment, and a placement failure only logs a warning without failing node creation ([#187](https://github.com/8beeeaaat/touchdesigner-mcp/pull/187)).
+
+### Fixed
+
+- `execute_python_script` responses now surface captured `print` output: the TouchDesigner side returns captured output under the `stdout`/`stderr` keys, but the response formatter read a nonexistent `output` key, so print output was silently dropped in summary/minimal responses. The keys are now read correctly, a `Stderr` section is rendered when scripts write to standard error, and the exec endpoint's OpenAPI schema documents both fields ([#183](https://github.com/8beeeaaat/touchdesigner-mcp/issues/183), [#189](https://github.com/8beeeaaat/touchdesigner-mcp/pull/189)).
+- `execute_python_script` error responses now include the full Python traceback instead of only the exception message, so failures inside TouchDesigner can be located without re-running the script with manual instrumentation ([#184](https://github.com/8beeeaaat/touchdesigner-mcp/issues/184), [#190](https://github.com/8beeeaaat/touchdesigner-mcp/pull/190)).
+- `execute_python_script` now exposes TouchDesigner's global namespace (`tdu`, `absTime`, `ui`, OP type names such as `noiseTOP`, `ParMode`, ...) by merging the `__main__` module globals into the script namespace, so code copy-pasted from the Textport or a DAT runs unchanged instead of raising `NameError` ([#185](https://github.com/8beeeaaat/touchdesigner-mcp/issues/185), [#191](https://github.com/8beeeaaat/touchdesigner-mcp/pull/191)).
+
+### Changed
+
+- Released version `1.5.0` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), and server registry metadata (`server.json`), including the updated MCPB download URL and checksum so npm and MCPB installations resolve the same release. The MCP API version (`src/api/index.yml`, `td/modules/utils/version.py`, `pyproject.toml`) is bumped from `1.4.3` to `1.5.0` because this release changes the server/API contract: the exec endpoint response gains `stdout`/`stderr` fields, TD-side script execution behavior changed (traceback in errors, TouchDesigner globals in the namespace, node auto-alignment), and the new `get_top_image` tool was added. Re-import `td/mcp_webserver_base.tox` (or update the `td/modules` files) so the TouchDesigner side runs the new contract. No dependency updates are included.
+
+### Technical
+
+- Expanded integration coverage for the release surface: live-TD reconciliation tests for Python script execution (stdout/stderr capture, traceback propagation, TouchDesigner globals), node auto-alignment (zero-overlap readback, explicit-coordinate override), and `get_top_image` (JPEG dimensions at native and `maxSize`-constrained resolution, temp-TOP cleanup, non-TOP family error), plus a mocked MCP-response test asserting the `execute_python_script` tool renders captured stdout/stderr ([#193](https://github.com/8beeeaaat/touchdesigner-mcp/pull/193), [#196](https://github.com/8beeeaaat/touchdesigner-mcp/pull/196)).
+- Added release tooling for maintainers: an `integration-test-guard` pre-push hook + skill that blocks pushes touching the API/MCP surface without integration-test changes, and a release-manager agent with `prepare-release` / `release-test-audit` skills encoding the two-axis version policy and the release flow ([#188](https://github.com/8beeeaaat/touchdesigner-mcp/pull/188), [#192](https://github.com/8beeeaaat/touchdesigner-mcp/pull/192)).
+
 ## [1.4.12] - 2026-07-02
 
 ### Fixed
