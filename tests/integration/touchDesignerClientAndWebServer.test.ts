@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { buildGetTopImageScript } from "../../src/features/tools/pythonScripts/getTopImageScript";
 import type { TdNode } from "../../src/gen/endpoints/TouchDesignerAPI";
 import { TouchDesignerClient } from "../../src/tdClient/touchDesignerClient";
 
@@ -25,6 +26,34 @@ async function verifyNodeExists(params: {
 	} catch (_err) {
 		return false;
 	}
+}
+
+/**
+ * Read the pixel dimensions out of a JPEG buffer by walking its segment
+ * markers to the SOF (start-of-frame) header.
+ */
+function readJpegSize(jpeg: Buffer): { width: number; height: number } {
+	if (jpeg.length < 4 || jpeg[0] !== 0xff || jpeg[1] !== 0xd8) {
+		throw new Error("not a JPEG: missing SOI marker");
+	}
+	let offset = 2;
+	while (offset + 4 <= jpeg.length) {
+		if (jpeg[offset] !== 0xff) {
+			throw new Error(`malformed JPEG: expected marker at offset ${offset}`);
+		}
+		const marker = jpeg[offset + 1];
+		// SOF0–SOF15 hold the frame size, excluding DHT(C4)/DAC(CC)/RST.
+		const isSof =
+			marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xcc;
+		if (isSof) {
+			return {
+				height: jpeg.readUInt16BE(offset + 5),
+				width: jpeg.readUInt16BE(offset + 7),
+			};
+		}
+		offset += 2 + jpeg.readUInt16BE(offset + 2);
+	}
+	throw new Error("malformed JPEG: no SOF marker found");
 }
 
 const tdClient = new TouchDesignerClient();
@@ -623,5 +652,120 @@ describe("TouchDesigner Client E2E Tests", () => {
 		expect(exec.data.result[1]).toBe(explicitY);
 
 		await tdClient.deleteNode({ nodePath: containerPath });
+	});
+
+	test("get_top_image script captures a TOP as a JPEG at its native resolution", async () => {
+		const nodeName = `top_image_${Date.now()}`;
+		const nodePath = `${SANDBOX_PATH}/${nodeName}`;
+		const createResponse = await tdClient.createNode({
+			nodeName,
+			nodeType: "constantTOP",
+			parentPath: SANDBOX_PATH,
+		});
+		if (!createResponse.success) {
+			throw new Error(`create failed: ${createResponse.error}`);
+		}
+
+		// Pin the TOP to a known non-square resolution and reconcile the setup
+		// against the node's actual cooked size before capturing.
+		const setup = await tdClient.execPythonScript<{ result: number[] }>({
+			script: [
+				`n = op('${nodePath}')`,
+				"n.par.outputresolution = 'custom'",
+				"n.par.resolutionw = 512",
+				"n.par.resolutionh = 256",
+				"n.cook(force=True)",
+				"[n.width, n.height]",
+			].join("\n"),
+		});
+		if (!setup.success) {
+			throw new Error(`setup failed: ${setup.error}`);
+		}
+		expect(setup.data.result).toEqual([512, 256]);
+
+		const execResponse = await tdClient.execPythonScript<{ result: string }>({
+			script: buildGetTopImageScript({ nodePath }),
+		});
+		if (!execResponse.success) {
+			throw new Error(`get_top_image script failed: ${execResponse.error}`);
+		}
+		const jpeg = Buffer.from(execResponse.data.result, "base64");
+		expect(jpeg.length).toBeGreaterThan(0);
+		// EOI trailer plus the SOF dimensions prove this is a complete JPEG of
+		// the TOP's real resolution, not just any base64 payload.
+		expect(jpeg[jpeg.length - 2]).toBe(0xff);
+		expect(jpeg[jpeg.length - 1]).toBe(0xd9);
+		expect(readJpegSize(jpeg)).toEqual({ height: 256, width: 512 });
+
+		await tdClient.deleteNode({ nodePath });
+	});
+
+	test("get_top_image maxSize downscales aspect-preserved and destroys the temp TOP", async () => {
+		const nodeName = `top_image_max_${Date.now()}`;
+		const nodePath = `${SANDBOX_PATH}/${nodeName}`;
+		const createResponse = await tdClient.createNode({
+			nodeName,
+			nodeType: "constantTOP",
+			parentPath: SANDBOX_PATH,
+		});
+		if (!createResponse.success) {
+			throw new Error(`create failed: ${createResponse.error}`);
+		}
+
+		const setup = await tdClient.execPythonScript<{ result: number[] }>({
+			script: [
+				`n = op('${nodePath}')`,
+				"n.par.outputresolution = 'custom'",
+				"n.par.resolutionw = 512",
+				"n.par.resolutionh = 256",
+				"n.cook(force=True)",
+				"[n.width, n.height]",
+			].join("\n"),
+		});
+		if (!setup.success) {
+			throw new Error(`setup failed: ${setup.error}`);
+		}
+		expect(setup.data.result).toEqual([512, 256]);
+
+		const execResponse = await tdClient.execPythonScript<{ result: string }>({
+			script: buildGetTopImageScript({ maxSize: 128, nodePath }),
+		});
+		if (!execResponse.success) {
+			throw new Error(`get_top_image script failed: ${execResponse.error}`);
+		}
+		const jpeg = Buffer.from(execResponse.data.result, "base64");
+		// 512x256 constrained to maxSize=128 on the long edge → 128x64.
+		expect(readJpegSize(jpeg)).toEqual({ height: 64, width: 128 });
+
+		// Reconcile cleanup: the temporary resolutionTOP the script chains on
+		// for downscaling must be destroyed even on the success path.
+		const cleanupCheck = await tdClient.execPythonScript<{ result: boolean }>({
+			script: `op('${SANDBOX_PATH}').op('__mcp_tmp_res__${nodeName}') is None`,
+		});
+		if (!cleanupCheck.success) {
+			throw new Error(`cleanup check failed: ${cleanupCheck.error}`);
+		}
+		expect(cleanupCheck.data.result).toBe(true);
+
+		await tdClient.deleteNode({ nodePath });
+	});
+
+	test("get_top_image script rejects non-TOP nodes with a family error", async () => {
+		// SANDBOX_PATH is a baseCOMP, so the script's family guard must trip
+		// inside TD and surface through the real error channel.
+		const execResponse = await tdClient.execPythonScript({
+			script: buildGetTopImageScript({ nodePath: SANDBOX_PATH }),
+		});
+
+		expect(execResponse).toBeDefined();
+		if (execResponse.success) {
+			throw new Error(
+				`expected failure but succeeded: ${JSON.stringify(execResponse.data)}`,
+			);
+		}
+		expect(execResponse.success).toBe(false);
+		const message = String(execResponse.error);
+		expect(message).toContain(`Node at ${SANDBOX_PATH} is not a TOP`);
+		expect(message).toContain("family=COMP");
 	});
 });
