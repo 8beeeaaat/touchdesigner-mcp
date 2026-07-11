@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.0] - 2026-07-11
 
+### Upgrade Notes
+
+What existing users can expect when the MCP server updates before the TouchDesigner component does:
+
+- **The server side updates itself; nothing breaks.** Configurations using `npx -y touchdesigner-mcp-server@latest` pick up 1.5.0 on the next MCP client restart. The server performs a version handshake with the TouchDesigner component and keeps operating against an older `mcp_webserver_base.tox` (API 1.3.0–1.4.x): all existing tools continue to work, and an "Update Recommended" notice with re-import instructions is appended to every tool response until the component is updated.
+- **Available immediately, without re-importing the `.tox`:** the new `get_top_image` tool (its capture script is written to run on older deployed components) and the `execute_python_script` stdout/stderr display fix ([#189](https://github.com/8beeeaaat/touchdesigner-mcp/pull/189) — the bug was on the Node.js side; TouchDesigner components have returned captured output all along).
+- **Requires re-importing `td/mcp_webserver_base.tox`:** full Python tracebacks in error responses ([#190](https://github.com/8beeeaaat/touchdesigner-mcp/pull/190)), TouchDesigner globals in the script namespace ([#191](https://github.com/8beeeaaat/touchdesigner-mcp/pull/191)), and node auto-alignment ([#187](https://github.com/8beeeaaat/touchdesigner-mcp/pull/187)). Re-importing also clears the per-response update notice.
+- Components older than v1.3.0 (which predate version reporting) are rejected at connection time, as in previous releases — update both the server and the component.
+
 ### Added
 
 - Added a new `get_top_image` MCP tool that captures the current output of any TOP node as a JPEG and returns it as an MCP image content block, so AI agents can actually see what a TOP is rendering instead of reasoning blind about visual output. An optional `maxSize` parameter downscales the longer side while preserving aspect ratio; when a downscale is needed, a temporary `resolutionTOP` is created next to the node and always destroyed afterward, leaving the project unmodified. The capture is routed through the same Python execution channel as `execute_python_script`, so no new HTTP endpoint is required ([#186](https://github.com/8beeeaaat/touchdesigner-mcp/issues/186), [#195](https://github.com/8beeeaaat/touchdesigner-mcp/pull/195)).
