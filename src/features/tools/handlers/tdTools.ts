@@ -10,7 +10,7 @@ import {
 	type ToolMetadata,
 } from "../metadata/touchDesignerToolMetadata.js";
 import { formatToolMetadata } from "../presenter/index.js";
-import { TOOL_DEFINITIONS } from "../toolDefinitions.js";
+import { TOOL_DEFINITIONS, type ToolRunResult } from "../toolDefinitions.js";
 import { detailOnlyFormattingSchema } from "../types.js";
 
 const describeToolsSchema = detailOnlyFormattingSchema.extend({
@@ -37,8 +37,8 @@ export function registerTdTools(
 			definition.schema.strict().shape,
 			async (params: Record<string, unknown> = {}) => {
 				try {
-					const text = await definition.run({ logger, params, tdClient });
-					return createToolResult(tdClient, text);
+					const output = await definition.run({ logger, params, tdClient });
+					return createToolResult(tdClient, output);
 				} catch (error) {
 					return handleToolError(
 						error,
@@ -95,11 +95,20 @@ export function registerTdTools(
 
 const createToolResult = (
 	tdClient: TouchDesignerClient,
-	text: string,
+	output: ToolRunResult,
 ): z.infer<typeof CallToolResultSchema> => {
-	const content: z.infer<typeof CallToolResultSchema>["content"] = [
-		{ text, type: "text" as const },
-	];
+	const content: z.infer<typeof CallToolResultSchema>["content"] =
+		typeof output === "string"
+			? [{ text: output, type: "text" as const }]
+			: output.content.map((block) =>
+					block.type === "image"
+						? {
+								data: block.data,
+								mimeType: block.mimeType,
+								type: "image" as const,
+							}
+						: { text: block.text, type: "text" as const },
+				);
 	const additionalContents = tdClient.getAdditionalToolResultContents();
 	if (additionalContents) {
 		content.push(...additionalContents);

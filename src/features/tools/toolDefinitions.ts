@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 import { REFERENCE_COMMENT, TOOL_NAMES } from "../../core/constants.js";
 import type { ILogger } from "../../core/logger.js";
 import {
@@ -29,12 +29,36 @@ import {
 	formatTdInfo,
 	formatUpdateNodeResult,
 } from "./presenter/index.js";
+import { buildGetTopImageScript } from "./pythonScripts/getTopImageScript.js";
 import {
 	detailOnlyFormattingSchema,
 	formattingOptionsSchema,
 } from "./types.js";
 
 export type ToolCategory = "system" | "python" | "nodes" | "classes" | "state";
+
+/** MCP text content block. */
+export interface ToolTextContent {
+	type: "text";
+	text: string;
+}
+
+/** MCP image content block (base64-encoded). */
+export interface ToolImageContent {
+	type: "image";
+	data: string;
+	mimeType: string;
+}
+
+export type ToolContent = ToolTextContent | ToolImageContent;
+
+/**
+ * A tool's `run` normally returns formatter-ready text, which is wrapped in a
+ * single text content block. Tools that need to return non-text content
+ * (e.g. an image) return `{ content }` with the full content block list
+ * instead.
+ */
+export type ToolRunResult = string | { content: ToolContent[] };
 
 /**
  * Single source of truth for a TouchDesigner MCP tool.
@@ -60,8 +84,8 @@ export interface ToolDefinition {
 	notes?: string;
 	/** Optional reference comment appended to error output. */
 	errorComment?: string;
-	/** Executes the tool and returns formatter-ready text. */
-	run: (ctx: ToolRunContext) => Promise<string>;
+	/** Executes the tool and returns formatter-ready text (or explicit content blocks). */
+	run: (ctx: ToolRunContext) => Promise<ToolRunResult>;
 }
 
 export interface ToolRunContext {
@@ -89,7 +113,7 @@ function defineTool<S extends z.ZodObject<z.ZodRawShape>>(def: {
 	example: string;
 	notes?: string;
 	errorComment?: string;
-	run: (ctx: TypedRunContext<S>) => Promise<string>;
+	run: (ctx: TypedRunContext<S>) => Promise<ToolRunResult>;
 }): ToolDefinition {
 	// `run` has a narrower param type (z.infer<S>) than ToolDefinition exposes
 	// (Record<string, unknown>). Function parameters are contravariant, so a
@@ -97,6 +121,27 @@ function defineTool<S extends z.ZodObject<z.ZodRawShape>>(def: {
 	// because params are validated by the MCP SDK before reaching run().
 	return def as unknown as ToolDefinition;
 }
+
+/**
+ * `get_top_image` has no OpenAPI-backed endpoint (see architecture note on
+ * the tool definition below), so its params schema is defined locally
+ * instead of being derived from the generated Zod schemas.
+ */
+const GetTopImageParams = z.object({
+	maxSize: z
+		.number()
+		.int()
+		.positive()
+		.max(4096)
+		.optional()
+		.describe(
+			"Maximum length of the image's longer side in pixels. The TOP is downscaled (aspect ratio preserved) only if it exceeds this value; omit to capture at native resolution.",
+		),
+	nodePath: z
+		.string()
+		.min(1)
+		.describe("Path to the TOP node to capture, e.g. '/project1/moviefilein1'"),
+});
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
 	defineTool({
@@ -415,5 +460,43 @@ console.log(docs.helpText?.slice(0, 200));`,
 			});
 		},
 		schema: GetModuleHelpQueryParams.extend(detailOnlyFormattingSchema.shape),
+	}),
+	defineTool({
+		category: "nodes",
+		description:
+			"Capture the current output of a TOP node as an image so it can be viewed directly (maxSize optionally downscales the longer side)",
+		errorComment: REFERENCE_COMMENT,
+		example: `import { getTopImage } from './servers/touchdesigner/getTopImage';
+
+const image = await getTopImage({ nodePath: '/project1/moviefilein1', maxSize: 512 });`,
+		name: TOOL_NAMES.GET_TOP_IMAGE,
+		notes:
+			"Routed through the same Python execution channel as execute_python_script; no dedicated API endpoint exists. When maxSize forces a downscale, a temporary resolutionTOP is created next to the node and always destroyed afterward, so the project is left unmodified.",
+		returns:
+			"An image content block (base64-encoded JPEG) with the captured TOP output.",
+		run: async ({ params, tdClient }) => {
+			const { nodePath, maxSize } = params;
+			const script = buildGetTopImageScript({ maxSize, nodePath });
+			const result = await tdClient.execPythonScript({ script });
+			if (!result.success) {
+				throw result.error;
+			}
+			const base64Data = result.data.result;
+			if (typeof base64Data !== "string" || base64Data.length === 0) {
+				throw new Error(
+					`get_top_image: expected a base64 string result for ${nodePath}, got ${typeof base64Data}`,
+				);
+			}
+			return {
+				content: [
+					{ data: base64Data, mimeType: "image/jpeg", type: "image" },
+					{
+						text: `Captured TOP image from ${nodePath}${maxSize ? ` (maxSize=${maxSize}px)` : ""}.`,
+						type: "text",
+					},
+				],
+			};
+		},
+		schema: GetTopImageParams,
 	}),
 ];
