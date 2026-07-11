@@ -1,44 +1,32 @@
 # Repository Guidelines
 
-## Project Structure
+## Project Structure & Module Organization
 
-- `src/`: MCP server core (core/, features/tools, prompts, resources, tdClient, server, api definitions, etc.)
-- `td/`: TouchDesigner-side Python modules and generated artifacts (modules/mcp, modules/td_server, templates, genHandlers.js, .tox)
-- `tests/`: Vitest tests (`unit/` and `integration/`)
-- `docs/`: Development guide, architecture, installation procedures
-- Distributions: `dist/` (build artifacts), `mcpb/` and `touchdesigner-mcp.mcpb` (MCP bundle)
+`src/` contains the TypeScript MCP server: shared logic is in `core/`, MCP features in `features/`, transport code in `transport/`, and TouchDesigner communication in `tdClient/`. The OpenAPI contract starts at `src/api/index.yml`. TouchDesigner-side Python, templates, generated artifacts, and `.tox` components live in `td/`. Tests belong in `tests/unit/` or `tests/integration/`, documentation in `docs/`, and media in `assets/`. Treat `dist/`, `src/gen/`, and `td/modules/td_server/` as generated output; edit their source schemas or templates instead.
 
 ## Build, Test, and Development Commands
 
-- Install dependencies: `npm install`
-- Build: `npm run build` (tsc + copy artifacts), `make build` (Docker-based)
-- Development inspector: `npm run dev` (stdio)
-- Start HTTP mode: `npm run http` (Prerequisites: built, TD on 9981 / HTTP on 6280)
-- Test: `npm test` (all), `npm run test:unit`, `npm run test:integration`, `npm run coverage`
-- Lint/Format: `npm run lint` (biome + tsc + ruff + prettier), `npm run format` (with fix)
-- Synchronize versions: `npm run version` (synchronizes API/Python/MCP)
-- Generate code: `npm run gen` (runs `gen:openapi` → `gen:handlers` → `gen:mcp`; no Docker/Java required)
-- MCP bundle: `npm run build:mcpb`
+- `npm install` installs Node dependencies.
+- `npm run build` regenerates code, compiles TypeScript, and copies runtime templates.
+- `make build` performs the Docker-based TouchDesigner module build.
+- `npm run dev` opens the MCP Inspector against the built stdio server.
+- `npm run http` starts HTTP mode on `127.0.0.1:6280`, targeting TouchDesigner on `9981`.
+- `npm test`, `npm run test:unit`, and `npm run test:integration` run all or scoped Vitest suites.
+- `npm run coverage` writes V8 reports; `npm run lint` runs all static checks.
+- `npm run gen` refreshes OpenAPI, Python handler, and TypeScript client output.
 
-## Coding Style and Naming
+## Coding Style & Naming Conventions
 
-- TypeScript: ESM, lint/format with `biome check`, type validation with `tsc --noEmit`. Folders are generally kebab-case, files camelCase, and types PascalCase.
-- Python (TD side): `ruff format` + `ruff check`. Generated code should be handled by modifying templates, not directly edited.
-- YAML/Documentation: Prettier (`**/*.{yml,yaml}`).
-- Compatibility Policy: MAJOR version mismatch or below `minApiVersion` will result in an error. MINOR differences will be a warning. PATCH differences are tolerated (#144).
+Use ESM TypeScript, tabs, and double quotes; let Biome organize imports. Use camelCase for files and functions, PascalCase for types, and generally kebab-case for directories. Python targets 3.9; Ruff enforces tabs, double quotes, and an 88-character line length. Run `npm run format` for automatic fixes. Keep changes focused.
 
 ## Testing Guidelines
 
-- Framework: Vitest (unit/integration). Mock with `vi.mock` / in-memory fakes (no MSW).
-- For compatibility or TD client related issues, please update or add existing test cases.
-- For new tests, name them in `tests/unit/*.test.ts` or `tests/integration/*.test.ts`.
+Name tests `*.test.ts` and place them in the appropriate unit or integration directory. Use Vitest globals and `vi.mock` or in-memory fakes. Add regression coverage for bug fixes, especially compatibility, transport, and TouchDesigner client changes. Run the narrow suite while developing, then `npm test` and `npm run lint` before submitting.
 
-## Commits and Pull Requests
+## Commit & Pull Request Guidelines
 
-- Commit example: `fix: ...`, `docs: ...`, `dev v1.4.2 (#142)`. Prefix + summary + PR number if applicable.
-- For PRs, include a summary of changes, verification steps (commands executed), and related issues/links (e.g., `#144`). For UI changes or artifact differences, provide a clear overview.
+Use concise imperative subjects with prefixes such as `feat:`, `fix:`, `test:`, `docs:`, `chore:`, and `release:`. Add issue or PR numbers when applicable, for example `fix: include Python traceback (#184)`. Pull requests should explain the change, link issues, list verification commands, and call out generated artifacts. Include screenshots for visible output changes.
 
-## Security and Configuration Tips
+## Security & Configuration Tips
 
-- The default connection destination for TouchDesigner is `127.0.0.1:9981`. For HTTP mode, specify using `--mcp-http-port`/`--mcp-http-host`.
-- If version compatibility is broken, check the README for update procedures and run `npm run version`.
+Keep local services bound to `127.0.0.1` unless remote access is intentional. Never commit credentials or machine-specific MCP configuration. After changing `package.json` versions, run `npm run version` to synchronize all metadata.
