@@ -9,6 +9,9 @@
 ```markdown
 ## [X.Y.Z] - YYYY-MM-DD
 
+### Upgrade Notes
+- <what existing users must know/do — see rule below>
+
 ### Added
 - <new user-facing capability>
 
@@ -27,10 +30,14 @@
 ### Technical
 - **Dependency Updates**: <what & why>
   - `pkg` old → new
+
+### Contributors
+- [@login](https://github.com/login) — <contribution> ([#N](https://github.com/8beeeaaat/touchdesigner-mcp/pull/N))
 ```
 
-Include only the sections that apply, in the order above (Added, Changed, Fixed,
-Removed, Security, Technical). Put the newest entry at the top of the file.
+Include only the sections that apply, in the order above (Upgrade Notes first,
+then Added, Changed, Fixed, Removed, Security, Technical, Contributors last).
+Put the newest entry at the top of the file.
 
 ## House-style rules (observed across 1.4.x)
 
@@ -60,6 +67,34 @@ Removed, Security, Technical). Put the newest entry at the top of the file.
 + **Dependency updates** go under `### Technical` as a `**Dependency Updates**:`
   bullet with an indented `old → new` list. If there are none, say so explicitly
   ("No dependency updates are included.").
++ **Upgrade Notes lead the entry** whenever the release changes what existing
+  users experience — mandatory when the API axis moves (introduced in 1.5.0).
+  Readers want "do I have to do anything?" answered first, so this section goes
+  before `### Added`. Derive it from the Node-side / TD-side split of the diff:
+  - The server side self-updates: the documented config is
+    `npx -y touchdesigner-mcp-server@latest`, so users pick the release up on
+    the next MCP client restart. Same-major/newer-minor against an older `.tox`
+    is **not** a failure — the version handshake continues and appends an
+    "Update Recommended" notice to every tool response
+    (see `src/core/compatibility.ts`).
+  - List what works **without** re-importing the `.tox`: Node-side-only changes
+    (formatter/client fixes, tools routed through the existing
+    `execute_python_script` channel).
+  - List what **requires** re-importing `td/mcp_webserver_base.tox`: anything
+    under `td/modules/**` — those files are baked into the `.tox`.
+  - Note hard rejections: components older than
+    `mcpCompatibility.minApiVersion` (`package.json`) are refused at connection
+    time.
+  Verify the split against the actual compatibility policy in
+  `src/core/compatibility.ts` instead of assuming it.
++ **Contributors close the entry** (introduced in 1.5.0). Credit every human
+  contributor in the release range as
+  `- [@login](https://github.com/login) — <contribution> ([#N](…/pull/N))`.
+  Identify contributors by cross-checking **three** sources — commit authors
+  (`git log --format='%an %ae'`), `Co-Authored-By` trailers, and the PR author
+  (`gh pr view <n> --json author`) — because squash merges can land a
+  contributor's PR under the maintainer's commit email. Exclude bots and
+  AI-assistant co-author trailers.
 
 ## Deriving the content from the diff
 
