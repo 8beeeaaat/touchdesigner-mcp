@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expanded integration coverage for the release surface: live-TD reconciliation tests for Python script execution (stdout/stderr capture, traceback propagation, TouchDesigner globals), node auto-alignment (zero-overlap readback, explicit-coordinate override), and `get_top_image` (JPEG dimensions at native and `maxSize`-constrained resolution, temp-TOP cleanup, non-TOP family error), plus a mocked MCP-response test asserting the `execute_python_script` tool renders captured stdout/stderr ([#193](https://github.com/8beeeaaat/touchdesigner-mcp/pull/193), [#196](https://github.com/8beeeaaat/touchdesigner-mcp/pull/196)).
 - Added release tooling for maintainers: an `integration-test-guard` pre-push hook + skill that blocks pushes touching the API/MCP surface without integration-test changes, and a release-manager agent with `prepare-release` / `release-test-audit` skills encoding the two-axis version policy and the release flow ([#188](https://github.com/8beeeaaat/touchdesigner-mcp/pull/188), [#192](https://github.com/8beeeaaat/touchdesigner-mcp/pull/192)).
 
+### Contributors
+
+- [@jmworks](https://github.com/jmworks) — `get_top_image` tool ([#195](https://github.com/8beeeaaat/touchdesigner-mcp/pull/195)); `execute_python_script` fixes: stdout/stderr display ([#189](https://github.com/8beeeaaat/touchdesigner-mcp/pull/189)), traceback in error responses ([#190](https://github.com/8beeeaaat/touchdesigner-mcp/pull/190)), TouchDesigner globals in the script namespace ([#191](https://github.com/8beeeaaat/touchdesigner-mcp/pull/191))
+- [@8beeeaaat](https://github.com/8beeeaaat) — node auto-alignment ([#187](https://github.com/8beeeaaat/touchdesigner-mcp/pull/187)); integration tests for Python script execution ([#193](https://github.com/8beeeaaat/touchdesigner-mcp/pull/193)) and live-TD `get_top_image` coverage ([#196](https://github.com/8beeeaaat/touchdesigner-mcp/pull/196)); integration-test-guard hook and release tooling ([#188](https://github.com/8beeeaaat/touchdesigner-mcp/pull/188), [#192](https://github.com/8beeeaaat/touchdesigner-mcp/pull/192))
+
 ## [1.4.12] - 2026-07-02
 
 ### Fixed
