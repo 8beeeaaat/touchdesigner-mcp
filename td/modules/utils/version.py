@@ -2,7 +2,7 @@
 Version utilities shared across TouchDesigner MCP Python modules.
 """
 
-MCP_API_VERSION = "1.4.3"
+MCP_API_VERSION = "1.5.0"
 
 
 def get_mcp_api_version() -> str:
