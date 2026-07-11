@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PreToolUse(Bash) guard: block `git push` when the outgoing commits change
+// Claude/Codex PreToolUse(Bash) guard: block `git push` when outgoing commits change
 // MCP/API source without an accompanying integration test change.
 //
 // Checked at push time (not commit time) so the gate fires once, right before
@@ -42,9 +42,11 @@ function git(args, cwd) {
 }
 
 const raw = await readStdin();
+let input = {};
 let cmd = "";
 try {
-	cmd = String((JSON.parse(raw).tool_input || {}).command || "");
+	input = JSON.parse(raw);
+	cmd = String((input.tool_input || {}).command || "");
 } catch {}
 
 // Only act on git push.
@@ -54,7 +56,7 @@ if (!cmd.includes("git push")) process.exit(0);
 if (/--delete|--tags|SKIP_ITEST_GUARD/.test(cmd)) process.exit(0);
 if (process.env.SKIP_ITEST_GUARD === "1") process.exit(0);
 
-const cwd = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
 // Determine the base of the outgoing range (what this push will add).
 let base = git(

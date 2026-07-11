@@ -42,10 +42,12 @@ owns the exact procedure — trust it, don't improvise version edits.
    while any surface change is an unwaived gap.**
 
 3. **Cut the release.** Invoke the **`prepare-release`** skill: decide both
-   version axes from the diff, write the CHANGELOG entry, build the MCPB bundle,
-   `npm version`, revert the API axis if it stays put, verify the version split,
-   commit, and open the `development → main` PR (title `vX.Y.Z`, body = the new
-   CHANGELOG section).
+   version axes from the diff, write the CHANGELOG entry (leading with
+   `### Upgrade Notes` when the API axis moves, closing with `### Contributors`
+   crediting every human contributor — see the skill's changelog-format
+   reference), build the MCPB bundle, `npm version`, revert the API axis if it
+   stays put, verify the version split, commit, and open the
+   `development → main` PR (title `vX.Y.Z`, body = the new CHANGELOG section).
 
 4. **Report and stop.** Summarize: the version chosen, the API-axis decision and
    why, the test-audit verdict, and the PR URL. Do not merge or publish.

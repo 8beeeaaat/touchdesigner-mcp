@@ -64,6 +64,15 @@ Step 0 commits into Keep-a-Changelog sections, write impact-first prose, referen
 the merged PRs, and include the mandatory "Released version … across …" bullet
 whose last sentence records the Step 2 API-axis decision.
 
+Two sections bracket the entry (both defined in changelog-format.md):
+
+- **`### Upgrade Notes` first** — required whenever the API axis moves, and
+  whenever the release otherwise changes what existing users experience. Derive
+  it from the Node-side vs TD-side split of the diff.
+- **`### Contributors` last** — credit every human contributor, cross-checking
+  commit authors, `Co-Authored-By` trailers, and PR authors (squash merges can
+  hide a contributor behind the maintainer's commit email).
+
 ## Step 4 — bump the version-bearing files
 
 Per [references/version-policy.md](references/version-policy.md):
