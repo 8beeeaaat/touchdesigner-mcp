@@ -1,15 +1,30 @@
 ﻿# MCP project template
 
-Copied by `create_td_project`. Contains:
-- `mcp_webserver_base.tox` + `modules/` + `import_modules.py`
-- Place/import the tox into a `.toe` saved as `project.toe` in this folder (one-time human/agent bootstrap if missing).
-- `.tdmcp/state.json` is written by create/start (see `state.example.json`).
+Used by `create_td_project` (copies this folder to a new destination).
 
-On project open, ensure an Execute DAT calls:
+## Contents
 
-```python
-from utils.apply_tdmcp_port import apply
-apply()
+- `project.toe` — TouchDesigner project with `mcp_webserver_base` imported
+- `mcp_webserver_base.tox` + `modules/` + `import_modules.py` — MCP HTTP bridge
+- `/project1/tdmcp_port_onstart` — Execute DAT (**onStart**) that sets the WebServer port
+- `.tdmcp/state.json` — written by `create_td_project` / `start_td_project` (not in the raw template)
+
+## What `apply_tdmcp_port` means
+
+Lab TouchDesigner already uses port **9981**. If a second project also listens on 9981, it fails or steals the lab.
+
+So when MCP creates/starts an owned project it writes:
+
+```json
+{ "port": 9984, "targetId": "owned-…", … }
 ```
 
-so the WebServer listens on the allocated port (not only 9981).
+into `.tdmcp/state.json`.
+
+**`apply_tdmcp_port`** reads that file and sets the bridge WebServer DAT (`mpc_webserver`) to that port, then restarts it if needed. If there is no `state.json` (you just opened the raw template), it does nothing and leaves 9981.
+
+You do **not** need to call it by hand — `tdmcp_port_onstart` runs it on project open.
+
+## After editing this template
+
+Save `project.toe` here again. Commit the toe + modules on the fork branch `multi-instance`.
