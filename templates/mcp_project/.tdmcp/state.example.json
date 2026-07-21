@@ -1,0 +1,5 @@
+﻿{
+  "targetId": "owned-example",
+  "port": 9984,
+  "host": "http://127.0.0.1"
+}

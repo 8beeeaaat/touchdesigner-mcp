@@ -1,0 +1,740 @@
+openapi: 3.0.0
+info:
+  description: OpenAPI schema for generating TouchDesigner API client code
+  title: TouchDesigner API
+  version: 1.5.0
+servers:
+  - url: ${process.env.TD_WEB_SERVER_HOST}:${process.env.TD_WEB_SERVER_PORT}
+    description: TouchDesigner Web Server
+paths:
+  /api/nodes:
+    get:
+      summary: Get nodes in the path
+      operationId: get_nodes
+      parameters:
+        - name: parentPath
+          description: Parent path  e.g., "/project1"
+          in: query
+          required: true
+          schema:
+            type: string
+            description: e.g., "/project1"
+        - name: pattern
+          description: Pattern to match against node names e.g., "null*"
+          in: query
+          required: false
+          schema:
+            type: string
+            description: e.g., "null*"
+            default: '*'
+        - name: includeProperties
+          description: Whether to include full node properties in the response (default false for better performance)
+          in: query
+          required: false
+          schema:
+            type: boolean
+            description: Include node properties in response
+            default: false
+      responses:
+        '200':
+          description: List of nodes matching the specified criteria
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the operation was successful
+                  data:
+                    type: object
+                    nullable: true
+                    properties:
+                      nodes:
+                        description: Result of the execution
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TdNode'
+                  error:
+                    type: string
+                    nullable: true
+                    description: Error message if the operation was not successful
+    post:
+      summary: Create a new node
+      operationId: create_node
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - parentPath
+                - nodeType
+              properties:
+                parentPath:
+                  type: string
+                  description: Path to the parent node (e.g., /project1)
+                nodeType:
+                  type: string
+                  description: Type of the node to create (e.g., textTop)
+                nodeName:
+                  type: string
+                  description: Name of the new node (optional)
+      responses:
+        '200':
+          description: Node created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the operation was successful
+                  data:
+                    type: object
+                    nullable: true
+                    properties:
+                      result:
+                        description: Result of the execution
+                        $ref: '#/components/schemas/TdNode'
+                  error:
+                    type: string
+                    nullable: true
+                    description: Error message if the operation was not successful
+    delete:
+      summary: Delete an existing node
+      operationId: delete_node
+      parameters:
+        - name: nodePath
+          description: Path to the node to delete. e.g., "/project1/geo1"
+          in: query
+          required: true
+          schema:
+            type: string
+            description: e.g., "/project1/geo1"
+      responses:
+        '200':
+          description: Node deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the operation was successful
+                  data:
+                    type: object
+                    nullable: true
+                    properties:
+                      deleted:
+                        type: boolean
+                        description: Whether the node was successfully deleted
+                      node:
+                        description: Information about the deleted node
+                        $ref: '#/components/schemas/TdNode'
+                  error:
+                    type: string
+                    nullable: true
+                    description: Error message if the operation was not successful
+  /api/nodes/detail:
+    get:
+      summary: Get node detail
+      description: Retrieves detailed information about a specific node including its properties, parameters and connections
+      operationId: get_node_detail
+      parameters:
+        - description: Node path. e.g., "/project1/textTOP"
+          in: query
+          name: nodePath
+          required: true
+          schema:
+            type: string
+            description: e.g., "/project1/textTOP"
+      responses:
+        '200':
+          description: Node properties
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the operation was successful
+                  data:
+                    nullable: true
+                    $ref: '#/components/schemas/TdNode'
+                  error:
+                    nullable: true
+                    type: string
+                    description: Error message if the operation was not successful
+    patch:
+      summary: Update node properties
+      operationId: update_node
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nodePath
+                - properties
+              properties:
+                nodePath:
+                  type: string
+                  description: Path to the node (e.g., /project1/null1)
+                properties:
+                  additionalProperties: true
+                  type: object
+      responses:
+        '200':
+          description: Information about the updated node
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the update operation was successful
+                  data:
+                    nullable: true
+                    type: object
+                    properties:
+                      path:
+                        type: string
+                        description: Path of the node that was updated
+                      updated:
+                        type: array
+                        description: List of property names that were successfully updated
+                        items:
+                          type: string
+                      failed:
+                        type: array
+                        description: List of properties that failed to update
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              description: Name of the property that failed to update
+                            reason:
+                              type: string
+                              description: Reason for the failure
+                      message:
+                        type: string
+                        description: Summary message about the update operation
+                  error:
+                    nullable: true
+                    type: string
+                    description: Error message if the operation was not successful
+  /api/nodes/errors:
+    get:
+      summary: Get node errors
+      description: Collects TouchDesigner error messages for a node and its children
+      operationId: get_node_errors
+      parameters:
+        - description: Absolute path to the node to inspect. e.g., "/project1/text1"
+          in: query
+          name: nodePath
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Node error report
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the operation was successful
+                  data:
+                    $ref: '#/components/schemas/TdNodeErrorReport'
+                  error:
+                    nullable: true
+                    type: string
+                    description: Error message if the operation was not successful
+  /api/td/classes:
+    get:
+      summary: Get a list of Python classes and modules
+      operationId: get_td_python_classes
+      description: Returns a list of Python classes, modules, and functions available in TouchDesigner
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the operation was successful
+                  data:
+                    nullable: true
+                    type: object
+                    properties:
+                      classes:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TdPythonClassInfo'
+                  error:
+                    nullable: true
+                    type: string
+                    description: Error message if the operation was not successful
+  /api/td/classes/{className}:
+    get:
+      summary: Get details of a specific Python class or module
+      operationId: get_td_python_class_details
+      description: Returns detailed information about a specific Python class, module, or function including methods, properties, and documentation
+      parameters:
+        - name: className
+          in: path
+          description: Name of the class or module. e.g., "textTOP"
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the operation was successful
+                  data:
+                    nullable: true
+                    $ref: '#/components/schemas/TdPythonClassDetails'
+                  error:
+                    nullable: true
+                    type: string
+                    description: Error message if the operation was not successful
+  /api/td/modules/help:
+    get:
+      summary: Get module/class Python help documentation
+      operationId: get_module_help
+      description: Retrieve Python help() documentation for TouchDesigner modules, classes, or utilities like tdu.
+      parameters:
+        - name: moduleName
+          in: query
+          description: Module or class name (e.g., "noiseCHOP", "td.noiseCHOP", "tdu").
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the operation was successful
+                  data:
+                    nullable: true
+                    $ref: '#/components/schemas/ModuleHelp'
+                  error:
+                    nullable: true
+                    type: string
+                    description: Error message if the operation was not successful
+  /api/td/nodes/exec:
+    post:
+      summary: Call a method of the specified node
+      description: |
+        Call a method on the node at the specified path (e.g., /project1).
+        This allows operations equivalent to TouchDesigner's Python API such as
+        `parent_comp = op('/project1')` and `parent_comp.create('textTOP', 'myText')`.
+      operationId: exec_node_method
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nodePath
+                - method
+              properties:
+                nodePath:
+                  type: string
+                  description: Path to the node (e.g., /project1/null1)
+                method:
+                  type: string
+                  description: Name of the method to call
+                args:
+                  type: array
+                  description: List of arguments for the method call
+                  items:
+                    oneOf:
+                      - type: string
+                      - type: number
+                      - type: boolean
+                kwargs:
+                  type: object
+                  additionalProperties: true
+                  description: Keyword arguments for the method call
+      responses:
+        '200':
+          description: Method call successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the operation was successful
+                  data:
+                    nullable: true
+                    type: object
+                    required:
+                      - result
+                    properties:
+                      result:
+                        description: Result of the method call. Can be any type (equivalent to unknown in TypeScript).
+                  error:
+                    nullable: true
+                    type: string
+                    description: Error message if the operation was not successful
+  /api/td/server/exec:
+    post:
+      summary: Execute python code on the server
+      description: |
+        Execute a Python script directly in TouchDesigner.
+        Multiline scripts and scripts containing comments are supported.
+        The script can optionally set a `result` variable to explicitly return a value.
+        This endpoint allows you to interact with TouchDesigner nodes programmatically.
+      operationId: exec_python_script
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - script
+              properties:
+                script:
+                  type: string
+                  description: e.g., "op('/project1/text_over_image').outputConnectors[0].connect(op('/project1/out1'))"
+      responses:
+        '200':
+          description: Script executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the operation was successful
+                  data:
+                    type: object
+                    required:
+                      - result
+                    nullable: true
+                    properties:
+                      result:
+                        description: Result of the executed script
+                        type: object
+                        properties:
+                          value:
+                            description: Return value of the executed script, can be any serializable value
+                      stdout:
+                        type: string
+                        description: Captured standard output (e.g. print statements) emitted while the script ran
+                      stderr:
+                        type: string
+                        description: Captured standard error output emitted while the script ran
+                  error:
+                    nullable: true
+                    type: string
+                    description: Error message if the operation was not successful
+  /api/td/server/td:
+    get:
+      summary: Get TouchDesigner information
+      description: Returns information about the TouchDesigner
+      operationId: get_td_info
+      responses:
+        '200':
+          description: TouchDesigner information
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - error
+                properties:
+                  success:
+                    description: Whether the operation was successful
+                    type: boolean
+                  data:
+                    nullable: true
+                    type: object
+                    required:
+                      - mcpApiVersion
+                      - osName
+                      - osVersion
+                      - server
+                      - version
+                    properties:
+                      mcpApiVersion:
+                        type: string
+                        description: Version of the TouchDesigner MCP API server
+                      osName:
+                        type: string
+                        description: Operating system name
+                      osVersion:
+                        type: string
+                        description: Operating system version
+                      server:
+                        type: string
+                        description: Server name (typically "TouchDesigner")
+                      version:
+                        type: string
+                        description: TouchDesigner version number
+                  error:
+                    nullable: true
+                    description: Error message if the operation was not successful
+                    type: string
+components:
+  schemas:
+    TdNode:
+      type: object
+      description: Information about a TouchDesigner node
+      required:
+        - id
+        - opType
+        - name
+        - path
+        - properties
+      properties:
+        id:
+          type: integer
+        opType:
+          type: string
+        name:
+          type: string
+        path:
+          type: string
+        properties:
+          type: object
+          additionalProperties: true
+    TdNodeFamilyType:
+      enum:
+        - COMP
+        - CHOP
+        - TOP
+        - SOP
+        - DAT
+        - MAT
+        - CUSTOM
+      type: string
+    TdNodeError:
+      type: object
+      description: Single node error entry
+      required:
+        - nodePath
+        - nodeName
+        - opType
+        - message
+      properties:
+        nodePath:
+          type: string
+          description: Absolute operator path that reported the error
+        nodeName:
+          type: string
+          description: Name of the operator
+        opType:
+          type: string
+          description: TouchDesigner operator type
+        message:
+          type: string
+          description: Error message reported by TouchDesigner
+    TdNodeErrorReport:
+      type: object
+      description: Aggregated node error report
+      required:
+        - nodePath
+        - nodeName
+        - opType
+        - errorCount
+        - hasErrors
+        - errors
+      properties:
+        nodePath:
+          type: string
+          description: Path that was inspected for errors
+        nodeName:
+          type: string
+          description: Name of the inspected node
+        opType:
+          type: string
+          description: Operator type of the inspected node
+        errorCount:
+          type: integer
+          description: Number of errors that were discovered
+        hasErrors:
+          type: boolean
+          description: Convenience flag indicating if any errors were found
+        errors:
+          type: array
+          description: Collection of raw node errors
+          items:
+            $ref: '#/components/schemas/TdNodeError'
+    TdPythonClassDetails:
+      type: object
+      description: Detailed information about a Python class or module
+      required:
+        - name
+        - type
+        - methods
+        - properties
+      properties:
+        name:
+          type: string
+          description: Name of the class or module
+        type:
+          type: string
+          enum:
+            - class
+            - module
+            - function
+            - object
+          description: Type of the Python entity
+        description:
+          type: string
+          description: Description of the class or module
+        methods:
+          type: array
+          description: List of methods available in the class or module
+          items:
+            $ref: '#/components/schemas/TdPythonMethodInfo'
+        properties:
+          type: array
+          description: List of properties available in the class or module
+          items:
+            $ref: '#/components/schemas/TdPythonPropertyInfo'
+    TdPythonClassInfo:
+      type: object
+      description: Information about a Python class or module available in TouchDesigner
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          description: Name of the class or module
+        type:
+          type: string
+          enum:
+            - class
+            - module
+            - function
+            - object
+          description: Type of the Python entity
+        description:
+          type: string
+          description: Description of the class or module
+    TdPythonMethodInfo:
+      type: object
+      description: Information about a Python method
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Method name
+        signature:
+          type: string
+          description: Method signature including parameters
+        description:
+          type: string
+          description: Description of the method
+    TdPythonPropertyInfo:
+      type: object
+      description: Information about a Python property
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          description: Property name
+        type:
+          type: string
+          description: Type of the property
+        value:
+          type: object
+          description: Current value of the property (if serializable)
+          nullable: true
+    ModuleHelp:
+      title: ModuleHelp
+      type: object
+      description: Raw Python help() output for a TouchDesigner module or class
+      required:
+        - moduleName
+        - helpText
+      properties:
+        moduleName:
+          type: string
+          description: Normalized module/class name the help text was generated for
+        helpText:
+          type: string
+          description: Captured output from Python's help() function

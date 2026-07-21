@@ -4,7 +4,7 @@
 	"description": "MCP server for TouchDesigner",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/8beeeaaat/touchdesigner-mcp.git"
+		"url": "git+https://github.com/asyade/touchdesigner-mcp.git"
 	},
 	"keywords": [
 		"MCP Server",
@@ -17,9 +17,9 @@
 		"minApiVersion": "1.3.0"
 	},
 	"bugs": {
-		"url": "https://github.com/8beeeaaat/touchdesigner-mcp/issues"
+		"url": "https://github.com/asyade/touchdesigner-mcp/issues"
 	},
-	"homepage": "https://github.com/8beeeaaat/touchdesigner-mcp#readme",
+	"homepage": "https://github.com/asyade/touchdesigner-mcp#readme",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"bin": {
@@ -79,6 +79,7 @@
 		"test": "run-p test:*",
 		"test:integration": "vitest run ./tests/integration",
 		"test:unit": "vitest run ./tests/unit",
+		"test:live-lifecycle": "node ./scripts/liveLifecycle.mjs",
 		"coverage": "vitest run --coverage",
 		"version": "run-p version:*",
 		"version:api": "node ./scripts/syncApiServerVersions.ts",

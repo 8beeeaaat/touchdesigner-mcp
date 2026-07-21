@@ -98,6 +98,17 @@ Download the following from the [latest release](https://github.com/8beeeaaat/to
 
 **Best for**: Users who want flexibility across different AI agents or need custom configuration.
 
+### Method 2b: Cursor (local fork / submodule build)
+
+**Best for**: Cursor users in this monorepo or anyone building [asyade/touchdesigner-mcp](https://github.com/asyade/touchdesigner-mcp).
+
+1. Build: `npm ci && npm run build` in the fork checkout.
+2. Add to project or user `.cursor/mcp.json` (prefer `node` + absolute `dist/cli.js` — see [`mcp.cursor.example.json`](../mcp.cursor.example.json)).
+3. Disable any user-level `npx touchdesigner-mcp-server@latest` TD entry so only one TD MCP server is active.
+4. Agent contract: [`docs/AGENT_MCP.md`](AGENT_MCP.md).
+
+### Method 2: NPM Package (Claude Code, Codex, and other MCP clients) — continued
+
 #### Installation Prerequisites
 
 - Node.js 18.x or later installed

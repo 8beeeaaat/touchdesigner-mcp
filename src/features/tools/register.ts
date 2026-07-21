@@ -1,5 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ILogger } from "../../core/logger.js";
+import {
+	getTargetRegistry,
+	type TargetRegistry,
+} from "../../core/targetRegistry.js";
 import type { TouchDesignerClient } from "../../tdClient/index.js";
 import { registerTdTools } from "./handlers/tdTools.js";
 
@@ -10,6 +14,7 @@ export function registerTools(
 	server: McpServer,
 	logger: ILogger,
 	tdClient: TouchDesignerClient,
+	registry: TargetRegistry = getTargetRegistry(),
 ): void {
-	registerTdTools(server, logger, tdClient);
+	registerTdTools(server, logger, tdClient, registry);
 }

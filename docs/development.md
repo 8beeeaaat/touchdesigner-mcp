@@ -116,6 +116,26 @@ command = "npx"
 args = ["mcp-remote", "http://localhost:6280/mcp"]
 ```
 
+### Cursor (`.cursor/mcp.json` or `~/.cursor/mcp.json`)
+
+Prefer a local build of **this fork** (not `npx touchdesigner-mcp-server@latest`) so multi-target and lifecycle tools are available. Use `node` + `dist/cli.js` for stable Windows paths. See also [`mcp.cursor.example.json`](../mcp.cursor.example.json).
+
+```json
+{
+  "mcpServers": {
+    "touchdesigner": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/touchdesigner-mcp/dist/cli.js",
+        "--stdio"
+      ]
+    }
+  }
+}
+```
+
+**Do not** run both this entry and a user-level `npx touchdesigner-mcp-server@latest` TD MCP at the same time — Cursor will expose two overlapping servers.
+
 ## Development Workflow
 
 1. **Clone and install**:

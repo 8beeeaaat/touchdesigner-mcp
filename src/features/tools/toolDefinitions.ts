@@ -153,13 +153,23 @@ const info = await getTdInfo();
 console.log(\`\${info.server} \${info.version}\`);`,
 		name: TOOL_NAMES.GET_TD_INFO,
 		returns:
-			"TouchDesigner build metadata (server, version, operating system).",
+			"TouchDesigner build metadata plus composite identity (projectName, projectFolder, osPid, targetId, webServerPort).",
 		run: async ({ params, tdClient }) => {
-			const result = await tdClient.getTdInfo();
-			if (!result.success) {
-				throw result.error;
-			}
-			return formatTdInfo(result.data, {
+			const { getTargetRegistry } = await import(
+				"../../core/targetRegistry.js"
+			);
+			const { probeIdentity } = await import(
+				"../../lifecycle/tdProcess.js"
+			);
+			const registry = getTargetRegistry();
+			const selected = registry.getSelected();
+			const identity = await probeIdentity(
+				tdClient,
+				selected.id,
+				selected.host,
+				selected.port,
+			);
+			return formatTdInfo(identity as never, {
 				detailLevel: params.detailLevel ?? "summary",
 				responseFormat: params.responseFormat,
 			});
