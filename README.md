@@ -17,11 +17,23 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
 - Query node properties and project structure
 - Programmatically control TouchDesigner via Python scripts
 
+### Multi-target (this fork)
+
+On the **asyade** fork (`multi-instance` branch), one stdio MCP server can address multiple TouchDesigner instances via a **sticky target**:
+
+- Builtin **`lab`** on port **9981** (default sticky)
+- MCP-**owned** projects on ports **≥9984** via `create_td_project` / `start_td_project` / `stop_td_project`
+- Node/script tools always hit the sticky target (no per-call `target` argument)
+
+**Agents:** read the contract in **[docs/AGENT_MCP.md](docs/AGENT_MCP.md)** (0/1/N workflows, identity, lifecycle, Definition of Done). Architecture notes: [docs/architecture.md](docs/architecture.md#multi-target-sticky-routing).
+
 ## Installation
 
 Please refer to the **[Installation Guide](docs/installation.md)**.
 
 If you are updating, please refer to the procedure in the **[Latest Release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)**.
+
+For Cursor + this fork (multi-target), prefer [Method 2b](docs/installation.md#method-2b-cursor-local-fork--submodule-build) — one local `dist/cli.js`, not upstream `npx` alongside it.
 
 ## MCP Server Features
 
@@ -33,17 +45,24 @@ Tools allow AI agents to perform actions in TouchDesigner.
 
 | Tool Name                | Description                                                        |
 | :---------------------- | :----------------------------------------------------------------- |
+| `list_td_targets`       | Lists known targets (lab + MCP-owned). No liveness probe. *(fork)* |
+| `select_td_target`      | Selects the sticky target and probes identity. *(fork)*            |
+| `create_td_project`     | Copies the MCP project template; assigns a port. Does not start TD. *(fork)* |
+| `start_td_project`      | Spawns TD on an owned toe, waits for the bridge, selects it. *(fork)* |
+| `stop_td_project`       | Soft-quit then kill an owned instance. Refuses `lab`. *(fork)*     |
 | `create_td_node`        | Creates a new node.                                                |
 | `delete_td_node`        | Deletes an existing node.                                          |
+| `describe_td_tools`     | Manifest of registered tools (optional filter).                    |
 | `exec_node_method`      | Calls a Python method on a node.                                   |
 | `execute_python_script` | Executes an arbitrary Python script in TouchDesigner.              |
-| `get_module_help`       | Gets Python help() documentation for TouchDesigner modules/classes.|
+| `get_td_module_help`    | Gets Python help() documentation for TouchDesigner modules/classes.|
 | `get_td_class_details`  | Gets details of a TouchDesigner Python class or module.            |
 | `get_td_classes`        | Gets a list of TouchDesigner Python classes.                       |
-| `get_td_info`           | Gets information about the TouchDesigner server environment.       |
+| `get_td_info`           | Gets information about the sticky TouchDesigner target.            |
 | `get_td_node_errors`    | Checks for errors on a specified node and its children. |
 | `get_td_node_parameters`| Gets the parameters of a specific node.                            |
 | `get_td_nodes`          | Gets nodes under a parent path, with optional filtering.           |
+| `get_top_image`         | Captures a TOP as a JPEG image content block.                      |
 | `update_td_node_parameters` | Updates the parameters of a specific node.                     |
 
 ### Prompts
