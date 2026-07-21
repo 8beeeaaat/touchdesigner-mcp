@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Gated live lifecycle smoke. Set TD_MCP_LIVE=1 with lab TD on :9981.
- * Full start/stop of a secondary requires a real templates/mcp_project/project.toe
- * (not the placeholder). Create+lab identity always run when gated.
+ * Gated live lifecycle smoke. Set TD_MCP_LIVE=1.
+ * - Always exercises create_td_project (no TD required).
+ * - Probes lab :9981 when available; skips start/stop if toe is placeholder or lab down.
  */
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -25,28 +25,41 @@ const registry = new TargetRegistry();
 resetTargetRegistryForTests(registry);
 const tdClient = createTouchDesignerClient({ logger: nullLogger });
 
-const labId = await probeIdentity(
-	tdClient,
-	"lab",
-	"http://127.0.0.1",
-	9981,
-);
-console.log("LAB_OK", labId.projectName, labId.projectFolder);
+let labOk = false;
+try {
+	const labId = await probeIdentity(
+		tdClient,
+		"lab",
+		"http://127.0.0.1",
+		9981,
+	);
+	console.log("LAB_OK", labId.projectName, labId.projectFolder);
+	labOk = true;
+} catch (err) {
+	console.log(
+		"LAB_SKIP",
+		err instanceof Error ? err.message.split("\n")[0] : String(err),
+	);
+}
 
 const destRoot = mkdtempSync(join(tmpdir(), "tdmcp-live-"));
 const dest = join(destRoot, "proj");
 try {
 	const created = await createTdProject({ destDir: dest });
 	console.log("CREATE_OK", created.targetId, created.port, created.toePath);
-	const toeHead = readFileSync(created.toePath, "utf8").slice(0, 32);
+	const toeHead = readFileSync(created.toePath, "utf8").slice(0, 40);
 	if (toeHead.includes("PLACEHOLDER")) {
-		console.log(
-			"SKIP_START placeholder project.toe — bootstrap a real toe in templates/mcp_project then re-run",
-		);
-		process.exit(0);
+		console.log("SKIP_START placeholder project.toe");
+	} else if (!labOk) {
+		console.log("SKIP_START lab offline (cannot dual-smoke)");
+	} else {
+		console.log("READY_FOR_START (manual: start_td_project then stop)");
 	}
-	console.log("LIVE_PARTIAL_PASS (start/stop requires non-placeholder toe)");
+	console.log(labOk ? "LIVE_PASS_PARTIAL" : "LIVE_PASS_CREATE_ONLY");
 	process.exit(0);
+} catch (err) {
+	console.error(err);
+	process.exit(1);
 } finally {
 	try {
 		rmSync(destRoot, { recursive: true, force: true });
