@@ -18,7 +18,13 @@ import {
 } from "../../../lifecycle/tdProcess.js";
 import type { TouchDesignerClient } from "../../../tdClient/touchDesignerClient.js";
 import {
-	buildToolMetadata,
+	createProjectSchema,
+	selectTargetSchema,
+	startProjectSchema,
+	stopProjectSchema,
+} from "../lifecycleToolDefinitions.js";
+import {
+	buildRegisteredToolMetadata,
 	type ToolMetadata,
 } from "../metadata/touchDesignerToolMetadata.js";
 import { formatToolMetadata } from "../presenter/index.js";
@@ -35,43 +41,6 @@ const describeToolsSchema = detailOnlyFormattingSchema.extend({
 		.optional(),
 });
 type DescribeToolsParams = z.input<typeof describeToolsSchema>;
-
-const selectTargetSchema = z.object({
-	id: z.string().min(1).describe("Target id from list_td_targets"),
-});
-
-const createProjectSchema = z.object({
-	destDir: z
-		.string()
-		.min(1)
-		.describe("Absolute path for the new project directory (must be empty/new)"),
-	name: z
-		.string()
-		.min(1)
-		.optional()
-		.describe("Toe stem name without extension (default: project)"),
-	port: z.number().int().min(9984).optional().describe("Optional fixed port"),
-});
-
-const startProjectSchema = z.object({
-	toePath: z
-		.string()
-		.min(1)
-		.describe("Absolute path to the .toe to open"),
-	tdExe: z
-		.string()
-		.min(1)
-		.optional()
-		.describe("Optional path to TouchDesigner.exe"),
-	timeoutMs: z.number().int().min(1000).optional(),
-});
-
-const stopProjectSchema = z.object({
-	targetId: z
-		.string()
-		.min(1)
-		.describe("Owned target id (never lab)"),
-});
 
 export function registerTdTools(
 	server: McpServer,
@@ -207,7 +176,7 @@ export function registerTdTools(
 		},
 	);
 
-	const toolMetadataEntries = buildToolMetadata(TOOL_DEFINITIONS);
+	const toolMetadataEntries = buildRegisteredToolMetadata();
 	server.tool(
 		TOOL_NAMES.DESCRIBE_TD_TOOLS,
 		"Generate a filesystem-oriented manifest of available TouchDesigner tools",

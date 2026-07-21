@@ -1,12 +1,13 @@
 import type { z } from "zod";
 import type { ToolNames } from "../index.js";
+import { LIFECYCLE_TOOL_DEFINITIONS } from "../lifecycleToolDefinitions.js";
 import {
 	TOOL_DEFINITIONS,
 	type ToolCategory,
-	type ToolDefinition,
+	type ToolMetadataSource,
 } from "../toolDefinitions.js";
 
-export type { ToolCategory };
+export type { ToolCategory, ToolMetadataSource };
 
 export interface ToolParameterMetadata {
 	name: string;
@@ -35,12 +36,12 @@ function toFunctionName(toolName: string): string {
 }
 
 /**
- * Builds the `describe_td_tools` manifest from the tool table. Parameter
+ * Builds the `describe_td_tools` manifest from tool metadata sources. Parameter
  * metadata is introspected from each tool's Zod schema, so it always reflects
- * the schema that is actually registered (sourced from the OpenAPI spec).
+ * the schema that is actually registered.
  */
 export function buildToolMetadata(
-	definitions: readonly ToolDefinition[] = TOOL_DEFINITIONS,
+	definitions: readonly ToolMetadataSource[] = TOOL_DEFINITIONS,
 ): ToolMetadata[] {
 	return definitions.map((definition) => {
 		const functionName = toFunctionName(definition.name);
@@ -56,6 +57,14 @@ export function buildToolMetadata(
 			tool: definition.name,
 		};
 	});
+}
+
+/** Full manifest: OpenAPI-backed tools + target/lifecycle tools. */
+export function buildRegisteredToolMetadata(): ToolMetadata[] {
+	return [
+		...buildToolMetadata(TOOL_DEFINITIONS),
+		...buildToolMetadata(LIFECYCLE_TOOL_DEFINITIONS),
+	];
 }
 
 /** Introspects a Zod object schema into flat parameter metadata. */

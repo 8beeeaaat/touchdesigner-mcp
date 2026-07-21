@@ -61,13 +61,12 @@ export type ToolContent = ToolTextContent | ToolImageContent;
 export type ToolRunResult = string | { content: ToolContent[] };
 
 /**
- * Single source of truth for a TouchDesigner MCP tool.
+ * Single source of truth for a TouchDesigner MCP tool that uses the shared
+ * OpenAPI-backed registration loop.
  *
- * Both the MCP registration loop (`registerTdTools`) and the
- * `describe_td_tools` manifest (`buildToolMetadata`) are derived from this
- * table, so a tool's description and input parameters can never drift between
- * what is registered and what is documented. Parameter metadata is introspected
- * directly from `schema`, which itself originates from the OpenAPI spec.
+ * `registerTdTools` registers these plus target/lifecycle tools. Prefer
+ * `buildRegisteredToolMetadata()` for `describe_td_tools` so the manifest
+ * includes both surfaces. Parameter metadata is introspected from `schema`.
  */
 export interface ToolDefinition {
 	/** Registered MCP tool name (also the source for functionName/modulePath). */
@@ -87,6 +86,19 @@ export interface ToolDefinition {
 	/** Executes the tool and returns formatter-ready text (or explicit content blocks). */
 	run: (ctx: ToolRunContext) => Promise<ToolRunResult>;
 }
+
+/** Schema + manifest fields (OpenAPI tools and lifecycle tools without `run`). */
+export type ToolMetadataSource = Pick<
+	ToolDefinition,
+	| "name"
+	| "description"
+	| "category"
+	| "schema"
+	| "returns"
+	| "example"
+	| "notes"
+>;
+
 
 export interface ToolRunContext {
 	params: Record<string, unknown>;

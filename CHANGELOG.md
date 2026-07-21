@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-target sticky routing and project lifecycle tools (`list_td_targets`, `select_td_target`, `create_td_project`, `start_td_project`, `stop_td_project`) on the asyade `multi-instance` branch: builtin `lab` on port 9981, MCP-owned projects on ports ≥9984, per-target request queues, and `.tdmcp/state.json` + `apply_tdmcp_port` for owned bridges.
 - Expanded agent contract [`docs/AGENT_MCP.md`](docs/AGENT_MCP.md) with tool inventory, 0/1/N workflows, registry/restart semantics, lifecycle cookbook, and Definition of Done; product docs (README tools table, architecture multi-target section) updated to match.
 
+### Changed
+
+- `describe_td_tools` includes lifecycle/target tools in its manifest (same surface agents see at runtime).
+
 ## [1.5.0] - 2026-07-11
 
 ### Upgrade Notes
