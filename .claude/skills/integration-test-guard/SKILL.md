@@ -22,7 +22,8 @@ with `SKIP_ITEST_GUARD=1` only when a test genuinely does not apply).
 
 `src/api/**` (OpenAPI schema) · `src/features/tools/**` (tool defs + handlers) ·
 `src/server/**` (MCP server) · `src/tdClient/**` (TD HTTP client) ·
-`src/transport/**` (stdio/HTTP transport) · `td/modules/mcp/**` (TD-side Python API).
+`src/transport/**` (stdio/HTTP transport) · `td/modules/mcp/**` (TD-side Python API) ·
+`src/toe/**` (offline ToeDigest — prefer **unit** / `test:toe-digest-replay`; add integration only if the change crosses into live HTTP/MCP registration behavior that integration suites cover).
 
 ## Step 1 — pick the right suite (by what the change affects)
 

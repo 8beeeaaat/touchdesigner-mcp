@@ -18,6 +18,8 @@ import {
 } from "../../../lifecycle/tdProcess.js";
 import type { TouchDesignerClient } from "../../../tdClient/touchDesignerClient.js";
 import { getToeDigest } from "../../../toe/digest.js";
+import { injectTdMcp } from "../../../toe/injectMcp.js";
+import { getToeNode } from "../../../toe/nodeInspect.js";
 import {
 	createProjectSchema,
 	selectTargetSchema,
@@ -29,7 +31,11 @@ import {
 	type ToolMetadata,
 } from "../metadata/touchDesignerToolMetadata.js";
 import { formatToolMetadata } from "../presenter/index.js";
-import { getToeDigestSchema } from "../toeToolDefinitions.js";
+import {
+	getToeDigestSchema,
+	getToeNodeSchema,
+	injectTdMcpSchema,
+} from "../toeToolDefinitions.js";
 import { TOOL_DEFINITIONS, type ToolRunResult } from "../toolDefinitions.js";
 import { detailOnlyFormattingSchema } from "../types.js";
 
@@ -176,7 +182,7 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.GET_TOE_DIGEST,
-		"[alpha] Offline ToeDigest of a .toe via toeexpand (cached). Modes: stats, outline (default), nodes. Token-capped; paths are expand-relative. API may change.",
+		"[alpha] Offline ToeDigest via toeexpand (cached). Modes: stats, outline (default), nodes, wires, refs. Token-capped; expand-relative paths. API may change.",
 		getToeDigestSchema.strict().shape,
 		async (params: z.input<typeof getToeDigestSchema>) => {
 			try {
@@ -184,6 +190,62 @@ export function registerTdTools(
 				return textResult(JSON.stringify(result, null, 2));
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.GET_TOE_DIGEST);
+			}
+		},
+	);
+
+	server.tool(
+		TOOL_NAMES.GET_TOE_NODE,
+		"[alpha] Deep offline inspect of one expand-relative node/COMP (inputs, outputs, parms, text). API may change.",
+		getToeNodeSchema.strict().shape,
+		async (params: z.input<typeof getToeNodeSchema>) => {
+			try {
+				const result = await getToeNode(params);
+				return textResult(JSON.stringify(result, null, 2));
+			} catch (error) {
+				return handleToolError(error, logger, TOOL_NAMES.GET_TOE_NODE);
+			}
+		},
+	);
+
+	server.tool(
+		TOOL_NAMES.INJECT_TD_MCP,
+		"[alpha] Offline: graft MCP onStart + modules/tdmcp_bridge.tox (runtime loadTox) into a foreign .toe in an empty destDir; write .tdmcp/state.json. Does not start TD. Then call start_td_project.",
+		injectTdMcpSchema.strict().shape,
+		async (params: z.input<typeof injectTdMcpSchema>) => {
+			try {
+				const result = await injectTdMcp(params);
+				registry.upsertOwned({
+					host: result.target.host,
+					id: result.target.id,
+					label: result.target.label,
+					port: result.target.port,
+					projectDir: result.target.projectDir,
+					toePath: result.target.toePath,
+				});
+				return textResult(JSON.stringify(result, null, 2));
+			} catch (error) {
+				if (error instanceof Error && "code" in error) {
+					const e = error as Error & {
+						code: string;
+						conflict?: unknown;
+					};
+					const payload = {
+						conflict: e.conflict ?? null,
+						error: e.code,
+						message: e.message,
+					};
+					return {
+						content: [
+							{
+								text: JSON.stringify(payload, null, 2),
+								type: "text" as const,
+							},
+						],
+						isError: true,
+					};
+				}
+				return handleToolError(error, logger, TOOL_NAMES.INJECT_TD_MCP);
 			}
 		},
 	);

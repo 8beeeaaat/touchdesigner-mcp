@@ -1,0 +1,4 @@
+COMP:annotate
+tile 0 0 1 1
+flags =  viewer 1 parlanguage 0
+end

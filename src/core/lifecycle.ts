@@ -5,6 +5,7 @@ import {
 	mkdirSync,
 	readdirSync,
 	readFileSync,
+	rmSync,
 	writeFileSync,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -85,6 +86,15 @@ export async function createTdProject(params: {
 	mkdirSync(destDir, { recursive: true });
 	cpSync(src, destDir, { recursive: true });
 
+	// Never leave bridge .tox sidecars beside the embedded COMP — TD pops
+	// "unexpected node name duplication" for mcp_webserver_base (file rename
+	// to tdmcp_bridge.tox is not enough; tox root op name still collides).
+	for (const name of ["mcp_webserver_base.tox", "tdmcp_bridge.tox"] as const) {
+		const tox = join(destDir, name);
+		if (existsSync(tox)) {
+			rmSync(tox, { force: true });
+		}
+	}
 	const toeName = `${params.name?.trim() || "project"}.toe`;
 	const seedToe = join(destDir, "project.toe");
 	const toePath = join(destDir, toeName);

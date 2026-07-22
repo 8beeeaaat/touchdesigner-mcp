@@ -1,5 +1,17 @@
 # Repository Guidelines
 
+## Agent ops (multi-instance fork)
+
+Before driving TouchDesigner from an agent, read **[docs/AGENT_MCP.md](docs/AGENT_MCP.md)**:
+
+- Sticky target **`lab`** @ **9981**; owned instances **≥9984**; never treat **9982**/**9983** as TD targets
+- `list_td_targets` ≠ alive; `select_td_target` probes; assert `projectFolder` + `projectName` before mutate
+- After MCP restart, owned targets drop from the in-memory registry until `start_td_project`
+- Offline `.toe`: `get_toe_digest` / `get_toe_node` — [docs/toe-digest.md](docs/toe-digest.md)
+- Source changes: `npm run build` → restart MCP (clients load `dist/cli.js`)
+
+Cursor skill (fork-local): [`.cursor/skills/touchdesigner-mcp/SKILL.md`](.cursor/skills/touchdesigner-mcp/SKILL.md).
+
 ## Project Structure & Module Organization
 
 `src/` contains the TypeScript MCP server: shared logic is in `core/`, MCP features in `features/`, transport code in `transport/`, and TouchDesigner communication in `tdClient/`. The OpenAPI contract starts at `src/api/index.yml`. TouchDesigner-side Python, templates, generated artifacts, and `.tox` components live in `td/`. Tests belong in `tests/unit/` or `tests/integration/`, documentation in `docs/`, and media in `assets/`. Treat `dist/`, `src/gen/`, and `td/modules/td_server/` as generated output; edit their source schemas or templates instead.

@@ -1,0 +1,6 @@
+TOP:blur
+inputs
+{
+0 	noise1
+}
+end

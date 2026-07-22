@@ -60,6 +60,7 @@ describe("buildRegisteredToolMetadata", () => {
 		expect(names).toContain(TOOL_NAMES.START_TD_PROJECT);
 		expect(names).toContain(TOOL_NAMES.STOP_TD_PROJECT);
 		expect(names).toContain(TOOL_NAMES.GET_TOE_DIGEST);
+		expect(names).toContain(TOOL_NAMES.GET_TOE_NODE);
 		expect(names).toContain(TOOL_NAMES.GET_TD_INFO);
 		expect(names).not.toContain(TOOL_NAMES.DESCRIBE_TD_TOOLS);
 	});

@@ -1,0 +1,6 @@
+TOP:null
+inputs
+{
+0 	blur1
+}
+end

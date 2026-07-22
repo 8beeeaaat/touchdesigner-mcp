@@ -25,7 +25,7 @@ On the **asyade** fork (`multi-instance` branch), one stdio MCP server can addre
 - MCP-**owned** projects on ports **≥9984** via `create_td_project` / `start_td_project` / `stop_td_project`
 - Node/script tools always hit the sticky target (no per-call `target` argument)
 
-**Agents:** read the contract in **[docs/AGENT_MCP.md](docs/AGENT_MCP.md)** (0/1/N workflows, identity, lifecycle, Definition of Done). Architecture notes: [docs/architecture.md](docs/architecture.md#multi-target-sticky-routing).
+**Agents:** read the contract in **[docs/AGENT_MCP.md](docs/AGENT_MCP.md)** (Operate vs Document, 0/1/N, identity, lifecycle, ToeDigest, failure cookbook, Definition of Done). Offline `.toe`: [docs/toe-digest.md](docs/toe-digest.md). Architecture notes: [docs/architecture.md](docs/architecture.md#multi-target-sticky-routing). After editing `src/`: `npm run build` then restart the MCP client process.
 
 ## Installation
 
@@ -62,6 +62,8 @@ Tools allow AI agents to perform actions in TouchDesigner.
 | `get_td_node_errors`    | Checks for errors on a specified node and its children. |
 | `get_td_node_parameters`| Gets the parameters of a specific node.                            |
 | `get_td_nodes`          | Gets nodes under a parent path, with optional filtering.           |
+| `get_toe_digest`        | **Alpha.** Offline ToeDigest via `toeexpand` (modes include `brief`, `stats`, `extensions`). *(fork)* See [docs/toe-digest.md](docs/toe-digest.md). |
+| `get_toe_node`          | **Alpha.** Offline inspect of one expand-relative node/COMP. *(fork)* |
 | `get_top_image`         | Captures a TOP as a JPEG image content block.                      |
 | `update_td_node_parameters` | Updates the parameters of a specific node.                     |
 

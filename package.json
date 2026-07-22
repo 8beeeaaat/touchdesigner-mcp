@@ -82,6 +82,7 @@
 		"test:live-lifecycle": "node ./scripts/liveLifecycle.mjs",
 		"test:toe-digest-smoke": "node ./scripts/toeDigestSmoke.mjs",
 		"test:toe-digest-e2e": "node ./scripts/toeDigestE2E.mjs",
+		"test:toe-digest-replay": "node ./scripts/toeDigestReplay.mjs",
 		"coverage": "vitest run --coverage",
 		"version": "run-p version:*",
 		"version:api": "node ./scripts/syncApiServerVersions.ts",
