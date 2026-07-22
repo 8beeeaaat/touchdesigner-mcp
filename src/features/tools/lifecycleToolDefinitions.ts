@@ -11,7 +11,9 @@ export const createProjectSchema = z.object({
 	destDir: z
 		.string()
 		.min(1)
-		.describe("Absolute path for the new project directory (must be empty/new)"),
+		.describe(
+			"Absolute path for the new project directory (must be empty/new)",
+		),
 	name: z
 		.string()
 		.min(1)
@@ -21,17 +23,28 @@ export const createProjectSchema = z.object({
 });
 
 export const startProjectSchema = z.object({
-	toePath: z.string().min(1).describe("Absolute path to the .toe to open"),
 	tdExe: z
 		.string()
 		.min(1)
 		.optional()
 		.describe("Optional path to TouchDesigner.exe"),
 	timeoutMs: z.number().int().min(1000).optional(),
+	toePath: z.string().min(1).describe("Absolute path to the .toe to open"),
 });
 
 export const stopProjectSchema = z.object({
 	targetId: z.string().min(1).describe("Owned target id (never lab)"),
+});
+
+export const tdUiDialogsSchema = z.object({
+	action: z
+		.enum(["list", "dismiss"])
+		.describe("list open dialogs + responding; dismiss #32770 by title"),
+	title: z
+		.string()
+		.min(1)
+		.optional()
+		.describe("Dialog window title to dismiss; omit to dismiss all listed"),
 });
 
 export const listTargetsSchema = z.object({}).strict();
@@ -73,10 +86,12 @@ export const LIFECYCLE_TOOL_DEFINITIONS: readonly ToolMetadataSource[] = [
 	{
 		category: "system",
 		description:
-			"Spawn TouchDesigner on a .toe that has .tdmcp/state.json, wait for the bridge, select the target.",
-		example: 'start_td_project({ toePath: "C:/tmp/my_td_project/project.toe" })',
+			"Spawn TouchDesigner on a .toe that has .tdmcp/state.json, wait for the bridge, select the target. Auto-dismisses Windows #32770 dialogs during wait.",
+		example:
+			'start_td_project({ toePath: "C:/tmp/my_td_project/project.toe" })',
 		name: TOOL_NAMES.START_TD_PROJECT,
-		returns: "JSON: identity, pid, port; sticky target becomes the owned instance",
+		returns:
+			"JSON: identity, pid, port, dismissedDialogs[]; sticky becomes owned. Non-empty dismissedDialogs (hard/unknown) ⇒ treat open as suspect.",
 		schema: startProjectSchema.strict(),
 	},
 	{
@@ -88,5 +103,16 @@ export const LIFECYCLE_TOOL_DEFINITIONS: readonly ToolMetadataSource[] = [
 		notes: "If the stopped target was selected, sticky falls back to lab.",
 		returns: "JSON: stop result",
 		schema: stopProjectSchema.strict(),
+	},
+	{
+		category: "system",
+		description:
+			"Windows-only: list or dismiss TouchDesigner #32770 load/runtime dialogs for the sticky target PID. Does not unstick a hung UI thread.",
+		example: 'td_ui_dialogs({ action: "list" })',
+		name: TOOL_NAMES.TD_UI_DIALOGS,
+		notes:
+			"list → dialogs + responding + mainWindowTitle. dismiss → Enter/Close on listed titles. Never dismisses main TouchDesigner window.",
+		returns: "JSON: dialogs, responding, mainWindowTitle, dismissed[]",
+		schema: tdUiDialogsSchema.strict(),
 	},
 ];

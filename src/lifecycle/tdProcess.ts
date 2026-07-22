@@ -1,17 +1,25 @@
-import { spawn, type ChildProcess } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import type { TouchDesignerClient } from "../tdClient/touchDesignerClient.js";
 import {
 	findTdExecutable,
 	readState,
-	writeState,
 	type TdMcpState,
+	writeState,
 } from "../core/lifecycle.js";
-import { LAB_TARGET_ID } from "../core/targetTypes.js";
-import type { TargetRegistry } from "../core/targetRegistry.js";
 import { runWithTarget } from "../core/targetContext.js";
 import { withTargetQueue } from "../core/targetQueue.js";
+import type { TargetRegistry } from "../core/targetRegistry.js";
+import { LAB_TARGET_ID } from "../core/targetTypes.js";
+import type { TouchDesignerClient } from "../tdClient/touchDesignerClient.js";
+import {
+	dedupeDialogs,
+	dismissAllTdUiDialogs,
+	inspectTdUi,
+	inspectTdUiLight,
+	type TdUiDialog,
+	type TdUiInspectResult,
+} from "./tdDialogs.js";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -21,7 +29,115 @@ export type StartProjectResult = {
 	pid: number;
 	toePath: string;
 	identity?: Record<string, unknown>;
+	dismissedDialogs: TdUiDialog[];
 };
+
+export type StartWaitDeps = {
+	inspect: (pid: number) => Promise<TdUiInspectResult>;
+	inspectLight: (pid: number) => Promise<TdUiInspectResult>;
+	dismissAll: (
+		dialogs: TdUiDialog[],
+	) => Promise<{ attempted: TdUiDialog[]; dismissed: TdUiDialog[] }>;
+	probe: () => Promise<Record<string, unknown>>;
+	sleepMs?: (ms: number) => Promise<void>;
+};
+
+/**
+ * Wait for bridge while inspecting/dismissing TD UI dialogs (testable core).
+ */
+export async function waitForBridgeWithDialogs(params: {
+	pid: number;
+	deadlineMs: number;
+	deps: StartWaitDeps;
+}): Promise<{
+	identity: Record<string, unknown>;
+	dismissedDialogs: TdUiDialog[];
+	lastSnapshot: TdUiInspectResult;
+}> {
+	const sleepFn = params.deps.sleepMs ?? sleep;
+	const dismissedDialogs: TdUiDialog[] = [];
+	let consecutiveInspectTimeouts = 0;
+	let lastSnapshot: TdUiInspectResult = {
+		dialogs: [],
+		mainWindowTitle: null,
+		responding: true,
+	};
+	let identity: Record<string, unknown> | undefined;
+	let lastProbeError: string | undefined;
+	let watchPid = params.pid;
+
+	while (Date.now() < params.deadlineMs) {
+		const useLight = consecutiveInspectTimeouts >= 2;
+		const snapshot = useLight
+			? await params.deps.inspectLight(watchPid)
+			: await params.deps.inspect(watchPid);
+		lastSnapshot = snapshot;
+		if (snapshot.inspectTimedOut) {
+			consecutiveInspectTimeouts += 1;
+		} else {
+			consecutiveInspectTimeouts = 0;
+		}
+
+		if (snapshot.dialogs.length > 0) {
+			const { dismissed } = await params.deps.dismissAll(snapshot.dialogs);
+			for (const d of dismissed) {
+				dismissedDialogs.push(d);
+			}
+			// Also record hard/unknown that we attempted even if dismiss failed
+			for (const d of snapshot.dialogs) {
+				if (
+					!dismissed.some((x) => x.title === d.title && x.message === d.message)
+				) {
+					dismissedDialogs.push(d);
+				}
+			}
+		}
+
+		try {
+			identity = await params.deps.probe();
+			const live = Number(identity.osPid);
+			if (Number.isFinite(live) && live > 0) {
+				watchPid = live;
+			}
+			break;
+		} catch (error) {
+			lastProbeError = error instanceof Error ? error.message : String(error);
+			await sleepFn(1000);
+		}
+	}
+
+	const unique = dedupeDialogs(dismissedDialogs);
+
+	if (!identity) {
+		const snap = {
+			dismissedDialogs: unique,
+			inspectTimedOut: lastSnapshot.inspectTimedOut ?? false,
+			mainWindowTitle: lastSnapshot.mainWindowTitle,
+			responding: lastSnapshot.responding,
+		};
+		throw new Error(
+			"start_td_project: timed out waiting for bridge" +
+				(lastProbeError ? ` (last error: ${lastProbeError})` : "") +
+				` uiSnapshot=${JSON.stringify(snap)}`,
+		);
+	}
+
+	// Final UI pass after bridge is up (modal can coexist with HTTP)
+	const finalSnap = await params.deps.inspect(watchPid);
+	lastSnapshot = finalSnap;
+	if (finalSnap.dialogs.length > 0) {
+		const { dismissed } = await params.deps.dismissAll(finalSnap.dialogs);
+		for (const d of [...dismissed, ...finalSnap.dialogs]) {
+			unique.push(d);
+		}
+	}
+
+	return {
+		dismissedDialogs: dedupeDialogs(unique),
+		identity,
+		lastSnapshot,
+	};
+}
 
 export async function startTdProject(params: {
 	toePath: string;
@@ -29,6 +145,8 @@ export async function startTdProject(params: {
 	tdClient: TouchDesignerClient;
 	tdExe?: string;
 	timeoutMs?: number;
+	/** Test-only overrides */
+	_test?: Partial<StartWaitDeps> & { pid?: number; skipSpawn?: boolean };
 }): Promise<StartProjectResult> {
 	const toePath = resolve(params.toePath);
 	if (!existsSync(toePath)) {
@@ -42,26 +160,38 @@ export async function startTdProject(params: {
 		);
 	}
 
-	const exe = findTdExecutable(params.tdExe);
-	const child: ChildProcess = spawn(exe, [toePath], {
-		detached: true,
-		stdio: "ignore",
-		windowsHide: false,
-	});
-	child.unref();
-	const pid = child.pid;
-	if (!pid) {
-		throw new Error("start_td_project: failed to spawn TouchDesigner");
-	}
+	let pid = params._test?.pid;
+	if (!params._test?.skipSpawn) {
+		const exe = findTdExecutable(params.tdExe);
+		const child: ChildProcess = spawn(exe, [toePath], {
+			detached: true,
+			stdio: "ignore",
+			windowsHide: false,
+		});
+		child.unref();
+		pid = child.pid;
+		if (!pid) {
+			throw new Error("start_td_project: failed to spawn TouchDesigner");
+		}
 
-	const nextState: TdMcpState = {
-		...state,
-		exe,
-		pid,
-		started_at: new Date().toISOString(),
-		toe_launched: toePath,
-	};
-	writeState(projectDir, nextState);
+		const nextState: TdMcpState = {
+			...state,
+			exe,
+			pid,
+			started_at: new Date().toISOString(),
+			toe_launched: toePath,
+		};
+		writeState(projectDir, nextState);
+	} else if (!pid) {
+		throw new Error("start_td_project: _test.skipSpawn requires _test.pid");
+	} else {
+		writeState(projectDir, {
+			...state,
+			pid,
+			started_at: new Date().toISOString(),
+			toe_launched: toePath,
+		});
+	}
 
 	const host = state.host || "http://127.0.0.1";
 	const target = params.registry.upsertOwned({
@@ -74,26 +204,25 @@ export async function startTdProject(params: {
 	});
 
 	const timeoutMs = params.timeoutMs ?? 120_000;
-	const deadline = Date.now() + timeoutMs;
-	let identity: Record<string, unknown> | undefined;
-	let lastProbeError: string | undefined;
-	while (Date.now() < deadline) {
-		try {
-			identity = await probeIdentity(params.tdClient, target.id, host, state.port);
-			break;
-		} catch (error) {
-			lastProbeError = error instanceof Error ? error.message : String(error);
-			await sleep(1000);
-		}
-	}
-	if (!identity) {
-		throw new Error(
-			`start_td_project: timed out waiting for bridge on ${host}:${state.port}` +
-				(lastProbeError ? ` (last error: ${lastProbeError})` : ""),
-		);
-	}
+	const deadlineMs = Date.now() + timeoutMs;
 
-	// Prefer live osPid when available
+	const deps: StartWaitDeps = {
+		dismissAll: params._test?.dismissAll ?? dismissAllTdUiDialogs,
+		inspect: params._test?.inspect ?? inspectTdUi,
+		inspectLight: params._test?.inspectLight ?? inspectTdUiLight,
+		probe:
+			params._test?.probe ??
+			(() => probeIdentity(params.tdClient, target.id, host, state.port)),
+		sleepMs: params._test?.sleepMs,
+	};
+
+	const { identity, dismissedDialogs } = await waitForBridgeWithDialogs({
+		deadlineMs,
+		deps,
+		pid: pid as number,
+	});
+
+	const nextState = readState(projectDir) ?? state;
 	const livePid = Number(identity.osPid);
 	if (Number.isFinite(livePid) && livePid > 0) {
 		nextState.pid = livePid;
@@ -102,8 +231,9 @@ export async function startTdProject(params: {
 
 	params.registry.select(state.targetId);
 	return {
+		dismissedDialogs,
 		identity,
-		pid: nextState.pid ?? pid,
+		pid: nextState.pid ?? (pid as number),
 		port: state.port,
 		targetId: state.targetId,
 		toePath,
@@ -117,10 +247,10 @@ export async function stopTdProject(params: {
 }): Promise<{ stopped: true; targetId: string }> {
 	const { targetId } = params;
 	if (targetId === LAB_TARGET_ID) {
-		throw new Error("stop_td_project: refusing to stop builtin target \"lab\"");
+		throw new Error('stop_td_project: refusing to stop builtin target "lab"');
 	}
 	const target = params.registry.get(targetId);
-	if (!target || target.source !== "owned") {
+	if (target?.source !== "owned") {
 		throw new Error(
 			`stop_td_project: target "${targetId}" is not an MCP-owned instance`,
 		);
@@ -233,4 +363,22 @@ export async function probeIdentity(
 			};
 		}),
 	);
+}
+
+/** Resolve OS pid for sticky target (owned state or probed identity). */
+export function resolveTargetPid(
+	registry: TargetRegistry,
+	identityOsPid?: number,
+): number | null {
+	if (Number.isFinite(identityOsPid) && (identityOsPid as number) > 0) {
+		return identityOsPid as number;
+	}
+	const selected = registry.getSelected();
+	if (selected.projectDir) {
+		const state = readState(selected.projectDir);
+		if (state?.pid && state.pid > 0) {
+			return state.pid;
+		}
+	}
+	return null;
 }

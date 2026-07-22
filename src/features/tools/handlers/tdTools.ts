@@ -12,7 +12,13 @@ import {
 	type TargetRegistry,
 } from "../../../core/targetRegistry.js";
 import {
+	dismissAllTdUiDialogs,
+	dismissTdUiDialog,
+	inspectTdUi,
+} from "../../../lifecycle/tdDialogs.js";
+import {
 	probeIdentity,
+	resolveTargetPid,
 	startTdProject,
 	stopTdProject,
 } from "../../../lifecycle/tdProcess.js";
@@ -25,6 +31,7 @@ import {
 	selectTargetSchema,
 	startProjectSchema,
 	stopProjectSchema,
+	tdUiDialogsSchema,
 } from "../lifecycleToolDefinitions.js";
 import {
 	buildRegisteredToolMetadata,
@@ -176,6 +183,97 @@ export function registerTdTools(
 				return textResult(JSON.stringify(result, null, 2));
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.STOP_TD_PROJECT);
+			}
+		},
+	);
+
+	server.tool(
+		TOOL_NAMES.TD_UI_DIALOGS,
+		"Windows-only: list or dismiss TouchDesigner #32770 dialogs for the sticky target PID.",
+		tdUiDialogsSchema.strict().shape,
+		async (params: z.input<typeof tdUiDialogsSchema>) => {
+			try {
+				if (process.platform !== "win32") {
+					return textResult(
+						JSON.stringify({
+							error: "td_ui_dialogs is Windows-only",
+							platform: process.platform,
+						}),
+					);
+				}
+				let pid = resolveTargetPid(registry);
+				if (!pid) {
+					const selected = registry.getSelected();
+					try {
+						const identity = await probeIdentity(
+							tdClient,
+							selected.id,
+							selected.host,
+							selected.port,
+						);
+						pid = resolveTargetPid(registry, Number(identity.osPid));
+					} catch {
+						// fall through
+					}
+				}
+				if (!pid) {
+					throw new Error(
+						"td_ui_dialogs: no OS pid for sticky target (start owned project or ensure bridge is up)",
+					);
+				}
+				const listed = await inspectTdUi(pid);
+				if (params.action === "list") {
+					return textResult(
+						JSON.stringify(
+							{
+								dialogs: listed.dialogs,
+								inspectTimedOut: listed.inspectTimedOut ?? false,
+								mainWindowTitle: listed.mainWindowTitle,
+								pid,
+								responding: listed.responding,
+							},
+							null,
+							2,
+						),
+					);
+				}
+				const targets = params.title
+					? listed.dialogs.filter((d) => d.title === params.title)
+					: listed.dialogs;
+				const toDismiss =
+					params.title && targets.length === 0
+						? [
+								{
+									message: "",
+									severity: "unknown" as const,
+									title: params.title,
+								},
+							]
+						: targets;
+				const { attempted, dismissed } = params.title
+					? {
+							attempted: toDismiss,
+							dismissed: (await dismissTdUiDialog(params.title)).dismissed
+								? toDismiss
+								: [],
+						}
+					: await dismissAllTdUiDialogs(toDismiss);
+				const still = await inspectTdUi(pid);
+				return textResult(
+					JSON.stringify(
+						{
+							attempted,
+							dismissed,
+							pid,
+							responding: still.responding,
+							stillOpen: still.dialogs,
+						},
+						null,
+						2,
+					),
+				);
+			} catch (error) {
+				return handleToolError(error, logger, TOOL_NAMES.TD_UI_DIALOGS);
 			}
 		},
 	);

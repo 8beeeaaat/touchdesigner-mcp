@@ -23,12 +23,13 @@ export const TOOL_NAMES = {
 	GET_TD_NODES: "get_td_nodes",
 	GET_TOE_DIGEST: "get_toe_digest",
 	GET_TOE_NODE: "get_toe_node",
-	INJECT_TD_MCP: "inject_td_mcp",
 	GET_TOP_IMAGE: "get_top_image",
+	INJECT_TD_MCP: "inject_td_mcp",
 	LIST_TD_TARGETS: "list_td_targets",
 	SELECT_TD_TARGET: "select_td_target",
 	START_TD_PROJECT: "start_td_project",
 	STOP_TD_PROJECT: "stop_td_project",
+	TD_UI_DIALOGS: "td_ui_dialogs",
 	UPDATE_TD_NODE_PARAMETERS: "update_td_node_parameters",
 } as const;
 

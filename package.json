@@ -80,6 +80,7 @@
 		"test:integration": "vitest run ./tests/integration",
 		"test:unit": "vitest run ./tests/unit",
 		"test:live-lifecycle": "node ./scripts/liveLifecycle.mjs",
+		"test:live-dialogs": "node ./scripts/liveTdDialogs.mjs",
 		"test:toe-digest-smoke": "node ./scripts/toeDigestSmoke.mjs",
 		"test:toe-digest-e2e": "node ./scripts/toeDigestE2E.mjs",
 		"test:toe-digest-replay": "node ./scripts/toeDigestReplay.mjs",

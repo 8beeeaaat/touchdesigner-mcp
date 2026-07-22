@@ -32,6 +32,11 @@ description: >-
 
 Ports: lab **9981**; reserved **9982** Stagepad / **9983** 4designer; owned **≥9984**.
 
+## UI dialogs (Windows)
+
+- `start_td_project` returns `dismissedDialogs` (hard/unknown ⇒ stop+fix; soft OK continue). See AGENT_MCP failure cookbook.
+- Mid-session: `td_ui_dialogs({ action: "list"|"dismiss" })`.
+
 ## Build + reload
 
 ```text

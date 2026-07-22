@@ -70,8 +70,9 @@ Prefer named tools for single operations. Use `execute_python_script` for multi-
 | `list_td_targets` | In-memory registry (lab + MCP-owned). **No liveness probe.** |
 | `select_td_target` | Sticky select by `id`; **probes** identity; fails if unknown or offline |
 | `create_td_project` | Copy template → `destDir`; write `.tdmcp/state.json`; upsert owned. **Does not start TD or select.** |
-| `start_td_project` | Spawn TD on `toePath` (requires `.tdmcp/state.json`); wait for bridge; **selects** owned |
+| `start_td_project` | Spawn TD on `toePath` (requires `.tdmcp/state.json`); wait for bridge; auto-dismiss Windows `#32770` dialogs; **selects** owned. Returns `dismissedDialogs[]` |
 | `stop_td_project` | Soft quit then kill owned PID. **Refuses `lab`.** |
+| `td_ui_dialogs` | **Windows-only.** `action: list\|dismiss` for sticky-target PID: list dialogs + `responding` / `mainWindowTitle`, or dismiss `#32770` by title (omit title = all listed). Does not unstick a hung UI thread |
 
 ### Offline ToeDigest / inject (alpha)
 
@@ -156,7 +157,7 @@ Always match `projectFolder` + `projectName` prefix to the user’s intent befor
 | Step | Tool | Notes |
 |------|------|-------|
 | 1 | `create_td_project` | `{ destDir, name?, port? }` — copies [`templates/mcp_project`](../templates/mcp_project/); writes `.tdmcp/state.json`; **does not select** |
-| 2 | `start_td_project` | `{ toePath, tdExe?, timeoutMs? }` — requires state file beside the toe; **selects** the owned target |
+| 2 | `start_td_project` | `{ toePath, tdExe?, timeoutMs? }` — requires state file beside the toe; **selects** the owned target; returns `dismissedDialogs` |
 | 3 | Work | Node/script tools on sticky owned target |
 | 4 | `stop_td_project` | `{ targetId }` — refuses `lab`; if that target was selected, sticky falls back to `lab` |
 
@@ -259,6 +260,10 @@ get_toe_node({ toePath, path: "project1/membrane_frag", profile: "deep" })
 | `NODE_NAME_DUPLICATE` / `TOC_DUPLICATE` | Duplicate op names or `.toc` lines (case variants) | `onConflict: "replace"`; inject always wipes reserved stems before graft; use `get_toe_digest({ mode: "validate" })` for details |
 | `TOX_NAME_COLLISION` | Project-root `.tox` stem matches an op | Delete root `tdmcp_bridge.tox` / `mcp_webserver_base.tox`; keep tox only under `modules/`; re-inject |
 | `mcp_webserver_base` / `…base1` / “Unexpected node duplication … in file” | Embedded bridge / project-root `.tox` / old shell-host merge | Re-inject with current MCP (`runtimeBridge:loadTox`, tox only under `modules/`); delete leftover root bridge `.tox` |
+| Non-empty `dismissedDialogs` with `severity: hard` or `unknown` after `start_td_project` | Load/UI modal (e.g. duplication) was shown (may have been auto-dismissed) | **Stop mutate.** `stop_td_project` if owned; remove root `.tox` / re-inject / `validate`; do not continue as if healthy |
+| `dismissedDialogs` only `severity: soft` (e.g. Backwards Compatiblity Issue) | TD runtime advisory | Safe to continue; optional user re-save later clears warning |
+| `start_td_project` timeout with `uiSnapshot` `responding: false` | TD UI stuck / hung during open | Stop grinding; `stop_td_project` or kill orphan PID; new `destDir` / foreign-toe ladder |
+| Mid-session modal still open | Bridge up while `#32770` remains | `td_ui_dialogs({ action: "list" })` then `dismiss`; re-check |
 | `NO_PROJECT1` | Foreign toe has no `project1` | v1 unsupported; recreate under template or ask user |
 | `SOURCE_LOCKED` | Source `.toe` open in TD | Close TD or copy file first |
 | `INJECT_VERIFY_FAILED` / 0-byte toe | Collapse/toc corruption or expand rename | Prefer in-place collapse; check `toecollapse`; retry; never hand-edit `.toc` with BOM/lossy tools |
