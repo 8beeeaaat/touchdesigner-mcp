@@ -49,6 +49,10 @@
 		"typescript": "6.0.3",
 		"vitest": "4.1.9"
 	},
+	"overrides": {
+		"@hono/node-server": "2.0.11",
+		"js-yaml": "4.3.0"
+	},
 	"type": "module",
 	"exports": {
 		".": {
