@@ -76,17 +76,20 @@ export async function startTdProject(params: {
 	const timeoutMs = params.timeoutMs ?? 120_000;
 	const deadline = Date.now() + timeoutMs;
 	let identity: Record<string, unknown> | undefined;
+	let lastProbeError: string | undefined;
 	while (Date.now() < deadline) {
 		try {
 			identity = await probeIdentity(params.tdClient, target.id, host, state.port);
 			break;
-		} catch {
+		} catch (error) {
+			lastProbeError = error instanceof Error ? error.message : String(error);
 			await sleep(1000);
 		}
 	}
 	if (!identity) {
 		throw new Error(
-			`start_td_project: timed out waiting for bridge on ${host}:${state.port}`,
+			`start_td_project: timed out waiting for bridge on ${host}:${state.port}` +
+				(lastProbeError ? ` (last error: ${lastProbeError})` : ""),
 		);
 	}
 

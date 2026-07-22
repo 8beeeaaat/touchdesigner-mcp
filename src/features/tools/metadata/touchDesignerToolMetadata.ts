@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { ToolNames } from "../index.js";
 import { LIFECYCLE_TOOL_DEFINITIONS } from "../lifecycleToolDefinitions.js";
+import { TOE_TOOL_DEFINITIONS } from "../toeToolDefinitions.js";
 import {
 	TOOL_DEFINITIONS,
 	type ToolCategory,
@@ -59,11 +60,12 @@ export function buildToolMetadata(
 	});
 }
 
-/** Full manifest: OpenAPI-backed tools + target/lifecycle tools. */
+/** Full manifest: OpenAPI-backed tools + target/lifecycle + toe tools. */
 export function buildRegisteredToolMetadata(): ToolMetadata[] {
 	return [
 		...buildToolMetadata(TOOL_DEFINITIONS),
 		...buildToolMetadata(LIFECYCLE_TOOL_DEFINITIONS),
+		...buildToolMetadata(TOE_TOOL_DEFINITIONS),
 	];
 }
 

@@ -7,6 +7,9 @@ tox default port 9981 and collisions break multi-instance.
 
 Call once on project start (Execute DAT onStart), or it is invoked from
 mcp_webserver_script when the bridge loads.
+
+Note: this module is imported (not run as a DAT body), so TD names like
+`project` / `op` are not in scope — use `td.project` / `td.op` instead.
 """
 
 from __future__ import annotations
@@ -16,9 +19,16 @@ import os
 from typing import Any, Optional
 
 
+def _td() -> Any:
+	"""TouchDesigner injects project/op into DAT/script scopes, not importable modules."""
+	import td
+
+	return td
+
+
 def _state_path() -> Optional[str]:
 	try:
-		folder = project.folder  # type: ignore[name-defined]
+		folder = _td().project.folder
 	except Exception:
 		return None
 	path = os.path.join(folder, ".tdmcp", "state.json")
@@ -42,18 +52,19 @@ def read_port() -> Optional[int]:
 def find_webserver(hint: Any = None) -> Any:
 	if hint is not None:
 		return hint
+	td = _td()
 	# Common layout: /project1/mcp_webserver_base/.../webserver*
 	try:
-		root = op("/project1/mcp_webserver_base")  # type: ignore[name-defined]
+		root = td.op("/project1/mcp_webserver_base")
 	except Exception:
 		root = None
 	if root is None:
 		try:
-			root = op("/project1")  # type: ignore[name-defined]
+			root = td.op("/project1")
 		except Exception:
 			return None
 	try:
-		for child in root.findChildren(type=webserverDAT, maxDepth=4):  # type: ignore[name-defined]
+		for child in root.findChildren(type=td.webserverDAT, maxDepth=4):
 			return child
 	except Exception:
 		pass

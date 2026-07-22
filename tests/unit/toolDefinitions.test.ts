@@ -1,6 +1,7 @@
 ﻿import { describe, expect, it } from "vitest";
 import { TOOL_NAMES } from "../../src/core/constants.js";
 import { LIFECYCLE_TOOL_DEFINITIONS } from "../../src/features/tools/lifecycleToolDefinitions.js";
+import { TOE_TOOL_DEFINITIONS } from "../../src/features/tools/toeToolDefinitions.js";
 import {
 	buildRegisteredToolMetadata,
 	buildToolMetadata,
@@ -48,7 +49,9 @@ describe("buildRegisteredToolMetadata", () => {
 
 	it("includes OpenAPI tools and lifecycle/target tools", () => {
 		expect(metadata).toHaveLength(
-			TOOL_DEFINITIONS.length + LIFECYCLE_TOOL_DEFINITIONS.length,
+			TOOL_DEFINITIONS.length +
+				LIFECYCLE_TOOL_DEFINITIONS.length +
+				TOE_TOOL_DEFINITIONS.length,
 		);
 		const names = metadata.map((entry) => entry.tool);
 		expect(names).toContain(TOOL_NAMES.LIST_TD_TARGETS);
@@ -56,6 +59,7 @@ describe("buildRegisteredToolMetadata", () => {
 		expect(names).toContain(TOOL_NAMES.CREATE_TD_PROJECT);
 		expect(names).toContain(TOOL_NAMES.START_TD_PROJECT);
 		expect(names).toContain(TOOL_NAMES.STOP_TD_PROJECT);
+		expect(names).toContain(TOOL_NAMES.GET_TOE_DIGEST);
 		expect(names).toContain(TOOL_NAMES.GET_TD_INFO);
 		expect(names).not.toContain(TOOL_NAMES.DESCRIBE_TD_TOOLS);
 	});

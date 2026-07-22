@@ -6,17 +6,18 @@ import { handleToolError } from "../../../core/errorHandling.js";
 import { createTdProject } from "../../../core/lifecycle.js";
 import type { ILogger } from "../../../core/logger.js";
 import { runWithTarget } from "../../../core/targetContext.js";
+import { withTargetQueue } from "../../../core/targetQueue.js";
 import {
 	getTargetRegistry,
 	type TargetRegistry,
 } from "../../../core/targetRegistry.js";
-import { withTargetQueue } from "../../../core/targetQueue.js";
 import {
 	probeIdentity,
 	startTdProject,
 	stopTdProject,
 } from "../../../lifecycle/tdProcess.js";
 import type { TouchDesignerClient } from "../../../tdClient/touchDesignerClient.js";
+import { getToeDigest } from "../../../toe/digest.js";
 import {
 	createProjectSchema,
 	selectTargetSchema,
@@ -28,6 +29,7 @@ import {
 	type ToolMetadata,
 } from "../metadata/touchDesignerToolMetadata.js";
 import { formatToolMetadata } from "../presenter/index.js";
+import { getToeDigestSchema } from "../toeToolDefinitions.js";
 import { TOOL_DEFINITIONS, type ToolRunResult } from "../toolDefinitions.js";
 import { detailOnlyFormattingSchema } from "../types.js";
 
@@ -56,12 +58,10 @@ export function registerTdTools(
 			async (params: Record<string, unknown> = {}) => {
 				try {
 					const selected = registry.getSelected();
-					const output = await runWithTarget(
-						registry.asOrigin(selected),
-						() =>
-							withTargetQueue(selected.id, () =>
-								definition.run({ logger, params, tdClient }),
-							),
+					const output = await runWithTarget(registry.asOrigin(selected), () =>
+						withTargetQueue(selected.id, () =>
+							definition.run({ logger, params, tdClient }),
+						),
 					);
 					return createToolResult(tdClient, output);
 				} catch (error) {
@@ -107,9 +107,7 @@ export function registerTdTools(
 					selected.host,
 					selected.port,
 				);
-				return textResult(
-					JSON.stringify({ selected, identity }, null, 2),
-				);
+				return textResult(JSON.stringify({ identity, selected }, null, 2));
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.SELECT_TD_TARGET);
 			}
@@ -172,6 +170,20 @@ export function registerTdTools(
 				return textResult(JSON.stringify(result, null, 2));
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.STOP_TD_PROJECT);
+			}
+		},
+	);
+
+	server.tool(
+		TOOL_NAMES.GET_TOE_DIGEST,
+		"[alpha] Offline ToeDigest of a .toe via toeexpand (cached). Modes: stats, outline (default), nodes. Token-capped; paths are expand-relative. API may change.",
+		getToeDigestSchema.strict().shape,
+		async (params: z.input<typeof getToeDigestSchema>) => {
+			try {
+				const result = await getToeDigest(params);
+				return textResult(JSON.stringify(result, null, 2));
+			} catch (error) {
+				return handleToolError(error, logger, TOOL_NAMES.GET_TOE_DIGEST);
 			}
 		},
 	);

@@ -30,6 +30,7 @@ Prefer named tools for single operations. Use `execute_python_script` for multi-
 | `create_td_project` | Copy template → `destDir`; write `.tdmcp/state.json`; upsert owned. **Does not start TD or select.** |
 | `start_td_project` | Spawn TD on `toePath` (requires `.tdmcp/state.json`); wait for bridge; **selects** owned |
 | `stop_td_project` | Soft quit then kill owned PID. **Refuses `lab`.** |
+| `get_toe_digest` | **Alpha.** Offline ToeDigest via `toeexpand` (cached). Does not start TD. See [`toe-digest.md`](toe-digest.md). |
 
 ### Project / nodes / scripts
 
@@ -112,6 +113,17 @@ Ports: lab **9981**; reserved **9982** / **9983** (other local products — allo
 | 4 | `stop_td_project` | `{ targetId }` — refuses `lab`; if that target was selected, sticky falls back to `lab` |
 
 Exe resolution: optional `tdExe`, else `TDINSTALL_TD_EXE` / `TOUCHDESIGNER_EXE`, else platform default.
+
+## Offline ToeDigest (alpha)
+
+Inspect a `.toe` on disk without opening TouchDesigner. **Alpha:** outline/stats shape and caps may change; do not treat as a stable public API yet.
+
+```text
+get_toe_digest({ toePath: "C:/…/project.toe", mode: "stats" })
+get_toe_digest({ toePath: "C:/…/project.toe", mode: "outline", path: "project1", maxDepth: 2 })
+```
+
+Modes: `stats` | `outline` (default) | `nodes`. Token caps: `maxNodes` / `maxChars`. Expand is copied into a temp cache — never beside scrape `raw/`. Details + E2E checklist: [`toe-digest.md`](toe-digest.md).
 
 ## Agent loop (Definition of Done)
 
