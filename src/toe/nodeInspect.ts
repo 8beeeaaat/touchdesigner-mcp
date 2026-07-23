@@ -68,7 +68,13 @@ export type ToeNodeResult = {
 		family?: string;
 	}[];
 	outputs?: { consumer: string; index: number }[];
-	parms?: { name: string; raw: string; isExpr: boolean }[];
+	parms?: {
+		name: string;
+		raw: string;
+		isExpr: boolean;
+		prefix: number;
+		parMode: string;
+	}[];
 	text?: string;
 	meta?: { tile?: string; flags?: string; cookOff?: boolean };
 	/** COMP Python Ext slots (ext0…), not TD Preferences packages. */
@@ -259,6 +265,8 @@ export async function getToeNode(opts: ToeNodeOptions): Promise<ToeNodeResult> {
 		result.parms = sliced.map((r: ParmRow) => ({
 			isExpr: r.isExpr,
 			name: r.name,
+			parMode: r.parMode,
+			prefix: r.prefix,
 			raw: r.raw.length > 200 ? `${r.raw.slice(0, 197)}…` : r.raw,
 		}));
 		if (rows.length > maxParms) {

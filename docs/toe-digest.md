@@ -89,7 +89,8 @@ Cache: `%TEMP%/tdmcp-toe-cache/<sha256>/`. **Never** writes beside the source to
 | Digest / expand | Live |
 |-----------------|------|
 | Expand-relative path `project1/foo` | Best-effort `suggestedOpPath` ≈ `/project1/foo` — **not guaranteed** |
-| `.n` inputs / `.network` compinputs | Operator wires / COMP inputs — exports/binds incomplete in W0 |
+| `.n` inputs / `.network` compinputs | Operator wires / COMP inputs |
+| `wires` export/bind (Gate P3) | `.parm` prefix `2` / `67109443` → digest kinds `export` / `bind` when a path/op ref is present |
 | `extensions` / `ext0object` | COMP Python Exts; confirm live with `get_td_node_parameters` if mutating |
 | Cook / TOP pixels | **Not** in ToeDigest — use live `get_td_node_errors` / `get_top_image` |
 
@@ -118,6 +119,30 @@ start_td_project({ toePath: "C:/tmp/demo_mcp/demo.toe" })
 Replace/upgrade: new empty `destDir`, `toePath` = previously injected toe, `onConflict: "replace"`. Full cookbooks: [`AGENT_MCP.md`](AGENT_MCP.md).
 
 Unknown / downloaded toes (open vs digest-only, inject failure ladder, recreate last resort, immutable source): [`AGENT_MCP.md`](AGENT_MCP.md) *Unknown / downloaded / archive `.toe`* and Cursor playbook [foreign-toe.md](../../../.cursor/skills/touchdesigner-mcp/reference/foreign-toe.md).
+
+## Expand-format research (undocumented IR)
+
+Derivative does **not** publish a formal grammar for `toeexpand` sidecars. Empirical
+reverse-analysis (grammars, axes, live probes, CRLF→0kb collapse confirmation) lives in
+the monorepo research tree:
+
+[`docs/td-technics/toe-format/`](../../../docs/td-technics/toe-format/README.md)
+
+That tree is **not** an operate contract. Promote only `confirmed` claims into parsers.
+Known promote: outline sidecar skip-set includes `.replicator` (replicator COMP state file).
+
+Coverage matrix (Wave 2): [`FEATURES.md`](../../../docs/td-technics/toe-format/FEATURES.md).
+Mode-prefix map: [`catalog/parm_modes.json`](../../../docs/td-technics/toe-format/catalog/parm_modes.json).
+
+Confirmed operational notes from research (also in `toe-format/grammars/`):
+
+- `.toc` must keep expand newline style — CRLF conversion can yield **0-byte** collapse
+- Text DAT `.text`: 27-byte header, magic `2\\n*`, BE uint16 length at bytes 25–26
+- Table DAT `.table`: magic `1\\n*` (distinct from text); length-prefixed cells
+- Wire kinds: `op` (`.n` inputs), `comp` (`.network` compinputs), `select` (parm paths), **`export` / `bind`** (Gate P3: `.parm` prefixes `2` / `67109443` when a path/op ref is present)
+- **`.parm` mode prefixes:** `0`=CONSTANT, `2`=EXPORT, `17`=EXPRESSION, `67109443`=BIND; `parseParmRows` exposes `prefix` + `parMode`; other prefixes → `unknown`
+- COMP Exts: local `extN*` prefix `0`; Annotate/native shortcut `op.TD…` prefix `256`
+- Bitfield / custom flags: see [`parm-bitfield.md`](../../../docs/td-technics/toe-format/grammars/parm-bitfield.md) (research; not all mapped in digest)
 
 ## Tests
 

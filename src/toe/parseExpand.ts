@@ -25,12 +25,44 @@ export type CompInputEdge = {
 
 export type WireEdge = OpInputEdge | CompInputEdge;
 
+/** Mapped from confirmed expand mode prefixes (Gate P3). */
+export type ParMode =
+	| "constant"
+	| "expression"
+	| "export"
+	| "bind"
+	| "unknown";
+
 export type ParmRow = {
 	name: string;
 	/** Remainder of the parm line after the name (raw). */
 	raw: string;
 	isExpr: boolean;
+	/** Leading int on the parm line, or -1 if absent. */
+	prefix: number;
+	parMode: ParMode;
 };
+
+/** Confirmed prefix → ParMode map (TD 2025.33070). Other prefixes stay unknown. */
+export function parModeFromPrefix(prefix: number): ParMode {
+	switch (prefix) {
+		case 0:
+			return "constant";
+		case 2:
+			return "export";
+		case 17:
+			return "expression";
+		case 67109443:
+			return "bind";
+		default:
+			return "unknown";
+	}
+}
+
+function leadingPrefix(raw: string): number {
+	const m = raw.match(/^(\d+)\b/);
+	return m ? Number(m[1]) : -1;
+}
 
 export type RefHit = {
 	path: string;
@@ -123,7 +155,7 @@ export function parseCompInputs(
 
 /**
  * Parse `.parm` into named rows. Skips lone `?` separators.
- * Expression heuristic: op(, /project, parent(), me., externaltox.
+ * Prefix/parMode from confirmed mode map; isExpr also uses text heuristic.
  */
 export function parseParmRows(parmBody: string): ParmRow[] {
 	const rows: ParmRow[] = [];
@@ -132,14 +164,27 @@ export function parseParmRows(parmBody: string): ParmRow[] {
 		if (!t || t === "?") continue;
 		const sp = t.search(/\s/);
 		if (sp < 0) {
-			rows.push({ isExpr: EXPR_HINT.test(t), name: t, raw: "" });
+			rows.push({
+				isExpr: EXPR_HINT.test(t),
+				name: t,
+				parMode: "unknown",
+				prefix: -1,
+				raw: "",
+			});
 			continue;
 		}
 		const name = t.slice(0, sp);
 		const raw = t.slice(sp).trim();
+		const prefix = leadingPrefix(raw);
+		const parMode = prefix < 0 ? "unknown" : parModeFromPrefix(prefix);
 		rows.push({
-			isExpr: EXPR_HINT.test(raw) || name.toLowerCase() === "externaltox",
+			isExpr:
+				parMode === "expression" ||
+				EXPR_HINT.test(raw) ||
+				name.toLowerCase() === "externaltox",
 			name,
+			parMode,
+			prefix,
 			raw,
 		});
 	}

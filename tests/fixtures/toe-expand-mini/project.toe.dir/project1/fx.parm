@@ -5,4 +5,5 @@ ext0name 0 FxExt
 ext0promote 0 on
 externaltox 17 "" "me.parent().fileFolder + '/mods/demo.tox'"
 audio 0 op('project1/noise1')
+Bound 67109443 0 op('../noise1')
 ?

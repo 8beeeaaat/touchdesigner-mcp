@@ -159,6 +159,7 @@ const SIDECAR_EXT = new Set([
 	".lod",
 	".tox",
 	".xyzw",
+	".replicator",
 ]);
 
 export type DigestOptions = {

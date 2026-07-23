@@ -6,7 +6,7 @@ Source of truth for agents using **this fork** (branch `multi-instance` and buil
 
 | Mode | When | Definition of Done |
 |------|------|--------------------|
-| **Operate** | Drive live TD, multi-instance, or offline ToeDigest | Identity asserted → tools used correctly → verify (`get_td_node_errors` / `get_top_image` or ToeDigest recipe). Stop after **3** failed probes with no new evidence. |
+| **Operate** | Drive live TD, multi-instance, or offline ToeDigest | Identity asserted → tools used correctly → verify (`get_td_node_errors` / `get_top_image` / **FPS Perform CHOP monitor** or ToeDigest recipe). Stop after **3** failed probes with no new evidence. |
 | **Document** | Changing tools/schemas/docs/skills, or asked to update agent docs | Diff runtime inventory vs this file → edit **this SoT first** → update README/skills → `npm run build` if schemas changed → restart MCP → scenario checklist green. Do not paraphrase READMEs into skills. |
 
 **Runtime schemas win** for tool names and parameters (`describe_td_tools` / Zod in `dist`). This document must match a built `dist/`.
@@ -269,6 +269,7 @@ get_toe_node({ toePath, path: "project1/membrane_frag", profile: "deep" })
 | `INJECT_VERIFY_FAILED` / 0-byte toe | Collapse/toc corruption or expand rename | Prefer in-place collapse; check `toecollapse`; retry; never hand-edit `.toc` with BOM/lossy tools |
 | `ModuleNotFoundError: mcp` after start | Missing `modules/` or failed `loadTox` | Re-`inject` with `replace`; ensure `modules/` + `modules/tdmcp_bridge.tox` |
 | Black `get_top_image` | Visual failure, not success | Fix network; do not claim pass |
+| Low viewer FPS / hitching | `cookRate` is target only; heavy TOP (e.g. HD sparse Noise) can tank FPS while image is non-black | Sample Perform CHOP `fps` + rank `cookTime` on the touched TOP chain; fix hotspots before claiming realtime |
 
 ## Agent loop (Operate DoD)
 
@@ -276,7 +277,7 @@ get_toe_node({ toePath, path: "project1/membrane_frag", profile: "deep" })
 2. `select_td_target` when not using lab (or after `start` which already selects)
 3. Assert identity (`projectFolder` / `projectName` prefix)
 4. Mutate via existing tools
-5. Verify: `get_td_node_errors` clean on the touched subtree; for visuals, `get_top_image` shows the expected result (black frame = fail)
+5. Verify: `get_td_node_errors` clean on the touched subtree; for visuals, `get_top_image` shows the expected result (black frame = fail); sample achieved FPS via Perform CHOP monitor + `cookTime` hotspots (`cookRate` is not a pass)
 
 Stop after **3** failed calls with no new evidence.
 

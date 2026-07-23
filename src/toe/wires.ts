@@ -24,7 +24,17 @@ export type SelectParmEdge = {
 	index: number;
 };
 
-export type DigestWireEdge = WireEdge | SelectParmEdge;
+/** Export/bind edges from confirmed `.parm` mode prefixes (Gate P3). */
+export type ModeParmEdge = {
+	kind: "export" | "bind";
+	to: string;
+	from: string;
+	param: string;
+	index: number;
+	prefix: number;
+};
+
+export type DigestWireEdge = WireEdge | SelectParmEdge | ModeParmEdge;
 
 function passesFilter(rel: string, filter: string): boolean {
 	if (!filter) return true;
@@ -184,6 +194,7 @@ export function hubChildrenWires(
 
 	if (includeSelect) {
 		out.push(...collectSelectParmEdges(expandDir, hub));
+		out.push(...collectModeParmEdges(expandDir, hub));
 	}
 	return out;
 }
@@ -213,24 +224,21 @@ function extractPathValue(raw: string): string {
 		.replace(/^["']|["']$/g, "");
 }
 
+/** Prefer `op('path')` target for bind/export payloads. */
+function extractModeRef(raw: string): string {
+	const opCall = raw.match(/\bop\s*\(\s*['"]([^'"]+)['"]\s*\)/);
+	if (opCall) return opCall[1];
+	const parentPath = raw.match(/\bparent\s*\(/);
+	if (parentPath) return extractPathValue(raw);
+	return extractPathValue(raw);
+}
+
 function collectSelectParmEdges(
 	expandDir: string,
 	hub: string,
 ): SelectParmEdge[] {
-	const hubAbs = join(expandDir, hub);
-	if (!existsSync(hubAbs)) return [];
-	let names: string[];
-	try {
-		names = readdirSync(hubAbs);
-	} catch {
-		return [];
-	}
 	const edges: SelectParmEdge[] = [];
-	for (const name of names) {
-		if (!name.toLowerCase().endsWith(".parm")) continue;
-		const nodeRel = `${hub}/${name.slice(0, -5)}`;
-		const body = readTextFile(join(hubAbs, name));
-		if (!body) continue;
+	for (const { nodeRel, body } of listHubParmBodies(expandDir, hub)) {
 		for (const row of parseParmRows(body)) {
 			if (!SELECT_PARMS.has(row.name.toLowerCase())) continue;
 			const from = extractPathValue(row.raw);
@@ -245,6 +253,56 @@ function collectSelectParmEdges(
 		}
 	}
 	return edges;
+}
+
+/**
+ * Collect export/bind wire edges from `.parm` rows whose prefix maps to those modes.
+ * Skips rows without a resolvable path/op snippet (no invented endpoints).
+ */
+function collectModeParmEdges(expandDir: string, hub: string): ModeParmEdge[] {
+	const edges: ModeParmEdge[] = [];
+	for (const { nodeRel, body } of listHubParmBodies(expandDir, hub)) {
+		for (const row of parseParmRows(body)) {
+			if (row.parMode !== "export" && row.parMode !== "bind") continue;
+			const fromRaw = extractModeRef(row.raw);
+			if (!looksLikeOpPath(fromRaw) && !fromRaw.includes("/")) continue;
+			edges.push({
+				from: resolveSiblingPath(nodeRel, fromRaw),
+				index: 0,
+				kind: row.parMode,
+				param: row.name,
+				prefix: row.prefix,
+				to: nodeRel,
+			});
+		}
+	}
+	return edges;
+}
+
+/** Hub COMP `.parm` (sibling file) plus immediate child `*.parm` under the hub dir. */
+function listHubParmBodies(
+	expandDir: string,
+	hub: string,
+): { nodeRel: string; body: string }[] {
+	const out: { nodeRel: string; body: string }[] = [];
+	const hubParm = readTextFile(join(expandDir, `${hub}.parm`));
+	if (hubParm) out.push({ body: hubParm, nodeRel: hub });
+
+	const hubAbs = join(expandDir, hub);
+	if (!existsSync(hubAbs)) return out;
+	let names: string[];
+	try {
+		names = readdirSync(hubAbs);
+	} catch {
+		return out;
+	}
+	for (const name of names) {
+		if (!name.toLowerCase().endsWith(".parm")) continue;
+		const nodeRel = `${hub}/${name.slice(0, -5)}`;
+		const body = readTextFile(join(hubAbs, name));
+		if (body) out.push({ body, nodeRel });
+	}
+	return out;
 }
 
 /**
@@ -345,6 +403,10 @@ export function formatWireEdgesText(
 			const conn = e.connector ? `:${e.connector}` : "";
 			const fam = e.family ? ` ${e.family}` : "";
 			lines.push(`${e.from} -> ${e.to}${conn}  # comp in${e.index}${fam}`);
+		} else if (e.kind === "export" || e.kind === "bind") {
+			lines.push(
+				`${e.from} -> ${e.to}  # ${e.kind} ${e.param} prefix=${e.prefix}`,
+			);
 		} else {
 			lines.push(`${e.from} -> ${e.to}  # select ${e.param}`);
 		}

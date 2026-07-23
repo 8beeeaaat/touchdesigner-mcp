@@ -9,7 +9,11 @@ import {
 } from "../../src/toe/parseExpand.js";
 import { collectRefs, formatRefsText } from "../../src/toe/refs.js";
 import { tryFindToeexpand } from "../../src/toe/toeTools.js";
-import { collectWireEdges, formatWireEdgesText } from "../../src/toe/wires.js";
+import {
+	collectWireEdges,
+	formatWireEdgesText,
+	hubChildrenWires,
+} from "../../src/toe/wires.js";
 
 const fixtureRoot = fileURLToPath(
 	new URL("../fixtures/toe-expand-mini/project.toe.dir", import.meta.url),
@@ -51,18 +55,28 @@ end
 		]);
 	});
 
-	it("parses parm rows and classifies refs", () => {
+	it("parses parm rows with prefix/parMode and classifies refs", () => {
 		const rows = parseParmRows(`?
 externaltox 17 "" "me.parent().fileFolder + '/mods/demo.tox'"
 frequency 0 0.5
 Audiochop 1 /project1/audio/null_out parent().op('audio/null_out')
+offsetx 2 1
+V2float 67109443 0 op('../const1').par.value0
 ?
 `);
 		expect(rows.map((r) => r.name)).toEqual([
 			"externaltox",
 			"frequency",
 			"Audiochop",
+			"offsetx",
+			"V2float",
 		]);
+		expect(rows[0].prefix).toBe(17);
+		expect(rows[0].parMode).toBe("expression");
+		expect(rows[1].parMode).toBe("constant");
+		expect(rows[3].parMode).toBe("export");
+		expect(rows[4].parMode).toBe("bind");
+		expect(rows[2].parMode).toBe("unknown");
 		expect(classifyRef("externaltox", rows[0].raw)).toBe("externaltox");
 		expect(classifyRef("Audiochop", rows[2].raw)).toBe("op");
 		expect(classifyRef("frequency", rows[1].raw)).toBeNull();
@@ -86,6 +100,16 @@ describe("wires + refs on fixture", () => {
 		const text = formatRefsText(hits, 40, 6000).text;
 		expect(text.toLowerCase()).toContain("externaltox");
 		expect(text).toMatch(/audio|op\(/i);
+	});
+
+	it("emits bind wire from confirmed mode prefix", () => {
+		const edges = hubChildrenWires(fixtureRoot, "project1/fx", {
+			includeSelectParms: true,
+		});
+		const bind = edges.filter((e) => e.kind === "bind");
+		expect(bind.length).toBeGreaterThanOrEqual(1);
+		const text = formatWireEdgesText(edges, 80, 6000).text;
+		expect(text).toMatch(/# bind Bound prefix=67109443/);
 	});
 });
 
