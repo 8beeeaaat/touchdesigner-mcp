@@ -76,8 +76,8 @@ describe("ALS URL rewrite", () => {
 });
 
 describe("port allocator", () => {
-	test("skips 9982 and 9983", async () => {
-		// Occupy 9984 so allocator must move; ensure result not 9982/9983
+	test("skips hub/lab/stagepad/4designer reserved ports", async () => {
+		// Occupy 9984 so allocator must move; ensure result not 9980–9983
 		const blockers: ReturnType<typeof createServer>[] = [];
 		try {
 			for (const p of [9984, 9985]) {
@@ -88,10 +88,9 @@ describe("port allocator", () => {
 				});
 				blockers.push(s);
 			}
-			const port = await allocateTdMcpPort(9982);
+			const port = await allocateTdMcpPort(9980);
 			expect(port).toBeGreaterThanOrEqual(9984);
-			expect(port).not.toBe(9982);
-			expect(port).not.toBe(9983);
+			expect([9980, 9981, 9982, 9983]).not.toContain(port);
 		} finally {
 			await Promise.all(
 				blockers.map(

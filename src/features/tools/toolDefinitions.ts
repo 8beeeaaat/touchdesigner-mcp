@@ -174,6 +174,9 @@ console.log(\`\${info.server} \${info.version}\`);`,
 				"../../lifecycle/tdProcess.js"
 			);
 			const registry = getTargetRegistry();
+			if (registry.hasHub()) {
+				await registry.syncFromHub();
+			}
 			const selected = registry.getSelected();
 			const identity = await probeIdentity(
 				tdClient,

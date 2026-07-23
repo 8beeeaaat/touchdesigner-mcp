@@ -24,18 +24,29 @@ Wire **one** stdio server to a local `dist/cli.js` build:
 
 Do **not** run upstream `npx touchdesigner-mcp-server@latest` alongside this fork — overlapping tool servers confuse agents.
 
-CLI `--host` / `--port` configure the builtin **lab** bridge only (defaults `http://127.0.0.1` / `9981`). They do not select owned targets.
+CLI `--host` / `--port` are **legacy soft defaults** for the conventional lab listen port (`http://127.0.0.1` / `9981`). Sticky routing uses **tdmcp-hub** peers.
+
+## tdmcp-hub (durable peers)
+
+Long-lived process on **`127.0.0.1:9980`**. Cursor MCP and TD bridges **upsert** it via `ensureHub` (health-check → lockfile → spawn `node dist/hub.js`). You do not start the hub manually.
+
+Contract: [`hub.md`](hub.md).
+
+- TD registers `{ id, host, port, … }` after binding its WebServer; heartbeats keep the peer alive.
+- MCP tools resolve sticky from the hub, then call existing OpenAPI on the peer’s listen port.
+- After **Restart MCP**, hub peers remain; schema changes still need `npm run build` + Restart MCP (not Reload Window for DoD).
 
 ## Ports (local products)
 
 | Port | Role |
 |------|------|
-| **9981** | Builtin sticky target **`lab`** (TD WebServer) |
+| **9980** | **tdmcp-hub** (peer registry + sticky) |
+| **9981** | Conventional **lab** WebServer listen (peer may register as id `lab`) |
 | **9982** | Reserved — Stagepad daemon (not a TD sticky target) |
 | **9983** | Reserved — 4designer daemon (not a TD sticky target) |
-| **≥9984** | MCP-owned TD instances (`create_td_project` / `start_td_project`) |
+| **free / preferred** | TD peer OpenAPI listen (from `.tdmcp/state.json` or allocator; skips 9980–9983) |
 
-Allocator skips 9982/9983. Never point TD WebServer tools at Stagepad/4designer ports.
+Never point TD WebServer tools at Stagepad/4designer ports. Never bind owned peers to **9980** or steal **9981** without intent.
 
 ## After changing this package (build + reload)
 
@@ -53,6 +64,8 @@ Then restart the MCP server in the client:
 
 **Order matters:** build, then restart. Restarting without rebuild keeps stale Zod schemas (classic: new `mode` rejected while source has it).
 
+If Restart still times out on tools: Cursor often leaves a zombie `node …/dist/cli.js --stdio` (Windows). Kill those PIDs then Restart again — see monorepo [reload-mcp.md](../../../.cursor/skills/touchdesigner-mcp/reference/reload-mcp.md) (“Why restart often fails”). This fork exits on stdin close to reduce orphans.
+
 Sanity after reload: `describe_td_tools` / tool descriptor shows new params; or call the new mode once.
 
 Optional monorepo checklist (symptoms table): parent checkout
@@ -67,11 +80,11 @@ Prefer named tools for single operations. Use `execute_python_script` for multi-
 
 | Tool | Role |
 |------|------|
-| `list_td_targets` | In-memory registry (lab + MCP-owned). **No liveness probe.** |
-| `select_td_target` | Sticky select by `id`; **probes** identity; fails if unknown or offline |
-| `create_td_project` | Copy template → `destDir`; write `.tdmcp/state.json`; upsert owned. **Does not start TD or select.** |
+| `list_td_targets` | Hub peers (+ soft lab hint). **No liveness probe.** |
+| `select_td_target` | Sticky select by `id` (persisted on hub); **probes** identity; fails if unknown or offline |
+| `create_td_project` | Copy template → `destDir`; write `.tdmcp/state.json` (preferred port + `hubUrl`); upsert owned on hub. **Does not start TD or select.** |
 | `start_td_project` | Spawn TD on `toePath` (requires `.tdmcp/state.json`); wait for bridge; auto-dismiss Windows `#32770` dialogs; **selects** owned. Returns `dismissedDialogs[]` |
-| `stop_td_project` | Soft quit then kill owned PID. **Refuses `lab`.** |
+| `stop_td_project` | Soft quit then kill owned PID; remove hub peer. **Refuses `lab`.** |
 | `td_ui_dialogs` | **Windows-only.** `action: list\|dismiss` for sticky-target PID: list dialogs + `responding` / `mainWindowTitle`, or dismiss `#32770` by title (omit title = all listed). Does not unstick a hung UI thread |
 
 ### Offline ToeDigest / inject (alpha)
@@ -111,12 +124,12 @@ Prefer named tools for single operations. Use `execute_python_script` for multi-
 
 ## Sticky targets
 
-- Default selected target: **`lab`** → `http://127.0.0.1:9981`
-- Registry = builtin `lab` + **MCP-owned** instances only (no disk-wide discovery of open TD windows)
+- Soft default id: **`lab`** (conventional listen **9981** until a peer registers)
+- Durable registry = **tdmcp-hub** peers (TD dial-in + MCP-owned placeholders). Soft lab hint may appear even when offline.
 - All node/script tools use the sticky target (**no per-call `target` argument**)
-- `list_td_targets` — metadata only (includes `selected` flag); offline lab still appears
-- `select_td_target` — `{ id }` sticky; probes identity; fails if unknown or offline
-- Registry is **process-memory only**. After an MCP/Cursor restart, `list_td_targets` typically shows only `lab` even if an owned TD is still running. Re-attach with `start_td_project` on that toe (needs sibling `.tdmcp/state.json`)
+- `list_td_targets` — metadata only (includes `selected` flag); offline lab hint still appears
+- `select_td_target` — `{ id }` sticky on hub; probes identity; fails if unknown or offline
+- After an MCP/Cursor **Restart**, hub peers **remain**. Schema/tool changes still need rebuild + Restart MCP. If hub was killed, peers are gone until TD re-registers or you `start_td_project` again.
 
 ## Workflows (0 / 1 / many)
 
@@ -126,10 +139,10 @@ Stay on sticky **`lab`**. Skip `select_td_target` unless you need a fresh identi
 
 ### No TD / lab bridge down
 
-- `list_td_targets` still returns `lab` (metadata ≠ alive)
+- `list_td_targets` may still return soft `lab` (metadata ≠ alive)
 - Mutations, `select_td_target`, and `get_td_info` fail with connection errors (`ECONNREFUSED`, …)
-- `create_td_project` / `inject_td_mcp` still work (filesystem only)
-- Bring up an owned instance with `create_td_project` → `start_td_project`, **or** `inject_td_mcp` → `start_td_project` for a foreign toe, **or** ask the user to open lab with the bridge on **9981**
+- `create_td_project` / `inject_td_mcp` still work (filesystem only); MCP `ensureHub` still upserts the hub
+- Bring up an owned instance with `create_td_project` → `start_td_project`, **or** `inject_td_mcp` → `start_td_project` for a foreign toe, **or** ask the user to open lab with the bridge (registers as `lab`)
 - Do not treat an empty/offline lab as a successful session
 
 ### Multiple instances (lab + owned, or several owned)
@@ -141,7 +154,7 @@ Stay on sticky **`lab`**. Skip `select_td_target` unless you need a fresh identi
 
 ### After MCP restart
 
-Expect only `lab` in the list. Owned `.tdmcp/state.json` files remain on disk; call `start_td_project` again to upsert and select, or work on lab if that is the intent.
+Hub peers should still list. Prefer `list_td_targets` then `select` / `get_td_info`. If the hub process died, TD will re-register on heartbeat/retry, or re-`start_td_project` for owned toes.
 
 ## Identity
 

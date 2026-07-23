@@ -2,28 +2,29 @@
 
 ## Agent ops (multi-instance fork)
 
-Before driving TouchDesigner from an agent, read **[docs/AGENT_MCP.md](docs/AGENT_MCP.md)**:
+Before driving TouchDesigner from an agent, read **[docs/AGENT_MCP.md](docs/AGENT_MCP.md)** and **[docs/hub.md](docs/hub.md)**:
 
-- Sticky target **`lab`** @ **9981**; owned instances **≥9984**; never treat **9982**/**9983** as TD targets
-- `list_td_targets` ≠ alive; `select_td_target` probes; assert `projectFolder` + `projectName` before mutate
-- After MCP restart, owned targets drop from the in-memory registry until `start_td_project`
+- **tdmcp-hub** `:9980` (upsert via `ensureHub`); conventional lab listen **9981**; skip Stagepad/4designer **9982**/**9983**
+- Sticky peers live on the hub; no per-call target — wrong sticky ⇒ wrong project
+- `npm run build` then restart MCP after `src/` / schema changes (stdio loads `dist/`); peers survive MCP restart if hub stays up
 - Offline `.toe`: `get_toe_digest` / `get_toe_node` — [docs/toe-digest.md](docs/toe-digest.md)
-- Source changes: `npm run build` → restart MCP (clients load `dist/cli.js`)
+- Live verify: `get_td_node_errors` + `get_top_image` (black frame = fail)
 
 Cursor skill (fork-local): [`.cursor/skills/touchdesigner-mcp/SKILL.md`](.cursor/skills/touchdesigner-mcp/SKILL.md).
 
 ## Project Structure & Module Organization
 
-`src/` contains the TypeScript MCP server: shared logic is in `core/`, MCP features in `features/`, transport code in `transport/`, and TouchDesigner communication in `tdClient/`. The OpenAPI contract starts at `src/api/index.yml`. TouchDesigner-side Python, templates, generated artifacts, and `.tox` components live in `td/`. Tests belong in `tests/unit/` or `tests/integration/`, documentation in `docs/`, and media in `assets/`. Treat `dist/`, `src/gen/`, and `td/modules/td_server/` as generated output; edit their source schemas or templates instead.
+`src/` contains the TypeScript MCP server: shared logic is in `core/`, MCP features in `features/`, transport code in `transport/`, TouchDesigner communication in `tdClient/`, and **tdmcp-hub** in `hub/` (+ `src/hub.ts` → `dist/hub.js`). The OpenAPI contract starts at `src/api/index.yml`. TouchDesigner-side Python, templates, generated artifacts, and `.tox` components live in `td/`. Tests belong in `tests/unit/` or `tests/integration/`, documentation in `docs/`, and media in `assets/`. Treat `dist/`, `src/gen/`, and `td/modules/td_server/` as generated output; edit their source schemas or templates instead.
 
 ## Build, Test, and Development Commands
 
 - `npm install` installs Node dependencies.
 - `npm run build` regenerates code, compiles TypeScript, and copies runtime templates.
+- `npm run hub` starts `tdmcp-hub` on `:9980` (usually unnecessary — consumers call `ensureHub`).
 - `make build` performs the Docker-based TouchDesigner module build.
 - `npm run dev` opens the MCP Inspector against the built stdio server.
 - `npm run http` starts HTTP mode on `127.0.0.1:6280`, targeting TouchDesigner on `9981`.
-- `npm test`, `npm run test:unit`, and `npm run test:integration` run all or scoped Vitest suites.
+- `npm test`, `npm run test:unit`, `npm run test:integration` run all or scoped Vitest suites.
 - `npm run coverage` writes V8 reports; `npm run lint` runs all static checks.
 - `npm run gen` refreshes OpenAPI, Python handler, and TypeScript client output.
 

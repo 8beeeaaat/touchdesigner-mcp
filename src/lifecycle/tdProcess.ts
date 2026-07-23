@@ -194,7 +194,7 @@ export async function startTdProject(params: {
 	}
 
 	const host = state.host || "http://127.0.0.1";
-	const target = params.registry.upsertOwned({
+	const target = await params.registry.upsertOwnedAsync({
 		host,
 		id: state.targetId,
 		label: `Owned ${toePath}`,
@@ -229,7 +229,7 @@ export async function startTdProject(params: {
 		writeState(projectDir, nextState);
 	}
 
-	params.registry.select(state.targetId);
+	await params.registry.selectAsync(state.targetId);
 	return {
 		dismissedDialogs,
 		identity,
@@ -297,7 +297,7 @@ export async function stopTdProject(params: {
 		const { pid: _p, started_at: _s, exe: _e, ...rest } = state;
 		writeState(projectDir, rest);
 	}
-	params.registry.removeOwned(targetId);
+	await params.registry.removeOwnedAsync(targetId);
 	return { stopped: true, targetId };
 }
 

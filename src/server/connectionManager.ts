@@ -54,13 +54,13 @@ export class ConnectionManager {
 	 */
 	async disconnect(): Promise<Result<void, Error>> {
 		if (!this.isConnected()) {
-			console.log("MCP server not connected");
+			console.error("MCP server not connected");
 			return createSuccessResult(undefined);
 		}
 
 		try {
 			await this.server.close();
-			console.log("MCP server disconnected from MCP");
+			console.error("MCP server disconnected from MCP");
 			this.transport = null;
 			return createSuccessResult(undefined);
 		} catch (error) {

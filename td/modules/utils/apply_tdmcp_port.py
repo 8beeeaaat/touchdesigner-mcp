@@ -1,8 +1,9 @@
 """
 Apply WebServer DAT port from project.folder/.tdmcp/state.json if present.
 
-Why: create_td_project assigns a free port (9984+) in .tdmcp/state.json so a
-secondary TD can run beside lab (:9981). Without this, every toe keeps the
+Why: create_td_project assigns a preferred listen port in .tdmcp/state.json so a
+secondary TD can run beside lab (:9981). Identity is the hub peer id (tdmcp-hub
+:9980); this module only rebinds the WebServer. Without this, every toe keeps the
 tox default port 9981 and collisions break multi-instance.
 
 Call once on project start (Execute DAT onStart), or it is invoked from

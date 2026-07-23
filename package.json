@@ -23,7 +23,8 @@
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"bin": {
-		"touchdesigner-mcp-server": "dist/cli.js"
+		"touchdesigner-mcp-server": "dist/cli.js",
+		"tdmcp-hub": "dist/hub.js"
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "1.29.0",
@@ -75,6 +76,7 @@
 		"format:python": "ruff format td/ && ruff check --fix td/",
 		"format:yaml": "prettier --write \"**/*.{yml,yaml}\"",
 		"dev": "npx @modelcontextprotocol/inspector node dist/cli.js --stdio",
+		"hub": "node dist/hub.js",
 		"http": "npm run build && node dist/cli.js --mcp-http-port=6280 --mcp-http-host=127.0.0.1 --host=http://127.0.0.1 --port=9981",
 		"test": "run-p test:*",
 		"test:integration": "vitest run ./tests/integration",

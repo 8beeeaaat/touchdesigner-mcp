@@ -19,7 +19,14 @@ export const createProjectSchema = z.object({
 		.min(1)
 		.optional()
 		.describe("Toe stem name without extension (default: project)"),
-	port: z.number().int().min(9984).optional().describe("Optional fixed port"),
+	port: z
+		.number()
+		.int()
+		.min(1024)
+		.optional()
+		.describe(
+			"Optional preferred TD WebServer listen port (skips 9980–9983; identity is hub peer id)",
+		),
 });
 
 export const startProjectSchema = z.object({
@@ -57,7 +64,7 @@ export const LIFECYCLE_TOOL_DEFINITIONS: readonly ToolMetadataSource[] = [
 	{
 		category: "system",
 		description:
-			"List known TouchDesigner targets (lab + MCP-owned). Does not probe liveness.",
+			"List known TouchDesigner targets (tdmcp-hub peers + soft lab hint). Does not probe liveness.",
 		example: "list_td_targets()",
 		name: TOOL_NAMES.LIST_TD_TARGETS,
 		returns: "JSON: selectedId and targets[] with selected flags",
@@ -75,11 +82,12 @@ export const LIFECYCLE_TOOL_DEFINITIONS: readonly ToolMetadataSource[] = [
 	{
 		category: "system",
 		description:
-			"Copy the MCP-ready project template to destDir and assign a port. Does not start TouchDesigner.",
+			"Copy the MCP-ready project template to destDir and assign a preferred listen port. Does not start TouchDesigner.",
 		example:
 			'create_td_project({ destDir: "C:/tmp/my_td_project", name: "project" })',
 		name: TOOL_NAMES.CREATE_TD_PROJECT,
-		notes: "Does not select the new target. Ports are ≥9984 (skips 9982/9983).",
+		notes:
+			"Does not select the new target. Preferred listen port skips 9980–9983; peer identity is hub id.",
 		returns: "JSON: created target + paths",
 		schema: createProjectSchema.strict(),
 	},

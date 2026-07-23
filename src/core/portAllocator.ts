@@ -1,6 +1,7 @@
 import net from "node:net";
 
-const SKIP_PORTS = new Set([9982, 9983]);
+/** Hub, lab convention, Stagepad, 4designer — never assign as TD peer listen. */
+const SKIP_PORTS = new Set([9980, 9981, 9982, 9983]);
 
 function isPortFree(port: number, host = "127.0.0.1"): Promise<boolean> {
 	return new Promise((resolve) => {
@@ -14,11 +15,11 @@ function isPortFree(port: number, host = "127.0.0.1"): Promise<boolean> {
 }
 
 /**
- * Allocate first free TCP port starting at `from` (default 9984),
- * skipping Stagepad (9982) and 4designer (9983).
+ * Allocate a free preferred TD WebServer listen port (identity is hub peer id).
+ * Default scan starts at 9984; skips 9980–9983.
  */
 export async function allocateTdMcpPort(from = 9984): Promise<number> {
-	let port = Math.max(from, 9984);
+	let port = Math.max(from, 1000);
 	for (let i = 0; i < 200; i++) {
 		while (SKIP_PORTS.has(port)) {
 			port += 1;
@@ -28,5 +29,5 @@ export async function allocateTdMcpPort(from = 9984): Promise<number> {
 		}
 		port += 1;
 	}
-	throw new Error("No free TD MCP port found from 9984 upward");
+	throw new Error(`No free TD MCP listen port found from ${from} upward`);
 }

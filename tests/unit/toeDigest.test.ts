@@ -209,7 +209,7 @@ describe("getToeDigest live expand", () => {
 			if (outline.mode !== "outline") return;
 			expect(outline.cacheHit).toBe(true);
 			expect(outline.expand.cacheKey).toBe(stats.expand.cacheKey);
-			expect(outline.outline).toContain("mcp_webserver_base");
+			expect(outline.outline).toContain("tdmcp_bridge");
 			expect(outline.outline.length).toBeLessThanOrEqual(6000);
 			expect(outline.truncated).toBeTypeOf("boolean");
 		},

@@ -1,5 +1,6 @@
 # Ensures /project1/tdmcp_bridge exists (loadTox from modules/ if needed),
-# then sets WebServer port from .tdmcp/state.json (owned copies use 9984+).
+# applies preferred WebServer port from .tdmcp/state.json, then registers
+# with tdmcp-hub (ensure/upsert hub when Hubdir is available).
 def onStart():
 	try:
 		import os
@@ -42,5 +43,20 @@ def onStart():
 		except Exception:
 			ws = None
 		apply(ws)
+
+		# Optional Hubdir: sibling state or env / conventional package path
+		hub_dir = os.environ.get("TDMCP_HUB_DIR")
+		if not hub_dir:
+			# Prefer package next to project when developing the fork
+			candidate = os.path.join(folder, "..", "tools", "touchdesigner-mcp")
+			candidate = os.path.normpath(candidate)
+			if os.path.isfile(os.path.join(candidate, "dist", "hub.js")):
+				hub_dir = candidate
+		try:
+			from utils import tdmcp_hub
+
+			tdmcp_hub.on_bridge_ready(hub_dir=hub_dir, webserver=ws)
+		except Exception as e:
+			print("tdmcp_port_onstart hub:", e)
 	except Exception as e:
 		print("tdmcp_port_onstart:", e)

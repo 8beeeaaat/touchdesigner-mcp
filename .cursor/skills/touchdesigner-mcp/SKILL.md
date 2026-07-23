@@ -24,13 +24,13 @@ description: >-
 
 | Situation | Action |
 |-----------|--------|
-| One TD / user silent | Stay **`lab`** (`:9981`) |
+| One TD / user silent | Stay **`lab`** (conventional `:9981`) |
 | Lab down | `create`→`start` owned, or ask user to open lab |
 | Foreign / unknown `.toe` | `inject_td_mcp` → `start` (copy in empty `destDir`; runtime `loadTox` via `modules/tdmcp_bridge.tox`); see AGENT_MCP Unknown toe + monorepo foreign-toe.md |
 | Many / non-lab | `list_td_targets` → `select_td_target` → assert identity |
-| After MCP restart | Expect only `lab`; `start_td_project` to reattach owned |
+| After MCP restart | Hub peers should remain (`:9980`); re-`start` only if hub died |
 
-Ports: lab **9981**; reserved **9982** Stagepad / **9983** 4designer; owned **≥9984**.
+Ports: **tdmcp-hub 9980**; lab **9981**; reserved **9982** Stagepad / **9983** 4designer; owned preferred free listen. See [docs/hub.md](../../../docs/hub.md).
 
 ## UI dialogs (Windows)
 

@@ -70,6 +70,9 @@ export function registerTdTools(
 			definition.schema.strict().shape,
 			async (params: Record<string, unknown> = {}) => {
 				try {
+					if (registry.hasHub()) {
+						await registry.syncFromHub();
+					}
 					const selected = registry.getSelected();
 					const output = await runWithTarget(registry.asOrigin(selected), () =>
 						withTargetQueue(selected.id, () =>
@@ -91,10 +94,13 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.LIST_TD_TARGETS,
-		"List known TouchDesigner targets (lab + MCP-owned). Does not probe liveness.",
+		"List known TouchDesigner targets (hub peers + soft lab hint). Does not probe liveness.",
 		z.object({}).strict().shape,
 		async () => {
 			try {
+				if (registry.hasHub()) {
+					await registry.syncFromHub();
+				}
 				const selectedId = registry.getSelectedId();
 				const targets = registry.list().map((t) => ({
 					...t,
@@ -113,7 +119,7 @@ export function registerTdTools(
 		selectTargetSchema.strict().shape,
 		async (params: z.input<typeof selectTargetSchema>) => {
 			try {
-				const selected = registry.select(params.id);
+				const selected = await registry.selectAsync(params.id);
 				const identity = await probeIdentity(
 					tdClient,
 					selected.id,
@@ -129,12 +135,12 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.CREATE_TD_PROJECT,
-		"Copy the MCP-ready project template to destDir and assign a port. Does not start TouchDesigner.",
+		"Copy the MCP-ready project template to destDir and assign a preferred listen port. Does not start TouchDesigner.",
 		createProjectSchema.strict().shape,
 		async (params: z.input<typeof createProjectSchema>) => {
 			try {
 				const created = await createTdProject(params);
-				registry.upsertOwned({
+				await registry.upsertOwnedAsync({
 					host: created.target.host,
 					id: created.target.id,
 					label: created.target.label,
@@ -313,7 +319,7 @@ export function registerTdTools(
 		async (params: z.input<typeof injectTdMcpSchema>) => {
 			try {
 				const result = await injectTdMcp(params);
-				registry.upsertOwned({
+				await registry.upsertOwnedAsync({
 					host: result.target.host,
 					id: result.target.id,
 					label: result.target.label,

@@ -423,6 +423,7 @@ export async function injectTdMcp(
 		const host = params.host || "http://127.0.0.1";
 		const state: TdMcpState = {
 			host,
+			hubUrl: process.env.TDMCP_HUB_URL || "http://127.0.0.1:9980",
 			port,
 			targetId,
 			toe_launched: workingToe,

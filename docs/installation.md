@@ -4,7 +4,17 @@ Installation guide for TouchDesigner MCP across different AI agents and platform
 
 [English](installation.md) / [日本語](installation.ja.md)
 
-## Quick Start
+## Fork quick start (asyade / this monorepo)
+
+1. **Node MCP** — point the client at `dist/cli.js` (stdio). On start it **upserts tdmcp-hub** on `:9980` (`ensureHub`).
+2. **TouchDesigner** — use the MCP project template / `tdmcp_bridge` (or import the tox + `modules/` kit). On open, `tdmcp_port_onstart` applies the preferred listen port and **registers** with the hub.
+3. Verify: `list_td_targets` → `get_td_info`.
+
+Hub contract: [`hub.md`](hub.md). Agent contract: [`AGENT_MCP.md`](AGENT_MCP.md).
+
+**Update:** rebuild Node (`npm run build`), restart the MCP server in the client, and refresh TD `modules/` (or re-copy template modules) when bridge Python changes. Prefer Restart MCP over Reload Window for routine schema refreshes; hub peers survive MCP restart.
+
+## Upstream Quick Start (Claude Desktop bundle)
 
 Most users can get running quickly with the Claude Desktop bundle flow. Download both
 `touchdesigner-mcp-td.zip` and `touchdesigner-mcp.mcpb` from the
@@ -16,6 +26,7 @@ component is running.
 
 ## Table of Contents
 
+- [Fork quick start (asyade / this monorepo)](#fork-quick-start-asyade--this-monorepo)
 - [Prerequisites](#prerequisites)
 - [TouchDesigner Setup (Required for All Methods)](#touchdesigner-setup-required-for-all-methods)
 - [MCP Server Installation Methods](#mcp-server-installation-methods)
@@ -37,6 +48,14 @@ component is running.
 
 **This step is required regardless of which installation method you choose.**
 
+### Asyade fork / template (preferred)
+
+1. Use [`templates/mcp_project`](../templates/mcp_project/) via `create_td_project`, **or** keep `modules/` + `tdmcp_bridge` / `mcp_webserver_base` beside the `.toe`.
+2. Ensure `tdmcp_port_onstart` (or equivalent) runs on project open — it loads the bridge, sets the preferred WebServer port, and registers with **tdmcp-hub**.
+3. Optional: set `TDMCP_HUB_DIR` to the package root so TD can spawn `dist/hub.js` if the hub is down.
+
+### Upstream zip layout
+
 1. Download [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) from the latest release
 2. Extract the ZIP file
 3. Import `mcp_webserver_base.tox` into your TouchDesigner project
@@ -44,17 +63,17 @@ component is running.
 
 <https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
 
-**⚠️ Most Important:** Do not change the folder structure or move files within the folder. `mcp_webserver_base.tox` references the contents of `modules/` using relative paths.
+**⚠️ Most Important:** Do not change the folder structure or move files within the folder. `mcp_webserver_base.tox` / `tdmcp_bridge` references the contents of `modules/` using relative paths.
 
 **Directory Structure**:
 
 ```text
 touchdesigner-mcp-td/
 ├── import_modules.py          # Module loader
-├── mcp_webserver_base.tox     # Main component
+├── mcp_webserver_base.tox     # Main component (upstream name)
 └── modules/                   # Python modules
     ├── mcp/                   # Core MCP logic
-    ├── utils/                 # Utilities
+    ├── utils/                 # Utilities (incl. tdmcp_hub.py on this fork)
     └── td_server/             # API server code
 ```
 
@@ -66,7 +85,7 @@ You can verify successful setup by checking the Textport (Alt+T or Dialogs → T
 
 Choose one of the following installation methods based on your AI agent and preferences.
 They all assume your TouchDesigner project already contains the imported
-`mcp_webserver_base.tox` component from the previous section.
+bridge component from the previous section.
 
 ### Method 1: MCP Bundle (Claude Desktop only)
 

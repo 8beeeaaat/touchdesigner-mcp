@@ -15,8 +15,11 @@ import type { TdTarget } from "./targetTypes.js";
 
 export type TdMcpState = {
 	targetId: string;
+	/** Preferred TD WebServer listen port (announced to hub on register). */
 	port: number;
 	host?: string;
+	/** Override hub base URL (default http://127.0.0.1:9980). */
+	hubUrl?: string;
 	pid?: number;
 	toe_launched?: string;
 	exe?: string;
@@ -107,6 +110,7 @@ export async function createTdProject(params: {
 	const host = params.host || "http://127.0.0.1";
 	writeState(destDir, {
 		host,
+		hubUrl: process.env.TDMCP_HUB_URL || "http://127.0.0.1:9980",
 		port,
 		targetId,
 		toe_launched: toePath,
