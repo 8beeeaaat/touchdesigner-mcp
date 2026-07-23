@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
 import { ConsoleLogger } from "./core/logger.js";
+import { installStdioLifecycleGuards } from "./core/stdioLifecycle.js";
+import { attachDefaultHub } from "./core/targetRegistry.js";
+import { getHubClient } from "./hub/client.js";
+import { ensureHub } from "./hub/ensureHub.js";
 import { TouchDesignerServer } from "./server/touchDesignerServer.js";
 import type {
 	StreamableHttpTransportConfig,
@@ -130,6 +134,9 @@ export async function startServer(params?: {
 
 		// Handle stdio mode
 		if (transportConfig.type === "stdio") {
+			// Exit when Cursor drops the pipe / orphans us (see stdioLifecycle.ts)
+			installStdioLifecycleGuards();
+
 			const transportResult = TransportFactory.create(transportConfig);
 			if (!transportResult.success) {
 				throw transportResult.error;
@@ -141,11 +148,40 @@ export async function startServer(params?: {
 			}
 
 			console.error("MCP server started in stdio mode");
+
+			// Hub upsert AFTER handshake so a slow/down hub cannot wedge Cursor initialize.
+			void ensureHub({ timeoutMs: 8_000 })
+				.then((hub) => {
+					attachDefaultHub(getHubClient(hub.hubUrl));
+					console.error(
+						`tdmcp-hub ready at ${hub.hubUrl} (spawned=${hub.spawned})`,
+					);
+				})
+				.catch((hubError) => {
+					console.error(
+						"ensureHub failed (tools may run without durable peers):",
+						hubError instanceof Error ? hubError.message : hubError,
+					);
+				});
+
 			return;
 		}
 
-		// Handle HTTP mode
+		// HTTP mode: ensure hub before serving (no Cursor stdio handshake)
 		if (isStreamableHttpTransportConfig(transportConfig)) {
+			try {
+				const hub = await ensureHub({ timeoutMs: 8_000 });
+				attachDefaultHub(getHubClient(hub.hubUrl));
+				console.error(
+					`tdmcp-hub ready at ${hub.hubUrl} (spawned=${hub.spawned})`,
+				);
+			} catch (hubError) {
+				console.error(
+					"ensureHub failed (tools may run without durable peers):",
+					hubError instanceof Error ? hubError.message : hubError,
+				);
+			}
+
 			// Use ConsoleLogger for HTTP manager and session manager
 			// This avoids "Not connected" errors since HTTP mode doesn't have a global MCP connection
 			const logger = new ConsoleLogger();

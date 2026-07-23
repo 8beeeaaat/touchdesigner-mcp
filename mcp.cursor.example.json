@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "touchdesigner": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/touchdesigner-mcp/dist/cli.js",
+        "--stdio"
+      ]
+    }
+  }
+}

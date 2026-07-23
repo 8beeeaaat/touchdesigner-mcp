@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { TOOL_NAMES } from "../../src/core/constants.js";
+import { LIFECYCLE_TOOL_DEFINITIONS } from "../../src/features/tools/lifecycleToolDefinitions.js";
+import { TOE_TOOL_DEFINITIONS } from "../../src/features/tools/toeToolDefinitions.js";
 import {
+	buildRegisteredToolMetadata,
 	buildToolMetadata,
 	deriveParameters,
 } from "../../src/features/tools/metadata/touchDesignerToolMetadata.js";
@@ -38,6 +41,37 @@ describe("buildToolMetadata", () => {
 			const definition = TOOL_DEFINITIONS.find((d) => d.name === entry.tool);
 			expect(entry.description).toBe(definition?.description);
 		}
+	});
+});
+
+describe("buildRegisteredToolMetadata", () => {
+	const metadata = buildRegisteredToolMetadata();
+
+	it("includes OpenAPI tools and lifecycle/target tools", () => {
+		expect(metadata).toHaveLength(
+			TOOL_DEFINITIONS.length +
+				LIFECYCLE_TOOL_DEFINITIONS.length +
+				TOE_TOOL_DEFINITIONS.length,
+		);
+		const names = metadata.map((entry) => entry.tool);
+		expect(names).toContain(TOOL_NAMES.LIST_TD_TARGETS);
+		expect(names).toContain(TOOL_NAMES.SELECT_TD_TARGET);
+		expect(names).toContain(TOOL_NAMES.CREATE_TD_PROJECT);
+		expect(names).toContain(TOOL_NAMES.START_TD_PROJECT);
+		expect(names).toContain(TOOL_NAMES.STOP_TD_PROJECT);
+		expect(names).toContain(TOOL_NAMES.TD_UI_DIALOGS);
+		expect(names).toContain(TOOL_NAMES.GET_TOE_DIGEST);
+		expect(names).toContain(TOOL_NAMES.GET_TOE_NODE);
+		expect(names).toContain(TOOL_NAMES.GET_TD_INFO);
+		expect(names).not.toContain(TOOL_NAMES.DESCRIBE_TD_TOOLS);
+	});
+
+	it("exposes select_td_target id parameter for filter=target", () => {
+		const select = metadata.find(
+			(entry) => entry.tool === TOOL_NAMES.SELECT_TD_TARGET,
+		);
+		expect(select?.parameters.some((p) => p.name === "id")).toBe(true);
+		expect(select?.description.toLowerCase()).toContain("target");
 	});
 });
 

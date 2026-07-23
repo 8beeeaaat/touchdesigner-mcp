@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **tdmcp-hub** (`dist/hub.js`, port **9980**): durable peer registry + sticky select; consumers call `ensureHub()` (health → lockfile → detached spawn). Contract: [`docs/hub.md`](docs/hub.md).
+- TD `utils/tdmcp_hub.py` + template `tdmcp_port_onstart` register/heartbeat (optional hub spawn via `TDMCP_HUB_DIR`).
+- Multi-target sticky routing and project lifecycle tools (`list_td_targets`, `select_td_target`, `create_td_project`, `start_td_project`, `stop_td_project`) on the asyade `multi-instance` branch: conventional `lab` listen **9981**, preferred owned listen ports (skip 9980–9983), per-target request queues, and `.tdmcp/state.json` + `apply_tdmcp_port` for owned bridges.
+- Expanded agent contract [`docs/AGENT_MCP.md`](docs/AGENT_MCP.md) with tool inventory, 0/1/N workflows, hub/restart semantics, lifecycle cookbook, and Definition of Done; product docs (README tools table, architecture multi-target section) updated to match.
+
+### Changed
+
+- Cursor MCP attaches to hub on startup; `list`/`select`/lifecycle upserts sync through hub so peers survive MCP restart when the hub process stays up.
+- Preferred listen-port allocator also skips **9980** (hub) and **9981** (lab convention).
+- `describe_td_tools` includes lifecycle/target tools in its manifest (same surface agents see at runtime).
+
 ## [1.5.0] - 2026-07-11
 
 ### Upgrade Notes

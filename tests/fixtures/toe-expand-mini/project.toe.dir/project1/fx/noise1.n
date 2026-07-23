@@ -1,0 +1,5 @@
+TOP:noise
+tile 0 0 1 1
+flags =  parlanguage 0
+color 0.67 0.67 0.67 
+end

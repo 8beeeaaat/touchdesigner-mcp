@@ -1,0 +1,5 @@
+COMP:base
+tile 0 0 1 1
+flags =  viewer 1 cook off parlanguage 0
+color 0.55 0.55 0.55 
+end

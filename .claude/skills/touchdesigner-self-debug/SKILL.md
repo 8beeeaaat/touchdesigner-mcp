@@ -31,6 +31,14 @@ the Textport, without standing up the HTTP WebServer, is the shortest path.
 - Unit/offline verification is insufficient and you need to reconcile against TD runtime data (any node attribute, cook result, error state, etc.).
 - You are in a fresh worktree that cannot rely on CI or the 9981-dependent integration suite.
 
+## When NOT to use this skill (use lifecycle MCP instead)
+
+- Spawning/attaching **owned** multi-instance projects → `create_td_project` / `start_td_project` / `stop_td_project` per [docs/AGENT_MCP.md](../../../docs/AGENT_MCP.md)
+- Sticky target selection / identity assert → `list_td_targets` / `select_td_target` / `get_td_info`
+- Offline `.toe` inspection → `get_toe_digest` / `get_toe_node` ([docs/toe-digest.md](../../../docs/toe-digest.md))
+
+Textport self-debug and lifecycle tools are complementary: Textport for TD-side Python reconciliation; lifecycle for process/port/target management.
+
 ## Prerequisites and Pitfalls (read first — these are general)
 
 1. **The `.tox` reads `td/modules/` from disk at runtime.** Re-authoring the `.tox` is **not** required for `.py` changes; reload modules or restart TD.

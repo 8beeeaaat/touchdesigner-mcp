@@ -6,12 +6,13 @@ This document describes the architecture of the TouchDesigner MCP server.
 
 1. [Overview](#overview)
 2. [System Architecture](#system-architecture)
-3. [Transport Layer](#transport-layer)
-4. [Core Layer](#core-layer)
-5. [TouchDesigner Integration Layer](#touchdesigner-integration-layer)
-6. [Data Flow](#data-flow)
-7. [Transport Selection Guide](#transport-selection-guide)
-8. [Design Principles](#design-principles)
+3. [Multi-target sticky routing](#multi-target-sticky-routing)
+4. [Transport Layer](#transport-layer)
+5. [Core Layer](#core-layer)
+6. [TouchDesigner Integration Layer](#touchdesigner-integration-layer)
+7. [Data Flow](#data-flow)
+8. [Transport Selection Guide](#transport-selection-guide)
+9. [Design Principles](#design-principles)
 
 ---
 
@@ -237,6 +238,44 @@ flowchart LR
     class S2 core
     class W2,P2 td
 ```
+
+---
+
+## Multi-target sticky routing
+
+On the asyade fork (`multi-instance`), one Node MCP process can talk to several TouchDesigner WebServer bridges. Agent-facing rules: [`AGENT_MCP.md`](AGENT_MCP.md).
+
+### Components
+
+| Piece | Role |
+|-------|------|
+| `TargetRegistry` (`src/core/targetRegistry.ts`) | Process-wide sticky selection; always has builtin `lab`; owned targets upserted by lifecycle tools |
+| `runWithTarget` / ALS (`src/core/targetContext.ts`) | Request origin (host/port) for the sticky target |
+| `withTargetQueue` (`src/core/targetQueue.ts`) | Serializes concurrent tool calls **per target id** |
+| Port allocator (`src/core/portAllocator.ts`) | Owned ports from **9984**, skipping **9982** / **9983** |
+| Lifecycle (`src/core/lifecycle.ts`, `src/lifecycle/tdProcess.ts`) | `create_td_project` / `start_td_project` / `stop_td_project` |
+
+```mermaid
+flowchart LR
+  agent[MCP tools]
+  reg[TargetRegistry sticky]
+  queue[per_target queue]
+  client[TouchDesignerClient]
+  lab["lab WebServer :9981"]
+  owned["owned WebServer :9984+"]
+
+  agent --> reg
+  reg --> queue
+  queue --> client
+  client --> lab
+  client --> owned
+```
+
+### Behavior notes
+
+- CLI `--host` / `--port` configure **lab only** at process start.
+- `list_td_targets` does not probe liveness; registry is **not** rehydrated from disk on MCP restart.
+- Node tools have **no** `target` parameter — wrong sticky selection hits the wrong project.
 
 ---
 

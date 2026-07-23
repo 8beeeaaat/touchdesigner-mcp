@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Agent ops (multi-instance) — read first when driving TD
+
+Contract: **[docs/AGENT_MCP.md](docs/AGENT_MCP.md)**. Offline ToeDigest: **[docs/toe-digest.md](docs/toe-digest.md)**.
+
+- Sticky **`lab`** `:9981`; owned `:9984+`; skip Stagepad/4designer ports **9982**/**9983**
+- No per-call target — wrong sticky ⇒ wrong project
+- `npm run build` then restart MCP after `src/` / schema changes (stdio loads `dist/`)
+- Live verify: `get_td_node_errors` + `get_top_image` (black frame = fail)
+- Textport / computer-use self-debug skill ≠ lifecycle tools — see `.claude/skills/touchdesigner-self-debug/` vs `create_td_project` / `start_td_project`
+
 ## Development Commands
 
 ### Building and Development

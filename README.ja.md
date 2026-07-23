@@ -17,6 +17,10 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 - ノードプロパティやプロジェクト構造の照会
 - PythonスクリプトによるTouchDesignerのプログラム的制御
 
+### マルチターゲット（このフォーク）
+
+asyade フォーク（`multi-instance`）では sticky ターゲットで複数 TD に接続できます。エージェント向け契約（英語）: **[docs/AGENT_MCP.md](docs/AGENT_MCP.md)**。
+
 ## インストール方法
 
 **[インストールガイド](docs/installation.ja.md)** を参照してください。
