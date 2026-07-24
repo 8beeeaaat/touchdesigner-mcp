@@ -147,18 +147,18 @@ const GetTopImageParams = z.object({
 		.max(4096)
 		.optional()
 		.describe(
-			"Maximum length of the image's longer side in pixels. The TOP is downscaled (aspect ratio preserved) only if it exceeds this value; omit to capture at native resolution.",
+			"Max longer-side px; downscale only if larger (aspect kept). Omit = native.",
 		),
 	nodePath: z
 		.string()
 		.min(1)
-		.describe("Path to the TOP node to capture, e.g. '/project1/moviefilein1'"),
+		.describe("TOP path to capture, e.g. '/project1/moviefilein1'"),
 });
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
 	defineTool({
 		category: "system",
-		description: "Get server information from TouchDesigner",
+		description: "TD info + sticky target identity",
 		example: `import { getTdInfo } from './servers/touchdesigner/getTdInfo';
 
 const info = await getTdInfo();
@@ -193,8 +193,7 @@ console.log(\`\${info.server} \${info.version}\`);`,
 	}),
 	defineTool({
 		category: "python",
-		description:
-			"Execute a Python script in TouchDesigner (detailLevel=minimal|summary|detailed, responseFormat=json|yaml|markdown)",
+		description: "Run Python in TD",
 		example: `import { executePythonScript } from './servers/touchdesigner/executePythonScript';
 
 await executePythonScript({
@@ -224,8 +223,7 @@ await executePythonScript({
 	}),
 	defineTool({
 		category: "nodes",
-		description:
-			"List nodes under a path with token-optimized output (detailLevel+limit supported)",
+		description: "List nodes under path",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { getTdNodes } from './servers/touchdesigner/getTdNodes';
 
@@ -256,8 +254,7 @@ console.log(nodes.nodes?.map(node => node.path));`,
 	}),
 	defineTool({
 		category: "nodes",
-		description:
-			"Get node parameters with concise/detailed formatting (detailLevel+limit supported)",
+		description: "Get node parameters",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { getTdNodeParameters } from './servers/touchdesigner/getTdNodeParameters';
 
@@ -281,7 +278,7 @@ console.log(node.properties?.Text);`,
 	}),
 	defineTool({
 		category: "nodes",
-		description: "Check node and descendant errors reported by TouchDesigner",
+		description: "Node + descendant errors from TD",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { getTdNodeErrors } from './servers/touchdesigner/getTdNodeErrors';
 
@@ -309,7 +306,7 @@ if (report.hasErrors) {
 	}),
 	defineTool({
 		category: "nodes",
-		description: "Create a new node in TouchDesigner",
+		description: "Create TD node",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { createTdNode } from './servers/touchdesigner/createTdNode';
 
@@ -336,7 +333,7 @@ console.log(created.result?.path);`,
 	}),
 	defineTool({
 		category: "nodes",
-		description: "Update parameters of a specific node in TouchDesigner",
+		description: "Update TD node parameters",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { updateTdNodeParameters } from './servers/touchdesigner/updateTdNodeParameters';
 
@@ -362,7 +359,7 @@ await updateTdNodeParameters({
 	}),
 	defineTool({
 		category: "nodes",
-		description: "Delete an existing node in TouchDesigner",
+		description: "Delete TD node",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { deleteTdNode } from './servers/touchdesigner/deleteTdNode';
 
@@ -385,7 +382,7 @@ console.log(result.deleted);`,
 	}),
 	defineTool({
 		category: "nodes",
-		description: "Execute a method on a specific node in TouchDesigner",
+		description: "Call method on TD node",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { execNodeMethod } from './servers/touchdesigner/execNodeMethod';
 
@@ -414,8 +411,7 @@ console.log(renderStatus.result);`,
 	}),
 	defineTool({
 		category: "classes",
-		description:
-			"List TouchDesigner Python classes/modules (detailLevel+limit supported)",
+		description: "List TD Python classes",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { getTdClasses } from './servers/touchdesigner/getTdClasses';
 
@@ -439,8 +435,7 @@ console.log(classes.classes?.map(cls => cls.name));`,
 	}),
 	defineTool({
 		category: "classes",
-		description:
-			"Get information about a TouchDesigner class/module (detailLevel+limit supported)",
+		description: "TD class/module details",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { getTdClassDetails } from './servers/touchdesigner/getTdClassDetails';
 
@@ -465,8 +460,7 @@ console.log(textTop.methods?.length);`,
 	}),
 	defineTool({
 		category: "classes",
-		description:
-			"Retrieve Python help() text for a TouchDesigner module or class",
+		description: "Python help() for TD module/class",
 		example: `import { getTdModuleHelp } from './servers/touchdesigner/getTdModuleHelp';
 
 const docs = await getTdModuleHelp({ moduleName: 'noiseCHOP' });
@@ -488,8 +482,7 @@ console.log(docs.helpText?.slice(0, 200));`,
 	}),
 	defineTool({
 		category: "nodes",
-		description:
-			"Capture the current output of a TOP node as an image so it can be viewed directly (maxSize optionally downscales the longer side)",
+		description: "Capture TOP as image (maxSize optional)",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { getTopImage } from './servers/touchdesigner/getTopImage';
 

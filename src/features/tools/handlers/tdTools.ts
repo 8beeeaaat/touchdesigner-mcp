@@ -28,6 +28,7 @@ import { injectTdMcp } from "../../../toe/injectMcp.js";
 import { getToeNode } from "../../../toe/nodeInspect.js";
 import {
 	createProjectSchema,
+	LIFECYCLE_TOOL_DEFINITIONS,
 	selectTargetSchema,
 	startProjectSchema,
 	stopProjectSchema,
@@ -38,24 +39,35 @@ import {
 	type ToolMetadata,
 } from "../metadata/touchDesignerToolMetadata.js";
 import { formatToolMetadata } from "../presenter/index.js";
+import { slimShapeForMcp, slimToeShapeForMcp } from "../slimSchemaForMcp.js";
 import {
 	getToeDigestSchema,
 	getToeNodeSchema,
 	injectTdMcpSchema,
+	TOE_TOOL_DEFINITIONS,
 } from "../toeToolDefinitions.js";
 import { TOOL_DEFINITIONS, type ToolRunResult } from "../toolDefinitions.js";
 import { detailOnlyFormattingSchema } from "../types.js";
 
 const describeToolsSchema = detailOnlyFormattingSchema.extend({
-	filter: z
-		.string()
-		.min(1)
-		.describe(
-			"Optional keyword to filter by tool name, module path, or parameter description",
-		)
-		.optional(),
+	filter: z.string().min(1).optional(),
 });
-type DescribeToolsParams = z.input<typeof describeToolsSchema>;
+
+function lifecycleDescription(name: string): string {
+	const entry = LIFECYCLE_TOOL_DEFINITIONS.find((d) => d.name === name);
+	if (!entry) {
+		throw new Error(`missing lifecycle tool metadata for ${name}`);
+	}
+	return entry.description;
+}
+
+function toeDescription(name: string): string {
+	const entry = TOE_TOOL_DEFINITIONS.find((d) => d.name === name);
+	if (!entry) {
+		throw new Error(`missing toe tool metadata for ${name}`);
+	}
+	return entry.description;
+}
 
 export function registerTdTools(
 	server: McpServer,
@@ -64,19 +76,21 @@ export function registerTdTools(
 	registry: TargetRegistry = getTargetRegistry(),
 ): void {
 	for (const definition of TOOL_DEFINITIONS) {
+		const fullSchema = definition.schema;
 		server.tool(
 			definition.name,
 			definition.description,
-			definition.schema.strict().shape,
+			slimShapeForMcp(fullSchema),
 			async (params: Record<string, unknown> = {}) => {
 				try {
+					const parsed = fullSchema.parse(params) as Record<string, unknown>;
 					if (registry.hasHub()) {
 						await registry.syncFromHub();
 					}
 					const selected = registry.getSelected();
 					const output = await runWithTarget(registry.asOrigin(selected), () =>
 						withTargetQueue(selected.id, () =>
-							definition.run({ logger, params, tdClient }),
+							definition.run({ logger, params: parsed, tdClient }),
 						),
 					);
 					return createToolResult(tdClient, output);
@@ -94,8 +108,8 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.LIST_TD_TARGETS,
-		"List known TouchDesigner targets (hub peers + soft lab hint). Does not probe liveness.",
-		z.object({}).strict().shape,
+		lifecycleDescription(TOOL_NAMES.LIST_TD_TARGETS),
+		slimShapeForMcp(z.object({}).strict()),
 		async () => {
 			try {
 				if (registry.hasHub()) {
@@ -115,11 +129,12 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.SELECT_TD_TARGET,
-		"Select the sticky TouchDesigner target for subsequent tools. Probes identity.",
-		selectTargetSchema.strict().shape,
-		async (params: z.input<typeof selectTargetSchema>) => {
+		lifecycleDescription(TOOL_NAMES.SELECT_TD_TARGET),
+		slimShapeForMcp(selectTargetSchema),
+		async (params: Record<string, unknown> = {}) => {
 			try {
-				const selected = await registry.selectAsync(params.id);
+				const parsed = selectTargetSchema.parse(params);
+				const selected = await registry.selectAsync(parsed.id);
 				const identity = await probeIdentity(
 					tdClient,
 					selected.id,
@@ -135,11 +150,12 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.CREATE_TD_PROJECT,
-		"Copy the MCP-ready project template to destDir and assign a preferred listen port. Does not start TouchDesigner.",
-		createProjectSchema.strict().shape,
-		async (params: z.input<typeof createProjectSchema>) => {
+		lifecycleDescription(TOOL_NAMES.CREATE_TD_PROJECT),
+		slimShapeForMcp(createProjectSchema),
+		async (params: Record<string, unknown> = {}) => {
 			try {
-				const created = await createTdProject(params);
+				const parsed = createProjectSchema.parse(params);
+				const created = await createTdProject(parsed);
 				await registry.upsertOwnedAsync({
 					host: created.target.host,
 					id: created.target.id,
@@ -157,16 +173,17 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.START_TD_PROJECT,
-		"Spawn TouchDesigner on a .toe that has .tdmcp/state.json, wait for the bridge, select the target.",
-		startProjectSchema.strict().shape,
-		async (params: z.input<typeof startProjectSchema>) => {
+		lifecycleDescription(TOOL_NAMES.START_TD_PROJECT),
+		slimShapeForMcp(startProjectSchema),
+		async (params: Record<string, unknown> = {}) => {
 			try {
+				const parsed = startProjectSchema.parse(params);
 				const result = await startTdProject({
 					registry,
 					tdClient,
-					tdExe: params.tdExe,
-					timeoutMs: params.timeoutMs,
-					toePath: params.toePath,
+					tdExe: parsed.tdExe,
+					timeoutMs: parsed.timeoutMs,
+					toePath: parsed.toePath,
 				});
 				return textResult(JSON.stringify(result, null, 2));
 			} catch (error) {
@@ -177,13 +194,14 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.STOP_TD_PROJECT,
-		"Soft-quit then kill an MCP-owned TouchDesigner instance. Refuses builtin lab.",
-		stopProjectSchema.strict().shape,
-		async (params: z.input<typeof stopProjectSchema>) => {
+		lifecycleDescription(TOOL_NAMES.STOP_TD_PROJECT),
+		slimShapeForMcp(stopProjectSchema),
+		async (params: Record<string, unknown> = {}) => {
 			try {
+				const parsed = stopProjectSchema.parse(params);
 				const result = await stopTdProject({
 					registry,
-					targetId: params.targetId,
+					targetId: parsed.targetId,
 					tdClient,
 				});
 				return textResult(JSON.stringify(result, null, 2));
@@ -195,10 +213,11 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.TD_UI_DIALOGS,
-		"Windows-only: list or dismiss TouchDesigner #32770 dialogs for the sticky target PID.",
-		tdUiDialogsSchema.strict().shape,
-		async (params: z.input<typeof tdUiDialogsSchema>) => {
+		lifecycleDescription(TOOL_NAMES.TD_UI_DIALOGS),
+		slimShapeForMcp(tdUiDialogsSchema),
+		async (params: Record<string, unknown> = {}) => {
 			try {
+				const parsed = tdUiDialogsSchema.parse(params);
 				if (process.platform !== "win32") {
 					return textResult(
 						JSON.stringify({
@@ -228,7 +247,7 @@ export function registerTdTools(
 					);
 				}
 				const listed = await inspectTdUi(pid);
-				if (params.action === "list") {
+				if (parsed.action === "list") {
 					return textResult(
 						JSON.stringify(
 							{
@@ -243,23 +262,23 @@ export function registerTdTools(
 						),
 					);
 				}
-				const targets = params.title
-					? listed.dialogs.filter((d) => d.title === params.title)
+				const targets = parsed.title
+					? listed.dialogs.filter((d) => d.title === parsed.title)
 					: listed.dialogs;
 				const toDismiss =
-					params.title && targets.length === 0
+					parsed.title && targets.length === 0
 						? [
 								{
 									message: "",
 									severity: "unknown" as const,
-									title: params.title,
+									title: parsed.title,
 								},
 							]
 						: targets;
-				const { attempted, dismissed } = params.title
+				const { attempted, dismissed } = parsed.title
 					? {
 							attempted: toDismiss,
-							dismissed: (await dismissTdUiDialog(params.title)).dismissed
+							dismissed: (await dismissTdUiDialog(parsed.title)).dismissed
 								? toDismiss
 								: [],
 						}
@@ -286,11 +305,11 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.GET_TOE_DIGEST,
-		"[alpha] Offline ToeDigest via toeexpand (cached). Modes: stats, outline (default), nodes, wires, refs. Token-capped; expand-relative paths. API may change.",
-		getToeDigestSchema.strict().shape,
-		async (params: z.input<typeof getToeDigestSchema>) => {
+		toeDescription(TOOL_NAMES.GET_TOE_DIGEST),
+		slimToeShapeForMcp(getToeDigestSchema),
+		async (params: Record<string, unknown> = {}) => {
 			try {
-				const result = await getToeDigest(params);
+				const result = await getToeDigest(getToeDigestSchema.parse(params));
 				return textResult(JSON.stringify(result, null, 2));
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.GET_TOE_DIGEST);
@@ -300,11 +319,11 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.GET_TOE_NODE,
-		"[alpha] Deep offline inspect of one expand-relative node/COMP (inputs, outputs, parms, text). API may change.",
-		getToeNodeSchema.strict().shape,
-		async (params: z.input<typeof getToeNodeSchema>) => {
+		toeDescription(TOOL_NAMES.GET_TOE_NODE),
+		slimToeShapeForMcp(getToeNodeSchema),
+		async (params: Record<string, unknown> = {}) => {
 			try {
-				const result = await getToeNode(params);
+				const result = await getToeNode(getToeNodeSchema.parse(params));
 				return textResult(JSON.stringify(result, null, 2));
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.GET_TOE_NODE);
@@ -314,11 +333,11 @@ export function registerTdTools(
 
 	server.tool(
 		TOOL_NAMES.INJECT_TD_MCP,
-		"[alpha] Offline: graft MCP onStart + modules/tdmcp_bridge.tox (runtime loadTox) into a foreign .toe in an empty destDir; write .tdmcp/state.json. Does not start TD. Then call start_td_project.",
-		injectTdMcpSchema.strict().shape,
-		async (params: z.input<typeof injectTdMcpSchema>) => {
+		toeDescription(TOOL_NAMES.INJECT_TD_MCP),
+		slimToeShapeForMcp(injectTdMcpSchema),
+		async (params: Record<string, unknown> = {}) => {
 			try {
-				const result = await injectTdMcp(params);
+				const result = await injectTdMcp(injectTdMcpSchema.parse(params));
 				await registry.upsertOwnedAsync({
 					host: result.target.host,
 					id: result.target.id,
@@ -357,11 +376,12 @@ export function registerTdTools(
 	const toolMetadataEntries = buildRegisteredToolMetadata();
 	server.tool(
 		TOOL_NAMES.DESCRIBE_TD_TOOLS,
-		"Generate a filesystem-oriented manifest of available TouchDesigner tools",
-		describeToolsSchema.strict().shape,
-		async (params: DescribeToolsParams = {}) => {
+		"Manifest of registered TD MCP tools",
+		slimShapeForMcp(describeToolsSchema),
+		async (params: Record<string, unknown> = {}) => {
 			try {
-				const { detailLevel, responseFormat, filter } = params;
+				const parsed = describeToolsSchema.parse(params);
+				const { detailLevel, responseFormat, filter } = parsed;
 				const normalizedFilter = filter?.trim().toLowerCase();
 				const filteredEntries = normalizedFilter
 					? toolMetadataEntries.filter((entry) =>

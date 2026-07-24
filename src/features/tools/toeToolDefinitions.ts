@@ -206,20 +206,19 @@ export const TOE_TOOL_DEFINITIONS: readonly ToolMetadataSource[] = [
 	{
 		category: "system",
 		description:
-			'[alpha] Offline ToeDigest. Full-project: stats → outline(path,maxDepth=1) → wires(path) → extensions. Hub: mode "brief" then get_toe_node deep. COMP Python Exts via mode "extensions" / stats.extensionsSummary (not Preferences packages).',
+			"[alpha] Offline ToeDigest. mode=stats|outline|nodes|wires|refs|brief|extensions|validate",
 		example:
 			'get_toe_digest({ toePath: "C:/proj/Gestation.toe", mode: "brief", path: "project1/comp_all", radius: 1 })',
 		name: TOOL_NAMES.GET_TOE_DIGEST,
 		notes:
-			"Alpha. Never writes beside the source toe. maxDepth is relative to path when path is set. See docs/toe-digest.md.",
+			"Alpha. Never writes beside the source toe. maxDepth is relative to path when path is set. Prefer brief for hubs; extensions = COMP Python Exts. See docs/toe-digest.md.",
 		returns:
 			"JSON: ToeDigest including expand{cacheKey,expandDir,tocPath,cacheHit}",
 		schema: getToeDigestSchema.strict(),
 	},
 	{
 		category: "system",
-		description:
-			'[alpha] Deep offline inspect of one expand-relative node. Prefer profile "deep" (files+raw+wires+children+meta). Always surfaces COMP Python Ext slots when present (extension.slots). Optional file= for sidecar text.',
+		description: "[alpha] Offline node inspect (profile summary|deep)",
 		example:
 			'get_toe_node({ toePath: "C:/proj/Gestation.toe", path: "project1/membrane_frag", profile: "deep" })',
 		name: TOOL_NAMES.GET_TOE_NODE,
@@ -232,7 +231,7 @@ export const TOE_TOOL_DEFINITIONS: readonly ToolMetadataSource[] = [
 	{
 		category: "system",
 		description:
-			"[alpha] Offline: copy a foreign .toe into an empty destDir, graft tdmcp_port_onstart, stage modules/ + modules/tdmcp_bridge.tox (runtime loadTox — no embedded bridge COMP), write .tdmcp/state.json. Then start_td_project. Does not start or select.",
+			"[alpha] Graft MCP into foreign .toe in empty destDir; then start_td_project",
 		example:
 			'inject_td_mcp({ toePath: "C:/dl/demo.toe", destDir: "C:/tmp/demo_mcp" })',
 		name: TOOL_NAMES.INJECT_TD_MCP,

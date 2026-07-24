@@ -39,6 +39,21 @@ get_toe_node({ toePath, path: "project1/glsl1", file: "glsl1_compute.text", prof
 
 Every response includes `expand: { cacheKey, expandDir, tocPath, cacheHit }` so you can correlate to disk without guessing temp paths.
 
+## Params not listed in `tools/list`
+
+To keep the always-on MCP catalog small, published schemas omit advanced optional knobs.
+They still work when passed (handlers re-validate with the full Zod schema). Discover via
+`describe_td_tools` filter=`toe` / `digest`, or this doc:
+
+| Tool | Core in `tools/list` | Advanced (pass when needed) |
+|------|----------------------|-----------------------------|
+| `get_toe_digest` | `toePath`, `mode`, `path` | `around`, `radius`, `maxDepth`, `relativeDepth`, `maxChars`, `maxNodes`, `refKind`, `refresh`, `tdExe` |
+| `get_toe_node` | `toePath`, `path`, `profile`, `include`, `file` | `maxChars`, `maxNodes`, `maxParms`, `refresh`, `tdExe` |
+| `inject_td_mcp` | `toePath`, `destDir`, `name`, `onConflict`, `port` | `tdExe` |
+
+Formatting: prefer `detailLevel` (`minimal`\|`summary`\|`detailed`). `limit` /
+`responseFormat` are not advertised in `tools/list`; defaults apply.
+
 ## Modes (`get_toe_digest`)
 
 | Mode | Use |

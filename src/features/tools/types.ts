@@ -5,6 +5,7 @@ import { z } from "zod";
  * These stay on the TypeScript side only and are not sent to TouchDesigner.
  */
 
+/** Kept for describe_td_tools introspection; MCP publish strips descriptions. */
 export const detailLevelSchema = z
 	.enum(["minimal", "summary", "detailed"] as const)
 	.describe(
@@ -22,6 +23,10 @@ export const presenterFormatSchema = z
 	.enum(["json", "yaml", "markdown"] as const)
 	.describe("Structured output format for formatted responses");
 
+/**
+ * Full formatting options on tool definitions (describe_td_tools).
+ * Published MCP schemas drop `responseFormat` via slimSchemaForMcp.
+ */
 export const detailOnlyFormattingSchema = z.object({
 	detailLevel: detailLevelSchema.optional(),
 	responseFormat: presenterFormatSchema.optional(),

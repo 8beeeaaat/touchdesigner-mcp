@@ -305,6 +305,18 @@ and return a summary. Monorepo pattern:
 [`docs/skill-authoring-patterns/04-token-discipline.md`](../../../docs/skill-authoring-patterns/04-token-discipline.md)
 (when this package lives inside `touchdesigner-mcp-td`).
 
+**Catalog (`tools/list`) budget:** always-on MCP catalog must stay ≤ **5000 tokens**
+(`est.` chars/1.5, JSON-calibrated; measure with
+`npm run build && node scripts/measure-tools-catalog.mjs` or
+`npx vitest run tests/unit/slimSchemaForMcp.test.ts`). Published schemas are **types +
+enums only** (no property descriptions); `responseFormat` / `limit` and rare ToeDigest
+knobs are omitted from `tools/list` — handlers still accept them / apply defaults.
+Param workflow + examples live in this doc, [`toe-digest.md`](toe-digest.md), the
+`touchdesigner-mcp` skill, and on-demand `describe_td_tools` (keeps full Zod
+descriptions). Tool `description` strings stay short. After editing
+`src/features/tools/*Definitions.ts` or slim helpers: `npm run build` + restart MCP
+(stdio loads `dist/`).
+
 ## Document mode checklist
 
 1. Diff tools in `src/core/constants.ts` + Zod vs this inventory and README tools table

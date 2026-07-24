@@ -63,8 +63,7 @@ export const listTargetsSchema = z.object({}).strict();
 export const LIFECYCLE_TOOL_DEFINITIONS: readonly ToolMetadataSource[] = [
 	{
 		category: "system",
-		description:
-			"List known TouchDesigner targets (tdmcp-hub peers + soft lab hint). Does not probe liveness.",
+		description: "List TD targets (hub peers + soft lab)",
 		example: "list_td_targets()",
 		name: TOOL_NAMES.LIST_TD_TARGETS,
 		returns: "JSON: selectedId and targets[] with selected flags",
@@ -72,8 +71,7 @@ export const LIFECYCLE_TOOL_DEFINITIONS: readonly ToolMetadataSource[] = [
 	},
 	{
 		category: "system",
-		description:
-			"Select the sticky TouchDesigner target for subsequent tools. Probes identity.",
+		description: "Select sticky TD target; probes identity",
 		example: 'select_td_target({ id: "lab" })',
 		name: TOOL_NAMES.SELECT_TD_TARGET,
 		returns: "JSON: selected target + identity (projectName, projectFolder, …)",
@@ -81,8 +79,7 @@ export const LIFECYCLE_TOOL_DEFINITIONS: readonly ToolMetadataSource[] = [
 	},
 	{
 		category: "system",
-		description:
-			"Copy the MCP-ready project template to destDir and assign a preferred listen port. Does not start TouchDesigner.",
+		description: "Copy MCP project template to destDir (does not start TD)",
 		example:
 			'create_td_project({ destDir: "C:/tmp/my_td_project", name: "project" })',
 		name: TOOL_NAMES.CREATE_TD_PROJECT,
@@ -93,8 +90,7 @@ export const LIFECYCLE_TOOL_DEFINITIONS: readonly ToolMetadataSource[] = [
 	},
 	{
 		category: "system",
-		description:
-			"Spawn TouchDesigner on a .toe that has .tdmcp/state.json, wait for the bridge, select the target. Auto-dismisses Windows #32770 dialogs during wait.",
+		description: "Start TD on .toe with .tdmcp/state.json; select target",
 		example:
 			'start_td_project({ toePath: "C:/tmp/my_td_project/project.toe" })',
 		name: TOOL_NAMES.START_TD_PROJECT,
@@ -104,8 +100,7 @@ export const LIFECYCLE_TOOL_DEFINITIONS: readonly ToolMetadataSource[] = [
 	},
 	{
 		category: "system",
-		description:
-			"Soft-quit then kill an MCP-owned TouchDesigner instance. Refuses builtin lab.",
+		description: "Stop MCP-owned TD (refuses lab)",
 		example: 'stop_td_project({ targetId: "owned-abcd1234" })',
 		name: TOOL_NAMES.STOP_TD_PROJECT,
 		notes: "If the stopped target was selected, sticky falls back to lab.",
@@ -114,8 +109,7 @@ export const LIFECYCLE_TOOL_DEFINITIONS: readonly ToolMetadataSource[] = [
 	},
 	{
 		category: "system",
-		description:
-			"Windows-only: list or dismiss TouchDesigner #32770 load/runtime dialogs for the sticky target PID. Does not unstick a hung UI thread.",
+		description: "Windows: list/dismiss TD #32770 dialogs for sticky PID",
 		example: 'td_ui_dialogs({ action: "list" })',
 		name: TOOL_NAMES.TD_UI_DIALOGS,
 		notes:
