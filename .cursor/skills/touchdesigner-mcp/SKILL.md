@@ -17,7 +17,7 @@ description: >-
 
 ## Operate vs Document
 
-- **Operate:** assert identity → tools → verify (`get_td_node_errors` / `get_top_image` or ToeDigest recipe). Stop after 3 failed probes.
+- **Operate:** assert identity → tools → verify (`get_td_node_errors`; `get_top_image` when look is the claim; or ToeDigest recipe). Prefer `detailLevel: summary` / `includeProperties: false`; store-first. Stop after 3 failed probes.
 - **Document:** update `docs/AGENT_MCP.md` first → README/skills → `npm run build` if schemas changed → restart MCP → probe.
 
 ## Sticky targets (quick)
@@ -60,6 +60,7 @@ Expand paths ≠ guaranteed live `op()` paths. Details: `docs/toe-digest.md`.
 
 1. Correct sticky target; identity matches intent
 2. `get_td_node_errors` clean on touched subtree
-3. Visuals: `get_top_image` not black
+3. Look claims: `get_top_image` not black (store-first; no look PASS without a note or user claim)
 4. If source changed: rebuilt + MCP restarted + schema probe OK
 5. Foreign toes: original archive path never overwritten; save only working `destDir` copy if user asks
+6. Token discipline: AGENT_MCP Token usage reduction (cheapest surface; trim dumps)

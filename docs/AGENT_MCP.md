@@ -6,7 +6,7 @@ Source of truth for agents using **this fork** (branch `multi-instance` and buil
 
 | Mode | When | Definition of Done |
 |------|------|--------------------|
-| **Operate** | Drive live TD, multi-instance, or offline ToeDigest | Identity asserted → tools used correctly → verify (`get_td_node_errors` / `get_top_image` / **FPS Perform CHOP monitor** or ToeDigest recipe). Stop after **3** failed probes with no new evidence. |
+| **Operate** | Drive live TD, multi-instance, or offline ToeDigest | Identity asserted → tools used correctly → verify (`get_td_node_errors`; `get_top_image` when look is the claim; **FPS Perform CHOP monitor** or ToeDigest recipe). Prefer cheapest surface; store-first (see Token usage reduction). Stop after **3** failed probes with no new evidence. |
 | **Document** | Changing tools/schemas/docs/skills, or asked to update agent docs | Diff runtime inventory vs this file → edit **this SoT first** → update README/skills → `npm run build` if schemas changed → restart MCP → scenario checklist green. Do not paraphrase READMEs into skills. |
 
 **Runtime schemas win** for tool names and parameters (`describe_td_tools` / Zod in `dist`). This document must match a built `dist/`.
@@ -106,7 +106,7 @@ Prefer named tools for single operations. Use `execute_python_script` for multi-
 | `exec_node_method` | Call a Python method on a node |
 | `execute_python_script` | Multi-step Python in TD (last expression side-effect safe when used as return value) |
 | `get_td_node_errors` | Errors on a node subtree |
-| `get_top_image` | JPEG of a TOP (`maxSize` optional; black frame = failure for visual checks) |
+| `get_top_image` | JPEG of a TOP (`maxSize` optional, prefer `256`; use when look is the claim; black frame = failure; store-first — do not re-capture unchanged path) |
 
 ### Runtime API help
 
@@ -290,9 +290,20 @@ get_toe_node({ toePath, path: "project1/membrane_frag", profile: "deep" })
 2. `select_td_target` when not using lab (or after `start` which already selects)
 3. Assert identity (`projectFolder` / `projectName` prefix)
 4. Mutate via existing tools
-5. Verify: `get_td_node_errors` clean on the touched subtree; for visuals, `get_top_image` shows the expected result (black frame = fail); sample achieved FPS via Perform CHOP monitor + `cookTime` hotspots (`cookRate` is not a pass)
+5. Verify: `get_td_node_errors` clean on the touched subtree; when look is the claim, `get_top_image` (`maxSize: 256`) shows the expected result (black frame = fail) — write a short note and reuse (do not re-capture unchanged paths); sample achieved FPS via Perform CHOP monitor + `cookTime` hotspots (`cookRate` is not a pass)
 
 Stop after **3** failed calls with no new evidence.
+
+## Token usage reduction
+
+Agents **decide** the cheapest surface that answers the claim (do not skip verification).
+Defaults: `detailLevel: "summary"` (or `"minimal"`), `includeProperties: false`. Prefer
+named tools over dump scripts. **Store-first:** first expensive capture/`Read` → short
+note (path + observation + verdict); reuse until state changes. No look PASS without a
+vision note or an explicit user look claim. Broad multi-file digs → isolate in a subagent
+and return a summary. Monorepo pattern:
+[`docs/skill-authoring-patterns/04-token-discipline.md`](../../../docs/skill-authoring-patterns/04-token-discipline.md)
+(when this package lives inside `touchdesigner-mcp-td`).
 
 ## Document mode checklist
 

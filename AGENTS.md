@@ -8,7 +8,7 @@ Before driving TouchDesigner from an agent, read **[docs/AGENT_MCP.md](docs/AGEN
 - Sticky peers live on the hub; no per-call target — wrong sticky ⇒ wrong project
 - `npm run build` then restart MCP after `src/` / schema changes (stdio loads `dist/`); peers survive MCP restart if hub stays up
 - Offline `.toe`: `get_toe_digest` / `get_toe_node` — [docs/toe-digest.md](docs/toe-digest.md)
-- Live verify: `get_td_node_errors` + `get_top_image` (black frame = fail)
+- Live verify: `get_td_node_errors`; `get_top_image` when look is the claim (black frame = fail; store-first). Prefer `detailLevel: summary` / `includeProperties: false`. See AGENT_MCP Token usage reduction.
 
 Cursor skill (fork-local): [`.cursor/skills/touchdesigner-mcp/SKILL.md`](.cursor/skills/touchdesigner-mcp/SKILL.md).
 
