@@ -58,6 +58,12 @@ def set_status(msg: str) -> None:
 	global _last_status
 	_last_status = msg
 	print(f"tdmcp_tunnel: {msg}")
+	try:
+		from utils import tdmcp_status
+
+		tdmcp_status.record("tunnel", msg)
+	except Exception:
+		pass
 
 
 def is_paused() -> bool:
@@ -120,6 +126,17 @@ def capture_snapshot_on_main() -> dict[str, Any]:
 	with _snapshot_lock:
 		_snapshot.clear()
 		_snapshot.update(snap)
+	try:
+		from utils import tdmcp_status
+
+		tdmcp_status.set_meta(
+			transport=str(snap.get("transport") or "http"),
+			target_id=str(snap.get("targetId") or ""),
+			hub_url=str(snap.get("hubUrl") or ""),
+			os_pid=int(snap.get("osPid") or 0),
+		)
+	except Exception:
+		pass
 	# Also seed hub module cache so its heartbeat thread never needs project.folder
 	try:
 		from utils import tdmcp_hub
@@ -375,11 +392,32 @@ def _dispatch_request(msg: dict[str, Any]) -> dict[str, Any]:
 
 def _handle_request_on_main(msg: dict[str, Any], sock: socket.socket) -> None:
 	"""MAIN THREAD ONLY."""
+	import time
+
+	t0 = time.perf_counter()
+	method = str(msg.get("method") or "GET")
+	path = str(msg.get("path") or "/")
 	try:
 		resp = _dispatch_request(msg)
 		_ws_send_text(sock, json.dumps(resp))
+		elapsed_ms = (time.perf_counter() - t0) * 1000.0
+		try:
+			from utils import tdmcp_status
+
+			tdmcp_status.note_request(
+				method, path, int(resp.get("statusCode") or 0), elapsed_ms
+			)
+		except Exception:
+			pass
 	except Exception as e:
 		traceback.print_exc()
+		elapsed_ms = (time.perf_counter() - t0) * 1000.0
+		try:
+			from utils import tdmcp_status
+
+			tdmcp_status.note_request(method, path, 500, elapsed_ms)
+		except Exception:
+			pass
 		try:
 			_ws_send_text(
 				sock,

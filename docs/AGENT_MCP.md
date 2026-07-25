@@ -97,7 +97,7 @@ Prefer named tools for single operations. Use `execute_python_script` for multi-
 |------|------|
 | `get_toe_digest` | Offline `.toe` via `toeexpand` (cached). Modes: `stats`, `outline`, `nodes`, `wires`, `refs`, `files`, `brief`, `extensions`. See [`toe-digest.md`](toe-digest.md). |
 | `get_toe_node` | Offline node/COMP inspect (`summary` / `deep`); optional `file=` sidecar |
-| `inject_td_mcp` | Offline: copy foreign `.toe` → empty `destDir`, graft `tdmcp_port_onstart` only, stage `modules/` + `modules/tdmcp_bridge.tox` (runtime `loadTox` on open — no embedded bridge COMP), write `.tdmcp/state.json`. **Does not start TD or select.** `onConflict`: `abort` (default) \| `skip` \| `replace`. Requires `project1`. See adopt cookbook below. |
+| `inject_td_mcp` | Offline: copy foreign `.toe` → empty `destDir`, graft `/local/tdmcp_boot` only, stage `modules/` + `modules/tdmcp_bridge.tox` (runtime `loadTox` on open — no embedded bridge COMP / no sibling onstart on `project1`), write `.tdmcp/state.json`. **Does not start TD or select.** `onConflict`: `abort` (default) \| `skip` \| `replace`. Requires `project1`. See adopt cookbook below. |
 
 ### Project / nodes / scripts
 
@@ -187,7 +187,7 @@ Greenfield empty project: `create_td_project`. Foreign/community `.toe` that lac
 | Step | Tool | Notes |
 |------|------|-------|
 | 0 | `get_toe_digest` | Optional map of source |
-| 1 | `inject_td_mcp` | `{ toePath, destDir, name?, port?, onConflict?, tdExe? }` — empty `destDir` only; copies source; grafts `tdmcp_port_onstart` + `modules/tdmcp_bridge.tox` (runtime `loadTox`); writes state; **does not select** |
+| 1 | `inject_td_mcp` | `{ toePath, destDir, name?, port?, onConflict?, tdExe? }` — empty `destDir` only; copies source; grafts `/local/tdmcp_boot` + `modules/tdmcp_bridge.tox` (runtime `loadTox`); writes state; **does not select** |
 | 2 | `start_td_project` | `{ toePath }` from inject result |
 | 3 | `get_td_info` | Assert `projectFolder` = `destDir` |
 | 4 | Work / `stop_td_project` | Same as owned lifecycle |
@@ -207,7 +207,7 @@ inject_td_mcp({ toePath: destA + "/demo.toe", destDir: destB, onConflict: "repla
 start_td_project({ toePath: destB + "/demo.toe" })
 ```
 
-**Runtime-bridge inject:** keep the foreign networks intact (sync `.build` from the MCP kit). Graft only `tdmcp_port_onstart`, which `loadTox`s `modules/tdmcp_bridge.tox` on open. Embedding the full bridge COMP into a community toe, or shell-host merging foreign COMPs into the MCP template, triggers TD “Unexpected node duplication (/project1/…) in file”. Warning `runtimeBridge:loadTox` is expected. Never stage `tdmcp_bridge.tox` at the project root (only under `modules/`). Collapse runs **in place** on the working expand (avoid `*.injecting.*` renames on Windows).
+**Runtime-bridge inject:** keep the foreign networks intact (sync `.build` from the MCP kit). Graft `/local/tdmcp_boot`, which `loadTox`s `modules/tdmcp_bridge.tox` on open (nested `tdmcp_port_onstart` inside the tox). Do not place a sibling `tdmcp_port_onstart` on `project1`. Embedding the full bridge COMP into a community toe, or shell-host merging foreign COMPs into the MCP template, triggers TD “Unexpected node duplication (/project1/…) in file”. Warning `runtimeBridge:loadTox` is expected. Never stage `tdmcp_bridge.tox` at the project root (only under `modules/`). Collapse runs **in place** on the working expand (avoid `*.injecting.*` renames on Windows).
 
 **Sidecars:** inject copies `modules/` + `import_modules.py` + `modules/tdmcp_bridge.tox`. Project-root bridge `.tox` files are deleted. After `loadTox`, modules resolve via `project.folder + '/modules'`.
 
@@ -331,7 +331,7 @@ descriptions). Tool `description` strings stay short. After editing
 
 ## Template
 
-[`templates/mcp_project`](../templates/mcp_project/) is a real TouchDesigner project with `mcp_webserver_base` imported. On start, `/project1/tdmcp_port_onstart` runs `utils.apply_tdmcp_port.apply()` so owned instances bind the port from `.tdmcp/state.json` instead of stealing lab **9981**. See the [template README](../templates/mcp_project/README.md).
+[`templates/mcp_project`](../templates/mcp_project/) is a real TouchDesigner project with `tdmcp_bridge` embedded. On start, `/project1/tdmcp_bridge/tdmcp_port_onstart` runs tunnel/HTTP setup from `.tdmcp/state.json` (owned instances do not steal lab **9981**). See the [template README](../templates/mcp_project/README.md).
 
 ## Architecture pointer
 

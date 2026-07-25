@@ -83,16 +83,49 @@ Liveness = socket. Disconnect marks `tunnelConnected: false` immediately.
 }
 ```
 
-`tdmcp_port_onstart` → `utils.tdmcp_tunnel.on_bridge_ready()`:
+`tdmcp_port_onstart` (inside `/project1/tdmcp_bridge`) → `utils.tdmcp_tunnel.on_bridge_ready()`:
 
 1. **Main thread:** `capture_snapshot_on_main()` (never touch `op`/`project` from workers).
 2. Optional ensure hub via `Hubdir`.
 3. Dial `/tunnel`, hello with nonce, reconnect with backoff (**never** silent-death).
 4. Dispatch requests into existing `api_controller` via
-   `/project1/tdmcp_port_onstart` **`onFrameStart`** → `process_pending()` on the
+   `/project1/tdmcp_bridge/tdmcp_port_onstart` **`onFrameStart`** → `process_pending()` on the
    main cook thread (`me.par.framestart` enabled at tunnel start). Do **not**
    drain via `td.run` from the WS worker (`td.app` may work there; `op`/`project`
    do not).
+
+Inject-only: `/local/tdmcp_boot` `loadTox`s the bridge first; create/template already embeds it.
+
+### Bridge face (visible status)
+
+The bridge COMP is no longer a silent brick. At start, `utils.tdmcp_status.ensure_ui`
+creates three ops inside `/project1/tdmcp_bridge`:
+
+| Op | Role |
+|----|------|
+| `status_top` | Text TOP — **Operator Viewer face** (green = connected) |
+| `status_text` | Curated summary (state, target, hub, pid, last op, event count) |
+| `event_log` | Table DAT — pretty event history, **hard-capped at 100 rows** |
+
+Workers only `record()` into a deque; `flush()` on `onFrameStart` writes DATs/TOP.
+Heartbeat “ok” lines are rate-limited (~30s) so long sessions stay quiet.
+
+```mermaid
+flowchart LR
+  MCP[Cursor MCP] --> Hub[tdmcp-hub]
+  Hub -->|tunnel proxy| Bridge[tdmcp_bridge]
+  Bridge --> Face[status_top face]
+```
+
+![Alive and kicking — tunnel connected](assets/bridge-status/status-connected.png)
+
+*Alive and kicking: tunnel up, target id, last `get_td_info`.*
+
+![Just cooked your script](assets/bridge-status/status-after-op.png)
+
+*Just cooked your script: last op shows `POST …/exec → 200`.*
+
+Regenerate screenshots with `TD_MCP_TUNNEL_E2E=1 node scripts/tunnelE2E.mjs`.
 
 **THREAD CONFLICT:** workers must not reference OPShortcut — see monorepo skill
 `reference/thread-safety.md`. Lifecycle treats that dialog as a hard start failure.

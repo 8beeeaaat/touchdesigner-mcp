@@ -21,11 +21,15 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
 
 On the **asyade** fork (`multi-instance` branch), one stdio MCP server can address multiple TouchDesigner instances via a **sticky target**:
 
-- Builtin **`lab`** on port **9981** (default sticky)
-- MCP-**owned** projects on ports **≥9984** via `create_td_project` / `start_td_project` / `stop_td_project`
+- Builtin **`lab`** on port **9981** (default sticky) or tunnel-registered `lab`
+- MCP-**owned** projects via **reverse tunnel** to **tdmcp-hub :9980** (`create_td_project` / `start_td_project` / `stop_td_project`)
 - Node/script tools always hit the sticky target (no per-call `target` argument)
 
-**Agents:** read the contract in **[docs/AGENT_MCP.md](docs/AGENT_MCP.md)** (Operate vs Document, 0/1/N, identity, lifecycle, ToeDigest, failure cookbook, Definition of Done). Offline `.toe`: [docs/toe-digest.md](docs/toe-digest.md). Architecture notes: [docs/architecture.md](docs/architecture.md#multi-target-sticky-routing). After editing `src/`: `npm run build` then restart the MCP client process.
+Owned peers show a **live bridge face** in the Network Editor (tunnel state, last op, capped event log) — not a blank COMP:
+
+![Bridge status face](docs/assets/bridge-status/status-after-op.png)
+
+Details: **[docs/hub.md](docs/hub.md)** (Bridge face) · contract **[docs/AGENT_MCP.md](docs/AGENT_MCP.md)**. Offline `.toe`: [docs/toe-digest.md](docs/toe-digest.md). After editing `src/`: `npm run build` then restart the MCP client process.
 
 ## Installation
 

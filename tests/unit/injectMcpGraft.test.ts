@@ -19,7 +19,9 @@ import {
 	nodeNameFromEntry,
 	patchBridgePortParm,
 	patchExternalToxParm,
+	readTdTextDatPayload,
 	removeTocLines,
+	stageBootInExpand,
 	wipeGraftOwned,
 } from "../../src/toe/graftManifest.js";
 
@@ -60,10 +62,10 @@ describe("detectNewline / mergeTocEntries", () => {
 		const dir = tempDir();
 		const toc = join(dir, "x.toc");
 		writeFileSync(toc, ".build\nproject1.n\n", "utf8");
-		mergeTocEntries(toc, ["project1/tdmcp_port_onstart.n"]);
+		mergeTocEntries(toc, ["local/tdmcp_boot.n"]);
 		const text = readFileSync(toc, "utf8");
 		expect(text.includes("\r\n")).toBe(false);
-		expect(text).toContain("project1/tdmcp_port_onstart.n\n");
+		expect(text).toContain("local/tdmcp_boot.n\n");
 	});
 
 	it("removeTocLines drops graft-owned entries", () => {
@@ -84,7 +86,15 @@ describe("detectNewline / mergeTocEntries", () => {
 });
 
 describe("detectBridgeConflict", () => {
-	const manifest = [
+	const nestedManifest = [
+		"project1/tdmcp_bridge.n",
+		"project1/tdmcp_bridge.parm",
+		"project1/tdmcp_bridge/tdmcp_port_onstart.n",
+		"project1/tdmcp_bridge/tdmcp_port_onstart.parm",
+		"project1/tdmcp_bridge/tdmcp_port_onstart.text",
+	];
+	/** Legacy sibling onstart (pre-nest) still recognized. */
+	const legacySiblingManifest = [
 		"project1/tdmcp_bridge.n",
 		"project1/tdmcp_bridge.parm",
 		"project1/tdmcp_port_onstart.n",
@@ -96,33 +106,62 @@ describe("detectBridgeConflict", () => {
 		const dir = tempDir();
 		mkdirSync(join(dir, "project1"), { recursive: true });
 		writeFileSync(join(dir, "project1", "blur1.n"), "TOP:blur\nend\n");
-		const c = detectBridgeConflict(dir, manifest);
+		const c = detectBridgeConflict(dir, nestedManifest);
 		expect(c.state).toBe("absent");
-		expect(c.missingManifestPaths).toHaveLength(manifest.length);
+		expect(c.missingManifestPaths).toHaveLength(nestedManifest.length);
 	});
 
-	it("reports full when stems + manifest present", () => {
+	it("reports full when bridge + nested onstart + manifest present", () => {
 		const dir = tempDir();
 		mkdirSync(join(dir, "project1", "tdmcp_bridge"), { recursive: true });
-		for (const rel of manifest) {
+		for (const rel of nestedManifest) {
 			const abs = join(dir, ...rel.split("/"));
 			mkdirSync(join(abs, ".."), { recursive: true });
 			writeFileSync(abs, "x\n");
 		}
-		const c = detectBridgeConflict(dir, manifest);
+		const c = detectBridgeConflict(dir, nestedManifest);
 		expect(c.state).toBe("full");
 		expect(c.missingManifestPaths).toEqual([]);
 	});
 
-	it("reports partial when only onStart exists", () => {
+	it("reports full for legacy sibling onstart + bridge", () => {
+		const dir = tempDir();
+		mkdirSync(join(dir, "project1", "tdmcp_bridge"), { recursive: true });
+		for (const rel of legacySiblingManifest) {
+			const abs = join(dir, ...rel.split("/"));
+			mkdirSync(join(abs, ".."), { recursive: true });
+			writeFileSync(abs, "x\n");
+		}
+		const c = detectBridgeConflict(dir, legacySiblingManifest);
+		expect(c.state).toBe("full");
+	});
+
+	it("reports partial when only sibling onStart exists", () => {
 		const dir = tempDir();
 		mkdirSync(join(dir, "project1"), { recursive: true });
 		writeFileSync(join(dir, "project1", "tdmcp_port_onstart.n"), "DAT:execute\nend\n");
-		const c = detectBridgeConflict(dir, manifest);
+		const c = detectBridgeConflict(dir, nestedManifest);
 		expect(c.state).toBe("partial");
 	});
 
-	it("reports full for onStart + modules tox (runtime inject)", () => {
+	it("reports full for /local/tdmcp_boot + modules tox (runtime inject)", () => {
+		const dir = tempDir();
+		mkdirSync(join(dir, "project1"), { recursive: true });
+		mkdirSync(join(dir, "local"), { recursive: true });
+		mkdirSync(join(dir, "modules"), { recursive: true });
+		for (const rel of [
+			"local/tdmcp_boot.n",
+			"local/tdmcp_boot.parm",
+			"local/tdmcp_boot.text",
+		]) {
+			writeFileSync(join(dir, ...rel.split("/")), "x\n");
+		}
+		writeFileSync(join(dir, "modules", "tdmcp_bridge.tox"), "tox\n");
+		const c = detectBridgeConflict(dir, nestedManifest, dir);
+		expect(c.state).toBe("full");
+	});
+
+	it("reports full for legacy sibling onStart + modules tox", () => {
 		const dir = tempDir();
 		mkdirSync(join(dir, "project1"), { recursive: true });
 		mkdirSync(join(dir, "modules"), { recursive: true });
@@ -134,14 +173,14 @@ describe("detectBridgeConflict", () => {
 			writeFileSync(join(dir, ...rel.split("/")), "x\n");
 		}
 		writeFileSync(join(dir, "modules", "tdmcp_bridge.tox"), "tox\n");
-		const c = detectBridgeConflict(dir, manifest, dir);
+		const c = detectBridgeConflict(dir, legacySiblingManifest, dir);
 		expect(c.state).toBe("full");
 	});
 
 	it("full with extras under stem still full", () => {
 		const dir = tempDir();
 		mkdirSync(join(dir, "project1", "tdmcp_bridge"), { recursive: true });
-		for (const rel of manifest) {
+		for (const rel of nestedManifest) {
 			const abs = join(dir, ...rel.split("/"));
 			mkdirSync(join(abs, ".."), { recursive: true });
 			writeFileSync(abs, "x\n");
@@ -150,9 +189,32 @@ describe("detectBridgeConflict", () => {
 			join(dir, "project1", "tdmcp_bridge", "extra.text"),
 			"extra\n",
 		);
-		const c = detectBridgeConflict(dir, manifest);
+		const c = detectBridgeConflict(dir, nestedManifest);
 		expect(c.state).toBe("full");
 		expect(c.extraUnderStem).toContain("project1/tdmcp_bridge/extra.text");
+	});
+});
+
+describe("stageBootInExpand / wipe boot", () => {
+	it("stages local/tdmcp_boot and wipe removes it", () => {
+		const dir = tempDir();
+		mkdirSync(join(dir, "project1"), { recursive: true });
+		const toc = join(dir, "x.toc");
+		writeFileSync(toc, "project1.n\n", "utf8");
+		const paths = stageBootInExpand(dir);
+		expect(paths).toEqual([
+			"local/tdmcp_boot.n",
+			"local/tdmcp_boot.parm",
+			"local/tdmcp_boot.text",
+		]);
+		expect(existsSync(join(dir, "local", "tdmcp_boot.n"))).toBe(true);
+		const text = readTdTextDatPayload(join(dir, "local", "tdmcp_boot.text"));
+		expect(text).toContain("def onStart");
+		expect(text).toContain("loadTox");
+		mergeTocEntries(toc, paths);
+		wipeGraftOwned(dir, toc, []);
+		expect(existsSync(join(dir, "local", "tdmcp_boot.n"))).toBe(false);
+		expect(readFileSync(toc, "utf8")).not.toMatch(/tdmcp_boot/);
 	});
 });
 

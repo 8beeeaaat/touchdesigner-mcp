@@ -23,16 +23,13 @@ import {
 	assertManifestPresent,
 	BRIDGE_TOX_SIDECAR,
 	BRIDGE_TOX_SOURCE_NAMES,
-	copyGraftKit,
 	detectBridgeConflict,
 	ensureGraftKit,
-	filterOnstartPaths,
 	mergeTocEntries,
 	MODULES_BRIDGE_TOX_REL,
 	modulesBridgeToxPath,
-	patchOnstartFrameStart,
-	patchOnstartText,
 	readBuildVersion,
+	stageBootInExpand,
 	syncBuildFromKit,
 	syncExpectedNodesFromKit,
 	wipeGraftOwned,
@@ -115,11 +112,15 @@ function stageSidecars(destDir: string): void {
 			rmSync(tox, { force: true });
 		}
 	}
-	const toxFrom = join(src, BRIDGE_TOX_SIDECAR);
+	const toxFromModules = join(src, ...MODULES_BRIDGE_TOX_REL.split("/"));
+	const toxFromRoot = join(src, BRIDGE_TOX_SIDECAR);
+	const toxFrom = existsSync(toxFromModules)
+		? toxFromModules
+		: toxFromRoot;
 	if (!existsSync(toxFrom)) {
 		throw new InjectTdMcpError(
 			"TEMPLATE_INCOMPLETE",
-			`MCP template missing ${BRIDGE_TOX_SIDECAR} at ${toxFrom}`,
+			`MCP template missing ${MODULES_BRIDGE_TOX_REL} (or ${BRIDGE_TOX_SIDECAR}) under ${src}`,
 		);
 	}
 	const toxTo = modulesBridgeToxPath(destDir);
@@ -150,13 +151,14 @@ function cleanupExpandArtifacts(destDir: string, toeStemPath: string): void {
 }
 
 /**
- * Stage a foreign `.toe` into an empty destDir, graft MCP onStart bootstrap
+ * Stage a foreign `.toe` into an empty destDir, graft `/local/tdmcp_boot`
  * offline (bridge COMP is loadTox'd at TD open from modules/), write
  * `.tdmcp/state.json`. Does not start TouchDesigner or select a target.
  *
  * Embedding the full bridge COMP into community toes (or shell-host merging
  * their networks into the MCP template) triggers TD
  * "Unexpected node duplication … in file" dialogs. Runtime loadTox avoids that.
+ * Nested `tdmcp_port_onstart` lives inside the tox, not on the project1 canvas.
  */
 export async function injectTdMcp(
 	params: InjectTdMcpParams,
@@ -231,13 +233,6 @@ export async function injectTdMcp(
 			tdExe: params.tdExe,
 			timeoutMs: params.timeoutMs,
 		});
-		const onstartPaths = filterOnstartPaths(kit.paths);
-		if (onstartPaths.length === 0) {
-			fail(
-				"TEMPLATE_INCOMPLETE",
-				"graft kit has no tdmcp_port_onstart paths",
-			);
-		}
 
 		try {
 			cpSync(sourceToe, workingToe);
@@ -325,8 +320,8 @@ export async function injectTdMcp(
 			warnings.push("runtimeBridge:loadTox");
 
 			wipeGraftOwned(expanded.expandDir, expanded.tocPath, kit.paths);
-			copyGraftKit(kit.kitExpandDir, expanded.expandDir, onstartPaths);
-			mergeTocEntries(expanded.tocPath, onstartPaths);
+			const bootPaths = stageBootInExpand(expanded.expandDir);
+			mergeTocEntries(expanded.tocPath, bootPaths);
 			const buildSync = syncBuildFromKit(
 				expanded.expandDir,
 				kit.kitExpandDir,
@@ -337,8 +332,6 @@ export async function injectTdMcp(
 				);
 			}
 			syncExpectedNodesFromKit(expanded.expandDir, kit.kitExpandDir);
-			patchOnstartText(expanded.expandDir);
-			patchOnstartFrameStart(expanded.expandDir);
 
 			try {
 				assertGraftClean(
@@ -382,12 +375,12 @@ export async function injectTdMcp(
 			});
 			const missing = assertManifestPresent(
 				verified.expandDir,
-				onstartPaths,
+				bootPaths,
 			);
 			if (missing.length > 0) {
 				fail(
 					"INJECT_VERIFY_FAILED",
-					`re-expand missing onStart paths: ${missing.slice(0, 8).join(", ")}`,
+					`re-expand missing boot paths: ${missing.slice(0, 8).join(", ")}`,
 				);
 			}
 			if (!existsSync(join(verified.expandDir, ".build"))) {
@@ -397,6 +390,24 @@ export async function injectTdMcp(
 				fail(
 					"INJECT_VERIFY_FAILED",
 					`missing ${MODULES_BRIDGE_TOX_REL} for runtime loadTox`,
+				);
+			}
+			// Sibling onstart must not sit on project1 (boot is under /local).
+			if (
+				existsSync(
+					join(
+						verified.expandDir,
+						"project1",
+						"tdmcp_port_onstart.n",
+					),
+				) ||
+				existsSync(
+					join(verified.expandDir, "project1", "tdmcp_port_onstart"),
+				)
+			) {
+				fail(
+					"INJECT_VERIFY_FAILED",
+					"sibling tdmcp_port_onstart on project1; expected /local/tdmcp_boot only",
 				);
 			}
 			// Bridge COMP must NOT be embedded — that is what triggers foreign-toe dialogs.

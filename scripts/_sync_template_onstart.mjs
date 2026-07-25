@@ -23,4 +23,6 @@ try {
 } catch {
 	/* ignore */
 }
-console.log("patched template onstart from tdmcp_port_onstart.py");
+console.log(
+	"patched nested template onstart (project1/tdmcp_bridge/tdmcp_port_onstart) from tdmcp_port_onstart.py",
+);

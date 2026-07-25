@@ -113,7 +113,7 @@ When both matter: digest for map → open project → verify live before mutate.
 
 ## `inject_td_mcp` (alpha write)
 
-Stages a **copy** of a foreign `.toe` into an empty `destDir`, grafts only `project1/tdmcp_port_onstart` (via `toeexpand` / `toecollapse`), syncs `.build` from the MCP kit, copies `modules/` + `import_modules.py` + **`modules/tdmcp_bridge.tox`**, writes `.tdmcp/state.json` with **`transport: "tunnel"`**, **`nonce`**, and `hubUrl` (listen `port: 0` by default). On open, `tdmcp_port_onstart` `loadTox`s the bridge and dials **tdmcp-hub** `/tunnel` (warning `runtimeBridge:loadTox`). Does **not** embed `/project1/tdmcp_bridge` in the foreign toe — that path (and shell-host merges) trigger TD “Unexpected node duplication … in file”. Optional `transport: "http"` keeps legacy WebServer listen + register.
+Stages a **copy** of a foreign `.toe` into an empty `destDir`, grafts `/local/tdmcp_boot` (via `toeexpand` / `toecollapse`), syncs `.build` from the MCP kit, copies `modules/` + `import_modules.py` + **`modules/tdmcp_bridge.tox`**, writes `.tdmcp/state.json` with **`transport: "tunnel"`**, **`nonce`**, and `hubUrl` (listen `port: 0` by default). On open, `/local/tdmcp_boot` `loadTox`s the bridge (nested `tdmcp_port_onstart` inside the tox dials **tdmcp-hub** `/tunnel`; warning `runtimeBridge:loadTox`). Does **not** embed `/project1/tdmcp_bridge` or a sibling `tdmcp_port_onstart` on the foreign `project1` canvas — that path (and shell-host merges) trigger TD “Unexpected node duplication … in file”. Optional `transport: "http"` keeps legacy WebServer listen + register.
 
 | Rule | Detail |
 |------|--------|
@@ -122,8 +122,9 @@ Stages a **copy** of a foreign `.toe` into an empty `destDir`, grafts only `proj
 | Host COMP | v1 requires `project1` |
 | Expand cache | Inject expands the **working copy under `destDir`**, not `%TEMP%/tdmcp-toe-cache` |
 | Bridge tox | Under `modules/tdmcp_bridge.tox` only — **never** project-root `tdmcp_bridge.tox` / `mcp_webserver_base.tox` (tox↔COMP name collision) |
-| `onConflict` | `abort` (default) / `skip` (full = onStart + modules tox or embedded bridge) / `replace` |
-| Verify | Pre/post collapse **toe_build**; collapse in place (no `*.injecting.*` rename); re-expand asserts onStart paths + modules tox, no embedded bridge COMP; hard fail wipes `destDir` |
+| Bootstrap | `/local/tdmcp_boot` only (not `project1/tdmcp_port_onstart`) |
+| `onConflict` | `abort` (default) / `skip` (full = boot + modules tox or embedded bridge) / `replace` |
+| Verify | Pre/post collapse **toe_build**; collapse in place (no `*.injecting.*` rename); re-expand asserts boot paths + modules tox, no embedded bridge COMP / sibling onstart; hard fail wipes `destDir` |
 | After inject | `start_td_project({ toePath })` — inject does **not** start or select; first open should have no duplication dialog |
 
 ```text

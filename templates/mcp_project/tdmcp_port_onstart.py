@@ -6,6 +6,7 @@
 # Tunnel/hub workers only see plain-string snapshots.
 # Tunnel OpenAPI drain runs in onFrameStart (this Execute DAT) — never via
 # td.run from the WS worker (that path cannot touch op/project).
+# Status face flush also runs here every frame (both transports).
 
 
 def onStart():
@@ -49,11 +50,17 @@ def onStart():
 			if os.path.isfile(os.path.join(candidate, "dist", "hub.js")):
 				hub_dir = candidate
 
-		from utils import tdmcp_tunnel
+		from utils import tdmcp_status, tdmcp_tunnel
 
 		# Snapshot on main BEFORE any worker thread
 		snap = tdmcp_tunnel.capture_snapshot_on_main()
 		transport = snap.get("transport") or tdmcp_tunnel.transport_from_snapshot()
+
+		# Visible COMP face for both transports
+		try:
+			tdmcp_status.ensure_ui(bridge)
+		except Exception as e:
+			print("tdmcp_port_onstart status UI:", e)
 
 		if transport == "tunnel":
 			try:
@@ -85,10 +92,10 @@ def onStart():
 
 def onFrameStart(frame):
 	try:
-		from utils import tdmcp_tunnel
+		from utils import tdmcp_status, tdmcp_tunnel
 
-		if tdmcp_tunnel.transport_from_snapshot() != "tunnel":
-			return
-		tdmcp_tunnel.process_pending()
+		if tdmcp_tunnel.transport_from_snapshot() == "tunnel":
+			tdmcp_tunnel.process_pending()
+		tdmcp_status.flush()
 	except Exception as e:
 		print("tdmcp_port_onstart frame:", e)

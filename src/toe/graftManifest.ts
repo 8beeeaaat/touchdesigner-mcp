@@ -18,9 +18,15 @@ import { expandToeInPlace } from "./collapseToe.js";
 const GRAFT_CACHE_ROOT = join(tmpdir(), "tdmcp-inject-graft");
 /** Live graft COMP name (avoid legacy `mcp_webserver_base` — collides on many community toes). */
 const BRIDGE_STEM = "project1/tdmcp_bridge";
-const ONSTART_STEM = "project1/tdmcp_port_onstart";
+/** Real Execute DAT lives *inside* the bridge COMP (hidden from project1 canvas). */
+const ONSTART_STEM = "project1/tdmcp_bridge/tdmcp_port_onstart";
+/** Legacy sibling path — wiped on replace so old templates upgrade cleanly. */
+const LEGACY_ONSTART_STEM = "project1/tdmcp_port_onstart";
+/** Inject-only bootstrap under /local (not on project1 canvas). */
+const BOOT_STEM = "local/tdmcp_boot";
 const BRIDGE_NAME = "tdmcp_bridge";
 const ONSTART_NAME = "tdmcp_port_onstart";
+const BOOT_NAME = "tdmcp_boot";
 /** Pre-rename COMP name — still wiped on replace so old injects can upgrade. */
 const LEGACY_BRIDGE_NAME = "mcp_webserver_base";
 
@@ -46,8 +52,11 @@ export const MODULES_BRIDGE_TOX_REL = "modules/tdmcp_bridge.tox";
 /** Embedded Text DAT path for import_modules inside the grafted bridge COMP. */
 export const IMPORT_MODULES_TEXT_REL =
 	"project1/tdmcp_bridge/import_modules.text";
-/** Execute DAT text path for port/onStart bootstrap. */
-export const ONSTART_TEXT_REL = "project1/tdmcp_port_onstart.text";
+/** Execute DAT text path for port/onStart (nested in bridge). */
+export const ONSTART_TEXT_REL =
+	"project1/tdmcp_bridge/tdmcp_port_onstart.text";
+/** Inject boot Execute DAT text under /local. */
+export const BOOT_TEXT_REL = "local/tdmcp_boot.text";
 
 /**
  * TD Text/Script DAT on-disk layout: 27-byte header, then payload.
@@ -154,6 +163,8 @@ function isGraftOwnedRel(rel: string): boolean {
 	const bridge = normKey(BRIDGE_STEM);
 	const legacy = normKey(`project1/${LEGACY_BRIDGE_NAME}`);
 	const onstart = normKey(ONSTART_STEM);
+	const legacyOnstart = normKey(LEGACY_ONSTART_STEM);
+	const boot = normKey(BOOT_STEM);
 	return (
 		r === bridge ||
 		r.startsWith(`${bridge}.`) ||
@@ -162,20 +173,42 @@ function isGraftOwnedRel(rel: string): boolean {
 		r.startsWith(`${legacy}.`) ||
 		r.startsWith(`${legacy}/`) ||
 		r === onstart ||
-		r.startsWith(`${onstart}.`)
+		r.startsWith(`${onstart}.`) ||
+		r === legacyOnstart ||
+		r.startsWith(`${legacyOnstart}.`) ||
+		r === boot ||
+		r.startsWith(`${boot}.`)
 	);
 }
 
-/** True for `tdmcp_port_onstart` expand paths (not the bridge COMP). */
+/** True for nested `tdmcp_port_onstart` expand paths (inside bridge COMP). */
 export function isOnstartRel(rel: string): boolean {
 	const r = normKey(rel);
 	const onstart = normKey(ONSTART_STEM);
-	return r === onstart || r.startsWith(`${onstart}.`);
+	const legacyOnstart = normKey(LEGACY_ONSTART_STEM);
+	return (
+		r === onstart ||
+		r.startsWith(`${onstart}.`) ||
+		r === legacyOnstart ||
+		r.startsWith(`${legacyOnstart}.`)
+	);
 }
 
-/** Kit manifest paths that belong to the onStart Execute DAT only. */
+/** True for inject-only `/local/tdmcp_boot` paths. */
+export function isBootRel(rel: string): boolean {
+	const r = normKey(rel);
+	const boot = normKey(BOOT_STEM);
+	return r === boot || r.startsWith(`${boot}.`);
+}
+
+/** Kit manifest paths that belong to the nested onStart Execute DAT. */
 export function filterOnstartPaths(manifestPaths: string[]): string[] {
 	return manifestPaths.filter((p) => isOnstartRel(p));
+}
+
+/** Kit / staged paths for inject bootstrap under /local. */
+export function filterBootPaths(manifestPaths: string[]): string[] {
+	return manifestPaths.filter((p) => isBootRel(p));
 }
 
 export function modulesBridgeToxPath(projectDir: string): string {
@@ -197,7 +230,11 @@ export function discoverGraftPaths(kitExpandDir: string): string[] {
 			const rel = toPosix(relative(kitExpandDir, child));
 			const st = statSync(child);
 			if (st.isDirectory()) {
-				if (rel === "project1" || isGraftOwnedRel(rel)) {
+				if (
+					rel === "project1" ||
+					rel === "local" ||
+					isGraftOwnedRel(rel)
+				) {
 					walk(child);
 				}
 				continue;
@@ -213,12 +250,14 @@ export function discoverGraftPaths(kitExpandDir: string): string[] {
 	}
 	walk(kitExpandDir);
 	out.sort();
-	if (out.length === 0) {
+	// Unique (walk can only emit each path once, but keep defensive)
+	const uniq = [...new Set(out)];
+	if (uniq.length === 0) {
 		throw new Error(
-			`graft kit has no mcp_webserver_base / tdmcp_port_onstart files under ${kitExpandDir}`,
+			`graft kit has no tdmcp_bridge / tdmcp_port_onstart files under ${kitExpandDir}`,
 		);
 	}
-	return out;
+	return uniq;
 }
 
 /**
@@ -580,11 +619,21 @@ export function detectBridgeConflict(
 	const bridgeHits = findProject1EntriesByStem(expandDir, BRIDGE_NAME);
 	const onStartHits = findProject1EntriesByStem(expandDir, ONSTART_NAME);
 	const hasBridge = bridgeHits.length > 0;
-	const hasOnStart = onStartHits.length > 0;
+	const hasLegacySiblingOnstart = onStartHits.length > 0;
+	const hasNestedOnstart = pathExistsInExpand(
+		expandDir,
+		`${ONSTART_STEM}.n`,
+	);
+	const hasBoot =
+		pathExistsInExpand(expandDir, `${BOOT_STEM}.n`) ||
+		pathExistsInExpand(expandDir, `${BOOT_STEM}.text`);
+	const hasOnStart =
+		hasLegacySiblingOnstart || hasNestedOnstart || hasBoot;
 	const hasModulesTox = Boolean(
 		projectDir && existsSync(modulesBridgeToxPath(projectDir)),
 	);
 	const onstartPaths = filterOnstartPaths(manifestPaths);
+	const bootPaths = filterBootPaths(manifestPaths);
 	const onstartPresent = onstartPaths.filter((p) =>
 		pathExistsInExpand(expandDir, p),
 	);
@@ -638,8 +687,12 @@ export function detectBridgeConflict(
 		return { ...emptyConflict, state: "absent" };
 	}
 
-	// Embedded bridge (create_td_project / old inject) — full kit present.
-	if (hasBridge && hasOnStart && missingManifestPaths.length === 0) {
+	// Embedded bridge (create_td_project) — bridge COMP + nested onstart.
+	if (
+		hasBridge &&
+		hasNestedOnstart &&
+		missingManifestPaths.length === 0
+	) {
 		return {
 			extraUnderStem,
 			nameCollisions: [...new Set(nameCollisions)],
@@ -649,9 +702,34 @@ export function detectBridgeConflict(
 		};
 	}
 
-	// Runtime inject: onStart + modules/tdmcp_bridge.tox (bridge COMP loaded on open).
+	// Legacy: sibling onstart + bridge still counts as full when kit matched.
+	if (hasBridge && hasLegacySiblingOnstart && missingManifestPaths.length === 0) {
+		return {
+			extraUnderStem,
+			nameCollisions: [...new Set(nameCollisions)],
+			missingManifestPaths: [],
+			presentPaths,
+			state: "full",
+		};
+	}
+
+	// Runtime inject: /local/tdmcp_boot + modules/tdmcp_bridge.tox
+	if (hasBoot && (hasModulesTox || hasBridge)) {
+		return {
+			extraUnderStem,
+			nameCollisions: [...new Set(nameCollisions)],
+			missingManifestPaths,
+			presentPaths: [
+				...onstartPresent,
+				...bootPaths.filter((p) => pathExistsInExpand(expandDir, p)),
+			],
+			state: "full",
+		};
+	}
+
+	// Legacy runtime inject: sibling onStart + modules tox
 	if (
-		hasOnStart &&
+		hasLegacySiblingOnstart &&
 		onstartMissing.length === 0 &&
 		(hasModulesTox || hasBridge)
 	) {
@@ -684,11 +762,18 @@ export function wipeGraftOwned(
 ): void {
 	const project1 = join(expandDir, "project1");
 	if (existsSync(project1)) {
-		// Snapshot names first — deleting while iterating is unsafe on some FS
 		const names = readdirSync(project1);
 		for (const name of names) {
 			if (!isGraftOwnedProject1Entry(name)) continue;
 			rmSync(join(project1, name), { force: true, recursive: true });
+		}
+	}
+	// Inject boot under /local
+	const localBoot = join(expandDir, "local", BOOT_NAME);
+	for (const ext of ["", ".n", ".parm", ".text"]) {
+		const abs = ext ? `${localBoot}${ext}` : localBoot;
+		if (existsSync(abs)) {
+			rmSync(abs, { force: true, recursive: true });
 		}
 	}
 	for (const rel of manifestPaths) {
@@ -843,8 +928,8 @@ export function patchImportModulesText(expandDir: string): void {
 }
 
 /**
- * Rewrite tdmcp_port_onstart Execute DAT from templates/tdmcp_port_onstart.py
- * (loadTox bridge from modules/ when not embedded, then apply port).
+ * Rewrite nested tdmcp_port_onstart Execute DAT from templates/tdmcp_port_onstart.py
+ * (create/template path — inside bridge COMP).
  */
 export function patchOnstartText(expandDir: string): void {
 	const textPath = join(expandDir, ...ONSTART_TEXT_REL.split("/"));
@@ -863,10 +948,17 @@ export function patchOnstartText(expandDir: string): void {
 /**
  * Ensure Frame Start is on so tunnel `onFrameStart` drains OpenAPI requests.
  * Runtime also flips `me.par.framestart`; this persists it in the .toe.
+ * Patches nested-in-bridge parm; falls back to legacy sibling path.
  */
 export function patchOnstartFrameStart(expandDir: string): void {
-	const parmPath = join(expandDir, "project1", "tdmcp_port_onstart.parm");
-	if (!existsSync(parmPath)) {
+	const nested = join(expandDir, ...`${ONSTART_STEM}.parm`.split("/"));
+	const legacy = join(expandDir, ...`${LEGACY_ONSTART_STEM}.parm`.split("/"));
+	const parmPath = existsSync(nested)
+		? nested
+		: existsSync(legacy)
+			? legacy
+			: null;
+	if (!parmPath) {
 		return;
 	}
 	let body = readFileSync(parmPath, "utf8");
@@ -884,6 +976,49 @@ export function patchOnstartFrameStart(expandDir: string): void {
 		body = `${body.trimEnd()}\nframestart 0 on\n`;
 	}
 	writeFileSync(parmPath, body, "utf8");
+}
+
+/**
+ * Rewrite inject-only `/local/tdmcp_boot` text from templates/tdmcp_boot.py.
+ */
+export function patchBootText(expandDir: string): void {
+	const textPath = join(expandDir, ...BOOT_TEXT_REL.split("/"));
+	mkdirSync(dirname(textPath), { recursive: true });
+	const srcPy = join(templateRoot(), "tdmcp_boot.py");
+	if (!existsSync(srcPy)) {
+		throw new Error(`MCP template missing tdmcp_boot.py at ${srcPy}`);
+	}
+	writeTdTextDat(textPath, readFileSync(srcPy, "utf8"));
+}
+
+/**
+ * Stage inject bootstrap Execute DAT under `/local` (not on project1 canvas).
+ * Returns toc-relative paths that were written.
+ */
+export function stageBootInExpand(expandDir: string): string[] {
+	const localDir = join(expandDir, "local");
+	mkdirSync(localDir, { recursive: true });
+	const nPath = join(localDir, `${BOOT_NAME}.n`);
+	const parmPath = join(localDir, `${BOOT_NAME}.parm`);
+	writeFileSync(
+		nPath,
+		[
+			"DAT:execute",
+			"tile 0 0 130 90",
+			"flags =  current on parlanguage 0",
+			"color 0.67 0.67 0.67 ",
+			"end",
+			"",
+		].join("\n"),
+		"utf8",
+	);
+	writeFileSync(
+		parmPath,
+		["?", "start 0 on", "language 0 python", "?", ""].join("\n"),
+		"utf8",
+	);
+	patchBootText(expandDir);
+	return [`${BOOT_STEM}.n`, `${BOOT_STEM}.parm`, `${BOOT_STEM}.text`];
 }
 
 /**
@@ -1040,7 +1175,7 @@ export function assertManifestPresent(
 	return manifestPaths.filter((p) => !pathExistsInExpand(expandDir, p));
 }
 
-export { BRIDGE_STEM, ONSTART_STEM, isGraftOwnedRel };
+export { BOOT_STEM, BRIDGE_STEM, ONSTART_STEM, isGraftOwnedRel };
 
 /** Resolve path helpers for tests. */
 export function resolveUnderExpand(expandDir: string, rel: string): string {

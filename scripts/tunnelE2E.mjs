@@ -1,13 +1,20 @@
 #!/usr/bin/env node
 /**
- * Live E2E: tunnel create→start→TOP→hub-kill reconnect against real TD.
+ * Live E2E: tunnel create→start→TOP→status face→hub-kill reconnect against real TD.
  * Set TD_MCP_TUNNEL_E2E=1. Requires TouchDesigner installed.
  *
- * Proves: nonce identity (vs squatters), get_top_image over /proxy, hub respawn.
+ * Proves: nonce identity, get_top_image over /proxy, bridge status face + history cap,
+ * hub respawn.
  */
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createTdProject } from "../dist/core/lifecycle.js";
 import {
 	resetTargetRegistryForTests,
@@ -26,6 +33,8 @@ if (process.env.TD_MCP_TUNNEL_E2E !== "1") {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ASSETS = join(__dirname, "..", "docs", "assets", "bridge-status");
 
 const destRoot = mkdtempSync(join(tmpdir(), "tdmcp-tunnel-e2e-"));
 const hubUrl = process.env.TDMCP_HUB_URL || "http://127.0.0.1:9980";
@@ -36,6 +45,21 @@ resetTargetRegistryForTests(registry);
 let hub = new HubClient(hubUrl);
 registry.attachHub(hub);
 const tdClient = createTouchDesignerClient({ logger: nullLogger });
+
+const { buildGetTopImageScript } = await import(
+	"../dist/features/tools/pythonScripts/getTopImageScript.js"
+);
+
+function extractResult(data) {
+	if (data && typeof data === "object" && "result" in data) return data.result;
+	return data;
+}
+
+function b64ToBuffer(b64) {
+	const s = typeof b64 === "string" ? b64 : "";
+	const clean = s.replace(/^data:image\/\w+;base64,/, "");
+	return Buffer.from(clean, "base64");
+}
 
 await ensureHub({ hubUrl });
 console.log("HUB_OK", hubUrl);
@@ -78,6 +102,38 @@ console.log("STARTED", started.targetId, "pid=", started.pid, started.identity);
 const selected = registry.getSelected();
 const withSticky = (fn) => runWithTarget(registry.asOrigin(selected), fn);
 
+async function captureTopPng(nodePath, outFile) {
+	const data = await withSticky(async () => {
+		const script = `
+import base64
+import td
+node = op(${JSON.stringify(nodePath)})
+if node is None:
+	raise Exception('missing ' + ${JSON.stringify(nodePath)})
+ba = node.saveByteArray('.png')
+if not ba:
+	raise Exception('empty png')
+result = base64.b64encode(bytes(ba)).decode('ascii')
+`;
+		const r = await tdClient.execPythonScript({ script });
+		if (!r.success) throw r.error;
+		return r.data;
+	});
+	const payload = extractResult(data);
+	const buf = b64ToBuffer(payload);
+	if (buf.length < 200) {
+		throw new Error(`TOP capture too small for ${nodePath}: ${buf.length}`);
+	}
+	// PNG magic
+	if (buf[0] !== 0x89 || buf[1] !== 0x50) {
+		console.warn("WARN capture not PNG magic", outFile);
+	}
+	mkdirSync(ASSETS, { recursive: true });
+	writeFileSync(outFile, buf);
+	console.log("WROTE", outFile, "bytes", buf.length);
+	return buf.length;
+}
+
 const info = await withSticky(async () => {
 	const r = await tdClient.getTdInfo();
 	if (!r.success) throw r.error;
@@ -93,6 +149,52 @@ if (folder && folder !== expected && !folder.includes("tunnel_e2e")) {
 	console.error("IDENTITY_MISMATCH", { folder, expected });
 	process.exit(2);
 }
+
+// Let onFrameStart flush status UI
+await sleep(1500);
+
+const statusProbe = await withSticky(async () => {
+	const script = `
+from utils import tdmcp_status
+tdmcp_status.flush(force=True)
+bridge = op('/project1/tdmcp_bridge')
+txt = bridge.op('status_text') if bridge else None
+log = bridge.op('event_log') if bridge else None
+top = bridge.op('status_top') if bridge else None
+result = {
+	'hasBridge': bridge is not None,
+	'hasText': txt is not None,
+	'hasLog': log is not None,
+	'hasTop': top is not None,
+	'text': (txt.text if txt is not None else '') or '',
+	'logRows': int(log.numRows) if log is not None else 0,
+	'opviewer': str(getattr(bridge.par, 'opviewer', '')),
+	'viewer': bool(getattr(bridge, 'viewer', False)),
+}
+`;
+	const r = await tdClient.execPythonScript({ script });
+	if (!r.success) throw r.error;
+	return extractResult(r.data);
+});
+console.log("STATUS_PROBE", statusProbe);
+const statusText = String(statusProbe?.text || "");
+if (!/connected/i.test(statusText)) {
+	console.error("STATUS_NOT_CONNECTED", statusText);
+	process.exit(5);
+}
+if (!statusText.includes(created.targetId) && !statusText.includes("owned-")) {
+	console.error("STATUS_MISSING_TARGET", statusText);
+	process.exit(5);
+}
+if (!statusProbe?.hasTop || !statusProbe?.viewer) {
+	console.error("STATUS_VIEWER_NOT_SET", statusProbe);
+	process.exit(5);
+}
+
+await captureTopPng(
+	"/project1/tdmcp_bridge/status_top",
+	join(ASSETS, "status-connected.png"),
+);
 
 // Build a constant TOP and capture pixels over the tunnel proxy
 await withSticky(async () => {
@@ -114,9 +216,40 @@ print(c.path)
 	if (!r.success) throw r.error;
 });
 
-const { buildGetTopImageScript } = await import(
-	"../dist/features/tools/pythonScripts/getTopImageScript.js"
+await sleep(800);
+
+const afterOp = await withSticky(async () => {
+	const script = `
+from utils import tdmcp_status
+tdmcp_status.flush(force=True)
+bridge = op('/project1/tdmcp_bridge')
+txt = bridge.op('status_text')
+log = bridge.op('event_log')
+result = {
+	'text': (txt.text if txt else '') or '',
+	'logRows': int(log.numRows) if log else 0,
+	'requests': int(tdmcp_status.request_count()),
+}
+`;
+	const r = await tdClient.execPythonScript({ script });
+	if (!r.success) throw r.error;
+	return extractResult(r.data);
+});
+console.log("AFTER_OP", afterOp);
+if (!afterOp?.logRows || afterOp.logRows < 2) {
+	console.error("EVENT_LOG_EMPTY", afterOp);
+	process.exit(6);
+}
+if (!afterOp?.requests || afterOp.requests < 1) {
+	console.error("REQUEST_COUNT_ZERO", afterOp);
+	process.exit(6);
+}
+
+await captureTopPng(
+	"/project1/tdmcp_bridge/status_top",
+	join(ASSETS, "status-after-op.png"),
 );
+
 const topImg = await withSticky(async () => {
 	const script = buildGetTopImageScript({
 		nodePath: "/project1/_agent_scratch/const_e2e",
@@ -126,10 +259,7 @@ const topImg = await withSticky(async () => {
 	if (!r.success) throw r.error;
 	return r.data;
 });
-const payload =
-	topImg && typeof topImg === "object" && "result" in topImg
-		? topImg.result
-		: topImg;
+const payload = extractResult(topImg);
 const imgBytes =
 	typeof payload === "string"
 		? payload.length
@@ -141,6 +271,49 @@ if (!imgBytes || imgBytes < 100) {
 	console.error("TOP_IMAGE_TOO_SMALL", imgBytes, typeof payload);
 	process.exit(3);
 }
+
+// History cap proof
+const capProof = await withSticky(async () => {
+	const script = `
+from utils import tdmcp_status
+n = tdmcp_status.flood_for_test(tdmcp_status.MAX_EVENTS + 40)
+tdmcp_status.flush(force=True)
+log = op('/project1/tdmcp_bridge/event_log')
+result = {
+	'dequeLen': int(tdmcp_status.deque_len()),
+	'maxEvents': int(tdmcp_status.MAX_EVENTS),
+	'logRows': int(log.numRows) if log else -1,
+}
+`;
+	const r = await tdClient.execPythonScript({ script });
+	if (!r.success) throw r.error;
+	return extractResult(r.data);
+});
+console.log("CAP_PROOF", capProof);
+if (capProof.dequeLen > capProof.maxEvents) {
+	console.error("DEQUE_OVER_CAP", capProof);
+	process.exit(7);
+}
+if (capProof.logRows > capProof.maxEvents + 1) {
+	console.error("TABLE_OVER_CAP", capProof);
+	process.exit(7);
+}
+
+writeFileSync(
+	join(ASSETS, "status-e2e-notes.md"),
+	[
+		"# Bridge status E2E notes",
+		"",
+		`- targetId: \`${created.targetId}\``,
+		`- status_text (connected):`,
+		"```",
+		statusText,
+		"```",
+		`- after-op requests=${afterOp.requests} logRows=${afterOp.logRows}`,
+		`- cap: deque=${capProof.dequeLen} logRows=${capProof.logRows} max=${capProof.maxEvents}`,
+		"",
+	].join("\n"),
+);
 
 // Hub kill → ensureHub → wait for TD tunnel reconnect → get_td_info again
 const healthBefore = await hub.health();
@@ -160,7 +333,6 @@ hub = new HubClient(hubUrl);
 registry.attachHub(hub);
 console.log("HUB_RESPAWNED");
 
-// Re-expect so reconnect hello is accepted (nonce still in state.json)
 await hub.expectPeer({
 	id: created.targetId,
 	nonce: created.nonce,
@@ -206,7 +378,17 @@ console.log("STOPPED", created.targetId, "was_pid=", stopPid);
 writeFileSync(
 	join(destRoot, "result.json"),
 	JSON.stringify(
-		{ created, started, info, info2, imgBytes, reconnected },
+		{
+			created,
+			started,
+			info,
+			info2,
+			imgBytes,
+			reconnected,
+			statusProbe,
+			afterOp,
+			capProof,
+		},
 		null,
 		2,
 	),

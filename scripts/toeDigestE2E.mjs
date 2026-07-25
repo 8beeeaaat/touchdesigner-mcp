@@ -45,7 +45,7 @@ async function caseT() {
 	assert(outline.outline.includes("mcp_webserver_base"), "mcp in outline");
 	const node = await getToeNode({
 		include: ["inputs", "parms", "meta"],
-		path: "project1/tdmcp_port_onstart",
+		path: "project1/tdmcp_bridge/tdmcp_port_onstart",
 		toePath: templateToe,
 	});
 	assert(node.opHint === "DAT:execute", "onstart type");

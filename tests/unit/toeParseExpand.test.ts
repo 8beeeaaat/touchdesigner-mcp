@@ -124,11 +124,11 @@ describe("getToeNode live", () => {
 		async () => {
 			const node = await getToeNode({
 				include: ["inputs", "parms", "meta", "text"],
-				path: "project1/tdmcp_port_onstart",
+				path: "project1/tdmcp_bridge/tdmcp_port_onstart",
 				toePath: templateToe,
 			});
 			expect(node.opHint).toBe("DAT:execute");
-			expect(node.path).toBe("project1/tdmcp_port_onstart");
+			expect(node.path).toBe("project1/tdmcp_bridge/tdmcp_port_onstart");
 		},
 		60_000,
 	);

@@ -51,7 +51,7 @@ component is running.
 ### Asyade fork / template (preferred)
 
 1. Use [`templates/mcp_project`](../templates/mcp_project/) via `create_td_project`, **or** keep `modules/` + `tdmcp_bridge` / `mcp_webserver_base` beside the `.toe`.
-2. Ensure `tdmcp_port_onstart` (or equivalent) runs on project open — it loads the bridge, sets the preferred WebServer port, and registers with **tdmcp-hub**.
+2. Ensure nested `tdmcp_port_onstart` (or inject `/local/tdmcp_boot`) runs on project open — it loads the bridge when needed, sets the preferred WebServer port / tunnel, and registers with **tdmcp-hub**.
 3. Optional: set `TDMCP_HUB_DIR` to the package root so TD can spawn `dist/hub.js` if the hub is down.
 
 ### Upstream zip layout

@@ -48,6 +48,12 @@ def set_status(msg: str) -> None:
 	global _last_status
 	_last_status = msg
 	print(f"tdmcp_hub: {msg}")
+	try:
+		from utils import tdmcp_status
+
+		tdmcp_status.record("hub", msg)
+	except Exception:
+		pass
 
 
 def is_paused() -> bool:
@@ -285,6 +291,13 @@ def heartbeat(base_url: Optional[str] = None) -> bool:
 	base = (base_url or hub_url_from_state()).rstrip("/")
 	try:
 		_http_json("POST", f"{base}/peers/heartbeat", {"id": _peer_id}, timeout=1.5)
+		# Rate-limited inside tdmcp_status.record — keeps long sessions quiet
+		try:
+			from utils import tdmcp_status
+
+			tdmcp_status.record("hub", "heartbeat ok")
+		except Exception:
+			pass
 		return True
 	except Exception as e:
 		set_status(f"heartbeat failed: {e}")
