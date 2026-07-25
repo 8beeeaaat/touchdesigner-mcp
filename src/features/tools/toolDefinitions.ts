@@ -180,9 +180,7 @@ console.log(\`\${info.server} \${info.version}\`);`,
 			const selected = registry.getSelected();
 			const identity = await probeIdentity(
 				tdClient,
-				selected.id,
-				selected.host,
-				selected.port,
+				registry.asOrigin(selected),
 			);
 			return formatTdInfo(identity as never, {
 				detailLevel: params.detailLevel ?? "summary",

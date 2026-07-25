@@ -11,15 +11,22 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { allocateTdMcpPort } from "./portAllocator.js";
-import type { TdTarget } from "./targetTypes.js";
+import type { TdTarget, TargetTransport } from "./targetTypes.js";
 
 export type TdMcpState = {
 	targetId: string;
-	/** Preferred TD WebServer listen port (announced to hub on register). */
+	/**
+	 * Preferred TD WebServer listen port for transport=http.
+	 * Unused (0) when transport=tunnel.
+	 */
 	port: number;
 	host?: string;
 	/** Override hub base URL (default http://127.0.0.1:9980). */
 	hubUrl?: string;
+	/** Launch nonce verified on tunnel hello. */
+	nonce?: string;
+	/** ipc transport — default tunnel for new projects. */
+	transport?: TargetTransport;
 	pid?: number;
 	toe_launched?: string;
 	exe?: string;
@@ -67,6 +74,8 @@ export type CreateProjectResult = {
 	toePath: string;
 	targetId: string;
 	port: number;
+	nonce: string;
+	transport: TargetTransport;
 	target: TdTarget;
 };
 
@@ -78,6 +87,8 @@ export async function createTdProject(params: {
 	name?: string;
 	port?: number;
 	host?: string;
+	/** Default tunnel. Pass "http" for legacy listen-port mode. */
+	transport?: TargetTransport;
 }): Promise<CreateProjectResult> {
 	const destDir = resolve(params.destDir);
 	if (dirNonEmpty(destDir)) {
@@ -105,27 +116,39 @@ export async function createTdProject(params: {
 		cpSync(seedToe, toePath);
 	}
 
-	const port = params.port ?? (await allocateTdMcpPort());
+	const transport: TargetTransport = params.transport ?? "tunnel";
+	const nonce = randomUUID().replace(/-/g, "");
 	const targetId = `owned-${randomUUID().slice(0, 8)}`;
 	const host = params.host || "http://127.0.0.1";
+	const hubUrl = process.env.TDMCP_HUB_URL || "http://127.0.0.1:9980";
+	const port =
+		transport === "http"
+			? (params.port ?? (await allocateTdMcpPort()))
+			: (params.port ?? 0);
+
 	writeState(destDir, {
 		host,
-		hubUrl: process.env.TDMCP_HUB_URL || "http://127.0.0.1:9980",
+		hubUrl,
+		nonce,
 		port,
 		targetId,
 		toe_launched: toePath,
+		transport,
 	});
 
 	const target: TdTarget = {
 		host,
+		hubUrl,
 		id: targetId,
 		label: `Owned ${toeName}`,
+		nonce,
 		port,
 		projectDir: destDir,
 		source: "owned",
 		toePath,
+		transport,
 	};
-	return { destDir, port, target, targetId, toePath };
+	return { destDir, nonce, port, target, targetId, toePath, transport };
 }
 
 export function findTdExecutable(explicit?: string): string {

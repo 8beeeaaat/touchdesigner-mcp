@@ -30,7 +30,8 @@ const DISMISS_TIMEOUT_MS = 2000;
 /** Soft titles (Gate5 allowlist). Empty until soft path validated. */
 export const SOFT_DIALOG_TITLE_RE = /Backwards Compatiblity Issue/i;
 
-const HARD_DIALOG_RE = /unexpected node(?: name)?\s+duplicat/i;
+const HARD_DIALOG_RE =
+	/unexpected node(?: name)?\s+duplicat|THREAD CONFLICT|cannot be referenced from separate threads/i;
 
 const BLOCKED_DISMISS_TITLES = new Set(["", "touchdesigner"]);
 

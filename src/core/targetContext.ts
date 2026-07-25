@@ -1,6 +1,9 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { TargetOrigin } from "./targetTypes.js";
-import { normalizeHost } from "./targetTypes.js";
+import {
+	normalizeHost,
+	resolveOriginUrl,
+	type TargetOrigin,
+} from "./targetTypes.js";
 
 const store = new AsyncLocalStorage<TargetOrigin>();
 
@@ -15,8 +18,10 @@ export function runWithTarget<T>(
 	return store.run(
 		{
 			host: normalizeHost(origin.host),
+			hubUrl: origin.hubUrl,
 			id: origin.id,
 			port: origin.port,
+			transport: origin.transport,
 		},
 		fn,
 	);
@@ -28,7 +33,7 @@ export function resolveRequestOrigin(): { id: string; origin: string } {
 	if (current) {
 		return {
 			id: current.id,
-			origin: `${normalizeHost(current.host)}:${current.port}`,
+			origin: resolveOriginUrl(current),
 		};
 	}
 	const host = normalizeHost(

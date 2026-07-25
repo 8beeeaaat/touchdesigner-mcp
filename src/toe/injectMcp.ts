@@ -13,7 +13,7 @@ import {
 	type TdMcpState,
 } from "../core/lifecycle.js";
 import { allocateTdMcpPort } from "../core/portAllocator.js";
-import type { TdTarget } from "../core/targetTypes.js";
+import type { TdTarget, TargetTransport } from "../core/targetTypes.js";
 import {
 	collapseToeInPlace,
 	expandToeInPlace,
@@ -30,6 +30,7 @@ import {
 	mergeTocEntries,
 	MODULES_BRIDGE_TOX_REL,
 	modulesBridgeToxPath,
+	patchOnstartFrameStart,
 	patchOnstartText,
 	readBuildVersion,
 	syncBuildFromKit,
@@ -50,6 +51,7 @@ export type InjectTdMcpParams = {
 	tdExe?: string;
 	host?: string;
 	timeoutMs?: number;
+	transport?: TargetTransport;
 };
 
 export type InjectTdMcpResult = {
@@ -57,6 +59,8 @@ export type InjectTdMcpResult = {
 	toePath: string;
 	targetId: string;
 	port: number;
+	nonce?: string;
+	transport?: TargetTransport;
 	action: "injected" | "skipped" | "replaced";
 	sourceBuild?: string;
 	warnings: string[];
@@ -218,7 +222,11 @@ export async function injectTdMcp(
 
 		stageSidecars(destDir);
 
-		const port = params.port ?? (await allocateTdMcpPort());
+		const transport = params.transport ?? "tunnel";
+		const port =
+			transport === "http"
+				? (params.port ?? (await allocateTdMcpPort()))
+				: (params.port ?? 0);
 		const kit = await ensureGraftKit({
 			tdExe: params.tdExe,
 			timeoutMs: params.timeoutMs,
@@ -330,6 +338,7 @@ export async function injectTdMcp(
 			}
 			syncExpectedNodesFromKit(expanded.expandDir, kit.kitExpandDir);
 			patchOnstartText(expanded.expandDir);
+			patchOnstartFrameStart(expanded.expandDir);
 
 			try {
 				assertGraftClean(
@@ -421,23 +430,30 @@ export async function injectTdMcp(
 
 		const targetId = `owned-${randomUUID().slice(0, 8)}`;
 		const host = params.host || "http://127.0.0.1";
+		const nonce = randomUUID().replace(/-/g, "");
+		const listenPort = transport === "http" ? port : 0;
 		const state: TdMcpState = {
 			host,
 			hubUrl: process.env.TDMCP_HUB_URL || "http://127.0.0.1:9980",
-			port,
+			nonce,
+			port: listenPort,
 			targetId,
 			toe_launched: workingToe,
+			transport,
 		};
 		writeState(destDir, state);
 
 		const target: TdTarget = {
 			host,
+			hubUrl: state.hubUrl,
 			id: targetId,
 			label: `Owned ${toeName}`,
-			port,
+			nonce,
+			port: listenPort,
 			projectDir: destDir,
 			source: "owned",
 			toePath: workingToe,
+			transport,
 		};
 
 		return {
@@ -445,11 +461,13 @@ export async function injectTdMcp(
 			conflict:
 				conflict.state === "absent" ? undefined : conflict,
 			destDir,
-			port,
+			nonce,
+			port: listenPort,
 			sourceBuild,
 			target,
 			targetId,
 			toePath: workingToe,
+			transport,
 			warnings,
 		};
 	} catch (err) {

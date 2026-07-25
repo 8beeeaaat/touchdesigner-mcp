@@ -861,6 +861,32 @@ export function patchOnstartText(expandDir: string): void {
 }
 
 /**
+ * Ensure Frame Start is on so tunnel `onFrameStart` drains OpenAPI requests.
+ * Runtime also flips `me.par.framestart`; this persists it in the .toe.
+ */
+export function patchOnstartFrameStart(expandDir: string): void {
+	const parmPath = join(expandDir, "project1", "tdmcp_port_onstart.parm");
+	if (!existsSync(parmPath)) {
+		return;
+	}
+	let body = readFileSync(parmPath, "utf8");
+	if (/^framestart\b/m.test(body)) {
+		body = body.replace(/^framestart\b.*$/m, "framestart 0 on");
+	} else if (body.includes("?")) {
+		// Insert before closing `?`
+		const trimmed = body.trimEnd();
+		if (trimmed.endsWith("?")) {
+			body = `${trimmed.slice(0, -1)}framestart 0 on\n?\n`;
+		} else {
+			body = `${trimmed}\nframestart 0 on\n`;
+		}
+	} else {
+		body = `${body.trimEnd()}\nframestart 0 on\n`;
+	}
+	writeFileSync(parmPath, body, "utf8");
+}
+
+/**
  * Bake owned port + Active into COMP custom pars so Parameter DAT → WebServer
  * expressions are valid on first cook (avoids "float argument must not be none").
  */

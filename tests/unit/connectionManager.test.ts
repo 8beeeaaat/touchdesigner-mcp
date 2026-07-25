@@ -109,7 +109,7 @@ describe("ConnectionManager", () => {
 
 			expect(result.success).toBe(true);
 			expect(mockServer.close).toHaveBeenCalled();
-			expect(consoleLogSpy).toHaveBeenCalledWith(
+			expect(consoleErrorSpy).toHaveBeenCalledWith(
 				"MCP server disconnected from MCP",
 			);
 			expect(connectionManager.isConnected()).toBe(false);
@@ -119,7 +119,7 @@ describe("ConnectionManager", () => {
 			const result = await connectionManager.disconnect();
 
 			expect(result.success).toBe(true);
-			expect(consoleLogSpy).toHaveBeenCalledWith("MCP server not connected");
+			expect(consoleErrorSpy).toHaveBeenCalledWith("MCP server not connected");
 			expect(mockServer.close).not.toHaveBeenCalled();
 		});
 

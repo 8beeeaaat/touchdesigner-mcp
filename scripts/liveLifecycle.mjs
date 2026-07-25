@@ -27,12 +27,12 @@ const tdClient = createTouchDesignerClient({ logger: nullLogger });
 
 let labOk = false;
 try {
-	const labId = await probeIdentity(
-		tdClient,
-		"lab",
-		"http://127.0.0.1",
-		9981,
-	);
+	const labId = await probeIdentity(tdClient, {
+		host: "http://127.0.0.1",
+		id: "lab",
+		port: 9981,
+		transport: "http",
+	});
 	console.log("LAB_OK", labId.projectName, labId.projectFolder);
 	labOk = true;
 } catch (err) {

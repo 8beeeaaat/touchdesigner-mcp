@@ -137,9 +137,7 @@ export function registerTdTools(
 				const selected = await registry.selectAsync(parsed.id);
 				const identity = await probeIdentity(
 					tdClient,
-					selected.id,
-					selected.host,
-					selected.port,
+					registry.asOrigin(selected),
 				);
 				return textResult(JSON.stringify({ identity, selected }, null, 2));
 			} catch (error) {
@@ -158,12 +156,32 @@ export function registerTdTools(
 				const created = await createTdProject(parsed);
 				await registry.upsertOwnedAsync({
 					host: created.target.host,
+					hubUrl: created.target.hubUrl,
 					id: created.target.id,
 					label: created.target.label,
+					nonce: created.target.nonce,
 					port: created.target.port,
 					projectDir: created.target.projectDir,
 					toePath: created.target.toePath,
+					transport: created.target.transport,
 				});
+				// Register expect early so a manually-opened toe can connect
+				if (created.transport === "tunnel" && created.nonce) {
+					const { getHubClient } = await import("../../../hub/client.js");
+					const { ensureHub } = await import("../../../hub/ensureHub.js");
+					const hubUrl =
+						created.target.hubUrl ||
+						process.env.TDMCP_HUB_URL ||
+						"http://127.0.0.1:9980";
+					await ensureHub({ hubUrl });
+					await getHubClient(hubUrl).expectPeer({
+						id: created.targetId,
+						label: created.target.label,
+						nonce: created.nonce,
+						projectDir: created.destDir,
+						toePath: created.toePath,
+					});
+				}
 				return textResult(JSON.stringify(created, null, 2));
 			} catch (error) {
 				return handleToolError(error, logger, TOOL_NAMES.CREATE_TD_PROJECT);
@@ -232,9 +250,7 @@ export function registerTdTools(
 					try {
 						const identity = await probeIdentity(
 							tdClient,
-							selected.id,
-							selected.host,
-							selected.port,
+							registry.asOrigin(selected),
 						);
 						pid = resolveTargetPid(registry, Number(identity.osPid));
 					} catch {

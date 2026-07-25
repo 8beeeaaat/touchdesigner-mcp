@@ -33,6 +33,16 @@ describe("classifyDialog", () => {
 	it("defaults to unknown", () => {
 		expect(classifyDialog("/project1/foo", "something else")).toBe("unknown");
 	});
+
+	it("marks THREAD CONFLICT as hard", () => {
+		expect(classifyDialog("THREAD CONFLICT", "OPShortcut")).toBe("hard");
+		expect(
+			classifyDialog(
+				"",
+				"TouchDesigner objects cannot be referenced from separate threads",
+			),
+		).toBe("hard");
+	});
 });
 
 describe("isDismissBlockedTitle", () => {

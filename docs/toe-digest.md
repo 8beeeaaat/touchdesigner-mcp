@@ -113,7 +113,7 @@ When both matter: digest for map → open project → verify live before mutate.
 
 ## `inject_td_mcp` (alpha write)
 
-Stages a **copy** of a foreign `.toe` into an empty `destDir`, grafts only `project1/tdmcp_port_onstart` (via `toeexpand` / `toecollapse`), syncs `.build` from the MCP kit, copies `modules/` + `import_modules.py` + **`modules/tdmcp_bridge.tox`**, writes `.tdmcp/state.json`. On open, `tdmcp_port_onstart` `loadTox`s the bridge (warning `runtimeBridge:loadTox`). Does **not** embed `/project1/tdmcp_bridge` in the foreign toe — that path (and shell-host merges) trigger TD “Unexpected node duplication … in file”.
+Stages a **copy** of a foreign `.toe` into an empty `destDir`, grafts only `project1/tdmcp_port_onstart` (via `toeexpand` / `toecollapse`), syncs `.build` from the MCP kit, copies `modules/` + `import_modules.py` + **`modules/tdmcp_bridge.tox`**, writes `.tdmcp/state.json` with **`transport: "tunnel"`**, **`nonce`**, and `hubUrl` (listen `port: 0` by default). On open, `tdmcp_port_onstart` `loadTox`s the bridge and dials **tdmcp-hub** `/tunnel` (warning `runtimeBridge:loadTox`). Does **not** embed `/project1/tdmcp_bridge` in the foreign toe — that path (and shell-host merges) trigger TD “Unexpected node duplication … in file”. Optional `transport: "http"` keeps legacy WebServer listen + register.
 
 | Rule | Detail |
 |------|--------|

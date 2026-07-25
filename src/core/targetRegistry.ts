@@ -1,6 +1,7 @@
 import { getHubClient, type HubClient } from "../hub/client.js";
 import type { HubPeer } from "../hub/types.js";
 import {
+	defaultHubUrl,
 	LAB_TARGET_ID,
 	normalizeHost,
 	type TdTarget,
@@ -17,12 +18,16 @@ function peerToTarget(peer: HubPeer): TdTarget {
 				: "owned";
 	return {
 		host: normalizeHost(peer.host),
+		hubUrl: defaultHubUrl(),
 		id: peer.id,
 		label: peer.label || peer.id,
+		nonce: peer.nonce,
 		port: peer.port,
 		projectDir: peer.projectDir,
 		source,
 		toePath: peer.toePath,
+		transport: peer.transport === "tunnel" ? "tunnel" : "http",
+		tunnelConnected: peer.tunnelConnected,
 	};
 }
 
@@ -31,6 +36,7 @@ function targetToPeer(target: TdTarget): HubPeer {
 		host: normalizeHost(target.host),
 		id: target.id,
 		label: target.label,
+		nonce: target.nonce,
 		port: target.port,
 		projectDir: target.projectDir,
 		source:
@@ -40,6 +46,8 @@ function targetToPeer(target: TdTarget): HubPeer {
 					? "owned"
 					: "registered",
 		toePath: target.toePath,
+		transport: target.transport ?? (target.port === 0 ? "tunnel" : "http"),
+		tunnelConnected: target.tunnelConnected,
 	};
 }
 
@@ -226,8 +234,10 @@ export class TargetRegistry {
 	asOrigin(target: TdTarget): TargetOrigin {
 		return {
 			host: normalizeHost(target.host),
+			hubUrl: target.hubUrl || defaultHubUrl(),
 			id: target.id,
 			port: target.port,
+			transport: target.transport ?? (target.port === 0 ? "tunnel" : "http"),
 		};
 	}
 }

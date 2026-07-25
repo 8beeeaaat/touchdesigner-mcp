@@ -15,6 +15,8 @@ function isPortFree(port: number, host = "127.0.0.1"): Promise<boolean> {
 }
 
 /**
+ * @deprecated Prefer transport=tunnel (default). Kept only for
+ * `create_td_project({ transport: "http" })` / inject HTTP opt-in and tests.
  * Allocate a free preferred TD WebServer listen port (identity is hub peer id).
  * Default scan starts at 9984; skips 9980–9983.
  */

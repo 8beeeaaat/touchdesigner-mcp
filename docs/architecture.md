@@ -252,7 +252,7 @@ On the asyade fork (`multi-instance`), one Node MCP process can talk to several 
 | `TargetRegistry` (`src/core/targetRegistry.ts`) | Process-wide sticky selection; always has builtin `lab`; owned targets upserted by lifecycle tools |
 | `runWithTarget` / ALS (`src/core/targetContext.ts`) | Request origin (host/port) for the sticky target |
 | `withTargetQueue` (`src/core/targetQueue.ts`) | Serializes concurrent tool calls **per target id** |
-| Port allocator (`src/core/portAllocator.ts`) | Owned ports from **9984**, skipping **9982** / **9983** |
+| Tunnel (default) / legacy HTTP | Owned peers dial hub `/tunnel` (`port: 0`); legacy HTTP still uses `portAllocator` + WebServer listen (**9984+**, skip **9982**/**9983**) |
 | Lifecycle (`src/core/lifecycle.ts`, `src/lifecycle/tdProcess.ts`) | `create_td_project` / `start_td_project` / `stop_td_project` |
 
 ```mermaid

@@ -28,25 +28,29 @@ CLI `--host` / `--port` are **legacy soft defaults** for the conventional lab li
 
 ## tdmcp-hub (durable peers)
 
-Long-lived process on **`127.0.0.1:9980`**. Cursor MCP and TD bridges **upsert** it via `ensureHub` (health-check → lockfile → spawn `node dist/hub.js`). You do not start the hub manually.
+Long-lived process on **`127.0.0.1:9980`**. Cursor MCP and TD bridges **upsert**
+it via `ensureHub` (health-check → lockfile → spawn `node dist/hub.js`). You do not
+start the hub manually.
 
-Contract: [`hub.md`](hub.md).
+Contract: [`hub.md`](hub.md) (**v2 reverse tunnel**).
 
-- TD registers `{ id, host, port, … }` after binding its WebServer; heartbeats keep the peer alive.
-- MCP tools resolve sticky from the hub, then call existing OpenAPI on the peer’s listen port.
-- After **Restart MCP**, hub peers remain; schema changes still need `npm run build` + Restart MCP (not Reload Window for DoD).
+- **Default (owned):** TD dials `ws://127.0.0.1:9980/tunnel` with a launch **nonce**;
+  MCP calls go through `/proxy/:peerId/api/…`. No per-instance listen port.
+- **Legacy lab HTTP:** peer may still register a WebServer listen port (e.g. **9981**).
+- After **Restart MCP**, hub peers remain; schema changes still need `npm run build` +
+  Restart MCP (not Reload Window for DoD).
 
 ## Ports (local products)
 
 | Port | Role |
 |------|------|
-| **9980** | **tdmcp-hub** (peer registry + sticky) |
-| **9981** | Conventional **lab** WebServer listen (peer may register as id `lab`) |
+| **9980** | **tdmcp-hub** (peers + sticky + **tunnel WS** + `/proxy`) |
+| **9981** | Legacy **lab** WebServer listen / soft hint (HTTP transport) |
 | **9982** | Reserved — Stagepad daemon (not a TD sticky target) |
 | **9983** | Reserved — 4designer daemon (not a TD sticky target) |
-| **free / preferred** | TD peer OpenAPI listen (from `.tdmcp/state.json` or allocator; skips 9980–9983) |
 
-Never point TD WebServer tools at Stagepad/4designer ports. Never bind owned peers to **9980** or steal **9981** without intent.
+Never point TD tools at Stagepad/4designer ports. Owned tunnel peers use **port 0** in
+state and do not bind a WebServer listen port.
 
 ## After changing this package (build + reload)
 
@@ -82,9 +86,9 @@ Prefer named tools for single operations. Use `execute_python_script` for multi-
 |------|------|
 | `list_td_targets` | Hub peers (+ soft lab hint). **No liveness probe.** |
 | `select_td_target` | Sticky select by `id` (persisted on hub); **probes** identity; fails if unknown or offline |
-| `create_td_project` | Copy template → `destDir`; write `.tdmcp/state.json` (preferred port + `hubUrl`); upsert owned on hub. **Does not start TD or select.** |
-| `start_td_project` | Spawn TD on `toePath` (requires `.tdmcp/state.json`); wait for bridge; auto-dismiss Windows `#32770` dialogs; **selects** owned. Returns `dismissedDialogs[]` |
-| `stop_td_project` | Soft quit then kill owned PID; remove hub peer. **Refuses `lab`.** |
+| `create_td_project` | Copy template → `destDir`; write `.tdmcp/state.json` (`targetId`, **nonce**, `transport:"tunnel"`, `hubUrl`); `/peers/expect`; upsert owned. **Does not start TD or select.** |
+| `start_td_project` | Spawn TD on `toePath` (requires `.tdmcp/state.json`); wait for **tunnel hello matching nonce** (or legacy HTTP probe); auto-dismiss Windows `#32770` dialogs; **selects** owned. Returns `dismissedDialogs[]` |
+| `stop_td_project` | Soft quit then kill owned PID from verified state; remove hub peer. **Refuses `lab`.** |
 | `td_ui_dialogs` | **Windows-only.** `action: list\|dismiss` for sticky-target PID: list dialogs + `responding` / `mainWindowTitle`, or dismiss `#32770` by title (omit title = all listed). Does not unstick a hung UI thread |
 
 ### Offline ToeDigest / inject (alpha)

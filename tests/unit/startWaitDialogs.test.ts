@@ -11,15 +11,21 @@ const hardDialog: TdUiDialog = {
 	title: "/project1/x",
 };
 
+const softDialog: TdUiDialog = {
+	message: "OSC In DAT parameter renamed",
+	severity: "soft",
+	title: "Backwards Compatiblity Issue",
+};
+
 describe("waitForBridgeWithDialogs", () => {
-	it("accumulates dismissedDialogs then succeeds", async () => {
+	it("accumulates soft dismissedDialogs then succeeds", async () => {
 		let inspectCalls = 0;
 		const inspect = vi.fn(async (): Promise<TdUiInspectResult> => {
 			inspectCalls += 1;
 			if (inspectCalls === 1) {
 				return {
-					dialogs: [hardDialog],
-					mainWindowTitle: hardDialog.title,
+					dialogs: [softDialog],
+					mainWindowTitle: softDialog.title,
 					responding: true,
 				};
 			}
@@ -48,7 +54,35 @@ describe("waitForBridgeWithDialogs", () => {
 
 		expect(result.identity.osPid).toBe(42);
 		expect(result.dismissedDialogs.length).toBeGreaterThanOrEqual(1);
-		expect(result.dismissedDialogs[0]?.title).toBe("/project1/x");
+		expect(result.dismissedDialogs[0]?.title).toBe(softDialog.title);
+		expect(dismissAll).toHaveBeenCalled();
+	});
+
+	it("fails start on hard TD UI dialog after dismiss", async () => {
+		const inspect = vi.fn(
+			async (): Promise<TdUiInspectResult> => ({
+				dialogs: [hardDialog],
+				mainWindowTitle: hardDialog.title,
+				responding: true,
+			}),
+		);
+		const dismissAll = vi.fn(async (dialogs: TdUiDialog[]) => ({
+			attempted: dialogs,
+			dismissed: dialogs,
+		}));
+		await expect(
+			waitForBridgeWithDialogs({
+				deadlineMs: Date.now() + 5_000,
+				deps: {
+					dismissAll,
+					inspect,
+					inspectLight: inspect,
+					probe: async () => ({ osPid: 1 }),
+					sleepMs: async () => undefined,
+				},
+				pid: 1,
+			}),
+		).rejects.toThrow(/hard TD UI dialog/);
 		expect(dismissAll).toHaveBeenCalled();
 	});
 
@@ -80,10 +114,15 @@ describe("waitForBridgeWithDialogs", () => {
 	});
 
 	it("timeout error includes uiSnapshot responding/dialogs", async () => {
+		const hungSoft: TdUiDialog = {
+			message: "please wait",
+			severity: "unknown",
+			title: "Loading",
+		};
 		const inspect = vi.fn(
 			async (): Promise<TdUiInspectResult> => ({
-				dialogs: [hardDialog],
-				mainWindowTitle: hardDialog.title,
+				dialogs: [hungSoft],
+				mainWindowTitle: hungSoft.title,
 				responding: false,
 			}),
 		);

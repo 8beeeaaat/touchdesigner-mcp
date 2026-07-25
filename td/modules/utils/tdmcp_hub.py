@@ -24,6 +24,14 @@ _heartbeat_stop = threading.Event()
 _heartbeat_thread: Optional[threading.Thread] = None
 _last_status = ""
 _peer_id: Optional[str] = None
+# Cached on main thread — heartbeat must NEVER call td.project / op
+_cached_state_path: Optional[str] = None
+_cached_hub_url: Optional[str] = None
+_cached_target_id: Optional[str] = None
+_cached_project_name: Optional[str] = None
+_cached_project_folder: Optional[str] = None
+_cached_listen_port: Optional[int] = None
+_cached_register_payload: Optional[dict[str, Any]] = None
 
 
 def _td() -> Any:
@@ -61,33 +69,59 @@ def resume() -> None:
 	set_status("resumed")
 
 
-def hub_url_from_state() -> str:
+def cache_state_path(
+	state_path: str,
+	hub_url: Optional[str] = None,
+	target_id: Optional[str] = None,
+	project_name: Optional[str] = None,
+	project_folder: Optional[str] = None,
+	listen_port: Optional[int] = None,
+) -> None:
+	"""MAIN THREAD: freeze paths/ids so worker threads never touch OPShortcut."""
+	global _cached_state_path, _cached_hub_url, _cached_target_id
+	global _cached_project_name, _cached_project_folder, _cached_listen_port
+	_cached_state_path = state_path
+	if hub_url:
+		_cached_hub_url = str(hub_url).rstrip("/")
+	if target_id:
+		_cached_target_id = str(target_id)
+	if project_name is not None:
+		_cached_project_name = str(project_name)
+	if project_folder is not None:
+		_cached_project_folder = str(project_folder)
+	if listen_port is not None:
+		_cached_listen_port = int(listen_port)
+
+
+def _read_state_dict() -> dict:
+	"""Worker-safe when `_cached_state_path` is set. Never calls td.project."""
+	path = _cached_state_path
+	if not path or not os.path.isfile(path):
+		return {}
 	try:
-		folder = _td().project.folder
-		path = os.path.join(folder, ".tdmcp", "state.json")
-		if os.path.isfile(path):
-			with open(path, encoding="utf-8") as f:
-				data = json.load(f)
-			raw = data.get("hubUrl") or data.get("hub_url")
-			if raw:
-				return str(raw).rstrip("/")
+		with open(path, encoding="utf-8") as f:
+			data = json.load(f)
+		return data if isinstance(data, dict) else {}
 	except Exception:
-		pass
+		return {}
+
+
+def hub_url_from_state() -> str:
+	if _cached_hub_url:
+		return _cached_hub_url
+	data = _read_state_dict()
+	raw = data.get("hubUrl") or data.get("hub_url")
+	if raw:
+		return str(raw).rstrip("/")
 	return os.environ.get("TDMCP_HUB_URL", HUB_DEFAULT_URL).rstrip("/")
 
 
 def target_id_from_state() -> Optional[str]:
-	try:
-		folder = _td().project.folder
-		path = os.path.join(folder, ".tdmcp", "state.json")
-		if os.path.isfile(path):
-			with open(path, encoding="utf-8") as f:
-				data = json.load(f)
-			tid = data.get("targetId")
-			return str(tid) if tid else None
-	except Exception:
-		pass
-	return None
+	if _cached_target_id:
+		return _cached_target_id
+	data = _read_state_dict()
+	tid = data.get("targetId")
+	return str(tid) if tid else None
 
 
 def _http_json(method: str, url: str, body: Optional[dict] = None, timeout: float = 2.0) -> Any:
@@ -168,34 +202,59 @@ def build_register_payload(
 	port: Optional[int] = None,
 	webserver: Any = None,
 ) -> dict[str, Any]:
-	td = _td()
-	listen = port if port is not None else _read_listen_port(webserver)
+	"""
+	Prefer cached plain strings (worker-safe). Touching td.project / WebServer
+	ops is MAIN THREAD only and only when caches are empty.
+	"""
+	global _cached_register_payload
+	if (
+		_cached_register_payload is not None
+		and peer_id is None
+		and port is None
+		and webserver is None
+	):
+		# Refresh pid only (pure Python)
+		payload = dict(_cached_register_payload)
+		payload["osPid"] = int(os.getpid())
+		return payload
+
+	listen = port if port is not None else _cached_listen_port
+	if listen is None and webserver is not None:
+		# Main-thread path with explicit webserver
+		listen = _read_listen_port(webserver)
 	if listen is None:
 		listen = 9981
+
 	tid = peer_id or target_id_from_state() or "lab"
-	# Monorepo / default lab toe without state → register as lab
-	if tid.startswith("owned-") is False and not target_id_from_state():
-		# Prefer lab when no state file
-		name = ""
+	name = _cached_project_name or ""
+	folder = _cached_project_folder or ""
+
+	if not name or not folder:
+		# MAIN THREAD fallback — do not call from heartbeat thread
 		try:
-			name = str(td.project.name)
+			td = _td()
+			name = name or str(td.project.name)
+			folder = folder or str(td.project.folder)
 		except Exception:
 			pass
+
+	if tid.startswith("owned-") is False and not target_id_from_state():
 		if "expe_baseline" in name or tid == "lab":
 			tid = "lab"
+
 	payload: dict[str, Any] = {
 		"id": tid,
 		"host": "http://127.0.0.1",
 		"port": int(listen),
 		"label": tid,
 		"source": "registered",
+		"osPid": int(os.getpid()),
 	}
-	try:
-		payload["projectName"] = str(td.project.name)
-		payload["projectFolder"] = str(td.project.folder)
-		payload["osPid"] = int(os.getpid())
-	except Exception:
-		pass
+	if name:
+		payload["projectName"] = name
+	if folder:
+		payload["projectFolder"] = folder
+	_cached_register_payload = dict(payload)
 	return payload
 
 
@@ -262,17 +321,47 @@ def on_bridge_ready(
 ) -> bool:
 	"""
 	Ensure hub (optional spawn), register this TD peer, start heartbeat.
-	Call from tdmcp_port_onstart after apply_tdmcp_port.
+	Call from tdmcp_port_onstart after apply_tdmcp_port (MAIN THREAD).
+	Always starts heartbeat so a failed first register still retries.
 	"""
 	if _paused:
 		set_status("paused — skip register")
 		return False
+
+	# Freeze identity on main before any worker starts
+	try:
+		td = _td()
+		folder = str(td.project.folder)
+		name = str(td.project.name)
+		state_path = os.path.join(folder, ".tdmcp", "state.json")
+		listen = _read_listen_port(webserver)
+		data = {}
+		if os.path.isfile(state_path):
+			try:
+				with open(state_path, encoding="utf-8") as f:
+					raw = json.load(f)
+				if isinstance(raw, dict):
+					data = raw
+			except Exception:
+				pass
+		cache_state_path(
+			state_path,
+			hub_url=str(data.get("hubUrl") or data.get("hub_url") or HUB_DEFAULT_URL),
+			target_id=str(data.get("targetId") or "") or None,
+			project_name=name,
+			project_folder=folder,
+			listen_port=listen if listen is not None else 9981,
+		)
+		# Pre-build payload so heartbeat re-register never touches ops
+		build_register_payload(webserver=webserver)
+	except Exception as e:
+		set_status(f"cache snapshot failed: {e}")
+
 	base = hub_url_from_state()
 	ensure_hub(hub_dir=hub_dir, base_url=base)
 	if not health_ok(base):
 		set_status("hub unreachable — will retry via heartbeat path")
-		# still try register later
 	ok = register(webserver=webserver, base_url=base)
-	if ok:
-		start_heartbeat()
+	# Always start heartbeat so register failures are not silent-death
+	start_heartbeat()
 	return ok

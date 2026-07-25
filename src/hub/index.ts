@@ -9,4 +9,16 @@ export { getHubClient, HubClient, resetHubClientForTests } from "./client.js";
 export { ensureHub, hubHealthOk, resolveHubJs } from "./ensureHub.js";
 export { PeerStore } from "./peerStore.js";
 export { createHubApp, startHubServer } from "./server.js";
-export type { HubPeer, HubPeerRecord, HubPeerSource } from "./types.js";
+export { TunnelManager } from "./tunnelManager.js";
+export {
+	defaultHubSnapshotPath,
+	loadHubSnapshot,
+	saveHubSnapshot,
+} from "./persistence.js";
+export type { HubPeer, HubPeerRecord, HubPeerSource, HubTransport } from "./types.js";
+export type {
+	TunnelHello,
+	TunnelRequest,
+	TunnelResponse,
+} from "./tunnelTypes.js";
+export { TUNNEL_DEFAULT_TIMEOUT_MS } from "./tunnelTypes.js";

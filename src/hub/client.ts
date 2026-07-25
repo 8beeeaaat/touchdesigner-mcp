@@ -83,6 +83,28 @@ export class HubClient {
 	select(id: string): Promise<HubStickyResponse> {
 		return this.json("PUT", "/sticky", { id });
 	}
+
+	expectPeer(body: {
+		id: string;
+		nonce: string;
+		label?: string;
+		projectDir?: string;
+		toePath?: string;
+		ttlMs?: number;
+	}): Promise<{ expect: unknown; selectedId: string | null }> {
+		return this.json("POST", "/peers/expect", body);
+	}
+
+	peerConnected(
+		id: string,
+	): Promise<{ id: string; connected: boolean; peer: HubPeer | null }> {
+		return this.json("GET", `/peers/${encodeURIComponent(id)}/connected`);
+	}
+
+	/** Absolute base URL for axios proxy calls to a tunnel peer. */
+	proxyOrigin(peerId: string): string {
+		return `${this.baseUrl}/proxy/${encodeURIComponent(peerId)}`;
+	}
 }
 
 let defaultClient: HubClient | undefined;

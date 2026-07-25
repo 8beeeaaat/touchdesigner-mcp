@@ -1,6 +1,13 @@
 # Ensures /project1/tdmcp_bridge exists (loadTox from modules/ if needed),
-# applies preferred WebServer port from .tdmcp/state.json, then registers
-# with tdmcp-hub (ensure/upsert hub when Hubdir is available).
+# then either (tunnel) dials out to tdmcp-hub or (http) applies WebServer port
+# and registers with the hub.
+#
+# THREAD SAFETY: all op()/project access stays on the main thread here.
+# Tunnel/hub workers only see plain-string snapshots.
+# Tunnel OpenAPI drain runs in onFrameStart (this Execute DAT) — never via
+# td.run from the WS worker (that path cannot touch op/project).
+
+
 def onStart():
 	try:
 		import os
@@ -35,6 +42,28 @@ def onStart():
 						pass
 				bridge = op("/project1/tdmcp_bridge") or loaded
 
+		hub_dir = os.environ.get("TDMCP_HUB_DIR")
+		if not hub_dir:
+			candidate = os.path.join(folder, "..", "tools", "touchdesigner-mcp")
+			candidate = os.path.normpath(candidate)
+			if os.path.isfile(os.path.join(candidate, "dist", "hub.js")):
+				hub_dir = candidate
+
+		from utils import tdmcp_tunnel
+
+		# Snapshot on main BEFORE any worker thread
+		snap = tdmcp_tunnel.capture_snapshot_on_main()
+		transport = snap.get("transport") or tdmcp_tunnel.transport_from_snapshot()
+
+		if transport == "tunnel":
+			try:
+				# Drain tunnel requests every frame on THIS Execute DAT (main cook).
+				tdmcp_tunnel.enable_frame_drain_on(me)
+				tdmcp_tunnel.on_bridge_ready(hub_dir=hub_dir)
+			except Exception as e:
+				print("tdmcp_port_onstart tunnel:", e)
+			return
+
 		from utils.apply_tdmcp_port import apply
 
 		ws = None
@@ -44,14 +73,6 @@ def onStart():
 			ws = None
 		apply(ws)
 
-		# Optional Hubdir: sibling state or env / conventional package path
-		hub_dir = os.environ.get("TDMCP_HUB_DIR")
-		if not hub_dir:
-			# Prefer package next to project when developing the fork
-			candidate = os.path.join(folder, "..", "tools", "touchdesigner-mcp")
-			candidate = os.path.normpath(candidate)
-			if os.path.isfile(os.path.join(candidate, "dist", "hub.js")):
-				hub_dir = candidate
 		try:
 			from utils import tdmcp_hub
 
@@ -60,3 +81,14 @@ def onStart():
 			print("tdmcp_port_onstart hub:", e)
 	except Exception as e:
 		print("tdmcp_port_onstart:", e)
+
+
+def onFrameStart(frame):
+	try:
+		from utils import tdmcp_tunnel
+
+		if tdmcp_tunnel.transport_from_snapshot() != "tunnel":
+			return
+		tdmcp_tunnel.process_pending()
+	except Exception as e:
+		print("tdmcp_port_onstart frame:", e)

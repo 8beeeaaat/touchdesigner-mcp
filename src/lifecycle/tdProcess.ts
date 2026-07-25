@@ -10,7 +10,13 @@ import {
 import { runWithTarget } from "../core/targetContext.js";
 import { withTargetQueue } from "../core/targetQueue.js";
 import type { TargetRegistry } from "../core/targetRegistry.js";
-import { LAB_TARGET_ID } from "../core/targetTypes.js";
+import {
+	defaultHubUrl,
+	LAB_TARGET_ID,
+	type TargetOrigin,
+} from "../core/targetTypes.js";
+import { getHubClient, type HubClient } from "../hub/client.js";
+import { ensureHub } from "../hub/ensureHub.js";
 import type { TouchDesignerClient } from "../tdClient/touchDesignerClient.js";
 import {
 	dedupeDialogs,
@@ -30,6 +36,7 @@ export type StartProjectResult = {
 	toePath: string;
 	identity?: Record<string, unknown>;
 	dismissedDialogs: TdUiDialog[];
+	transport?: string;
 };
 
 export type StartWaitDeps = {
@@ -79,11 +86,21 @@ export async function waitForBridgeWithDialogs(params: {
 		}
 
 		if (snapshot.dialogs.length > 0) {
+			const hard = snapshot.dialogs.filter((d) => d.severity === "hard");
+			if (hard.length > 0) {
+				// Dismiss so TD isn't wedged, but fail start — hard dialogs are bugs
+				await params.deps.dismissAll(hard);
+				throw new Error(
+					"start_td_project: hard TD UI dialog: " +
+						hard
+							.map((d) => `${d.title}: ${d.message.slice(0, 160)}`)
+							.join(" | "),
+				);
+			}
 			const { dismissed } = await params.deps.dismissAll(snapshot.dialogs);
 			for (const d of dismissed) {
 				dismissedDialogs.push(d);
 			}
-			// Also record hard/unknown that we attempted even if dismiss failed
 			for (const d of snapshot.dialogs) {
 				if (
 					!dismissed.some((x) => x.title === d.title && x.message === d.message)
@@ -122,7 +139,6 @@ export async function waitForBridgeWithDialogs(params: {
 		);
 	}
 
-	// Final UI pass after bridge is up (modal can coexist with HTTP)
 	const finalSnap = await params.deps.inspect(watchPid);
 	lastSnapshot = finalSnap;
 	if (finalSnap.dialogs.length > 0) {
@@ -139,12 +155,27 @@ export async function waitForBridgeWithDialogs(params: {
 	};
 }
 
+function originFromState(
+	state: TdMcpState,
+	targetId: string,
+): TargetOrigin {
+	const transport = state.transport ?? (state.port > 0 ? "http" : "tunnel");
+	return {
+		host: state.host || "http://127.0.0.1",
+		hubUrl: state.hubUrl || defaultHubUrl(),
+		id: targetId,
+		port: state.port,
+		transport,
+	};
+}
+
 export async function startTdProject(params: {
 	toePath: string;
 	registry: TargetRegistry;
 	tdClient: TouchDesignerClient;
 	tdExe?: string;
 	timeoutMs?: number;
+	hubClient?: HubClient;
 	/** Test-only overrides */
 	_test?: Partial<StartWaitDeps> & { pid?: number; skipSpawn?: boolean };
 }): Promise<StartProjectResult> {
@@ -154,11 +185,26 @@ export async function startTdProject(params: {
 	}
 	const projectDir = dirname(toePath);
 	const state = readState(projectDir);
-	if (!state?.port || !state.targetId) {
+	if (!state?.targetId) {
 		throw new Error(
 			`start_td_project: missing .tdmcp/state.json in ${projectDir}. Run create_td_project first.`,
 		);
 	}
+	const transport = state.transport ?? (state.port > 0 ? "http" : "tunnel");
+	if (transport === "tunnel" && !state.nonce) {
+		throw new Error(
+			`start_td_project: transport=tunnel requires nonce in ${projectDir}/.tdmcp/state.json`,
+		);
+	}
+	if (transport === "http" && !(state.port > 0)) {
+		throw new Error(
+			`start_td_project: transport=http requires port in ${projectDir}/.tdmcp/state.json`,
+		);
+	}
+
+	const hubUrl = state.hubUrl || defaultHubUrl();
+	const hub = params.hubClient ?? getHubClient(hubUrl);
+	await ensureHub({ hubUrl });
 
 	let pid = params._test?.pid;
 	if (!params._test?.skipSpawn) {
@@ -180,6 +226,7 @@ export async function startTdProject(params: {
 			pid,
 			started_at: new Date().toISOString(),
 			toe_launched: toePath,
+			transport,
 		};
 		writeState(projectDir, nextState);
 	} else if (!pid) {
@@ -190,29 +237,65 @@ export async function startTdProject(params: {
 			pid,
 			started_at: new Date().toISOString(),
 			toe_launched: toePath,
+			transport,
 		});
 	}
 
 	const host = state.host || "http://127.0.0.1";
-	const target = await params.registry.upsertOwnedAsync({
-		host,
-		id: state.targetId,
-		label: `Owned ${toePath}`,
-		port: state.port,
-		projectDir,
-		toePath,
-	});
+
+	if (transport === "tunnel") {
+		await hub.expectPeer({
+			id: state.targetId,
+			label: `Owned ${toePath}`,
+			nonce: state.nonce as string,
+			projectDir,
+			toePath,
+			ttlMs: Math.max(params.timeoutMs ?? 120_000, 600_000),
+		});
+		await params.registry.upsertOwnedAsync({
+			host,
+			hubUrl,
+			id: state.targetId,
+			label: `Owned ${toePath}`,
+			nonce: state.nonce,
+			port: 0,
+			projectDir,
+			toePath,
+			transport: "tunnel",
+			tunnelConnected: false,
+		});
+	} else {
+		await params.registry.upsertOwnedAsync({
+			host,
+			id: state.targetId,
+			label: `Owned ${toePath}`,
+			port: state.port,
+			projectDir,
+			toePath,
+			transport: "http",
+		});
+	}
 
 	const timeoutMs = params.timeoutMs ?? 120_000;
 	const deadlineMs = Date.now() + timeoutMs;
+	const origin = originFromState({ ...state, transport }, state.targetId);
+
+	const probe =
+		params._test?.probe ??
+		(transport === "tunnel"
+			? () => probeTunnelReady(hub, state, toePath, projectDir)
+			: () =>
+					probeIdentity(params.tdClient, {
+						...origin,
+						host,
+						port: state.port,
+					}));
 
 	const deps: StartWaitDeps = {
 		dismissAll: params._test?.dismissAll ?? dismissAllTdUiDialogs,
 		inspect: params._test?.inspect ?? inspectTdUi,
 		inspectLight: params._test?.inspectLight ?? inspectTdUiLight,
-		probe:
-			params._test?.probe ??
-			(() => probeIdentity(params.tdClient, target.id, host, state.port)),
+		probe,
 		sleepMs: params._test?.sleepMs,
 	};
 
@@ -227,6 +310,10 @@ export async function startTdProject(params: {
 	if (Number.isFinite(livePid) && livePid > 0) {
 		nextState.pid = livePid;
 		writeState(projectDir, nextState);
+	} else if (transport === "tunnel" && pid) {
+		// Keep spawn pid if hello didn't include osPid
+		nextState.pid = pid;
+		writeState(projectDir, nextState);
 	}
 
 	await params.registry.selectAsync(state.targetId);
@@ -237,7 +324,51 @@ export async function startTdProject(params: {
 		port: state.port,
 		targetId: state.targetId,
 		toePath,
+		transport,
 	};
+}
+
+async function probeTunnelReady(
+	hub: HubClient,
+	state: TdMcpState,
+	toePath: string,
+	projectDir: string,
+): Promise<Record<string, unknown>> {
+	const status = await hub.peerConnected(state.targetId);
+	if (!status.connected || !status.peer) {
+		throw new Error(
+			`tunnel not connected for ${state.targetId} (expects nonce=${state.nonce?.slice(0, 8)}…)`,
+		);
+	}
+	const peer = status.peer;
+	if (state.nonce && peer.nonce && peer.nonce !== state.nonce) {
+		throw new Error(
+			`tunnel nonce mismatch for ${state.targetId}: peer=${peer.nonce} expected=${state.nonce}`,
+		);
+	}
+	// Optional path sanity when TD reported folder
+	if (
+		peer.projectFolder &&
+		normalizePath(peer.projectFolder) !== normalizePath(projectDir)
+	) {
+		throw new Error(
+			`tunnel projectFolder mismatch: peer=${peer.projectFolder} expected=${projectDir}`,
+		);
+	}
+	return {
+		osPid: peer.osPid,
+		projectFolder: peer.projectFolder ?? projectDir,
+		projectName: peer.projectName,
+		targetId: state.targetId,
+		toePath: peer.toePath ?? toePath,
+		transport: "tunnel",
+		tunnelConnected: true,
+		webServerPort: 0,
+	};
+}
+
+function normalizePath(p: string): string {
+	return p.replace(/\\/g, "/").replace(/\/$/, "").toLowerCase();
 }
 
 export async function stopTdProject(params: {
@@ -257,6 +388,7 @@ export async function stopTdProject(params: {
 	}
 	const projectDir = target.projectDir;
 	const state = projectDir ? readState(projectDir) : null;
+	// Only kill a PID we recorded after verified hello / spawn
 	const pid = state?.pid;
 
 	try {
@@ -321,11 +453,10 @@ print("__ID__" + json.dumps({
 
 export async function probeIdentity(
 	tdClient: TouchDesignerClient,
-	targetId: string,
-	host: string,
-	port: number,
+	origin: TargetOrigin,
 ): Promise<Record<string, unknown>> {
-	return runWithTarget({ host, id: targetId, port }, async () =>
+	const targetId = origin.id;
+	return runWithTarget(origin, async () =>
 		withTargetQueue(targetId, async () => {
 			const info = await tdClient.getTdInfo();
 			if (!info.success) {
@@ -359,7 +490,8 @@ export async function probeIdentity(
 				...(info.data as Record<string, unknown>),
 				...identity,
 				targetId,
-				webServerPort: port,
+				transport: origin.transport ?? "http",
+				webServerPort: origin.port,
 			};
 		}),
 	);
