@@ -1,5 +1,7 @@
 # TouchDesigner MCP
 
+[![MCP Toplist](https://mcptoplist.com/badge/io.github.8beeeaaat%2Ftouchdesigner-mcp-server.svg)](https://mcptoplist.com/server/io.github.8beeeaaat%2Ftouchdesigner-mcp-server)
+
 [![Version](https://img.shields.io/npm/v/touchdesigner-mcp-server?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/touchdesigner-mcp-server)
 [![Downloads](https://img.shields.io/npm/dt/touchdesigner-mcp-server.svg?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/touchdesigner-mcp-server)
 
