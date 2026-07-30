@@ -197,7 +197,7 @@ Add the optional flags only when TouchDesigner is not running on `http://127.0.0
 
 Choose a transport configuration:
 
-##### Option A: Streamable HTTP ([spec](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http))
+##### Option A: Streamable HTTP ([spec](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http))
 
 <https://github.com/user-attachments/assets/4025f9cd-b19c-42f0-8274-7609650abd34>
 
@@ -348,8 +348,7 @@ Expected response:
 ```json
 {
   "status": "ok",
-  "sessions": 0,
-  "timestamp": "2025-12-06T05:30:00.000Z"
+  "timestamp": "2026-07-30T05:30:00.000Z"
 }
 ```
 
@@ -359,7 +358,7 @@ Expected response:
 | --- | --- | --- |
 | Connection | Standard I/O | HTTP/SSE |
 | Use Case | Local CLI / desktop tools | Remote agents, browser integrations |
-| Session Management | Single connection | Multi-session with TTL |
+| State Model | Single connection | Stateless (per-request) |
 | Port Required | No | Yes |
 
 ## Verification

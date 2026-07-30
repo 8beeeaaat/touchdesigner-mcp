@@ -20,7 +20,8 @@ The project uses OpenAPI 3.0.0 schema-based code generation with a three-step pr
 - `npm run gen` - Run all generation steps in sequence
 
 ### Testing and Quality
-- `npm test` - Run all tests (integration and unit)
+- `npm test` - Run all tests (e2e, integration and unit)
+- `npm run test:e2e` - E2E tests: builds `dist/` and drives the built `dist/cli.js` with the real MCP SDK v2 client over stdio and Streamable HTTP (both protocol eras; no TouchDesigner required)
 - `npm run test:integration` - Integration tests with TouchDesigner WebServer
 - `npm run test:unit` - Unit tests for MCP server components
 - `npm run coverage` - Generate test coverage report
@@ -93,12 +94,13 @@ Communication flows: AI Agent ↔ Node.js MCP Server ↔ HTTP API ↔ Python Web
 
 ### Transport Architecture
 
-The transport layer uses a factory + manager pattern to support stdio and streamable HTTP modes:
+Both transports serve MCP protocol revision 2026-07-28 and transparently fall back to the 2025-era protocol for older clients, from the same server factory (`TouchDesignerServer.create()`):
 
-- `src/transport/factory.ts` – Validates transport config (stdio vs HTTP) and instantiates the appropriate MCP transport
-- `src/transport/expressHttpManager.ts` – Wraps `StreamableHTTPServerTransport` inside an Express server, wiring `/mcp` and `/health`, plus graceful shutdown
-- `src/transport/sessionManager.ts` – Tracks HTTP sessions (UUIDs, TTL cleanup) for health metrics and future SDK callbacks
+- stdio – `serveStdio(factory)` from `@modelcontextprotocol/server/stdio`, wired in `src/cli.ts`; the opening exchange selects the protocol era per connection
+- `src/transport/expressHttpManager.ts` – Mounts `createMcpHandler(factory)` (stateless per-request serving for both eras) on the SDK Express app (`createMcpExpressApp`, DNS-rebinding protection) via `toNodeHandler`, wiring `/mcp` and `/health`, plus graceful shutdown
 - `src/transport/config.ts` – Type definitions and Zod validators for `TransportConfig`
+
+Protocol-level sessions were removed by spec revision 2026-07-28: there is no `Mcp-Session-Id` header, and `GET`/`DELETE /mcp` answer `405`. The MCP `logging` capability is no longer declared (deprecated by SEP-2577); logs go to stderr via `ConsoleLogger`.
 
 Design references: `.doc/streamable-http-implementation-plan.md` and `.doc/refactor_sdk_first.md` cover the SDK-first approach and HTTP rollout plan.
 
@@ -143,7 +145,15 @@ The project uses OpenAPI 3.0.0 schema (`src/api/index.yml`) for maintaining cons
 
 ## Current Development Tasks
 
-**Recent Update**: Generation pipeline simplification
+**Recent Update**: MCP protocol revision 2026-07-28
+
+- Migrated from `@modelcontextprotocol/sdk` 1.x to the SDK v2 packages (`@modelcontextprotocol/server` / `node` / `express` / `core` 2.0.0)
+- Both transports serve protocol revision 2026-07-28 with transparent 2025-era fallback (`serveStdio` / `createMcpHandler`)
+- Streamable HTTP is stateless: `TransportFactory` / `TransportRegistry` / `SessionManager` were deleted
+- Tools use `registerTool`, prompts use `registerPrompt` (Zod schemas); the deprecated MCP `logging` capability was dropped (stderr logging instead)
+- Node.js 20+ required
+
+**Previous Update**: Generation pipeline simplification
 
 - Replaced `@openapitools/openapi-generator-cli` (Java-based python-flask generator) with `@redocly/cli` bundle — only the bundled `openapi.yaml` was ever consumed downstream
 - `gen:webserver` script renamed to `gen:openapi`; Java runtime removed from Dockerfile

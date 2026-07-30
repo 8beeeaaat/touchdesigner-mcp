@@ -1,112 +1,75 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-	GetPromptRequestSchema,
-	ListPromptsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
+import type { McpServer } from "@modelcontextprotocol/server";
+import { z } from "zod";
 import { PROMPT_NAMES, TOOL_NAMES } from "../../../core/constants.js";
 import type { ILogger } from "../../../core/logger.js";
 
-const PROMPTS = [
-	{
-		arguments: [
-			{
-				description: "Name of the node to check",
-				name: "nodeName",
-				required: true,
-			},
-			{
-				description: "Family of the node to check",
-				name: "nodeFamily",
-				required: false,
-			},
-			{
-				description: "Type of the node to check",
-				name: "nodeType",
-				required: false,
-			},
-		],
-		description: "Fuzzy search for node",
-		name: PROMPT_NAMES.SEARCH_NODE,
-	},
-	{
-		arguments: [
-			{
-				description: "Path to the node to check",
-				name: "nodePath",
-				required: true,
-			},
-		],
-		description: "Fuzzy search for node and return errors in TouchDesigner.",
-		name: PROMPT_NAMES.CHECK_NODE_ERRORS,
-	},
-	{
-		description: "Connect nodes between each other in TouchDesigner.",
-		name: PROMPT_NAMES.NODE_CONNECTION,
-	},
-];
-
 /**
  * Register prompt handlers with MCP server
+ *
+ * Prompts are registered through the high-level `registerPrompt` API: argument
+ * validation is derived from the Zod schemas, and the SDK serves
+ * `prompts/list` / `prompts/get` (including the 2026-07-28 cache fields) from
+ * these registrations.
  */
 export function registerTdPrompts(server: McpServer, logger: ILogger): void {
-	server.server.setRequestHandler(ListPromptsRequestSchema, async () => {
-		return {
-			prompts: PROMPTS,
-		};
-	});
-
-	server.server.setRequestHandler(GetPromptRequestSchema, (request) => {
-		try {
+	server.registerPrompt(
+		PROMPT_NAMES.SEARCH_NODE,
+		{
+			argsSchema: z.object({
+				nodeFamily: z
+					.string()
+					.describe("Family of the node to check")
+					.optional(),
+				nodeName: z.string().describe("Name of the node to check"),
+				nodeType: z.string().describe("Type of the node to check").optional(),
+			}),
+			description: "Fuzzy search for node",
+		},
+		({ nodeName, nodeFamily, nodeType }) => {
 			logger.sendLog({
-				data: `Handling GetPromptRequest: ${request.params.name}`,
+				data: `Handling GetPromptRequest: ${PROMPT_NAMES.SEARCH_NODE}`,
 				level: "debug",
 			});
-			const prompt = getPrompt(request.params.name);
-			if (!prompt) {
-				throw new Error("Prompt name is required");
-			}
+			return {
+				messages: handleSearchNodePrompt({ nodeFamily, nodeName, nodeType }),
+			};
+		},
+	);
 
-			if (prompt.name === PROMPT_NAMES.SEARCH_NODE) {
-				if (!request.params.arguments?.nodeName) {
-					throw new Error("Missing required argument: nodeName");
-				}
-				const { nodeName, nodeFamily, nodeType } = request.params.arguments;
-				const messages = handleSearchNodePrompt({
-					nodeFamily,
-					nodeName,
-					nodeType,
-				});
-				return { messages };
-			}
-
-			if (prompt.name === PROMPT_NAMES.CHECK_NODE_ERRORS) {
-				if (!request.params.arguments?.nodePath) {
-					throw new Error("Missing required argument: nodePath");
-				}
-				const { nodePath } = request.params.arguments;
-				const messages = handleCheckNodeErrorsPrompt({
-					nodePath,
-				});
-				return { messages };
-			}
-
-			if (prompt.name === PROMPT_NAMES.NODE_CONNECTION) {
-				const messages = handleNodeConnectionPrompt();
-				return { messages };
-			}
-			throw new Error(
-				`Prompt implementation for ${request.params.name} not found`,
-			);
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
+	server.registerPrompt(
+		PROMPT_NAMES.CHECK_NODE_ERRORS,
+		{
+			argsSchema: z.object({
+				nodePath: z.string().describe("Path to the node to check"),
+			}),
+			description: "Fuzzy search for node and return errors in TouchDesigner.",
+		},
+		({ nodePath }) => {
 			logger.sendLog({
-				data: `Error handling prompt request: ${errorMessage}`,
-				level: "error",
+				data: `Handling GetPromptRequest: ${PROMPT_NAMES.CHECK_NODE_ERRORS}`,
+				level: "debug",
 			});
-			throw new Error(errorMessage);
-		}
-	});
+			return {
+				messages: handleCheckNodeErrorsPrompt({ nodePath }),
+			};
+		},
+	);
+
+	server.registerPrompt(
+		PROMPT_NAMES.NODE_CONNECTION,
+		{
+			description: "Connect nodes between each other in TouchDesigner.",
+		},
+		() => {
+			logger.sendLog({
+				data: `Handling GetPromptRequest: ${PROMPT_NAMES.NODE_CONNECTION}`,
+				level: "debug",
+			});
+			return {
+				messages: handleNodeConnectionPrompt(),
+			};
+		},
+	);
 }
 
 function handleSearchNodePrompt(params: {
@@ -120,9 +83,9 @@ function handleSearchNodePrompt(params: {
 				text: `Use the "${TOOL_NAMES.GET_TD_NODES}", "${TOOL_NAMES.GET_TD_NODE_PARAMETERS}" tools to search nodes what named "${params.nodeName}" in the TouchDesigner project.${
 					params.nodeType ? ` Node Type: ${params.nodeType}.` : ""
 				}${params.nodeFamily ? ` Node Family: ${params.nodeFamily}.` : ""}`,
-				type: "text",
+				type: "text" as const,
 			},
-			role: "user",
+			role: "user" as const,
 		},
 	];
 }
@@ -132,9 +95,9 @@ function handleCheckNodeErrorsPrompt(params: { nodePath: string }) {
 		{
 			content: {
 				text: `Use the "${TOOL_NAMES.GET_TD_NODE_ERRORS}" tool to inspect "${params.nodePath}" (and optionally its children) for error messages. If errors are returned, examine the affected nodes' parameters and connections to resolve them.`,
-				type: "text",
+				type: "text" as const,
 			},
-			role: "user",
+			role: "user" as const,
 		},
 	];
 }
@@ -144,17 +107,9 @@ function handleNodeConnectionPrompt() {
 		{
 			content: {
 				text: `Use the "${TOOL_NAMES.EXECUTE_PYTHON_SCRIPT}" tool e.g. op('/project1/text_over_image').outputConnectors[0].connect(op('/project1/out1'))`,
-				type: "text",
+				type: "text" as const,
 			},
-			role: "user",
+			role: "user" as const,
 		},
 	];
-}
-
-function getPrompt(name: string): (typeof PROMPTS)[number] {
-	const prompt = PROMPTS.find((p) => p.name === name);
-	if (!prompt) {
-		throw new Error(`Prompt ${name} not found`);
-	}
-	return prompt;
 }

@@ -20,13 +20,19 @@
 		"url": "https://github.com/8beeeaaat/touchdesigner-mcp/issues"
 	},
 	"homepage": "https://github.com/8beeeaaat/touchdesigner-mcp#readme",
+	"engines": {
+		"node": ">=20.0.0"
+	},
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"bin": {
 		"touchdesigner-mcp-server": "dist/cli.js"
 	},
 	"dependencies": {
-		"@modelcontextprotocol/sdk": "1.29.0",
+		"@modelcontextprotocol/core": "^2.0.0",
+		"@modelcontextprotocol/express": "^2.0.0",
+		"@modelcontextprotocol/node": "^2.0.0",
+		"@modelcontextprotocol/server": "^2.0.0",
 		"axios": "1.18.1",
 		"express": "5.2.1",
 		"mustache": "4.2.0",
@@ -36,6 +42,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.1",
+		"@modelcontextprotocol/client": "^2.0.0",
 		"@redocly/cli": "2.35.1",
 		"@types/express": "5.0.6",
 		"@types/mustache": "4.2.6",
@@ -81,6 +88,7 @@
 		"dev": "npx @modelcontextprotocol/inspector node dist/cli.js --stdio",
 		"http": "npm run build && node dist/cli.js --mcp-http-port=6280 --mcp-http-host=127.0.0.1 --host=http://127.0.0.1 --port=9981",
 		"test": "run-p test:*",
+		"test:e2e": "npm run build:dist && vitest run ./tests/e2e",
 		"test:integration": "vitest run ./tests/integration",
 		"test:unit": "vitest run ./tests/unit",
 		"coverage": "vitest run --coverage",

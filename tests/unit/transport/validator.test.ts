@@ -55,26 +55,18 @@ describe("TransportConfigValidator", () => {
 			}
 		});
 
-		test("should validate HTTP config with session config", () => {
-			const config: StreamableHttpTransportConfig = {
+		test("should reject HTTP config carrying a sessionConfig key (protocol-level sessions were removed)", () => {
+			const config = {
 				endpoint: "/mcp",
 				host: "localhost",
 				port: 6280,
-				sessionConfig: {
-					cleanupInterval: 300000,
-					enabled: true,
-					ttl: 3600000,
-				},
+				sessionConfig: { enabled: true },
 				type: "streamable-http",
 			};
 
 			const result = TransportConfigValidator.validate(config);
 
-			expect(result.success).toBe(true);
-			if (result.success) {
-				expect(result.data.sessionConfig?.enabled).toBe(true);
-				expect(result.data.sessionConfig?.ttl).toBe(3600000);
-			}
+			expect(result.success).toBe(false);
 		});
 
 		test("should validate HTTP config without security config", () => {
@@ -162,46 +154,6 @@ describe("TransportConfigValidator", () => {
 				expect(result.error.message).toContain("Endpoint");
 			}
 		});
-
-		test("should reject HTTP config with negative TTL", () => {
-			const config = {
-				endpoint: "/mcp",
-				host: "127.0.0.1",
-				port: 6280,
-				sessionConfig: {
-					enabled: true,
-					ttl: -1000,
-				},
-				type: "streamable-http",
-			};
-
-			const result = TransportConfigValidator.validate(config);
-
-			expect(result.success).toBe(false);
-			if (!result.success) {
-				expect(result.error.message).toContain("validation failed");
-			}
-		});
-
-		test("should reject HTTP config with negative cleanup interval", () => {
-			const config = {
-				endpoint: "/mcp",
-				host: "127.0.0.1",
-				port: 6280,
-				sessionConfig: {
-					cleanupInterval: -5000,
-					enabled: true,
-				},
-				type: "streamable-http",
-			};
-
-			const result = TransportConfigValidator.validate(config);
-
-			expect(result.success).toBe(false);
-			if (!result.success) {
-				expect(result.error.message).toContain("validation failed");
-			}
-		});
 	});
 
 	describe("discriminated union validation", () => {
@@ -271,17 +223,15 @@ describe("TransportConfigValidator", () => {
 				endpoint: "/mcp",
 				host: "127.0.0.1",
 				port: 6280,
-				sessionConfig: {
-					enabled: false,
-				},
 				type: "streamable-http",
 			};
 
 			const result = TransportConfigValidator.validateAndMergeDefaults(config);
 
 			expect(result.success).toBe(true);
-			if (result.success) {
-				expect(result.data.sessionConfig?.enabled).toBe(false);
+			if (result.success && result.data.type === "streamable-http") {
+				expect(result.data.host).toBe("127.0.0.1");
+				expect(result.data.port).toBe(6280);
 			}
 		});
 	});

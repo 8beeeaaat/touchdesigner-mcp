@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { ILogger } from "../../core/logger.js";
 import type { TouchDesignerClient } from "../../tdClient/index.js";
 import { registerTdTools } from "./handlers/tdTools.js";

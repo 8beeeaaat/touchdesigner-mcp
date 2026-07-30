@@ -1,7 +1,7 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import type { Transport } from "@modelcontextprotocol/server";
+import { McpServer } from "@modelcontextprotocol/server";
 import type { ILogger } from "../core/logger.js";
-import { McpLogger } from "../core/logger.js";
+import { ConsoleLogger } from "../core/logger.js";
 import type { Result } from "../core/result.js";
 import { MCP_SERVER_VERSION } from "../core/version.js";
 import { registerPrompts } from "../features/prompts/index.js";
@@ -12,9 +12,11 @@ import { ConnectionManager } from "./connectionManager.js";
 
 /**
  * Capabilities supported by TouchDesigner MCP Server
+ *
+ * The `logging` capability was removed: MCP deprecates the Logging feature as
+ * of protocol revision 2026-07-28 (SEP-2577) in favor of stderr logging.
  */
 export interface TouchDesignerCapabilities {
-	logging: Record<string, never>;
 	prompts: Record<string, never>;
 	tools: Record<string, never>;
 }
@@ -39,13 +41,12 @@ export class TouchDesignerServer {
 			},
 			{
 				capabilities: {
-					logging: {},
 					prompts: {},
 					tools: {},
 				},
 			},
 		);
-		this.logger = new McpLogger(this.server);
+		this.logger = new ConsoleLogger();
 
 		this.tdClient = createTouchDesignerClient({ logger: this.logger });
 

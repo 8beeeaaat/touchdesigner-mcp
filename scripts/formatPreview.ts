@@ -13,12 +13,7 @@ type ToolEntry = {
 class MockMcpServer {
 	public tools = new Map<string, ToolEntry>();
 
-	tool(name: string, ...rest: unknown[]): void {
-		const args = [...rest];
-		if (typeof args[0] === "string") {
-			args.shift();
-		}
-		const handler = args.pop();
+	registerTool(name: string, _config: unknown, handler: unknown): void {
 		if (typeof handler === "function") {
 			this.tools.set(name, { handler: handler as ToolHandler });
 			return;
@@ -79,7 +74,7 @@ async function main() {
 	const tdClient = new TouchDesignerClient();
 
 	registerTdTools(
-		server as unknown as import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
+		server as unknown as import("@modelcontextprotocol/server").McpServer,
 		logger,
 		tdClient,
 	);

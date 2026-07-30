@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Upgrade Notes
+
+- **MCP clients keep working without changes.** The server now speaks MCP protocol revision [2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28/changelog) and transparently falls back to the 2025-era protocol for existing clients, in both stdio and HTTP modes. Clients that already understand 2026-07-28 negotiate it via `server/discover`.
+- **HTTP mode is now stateless.** Protocol revision 2026-07-28 removes protocol-level sessions ([SEP-2567](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2567)): the `Mcp-Session-Id` header is no longer issued or accepted, `GET`/`DELETE` on `/mcp` answer `405` (SDK clients tolerate both), and the `/health` response no longer reports a `sessions` count. Deployments can now sit behind ordinary round-robin load balancers.
+- **MCP logging capability removed.** The Logging feature is deprecated by the specification ([SEP-2577](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2577)); server logs now go to stderr only. The TouchDesigner side and all tools are unaffected.
+- **Node.js 20+ is now required** (SDK v2 requirement; declared in `engines` and the MCPB manifest).
+
+### Changed
+
+- Updated the MCP protocol implementation to specification revision 2026-07-28: migrated from `@modelcontextprotocol/sdk` 1.29.0 to the SDK v2 packages (`@modelcontextprotocol/server`, `@modelcontextprotocol/node`, `@modelcontextprotocol/express`, `@modelcontextprotocol/core` 2.0.0). stdio serving goes through `serveStdio` and HTTP serving through `createMcpHandler`, each serving 2026-07-28 and the 2025-era protocol from the same tool/prompt registrations. Responses now carry the revision's `resultType` field, list results the required `ttlMs`/`cacheScope` cache hints ([SEP-2549](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2549)), and the standard `Mcp-Method`/`Mcp-Name` request headers are validated on the modern HTTP path ([SEP-2243](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2243)).
+- Tools are registered through the v2 `registerTool` API and prompts through `registerPrompt` with Zod argument schemas (replacing the deprecated variadic `server.tool()` and hand-written low-level `prompts/list` / `prompts/get` handlers). Tool and prompt wire behavior is unchanged apart from the new protocol fields.
+
+### Removed
+
+- Removed the session management layer (`TransportFactory`, `TransportRegistry`, `SessionManager`, `SessionConfig`) — protocol revision 2026-07-28 makes Streamable HTTP stateless, serving every request with a fresh server instance.
+- Removed the deprecated MCP `logging` capability and the `McpLogger`; logging now writes to stderr (SEP-2577 migration path).
+
+### Technical
+
+- Added an E2E test suite (`npm run test:e2e`, also run in CI) that spawns the built `dist/cli.js` and drives it with the real MCP SDK v2 client (`@modelcontextprotocol/client`) over both transports: 2026-07-28 negotiation via `server/discover` (auto and pinned modes), the 2025-era legacy fallback, `tools/list` / `tools/call` / `prompts/get`, and the stateless `/health` shape. Readiness uses health-endpoint polling rather than fixed sleeps; no TouchDesigner instance is required.
+
 ## [1.5.0] - 2026-07-11
 
 ### Upgrade Notes

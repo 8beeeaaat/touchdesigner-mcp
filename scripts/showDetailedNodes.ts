@@ -12,17 +12,9 @@ type ToolEntry = {
 class MockMcpServer {
 	public tools = new Map<string, ToolEntry>();
 
-	tool(name: string, ...args: unknown[]): void {
-		const rest = [...args];
-		if (typeof rest[0] === "string") {
-			rest.shift();
-		}
-		if (rest.length === 1 && typeof rest[0] === "function") {
-			this.tools.set(name, { handler: rest[0] as ToolHandler });
-			return;
-		}
-		if (rest.length === 2 && typeof rest[1] === "function") {
-			this.tools.set(name, { handler: rest[1] as ToolHandler });
+	registerTool(name: string, _config: unknown, handler: unknown): void {
+		if (typeof handler === "function") {
+			this.tools.set(name, { handler: handler as ToolHandler });
 			return;
 		}
 		throw new Error(`Unsupported registration signature for ${name}`);
@@ -67,7 +59,7 @@ async function main() {
 	const tdClient = new TouchDesignerClient();
 
 	registerTdTools(
-		server as unknown as import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
+		server as unknown as import("@modelcontextprotocol/server").McpServer,
 		logger,
 		tdClient,
 	);

@@ -17,7 +17,7 @@ import { execFileSync } from "node:child_process";
 
 const API_RE =
 	/^(src\/api\/|src\/features\/tools\/|src\/server\/|src\/tdClient\/|src\/transport\/|td\/modules\/mcp\/)/;
-const ITEST_RE = /^tests\/integration\//;
+const ITEST_RE = /^tests\/(integration|e2e)\//;
 
 function readStdin() {
 	return new Promise((resolve) => {
@@ -87,9 +87,9 @@ if (apiFiles.length > 0 && !hasTest) {
 		"Changed API/MCP files in this push:",
 		...apiFiles.map((f) => `  - ${f}`),
 		"",
-		"Add or update a test under tests/integration/ (run the integration-test-guard skill),",
-		"commit it, and push again — or, if this change truly needs no integration test,",
-		"re-run the push with SKIP_ITEST_GUARD=1 prefixed.",
+		"Add or update a test under tests/integration/ or tests/e2e/ (run the",
+		"integration-test-guard skill), commit it, and push again — or, if this change",
+		"truly needs no integration test, re-run the push with SKIP_ITEST_GUARD=1 prefixed.",
 	];
 	process.stderr.write(`${lines.join("\n")}\n`);
 	process.exit(2);

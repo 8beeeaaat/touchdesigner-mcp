@@ -1,51 +1,41 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { LoggingMessageNotification } from "@modelcontextprotocol/sdk/types.js";
+/**
+ * Log severity levels (RFC 5424, matching MCP logging levels)
+ */
+export type LogLevel =
+	| "debug"
+	| "info"
+	| "notice"
+	| "warning"
+	| "error"
+	| "critical"
+	| "alert"
+	| "emergency";
+
+/**
+ * Parameters for a log entry
+ */
+export interface LogParams {
+	level: LogLevel;
+	data: unknown;
+	logger?: string;
+}
 
 /**
  * Logger interface definition
  */
 export interface ILogger {
-	sendLog(args: LoggingMessageNotification["params"]): void;
+	sendLog(args: LogParams): void;
 }
 
 /**
- * MCP compatible logger implementation
- * Handles "Not connected" errors gracefully
- */
-export class McpLogger implements ILogger {
-	constructor(private server: McpServer) {}
-
-	sendLog(args: LoggingMessageNotification["params"]) {
-		try {
-			this.server.server.sendLoggingMessage({
-				...args,
-			});
-		} catch (error) {
-			// Only swallow the expected "Not connected" error during startup/shutdown
-			if (error instanceof Error && error.message === "Not connected") {
-				return;
-			}
-
-			// For all other errors, log detailed information to help diagnose logging system failures
-			console.error(
-				"CRITICAL: Failed to send log to MCP server. Logging system may be compromised.",
-				{
-					error: error instanceof Error ? error.message : String(error),
-					originalLogger: args.logger,
-					originalLogLevel: args.level,
-					stack: error instanceof Error ? error.stack : undefined,
-				},
-			);
-		}
-	}
-}
-
-/**
- * Console Logger implementation for standalone use (e.g., HTTP mode setup)
- * Outputs to stderr to avoid interfering with stdio transport
+ * Console Logger implementation
+ *
+ * Outputs to stderr to avoid interfering with stdio transport.
+ * The MCP logging capability is deprecated as of protocol revision 2026-07-28
+ * (SEP-2577); stderr logging is the suggested migration path.
  */
 export class ConsoleLogger implements ILogger {
-	sendLog(args: LoggingMessageNotification["params"]) {
+	sendLog(args: LogParams) {
 		const timestamp = new Date().toISOString();
 		const level = args.level?.toUpperCase() || "INFO";
 		const logger = args.logger || "unknown";

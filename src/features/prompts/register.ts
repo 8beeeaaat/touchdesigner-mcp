@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { ILogger } from "../../core/logger.js";
 import { registerTdPrompts } from "./handlers/td_prompts.js";
 

@@ -41,11 +41,9 @@ flowchart TB
     end
 
     subgraph Transport ["Transport Layer<br/>(Node.js)"]
-        B1["📡 TransportFactory<br/>(src/transport/factory.ts)"]
-        B2["📞 StdioServerTransport<br/>(MCP SDK)"]
-        B3["🌐 StreamableHTTPServerTransport<br/>(MCP SDK)"]
+        B2["📞 serveStdio<br/>(@modelcontextprotocol/server/stdio)"]
+        B3["🌐 createMcpHandler<br/>(@modelcontextprotocol/server)"]
         B4["🖥️ ExpressHttpManager<br/>(src/transport/expressHttpManager.ts)"]
-        B5["🔐 SessionManager<br/>(src/transport/sessionManager.ts)"]
     end
 
     subgraph Core ["Core Layer<br/>(Node.js)"]
@@ -62,10 +60,8 @@ flowchart TB
         D4["🎨 TouchDesigner Nodes<br/>(/project1/...)"]
     end
 
-    A1 & A2 & A3 --> B1
-    B1 --> B2 & B3
-    B3 --> B4
-    B4 --> B5
+    A1 & A2 & A3 --> B2 & B4
+    B4 --> B3
     B2 & B3 --> C1
     C1 --> C2
     C2 --> C3
@@ -81,7 +77,7 @@ flowchart TB
     classDef td fill:#d7f5e3,stroke:#2f9e44,stroke-width:2px
 
     class A1,A2,A3 client
-    class B1,B2,B3,B4,B5 transport
+    class B2,B3,B4 transport
     class C1,C2,C3,C4 core
     class D1,D2,D3,D4 td
 ```
@@ -97,7 +93,7 @@ flowchart LR
     end
 
     subgraph Server ["MCP Server Process"]
-        S1["StdioServerTransport<br/>(stdin/stdout)"]
+        S1["serveStdio<br/>(stdin/stdout)"]
         S2["TouchDesignerServer"]
         S3["TouchDesignerClient<br/>(HTTP)"]
     end
@@ -140,13 +136,13 @@ flowchart TB
     subgraph Server ["MCP Server Process"]
         direction TB
         S1["ExpressHttpManager<br/>:6280"]
-        S2["SessionManager<br/>(TTL cleanup)"]
-        S3["StreamableHTTPServerTransport<br/>(MCP SDK)"]
+        S2["createMcpHandler<br/>(fresh instance per request)"]
+        S3["toNodeHandler<br/>(MCP SDK)"]
         S4["TouchDesignerServer"]
         S5["TouchDesignerClient<br/>(HTTP)"]
 
         S1 --> S2
-        S1 --> S3
+        S2 --> S3
         S3 --> S4
         S4 --> S5
     end
@@ -155,9 +151,9 @@ flowchart TB
         T1["WebServer DAT<br/>:9981"]
     end
 
-    C1 -->|"HTTP/SSE<br/>Session 1"| S1
-    C2 -->|"HTTP/SSE<br/>Session 2"| S1
-    C3 -->|"HTTP/SSE<br/>Session 3"| S1
+    C1 -->|"HTTP/SSE<br/>Request 1"| S1
+    C2 -->|"HTTP/SSE<br/>Request 2"| S1
+    C3 -->|"HTTP/SSE<br/>Request 3"| S1
 
     S5 <-->|"HTTP API"| T1
 
@@ -172,11 +168,11 @@ flowchart TB
 
 **Key Characteristics**:
 
-- **Multi-Session**: Single MCP server process handles multiple concurrent clients via TransportRegistry
+- **Stateless Serving**: Every request gets a freshly-instantiated `TouchDesignerServer` from `createMcpHandler`'s factory — no protocol-level session, no `Mcp-Session-Id` header
 - **HTTP/SSE**: RESTful API + Server-Sent Events for streaming
-- **Session Management**: TTL-based automatic cleanup with per-session isolation
+- **Dual Protocol Era**: Serves revision 2026-07-28 and falls back to stateless serving for 2025-era clients, from the same endpoint
 - **Network Accessible**: Can accept remote connections
-- **Per-Session State**: Each client gets independent MCP protocol state (transport + server instances)
+- **No Shared In-Memory State**: Concurrent clients don't share or contend for server instances
 
 #### Architecture Layers
 
@@ -187,7 +183,7 @@ flowchart LR
     A["🤖 AI Agent CLI"]
 
     subgraph Node ["Node.js MCP Server"]
-        T1["📞 StdioServerTransport"]
+        T1["📞 serveStdio"]
         S1["🎯 TouchDesignerServer"]
     end
 
@@ -213,13 +209,13 @@ flowchart LR
 flowchart LR
     C["🤖 AI Agent / Browser"]
     subgraph HTTP ["HTTP Edge"]
-        H1["🌐 Streamable HTTP<br/>Server Transport"]
-        H2["🖥️ ExpressHttpManager"]
-        H3["🔐 SessionManager"]
+        H1["🖥️ ExpressHttpManager"]
+        H2["🌐 createMcpExpressApp<br/>(@modelcontextprotocol/express)"]
+        H3["📡 createMcpHandler + toNodeHandler<br/>(@modelcontextprotocol/server + node)"]
     end
 
     subgraph NodeCore ["Node.js Core"]
-        S2["🎯 TouchDesignerServer"]
+        S2["🎯 TouchDesignerServer<br/>(fresh instance per request)"]
     end
 
     subgraph TouchDesigner ["TouchDesigner"]
@@ -227,7 +223,7 @@ flowchart LR
         P2["🎨 TouchDesigner Nodes"]
     end
 
-    C -->|"HTTPS + SSE"| H1 --> H2 --> H3 --> S2 --> W2 --> P2
+    C -->|"HTTPS"| H1 --> H2 --> H3 --> S2 --> W2 --> P2
 
     classDef transport fill:#fff3cd,stroke:#ffc107,stroke-width:2px
     classDef core fill:#efe1ff,stroke:#8250df,stroke-width:2px
@@ -248,246 +244,96 @@ The transport layer provides a pluggable architecture that supports multiple MCP
 
 ```mermaid
 graph TB
-    subgraph Factory ["TransportFactory"]
-        F1["create(config)"]
-        F2["validate(config)"]
-    end
-
     subgraph Config ["TransportConfig"]
         C1["StdioTransportConfig"]
-        C2["StreamableHttpTransportConfig<br/>- port: number<br/>- host: string<br/>- endpoint: string<br/>- sessionConfig: SessionConfig"]
+        C2["StreamableHttpTransportConfig<br/>- port: number<br/>- host: string<br/>- endpoint: string"]
+    end
+
+    subgraph Stdio ["Stdio Serving"]
+        D1["serveStdio(factory)<br/>(@modelcontextprotocol/server/stdio)<br/>- protocol era negotiated per connection<br/>- one factory instance pinned per connection"]
     end
 
     subgraph HTTP ["HTTP Management"]
         H1["ExpressHttpManager<br/>- start/stop lifecycle<br/>- /mcp endpoint<br/>- /health endpoint<br/>- Graceful shutdown"]
-        H2["TransportRegistry<br/>- getOrCreate(sessionId, request)<br/>- Per-session transport isolation<br/>- Session lifecycle management"]
-        H3["SessionManager<br/>- create(metadata)<br/>- cleanup(sessionId)<br/>- TTL-based expiration<br/>- Active session tracking"]
+        H2["createMcpExpressApp<br/>(@modelcontextprotocol/express)<br/>- Host/Origin DNS-rebinding protection<br/>- JSON body parsing"]
+        H3["createMcpHandler + toNodeHandler<br/>(@modelcontextprotocol/server + node)<br/>- fresh server instance per request<br/>- serves 2026-07-28, falls back to 2025-era"]
     end
 
-    F1 --> C1 & C2
+    C1 --> D1
     C2 --> H1
     H1 --> H2
     H2 --> H3
 
-    classDef factory fill:#fff3cd,stroke:#ffc107,stroke-width:2px
     classDef config fill:#d8e8ff,stroke:#1f6feb,stroke-width:2px
+    classDef stdio fill:#fff3cd,stroke:#ffc107,stroke-width:2px
     classDef http fill:#efe1ff,stroke:#8250df,stroke-width:2px
 
-    class F1,F2 factory
     class C1,C2 config
+    class D1 stdio
     class H1,H2,H3 http
 ```
 
-### TransportFactory
+### Stdio Serving
 
-**Responsibility**: Generate transport instances based on configuration
+**Responsibility**: Speak the MCP protocol over stdin/stdout, picking the wire era per connection
 
-**Implementation**: [src/transport/factory.ts](../src/transport/factory.ts)
-
-```typescript
-class TransportFactory {
-  static create(
-    config: TransportConfig,
-    logger?: ILogger,
-    sessionManager?: ISessionManager | null
-  ): Result<Transport, Error>
-}
-```
+**Implementation**: [src/cli.ts](../src/cli.ts) via `serveStdio` from `@modelcontextprotocol/server/stdio`
 
 **Key Features**:
 
-- **Logger Integration**: Session lifecycle events logged via ILogger
-- **SessionManager Integration**: SDK callbacks wired to SessionManager methods
-  - `onsessioninitialized` → `sessionManager.register(sessionId)`
-  - `onsessionclosed` → `sessionManager.cleanup(sessionId)`
-
-**Supported Transports**:
-
-1. **Stdio**: Standard I/O based transport (default)
-   - For local CLI usage
-   - No session management required
-   - Single connection
-   - Logger and SessionManager parameters ignored
-
-2. **Streamable HTTP**: HTTP + SSE based transport
-   - For remote clients/web applications
-   - Full session management support via SDK callbacks
-   - Multiple concurrent sessions support
-   - Logger and SessionManager parameters utilized
-
-### TransportRegistry
-
-**Responsibility**: Per-session transport and server instance management
-
-**Implementation**: [src/transport/transportRegistry.ts](../src/transport/transportRegistry.ts)
-
-**Key Features**:
-
-- **Per-Session Isolation**: Each client gets independent transport + server instances
-- **Session Lifecycle**: Manages creation, reuse, and cleanup of session resources
-- **Request Routing**: Routes HTTP requests to appropriate transport based on session ID
-- **Graceful Cleanup**: Closes all active sessions during shutdown
-
-**Architecture**:
-
-```typescript
-interface SessionEntry {
-  transport: StreamableHTTPServerTransport;
-  server: McpServer;
-  createdAt: number;
-}
-
-class TransportRegistry {
-  private readonly sessions: Map<string, SessionEntry>;
-
-  async getOrCreate(
-    sessionId: string | undefined,
-    requestBody: JSONRPCMessage,
-    serverFactory: () => McpServer,
-  ): Promise<StreamableHTTPServerTransport | null>
-}
-```
-
-**Request Handling Logic**:
-
-1. **Existing Session** (`sessionId` exists in registry) → Return cached transport
-2. **New Session** (no `sessionId` + `initialize` request) → Create new transport + server
-3. **Invalid Session** (all other cases) → Return `null` (triggers 400 error)
-
-**Session Creation Flow**:
-
-```typescript
-// 1. Create transport with lifecycle callbacks
-const transport = new StreamableHTTPServerTransport({
-  sessionIdGenerator: () => randomUUID(),
-  onsessioninitialized: (sessionId) => {
-    // Store in registry
-    this.sessions.set(sessionId, { transport, server, createdAt });
-    // Register with SessionManager for TTL tracking
-    sessionManager?.register(sessionId);
-  },
-  onsessionclosed: (sessionId) => {
-    // Remove from registry
-    this.remove(sessionId);
-    // Cleanup from SessionManager
-    sessionManager?.cleanup(sessionId);
-  },
-});
-
-// 2. Create server instance via factory
-const server = serverFactory();
-
-// 3. Connect server to transport
-await server.connect(transport);
-```
-
-**Multi-Session Support**:
-
-The registry enables multiple concurrent clients by maintaining independent MCP protocol state per session:
-
-```text
-Client 1 → POST /mcp (no session) → TransportRegistry.getOrCreate()
-                                   → New transport + server (Session A)
-                                   → Response includes mcp-session-id: A
-
-Client 1 → POST /mcp (session: A) → TransportRegistry.getOrCreate()
-                                   → Reuse existing transport (Session A)
-
-Client 2 → POST /mcp (no session) → TransportRegistry.getOrCreate()
-                                   → New transport + server (Session B)
-                                   → Response includes mcp-session-id: B
-```
+- The opening exchange on each connection selects protocol revision 2026-07-28 or falls back to the legacy handshake for older clients
+- One server instance from the factory (`() => TouchDesignerServer.create()`) is pinned for the lifetime of the connection
+- `ConnectionManager` ([src/server/connectionManager.ts](../src/server/connectionManager.ts)) remains as a thin wrapper around `server.connect()`, but the production stdio entry point goes through `serveStdio`
 
 ### ExpressHttpManager
 
-**Responsibility**: HTTP server lifecycle management
+**Responsibility**: HTTP server lifecycle management for stateless per-request MCP serving
 
 **Implementation**: [src/transport/expressHttpManager.ts](../src/transport/expressHttpManager.ts)
 
 **Key Features**:
 
-- Express app generation using SDK's `createMcpExpressApp()`
-- `/mcp` endpoint: Routes to TransportRegistry for per-session handling
-- `/health` endpoint: Health check (includes active session count)
-- Graceful shutdown with registry cleanup
+- `createMcpHandler(serverFactory)` from `@modelcontextprotocol/server` builds a handler that creates a fresh `TouchDesignerServer` instance for every request — there is no protocol-level session and no `Mcp-Session-Id` header. It serves revision 2026-07-28 and falls back to stateless serving for 2025-era clients on the same endpoint.
+- `toNodeHandler` from `@modelcontextprotocol/node` adapts the handler to a Node.js request handler.
+- `createMcpExpressApp` from `@modelcontextprotocol/express` builds the Express app, providing Host/Origin DNS-rebinding protection and JSON body parsing.
+- `/mcp` accepts all methods; `GET`/`DELETE` return `405` since there is no session stream to open or terminate.
+- `/health` returns `{ status: 'ok', timestamp }` — no session count, since none is tracked.
+- Graceful shutdown closes open subscription streams via `handler.close()`, then closes the HTTP server.
 
 **Request Handling Flow**:
 
 ```typescript
-const handleMcpRequest: RequestHandler = async (req, res) => {
-  // Extract session ID from header
-  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+this.handler = createMcpHandler(() => this.serverFactory(), {
+  onerror: logHandlerError,
+});
 
-  // Get or create transport for this session via TransportRegistry
-  const transport = await this.registry.getOrCreate(
-    sessionId,
-    req.body,
-    this.serverFactory,
-  );
+const app = createMcpExpressApp({ host: this.config.host });
 
-  if (!transport) {
-    // Invalid session (session ID provided but not found, or non-initialize without session)
-    res.status(400).json({
-      jsonrpc: "2.0",
-      error: { code: -32000, message: "Invalid session" },
-      id: null
-    });
-    return;
-  }
+const nodeHandler = toNodeHandler(this.handler, { onerror: logHandlerError });
+app.all(this.config.endpoint, (req, res) => {
+  void nodeHandler(req, res, req.body);
+});
 
-  // Delegate request to per-session transport
-  await transport.handleRequest(req, res, req.body);
-};
-
-// MCP protocol endpoints
-app.post('/mcp', handleMcpRequest); // JSON-RPC requests
-app.get('/mcp', handleMcpRequest);  // SSE streaming
-app.delete('/mcp', handleMcpRequest); // Session termination
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    sessions: this.registry.getCount(),
-    timestamp: new Date().toISOString()
-  });
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 ```
 
-### SessionManager
+### Stateless Request Handling
 
-**Responsibility**: Client session management
+Every request to `/mcp` is served independently — there is no session store to route through:
 
-**Implementation**: [src/transport/sessionManager.ts](../src/transport/sessionManager.ts)
+```text
+Client → POST /mcp (tools/list) → createMcpHandler invokes serverFactory()
+                                 → New TouchDesignerServer instance handles this request only
+                                 → Response returned, instance discarded
 
-**Key Features**:
-
-- Session registration (SDK-generated UUIDs)
-- Session cleanup
-- TTL-based automatic expiration with error handling
-- Active session tracking
-
-**SDK Integration**:
-
-Session lifecycle is fully integrated with MCP SDK callbacks:
-
-- **Session Creation**: SDK generates session IDs via `onsessioninitialized` callback
-- **Session Registration**: `SessionManager.register()` tracks SDK-created sessions
-- **Session Validation**: Handled by SDK (`StreamableHTTPServerTransport.handleRequest()`)
-- **Session Cleanup**: `SessionManager.cleanup()` called from `onsessionclosed` callback
-- **Automatic Expiration**: TTL-based cleanup runs independently
-
-```typescript
-interface ISessionManager {
-  create(metadata?: Record<string, unknown>): string;  // Manual creation (not used with SDK)
-  register(sessionId: string, metadata?: Record<string, unknown>): void;  // SDK integration
-  cleanup(sessionId: string): Result<void, Error>;
-  list(): Session[];
-  startTTLCleanup(): void;
-  stopTTLCleanup(): void;
-  getActiveSessionCount(): number;
-}
+Client → POST /mcp (tools/call) → createMcpHandler invokes serverFactory()
+                                 → Another fresh TouchDesignerServer instance
+                                 → Response returned, instance discarded
 ```
+
+There is no `mcp-session-id` header and no session store: protocol version and capabilities travel per-request inside the `_meta` envelope (`io.modelcontextprotocol/protocolVersion`, `io.modelcontextprotocol/clientCapabilities`), and any state a client needs across calls is carried via server-minted handles rather than server-side session storage.
 
 ---
 
@@ -657,7 +503,7 @@ def create_node(parent_path: str, node_type: str, node_name: str = None):
 ```mermaid
 sequenceDiagram
     participant Client as MCP Client
-    participant Stdio as StdioServerTransport
+    participant Stdio as serveStdio
     participant Server as TouchDesignerServer
     participant TDClient as TouchDesignerClient
     participant TD as TouchDesigner<br/>WebServer
@@ -678,69 +524,35 @@ sequenceDiagram
 sequenceDiagram
     participant Client as MCP Client
     participant Express as ExpressHttpManager
-    participant Transport as StreamableHTTP<br/>Transport
-    participant Session as SessionManager
-    participant Server as TouchDesignerServer
+    participant Handler as createMcpHandler
+    participant Server as TouchDesignerServer<br/>(fresh instance)
     participant TD as TouchDesigner<br/>WebServer
 
-    Client->>Express: POST /mcp (initialize)
-    Express->>Transport: handleRequest()
-    Note over Transport: SDK generates sessionId (UUID)
-    Transport->>Session: register(sessionId)<br/>[via onsessioninitialized]
-    Session-->>Session: Track session with metadata
-    Transport->>Server: MCP initialize
+    Client->>Express: POST /mcp (tools/list)<br/>MCP-Protocol-Version: 2026-07-28<br/>Mcp-Method: tools/list
+    Express->>Handler: toNodeHandler(req, res)
+    Handler->>Server: serverFactory() → new instance
     Server->>TD: verifyCompatibility()
     TD-->>Server: { mcpApiVersion: "1.3.1" }
-    Server-->>Transport: initialize response
-    Transport-->>Express: HTTP 200 + Set-Cookie
-    Express-->>Client: JSON-RPC + sessionId header
+    Server-->>Handler: tools/list result
+    Handler-->>Express: HTTP 200 (resultType, ttlMs, cacheScope)
+    Express-->>Client: JSON-RPC response<br/>_meta.serverInfo
+    Note over Handler,Server: Instance discarded after response —<br/>no session persists between requests
 
-    Client->>Express: POST /mcp (tools/list)<br/>Cookie: sessionId
-    Express->>Transport: handleRequest()
-    Note over Transport: SDK validates sessionId
-    Transport->>Server: tools/list
-    Server-->>Transport: tools array
-    Transport-->>Express: HTTP 200
-    Express-->>Client: JSON-RPC response
-
-    Client->>Express: DELETE /mcp<br/>Cookie: sessionId
-    Express->>Transport: handleRequest()
-    Transport->>Session: cleanup(sessionId)<br/>[via onsessionclosed]
-    Session-->>Session: Remove session
-    Transport-->>Express: HTTP 200
-    Express-->>Client: Session terminated
+    Client->>Express: GET /mcp
+    Express-->>Client: HTTP 405 (no session stream to open)
 
     Client->>Express: GET /health
-    Express->>Session: getActiveSessionCount()
-    Session-->>Express: session count
-    Express-->>Client: { status: "ok", sessions: N, timestamp: "..." }
+    Express-->>Client: { status: "ok", timestamp: "..." }
 ```
 
-### Session Lifecycle
+### Stateless Request Lifecycle
 
-```mermaid
-stateDiagram-v2
-    [*] --> Created: initialize request
-    Created --> Active: session created (UUID)
-    Active --> Active: update lastAccessedAt
-    Active --> Expired: TTL exceeded
-    Active --> Terminated: DELETE /mcp
-    Expired --> Cleaned: TTL cleanup task
-    Terminated --> Cleaned: explicit cleanup
-    Cleaned --> [*]
+Each HTTP request is handled independently — there is no per-connection session to create, track, or expire:
 
-    note right of Active
-        SessionManager tracks:
-        - createdAt
-        - lastAccessedAt
-        - metadata
-    end note
-
-    note right of Expired
-        TTL cleanup runs every
-        TTL/2 interval
-    end note
-```
+1. The client sends a request carrying the `_meta` envelope with its protocol version and capabilities (2026-07-28), or is served through the legacy stateless fallback for 2025-era clients.
+2. `createMcpHandler` invokes `serverFactory()`, producing a fresh `TouchDesignerServer` / `McpServer` instance scoped to this request only.
+3. The instance handles the request and returns a response — list results carry `ttlMs`/`cacheScope` (SEP-2549), and the response includes `Mcp-Method`/`Mcp-Name` headers (SEP-2243) — then the instance is discarded.
+4. Any state a client needs across calls travels via server-minted handles carried in request/response payloads, not server-side session storage.
 
 ---
 
@@ -756,14 +568,14 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
 | --- | --- | --- |
 | **Connection** | Standard I/O (stdin/stdout) | HTTP/SSE (Server-Sent Events) |
 | **Use Case** | Local CLI tools, desktop applications | Remote agents, web applications, microservices |
-| **Session Management** | Single connection | Multi-session with TTL expiration |
-| **Concurrency** | 1 process = 1 connection | Multiple concurrent sessions |
+| **State Model** | Single connection, one factory instance pinned per connection | Stateless — fresh server instance per request, no `Mcp-Session-Id` |
+| **Concurrency** | 1 process = 1 connection | Multiple concurrent requests, no session affinity |
 | **Remote Access** | Not supported | Supported (network accessible) |
 | **Health Check** | Not available | `GET /health` endpoint |
-| **Monitoring** | Limited | Session tracking, metrics |
+| **Monitoring** | Limited | Liveness via `/health` |
 | **Debugging** | Requires MCP Inspector | Standard HTTP tools (curl, Postman, browser DevTools) |
-| **Scalability** | Limited (1:1 process model) | High (load balancing, horizontal scaling) |
-| **Security** | Process isolation | DNS rebinding protection, session validation |
+| **Scalability** | Limited (1:1 process model) | High (stateless, load balancing, horizontal scaling) |
+| **Security** | Process isolation | DNS rebinding protection (Host/Origin validation) |
 | **Deployment** | Simple (local binary) | Requires HTTP server setup |
 
 ### When to Use Stdio Mode
@@ -859,7 +671,7 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
 
    # Health check
    curl http://localhost:6280/health
-   # Response: {"status":"ok","sessions":0,"timestamp":"2025-12-06T..."}
+   # Response: {"status":"ok","timestamp":"2026-07-30T..."}
 
    ```
 
@@ -896,7 +708,8 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
    # Client 1: Claude Desktop (via HTTP client library)
    # Client 2: Web application
    # Client 3: VSCode extension
-   # All sharing the same MCP server instance
+   # Each request served by an independently-instantiated MCP server —
+   # no shared in-memory session state between clients or requests
    ```
 
 4. **Monitoring Integration**
@@ -912,10 +725,10 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
 **Advantages**:
 
 - Remote access capability
-- Multiple concurrent sessions
+- Multiple concurrent clients, no session affinity required
 - Standard HTTP debugging tools
 - Built-in health checking
-- Session management with TTL
+- Stateless scaling (no session store to replicate)
 - Horizontal scalability
 - Load balancing support
 - Easy monitoring integration
@@ -925,7 +738,6 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
 - Requires port configuration
 - Network security considerations
 - More complex setup
-- Requires session management
 
 ### Usage Examples
 
@@ -1102,7 +914,7 @@ touchdesigner-mcp-server --mcp-http-port=6280
 touchdesigner-mcp-server --stdio
 ```
 
-**Note**: Session management features (TTL, health checks, concurrent sessions) are not available in Stdio mode.
+**Note**: Health checking is not available in Stdio mode (no HTTP endpoint). HTTP mode serves every request statelessly, so there is no session state to migrate either way.
 
 ---
 
@@ -1147,12 +959,6 @@ type Result<T, E = Error> =
 Interface-driven design for testability and extensibility:
 
 ```typescript
-interface ISessionManager {
-  create(metadata?: Record<string, unknown>): string;
-  cleanup(sessionId: string): Result<void, Error>;
-  // ...
-}
-
 interface ILogger {
   sendLog(params: { level: string; data: string; logger: string }): void;
 }
@@ -1183,10 +989,10 @@ npm run gen            # Run all generation steps
 
 ### Adding New Transports
 
-1. Define configuration type in `src/transport/config.ts`
-2. Add Zod schema
-3. Add new case to `TransportFactory.create()`
-4. Implement transport-specific manager (if needed)
+1. Define configuration type in `src/transport/config.ts` and add it to the `TransportConfig` union
+2. Add a Zod validation schema
+3. Implement a transport-specific manager (following the `ExpressHttpManager` pattern) that wires `serverFactory` to the new transport
+4. Branch on `config.type` in `src/cli.ts`'s `startServer()` to instantiate the new manager
 
 **Example (WebSocket)**:
 
@@ -1204,16 +1010,17 @@ export type TransportConfig =
   | StreamableHttpTransportConfig
   | WebSocketTransportConfig;
 
-// 3. Extend factory
-static create(config: TransportConfig): Result<Transport, Error> {
-  switch (config.type) {
-    case 'stdio':
-      return this.createStdio();
-    case 'streamable-http':
-      return this.createStreamableHttp(config);
-    case 'websocket':
-      return this.createWebSocket(config);
-  }
+// 3. Branch in startServer()
+switch (transportConfig.type) {
+  case 'stdio':
+    serveStdio(() => TouchDesignerServer.create());
+    break;
+  case 'streamable-http':
+    await new ExpressHttpManager(transportConfig, serverFactory, logger).start();
+    break;
+  case 'websocket':
+    await new WebSocketManager(transportConfig, serverFactory, logger).start();
+    break;
 }
 ```
 
@@ -1230,16 +1037,18 @@ static create(config: TransportConfig): Result<Transport, Error> {
 
 ### MCP Specification
 
-- [MCP Specification - Transports](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)
-- [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#http-with-sse)
+- [MCP Specification - Transports](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports)
+- [Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)
 
-### MCP TypeScript SDK
+### MCP TypeScript SDK (v2)
 
-- [SDK Repository](https://github.com/modelcontextprotocol/typescript-sdk)
-- [Express Integration](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/server/express.ts)
+- [@modelcontextprotocol/server](https://www.npmjs.com/package/@modelcontextprotocol/server)
+- [@modelcontextprotocol/express](https://www.npmjs.com/package/@modelcontextprotocol/express)
+- [@modelcontextprotocol/node](https://www.npmjs.com/package/@modelcontextprotocol/node)
+- [@modelcontextprotocol/core](https://www.npmjs.com/package/@modelcontextprotocol/core)
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2025-12-06
+**Document Version**: 2.0
+**Last Updated**: 2026-07-30
 **Status**: Complete
