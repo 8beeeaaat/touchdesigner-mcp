@@ -1,6 +1,10 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ConsoleLogger } from "../../src/core/logger.js";
 import { TouchDesignerServer } from "../../src/server/touchDesignerServer.js";
+import {
+	type ITouchDesignerApi,
+	TouchDesignerClient,
+} from "../../src/tdClient/touchDesignerClient.js";
 import type { StreamableHttpTransportConfig } from "../../src/transport/config.js";
 import { ExpressHttpManager } from "../../src/transport/expressHttpManager.js";
 
@@ -50,6 +54,22 @@ describe("HTTP Transport Integration", () => {
 	const testPort = 3302;
 	const baseUrl = `http://127.0.0.1:${testPort}`;
 	let httpManager: ExpressHttpManager;
+	const getTdInfo = vi.fn().mockResolvedValue({
+		data: {
+			mcpApiVersion: "1.3.1",
+			osName: "test-os",
+			osVersion: "0.0.0",
+			server: "mock",
+			version: "0.0.0",
+		},
+		error: null,
+		success: true,
+	});
+	const getNodes = vi.fn().mockResolvedValue({
+		data: { nodes: [] },
+		error: null,
+		success: true,
+	});
 	const config: StreamableHttpTransportConfig = {
 		endpoint: "/mcp",
 		host: "127.0.0.1",
@@ -62,9 +82,17 @@ describe("HTTP Transport Integration", () => {
 		process.env.TD_WEB_SERVER_PORT = "9981";
 
 		const logger = new ConsoleLogger();
+		const tdClient = new TouchDesignerClient({
+			httpClient: {
+				getNodes,
+				getTdInfo,
+			} as unknown as ITouchDesignerApi,
+			logger,
+		});
 
-		// Server factory for per-request instances (stateless serving)
-		const serverFactory = () => TouchDesignerServer.create();
+		// MCP server instances are request-scoped, but compatibility results belong
+		// to the shared TouchDesigner API client and retain their configured TTL.
+		const serverFactory = () => TouchDesignerServer.create({ tdClient });
 
 		httpManager = new ExpressHttpManager(config, serverFactory, logger);
 
@@ -151,6 +179,38 @@ describe("HTTP Transport Integration", () => {
 		expect(body.result?.resultType).toBe("complete");
 		expect(body.result?.ttlMs).toBe(0);
 		expect(body.result?.cacheScope).toBe("private");
+	});
+
+	it("should cache TouchDesigner compatibility across HTTP requests", async () => {
+		for (const id of [4, 5]) {
+			const response = await fetch(`${baseUrl}${config.endpoint}`, {
+				body: JSON.stringify({
+					id,
+					jsonrpc: "2.0",
+					method: "tools/call",
+					params: {
+						_meta: modernEnvelope(),
+						arguments: { parentPath: "/project1" },
+						name: "get_td_nodes",
+					},
+				}),
+				headers: {
+					Accept: "application/json, text/event-stream",
+					"Content-Type": "application/json",
+					"MCP-Protocol-Version": MODERN_PROTOCOL_VERSION,
+					"Mcp-Method": "tools/call",
+					"Mcp-Name": "get_td_nodes",
+				},
+				method: "POST",
+			});
+
+			expect(response.status).toBe(200);
+			const body = await response.json();
+			expect(body.result?.isError).toBeFalsy();
+		}
+
+		expect(getTdInfo).toHaveBeenCalledTimes(1);
+		expect(getNodes).toHaveBeenCalledTimes(2);
 	});
 
 	it("should reject GET requests with 405 (protocol-level sessions were removed)", async () => {

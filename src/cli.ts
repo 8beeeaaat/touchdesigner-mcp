@@ -3,6 +3,7 @@
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { ConsoleLogger } from "./core/logger.js";
 import { TouchDesignerServer } from "./server/touchDesignerServer.js";
+import { createTouchDesignerClient } from "./tdClient/index.js";
 import type {
 	StreamableHttpTransportConfig,
 	TransportConfig,
@@ -139,9 +140,11 @@ export async function startServer(params?: {
 		// Handle HTTP mode
 		if (isStreamableHttpTransportConfig(transportConfig)) {
 			const logger = new ConsoleLogger();
+			const tdClient = createTouchDesignerClient({ logger });
 
-			// Server factory for creating per-request instances (stateless serving)
-			const serverFactory = () => TouchDesignerServer.create();
+			// MCP server state is request-scoped, while the TouchDesigner client
+			// retains compatibility results across requests for their configured TTL.
+			const serverFactory = () => TouchDesignerServer.create({ tdClient });
 
 			// Create Express HTTP manager with server factory
 			const httpManager = new ExpressHttpManager(

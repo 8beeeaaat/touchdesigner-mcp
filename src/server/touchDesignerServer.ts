@@ -21,6 +21,10 @@ export interface TouchDesignerCapabilities {
 	tools: Record<string, never>;
 }
 
+export interface TouchDesignerServerParams {
+	tdClient?: TouchDesignerClient;
+}
+
 /**
  * TouchDesigner MCP Server implementation
  */
@@ -33,7 +37,7 @@ export class TouchDesignerServer {
 	/**
 	 * Initialize TouchDesignerServer with proper dependency injection
 	 */
-	constructor() {
+	constructor(params: TouchDesignerServerParams = {}) {
 		this.server = new McpServer(
 			{
 				name: "TouchDesigner",
@@ -48,7 +52,8 @@ export class TouchDesignerServer {
 		);
 		this.logger = new ConsoleLogger();
 
-		this.tdClient = createTouchDesignerClient({ logger: this.logger });
+		this.tdClient =
+			params.tdClient ?? createTouchDesignerClient({ logger: this.logger });
 
 		this.connectionManager = new ConnectionManager(this.server, this.logger);
 
@@ -70,8 +75,8 @@ export class TouchDesignerServer {
 	 * const transport = await registry.getOrCreate(sessionId, body, serverFactory);
 	 * ```
 	 */
-	static create(): McpServer {
-		const instance = new TouchDesignerServer();
+	static create(params: TouchDesignerServerParams = {}): McpServer {
+		const instance = new TouchDesignerServer(params);
 		return instance.server;
 	}
 

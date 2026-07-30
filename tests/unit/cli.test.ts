@@ -1,18 +1,45 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parseArgs, parseTransportConfig, startServer } from "../../src/cli.js";
 
-const { defaultServeStdioImpl, serveStdioMock, TouchDesignerServerCreateMock } =
-	vi.hoisted(() => {
-		const defaultServeStdioImpl = () => ({ close: vi.fn() });
-		const serveStdioMock = vi.fn(defaultServeStdioImpl);
-		const TouchDesignerServerCreateMock = vi.fn(() => ({}));
-
-		return {
-			defaultServeStdioImpl,
-			serveStdioMock,
-			TouchDesignerServerCreateMock,
-		};
+const {
+	createTouchDesignerClientMock,
+	defaultServeStdioImpl,
+	ExpressHttpManagerMock,
+	httpManagerStartMock,
+	httpManagerStopMock,
+	serveStdioMock,
+	sharedTdClient,
+	TouchDesignerServerCreateMock,
+} = vi.hoisted(() => {
+	const defaultServeStdioImpl = () => ({ close: vi.fn() });
+	const serveStdioMock = vi.fn(defaultServeStdioImpl);
+	const TouchDesignerServerCreateMock = vi.fn(() => ({}));
+	const sharedTdClient = { kind: "shared TouchDesigner client" };
+	const createTouchDesignerClientMock = vi.fn(() => sharedTdClient);
+	const httpManagerStartMock = vi
+		.fn()
+		.mockResolvedValue({ data: undefined, success: true });
+	const httpManagerStopMock = vi
+		.fn()
+		.mockResolvedValue({ data: undefined, success: true });
+	const ExpressHttpManagerMock = vi.fn(function MockExpressHttpManager(
+		this: Record<string, unknown>,
+	) {
+		this.start = httpManagerStartMock;
+		this.stop = httpManagerStopMock;
 	});
+
+	return {
+		createTouchDesignerClientMock,
+		defaultServeStdioImpl,
+		ExpressHttpManagerMock,
+		httpManagerStartMock,
+		httpManagerStopMock,
+		serveStdioMock,
+		sharedTdClient,
+		TouchDesignerServerCreateMock,
+	};
+});
 
 // Mock dependencies
 vi.mock("@modelcontextprotocol/server/stdio", () => ({
@@ -21,6 +48,14 @@ vi.mock("@modelcontextprotocol/server/stdio", () => ({
 
 vi.mock("../../src/server/touchDesignerServer.js", () => ({
 	TouchDesignerServer: { create: TouchDesignerServerCreateMock },
+}));
+
+vi.mock("../../src/tdClient/index.js", () => ({
+	createTouchDesignerClient: createTouchDesignerClientMock,
+}));
+
+vi.mock("../../src/transport/expressHttpManager.js", () => ({
+	ExpressHttpManager: ExpressHttpManagerMock,
 }));
 
 describe("CLI", () => {
@@ -154,8 +189,16 @@ describe("CLI", () => {
 
 			TouchDesignerServerCreateMock.mockReset();
 			TouchDesignerServerCreateMock.mockImplementation(() => ({}));
+			createTouchDesignerClientMock.mockClear();
+			ExpressHttpManagerMock.mockClear();
+			httpManagerStartMock.mockClear();
+			httpManagerStopMock.mockClear();
 
 			vi.clearAllMocks();
+		});
+
+		afterEach(() => {
+			vi.restoreAllMocks();
 		});
 
 		it("should set environment variables from parsed arguments", async () => {
@@ -182,6 +225,37 @@ describe("CLI", () => {
 			const factory = serveStdioMock.mock.calls[0][0] as () => unknown;
 			factory();
 			expect(TouchDesignerServerCreateMock).toHaveBeenCalledTimes(1);
+		});
+
+		it("should reuse one TouchDesigner client across HTTP server instances", async () => {
+			vi.spyOn(console, "error").mockImplementation(() => {});
+			vi.spyOn(process, "on").mockImplementation(() => process);
+
+			await startServer({
+				argv: [
+					"node",
+					"cli.js",
+					"--mcp-http-port=6280",
+					"--host=127.0.0.1",
+					"--port=9981",
+				],
+				nodeEnv: "cli",
+			});
+
+			expect(createTouchDesignerClientMock).toHaveBeenCalledTimes(1);
+			const serverFactory = ExpressHttpManagerMock.mock
+				.calls[0][1] as () => unknown;
+
+			serverFactory();
+			serverFactory();
+
+			expect(TouchDesignerServerCreateMock).toHaveBeenCalledTimes(2);
+			expect(TouchDesignerServerCreateMock).toHaveBeenNthCalledWith(1, {
+				tdClient: sharedTdClient,
+			});
+			expect(TouchDesignerServerCreateMock).toHaveBeenNthCalledWith(2, {
+				tdClient: sharedTdClient,
+			});
 		});
 
 		it("should handle unexpected errors gracefully", async () => {
