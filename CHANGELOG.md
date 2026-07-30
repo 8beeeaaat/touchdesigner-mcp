@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **For MCP client users** (Claude Desktop, other MCP hosts — npx or MCPB installs):
 
 - **No configuration changes needed.** The server now speaks MCP protocol revision [2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28/changelog) and transparently falls back to the 2025-era protocol for existing clients, in both stdio and HTTP modes. Clients that already understand 2026-07-28 negotiate it automatically via `server/discover`.
+
+  Client compatibility verified against this release (live, via the Docker container route):
+
+  | Client | Version tested | Protocol served | Evidence |
+  |---|---|---|---|
+  | MCP SDK v2 (`@modelcontextprotocol/client`) | 2.0.0 | 2026-07-28 (auto and pinned modes) and 2025-06-18 legacy | E2E suite; live SDK probes over stdio and Streamable HTTP |
+  | Claude Code | 2.1.220 | 2025-06-18 via the transparent legacy fallback (client does not implement `server/discover` yet) | All 14 tools listed and called live; a raw `initialize` over the identical stdio route negotiated `2025-06-18` |
+  | Codex CLI | 0.146.0 | 2026-07-28 support gated behind `[features] mcp_2026_07_28 = true` (default `false` → 2025 era) | All 14 tools discovered and called live with the flag enabled; the per-request wire revision itself was not directly observed |
+  | Claude Desktop | — | 2025-era fallback expected | Config registration only; not directly measured |
 - **The TouchDesigner side is untouched.** No `.tox` re-import is required; all 14 tools and 3 prompts behave identically. In HTTP mode, the TouchDesigner version-compatibility check result is now shared across requests for its TTL, so the per-request stateless serving does not re-run the handshake on every call.
 - **The version-compatibility notice got more precise.** The check now compares your deployed component against the API version this release ships with (`1.5.0`) instead of the npm package version, so the `2.0.0` package number does not affect deployed components. A component whose API version differs in minor/patch now receives an "Update Recommended" notice (previously patch differences were silent), and a component from a *newer* API generation than the server supports gets a clear "update the MCP server" error instead of a generic mismatch message.
 - **Node.js 20+ is now required** to run the server (SDK v2 requirement; declared in `engines` and the MCPB manifest). Check `node --version` where the MCP host spawns the server.
