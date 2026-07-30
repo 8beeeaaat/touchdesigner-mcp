@@ -28,7 +28,7 @@ TouchDesigner MCP を各種 AI エージェントおよびプラットフォー�
 ## 前提条件
 
 - **TouchDesigner**（最新版推奨）
-- NPM 利用の場合: **Node.js 18.x** 以上。 _Claude Desktopをご利用の場合は不要です_
+- NPM 利用の場合: **Node.js 20.x** 以上。 _Claude Desktopをご利用の場合は不要です_
 - Docker 利用の場合: **Docker** と **Docker Compose**
 
 ## TouchDesigner セットアップ（全方法共通）
@@ -94,7 +94,7 @@ Alt+T または Dialogs → Textport でログを確認可能です。
 
 #### 事前準備
 
-- Node.js 18.x 以上
+- Node.js 20.x 以上
 - TouchDesigner コンポーネント設置済み（[TouchDesigner セットアップ](#touchdesigner-セットアップ全方法共通)）
 
 準備ができたら、利用するクライアントに以下のいずれかの設定を登録します。
