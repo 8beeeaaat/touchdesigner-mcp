@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Patched all open Dependabot alerts: bumped `brace-expansion` and `body-parser` ([#200](https://github.com/8beeeaaat/touchdesigner-mcp/pull/200)), then resolved the remaining 9 alerts in transitive dependencies via targeted bumps and npm `overrides` ([#201](https://github.com/8beeeaaat/touchdesigner-mcp/pull/201)).
+- Bumped the transitive development dependency `postcss` (via `vitest` → `vite`) to 8.5.25, patching the source-map path-traversal advisory published after the fixes above (Dependabot alert 169, high severity, development scope only — the published package's runtime dependencies are unaffected).
 
 ### Technical
 
