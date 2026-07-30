@@ -82,10 +82,12 @@ npm run build:mcpb                       # must precede version:mcp (it hashes t
 npm version <patch|minor|major> --no-git-tag-version
 ```
 
-**If the API axis stays put** (Step 2), revert the three API files now:
+**If the API axis stays put** (Step 2), revert the three API files and the
+`expectedApiVersion` field now:
 
 ```bash
 git checkout HEAD -- src/api/index.yml td/modules/utils/version.py pyproject.toml
+npm pkg set mcpCompatibility.expectedApiVersion=<OLD_API_VERSION>
 ```
 
 Then verify the split is correct:
@@ -93,7 +95,9 @@ Then verify the split is correct:
 ```bash
 grep -H version package.json src/api/index.yml pyproject.toml
 grep MCP_API_VERSION td/modules/utils/version.py
-# package.json = NEW package version; the API-axis files = OLD API version (unless Step 2 bumped them)
+grep -A3 mcpCompatibility package.json
+# package.json version = NEW package version; the API-axis files AND
+# mcpCompatibility.expectedApiVersion = OLD API version (unless Step 2 bumped them)
 ```
 
 > The `server.json` `fileSha256` will not match the CI-rebuilt release asset —

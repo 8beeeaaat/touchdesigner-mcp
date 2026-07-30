@@ -14,7 +14,8 @@
 	"license": "MIT",
 	"mcpName": "io.github.8beeeaaat/touchdesigner-mcp-server",
 	"mcpCompatibility": {
-		"minApiVersion": "1.3.0"
+		"minApiVersion": "1.3.0",
+		"expectedApiVersion": "1.5.0"
 	},
 	"bugs": {
 		"url": "https://github.com/8beeeaaat/touchdesigner-mcp/issues"

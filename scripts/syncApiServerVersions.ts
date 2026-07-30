@@ -45,6 +45,19 @@ writeTextFile("src/api/index.yml", (contents) => {
 	return contents.replace(/version:\s*[\d.]+/, `version: ${packageVersion}`);
 });
 
+// The compatibility check compares connected components against this value,
+// so it must track the API version axis together with the three files above.
+packageJson.mcpCompatibility = {
+	...packageJson.mcpCompatibility,
+	expectedApiVersion: packageVersion,
+};
+writeFileSync(
+	packageJsonPath,
+	`${JSON.stringify(packageJson, null, "\t")}\n`,
+	"utf8",
+);
+updatedFiles.push("package.json (mcpCompatibility.expectedApiVersion)");
+
 console.log(
 	`Synchronized version ${packageVersion} across: ${updatedFiles.join(", ")}`,
 );

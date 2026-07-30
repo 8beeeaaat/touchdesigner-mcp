@@ -1,14 +1,23 @@
 import semver from "semver";
 import { MIN_COMPATIBLE_API_VERSION } from "./version.js";
 
+/**
+ * Compatibility is decided by comparing the connected TouchDesigner
+ * component's API version against the API version this release ships with
+ * (`mcpCompatibility.expectedApiVersion`), bounded below by
+ * `mcpCompatibility.minApiVersion`.
+ *
+ * The npm package version is deliberately NOT part of the decision: the
+ * package version and the API version are independent axes, so a package
+ * major bump alone must never invalidate deployed components.
+ */
 export const COMPATIBILITY_POLICY_TYPES = {
 	BELOW_MIN_VERSION: "belowMinVersion",
 	COMPATIBLE: "compatible",
-	MAJOR_MISMATCH: "majorMismatch",
-	NEWER_MINOR: "newerMinor",
+	COMPONENT_NEWER: "componentNewer",
+	COMPONENT_OUTDATED: "componentOutdated",
 	NO_VERSION: "noVersion",
-	OLDER_MINOR: "olderMinor",
-	PATCH_DIFF: "patchDiff",
+	SERVER_OUTDATED: "serverOutdated",
 } as const;
 
 export const COMPATIBILITY_POLICY_ERROR_LEVELS = {
@@ -22,6 +31,16 @@ export type CompatibilityPolicyType =
 
 export type CompatibilityPolicyErrorLevel =
 	(typeof COMPATIBILITY_POLICY_ERROR_LEVELS)[keyof typeof COMPATIBILITY_POLICY_ERROR_LEVELS];
+
+/**
+ * Arguments shared by every compatibility message generator
+ */
+export interface CompatibilityMessageArgs {
+	apiVersion: string;
+	expectedApiVersion: string;
+	mcpVersion: string;
+	minRequired: string;
+}
 
 /**
  * Compatibility policy configuration
@@ -48,43 +67,36 @@ const COMPATIBILITY_POLICY = {
 	} as const,
 
 	/**
-	 * Behavior when MAJOR versions differ
+	 * Behavior when the component's API generation (MAJOR) is newer than this
+	 * server release supports
 	 * - 'error': Stop processing with error
 	 */
-	[COMPATIBILITY_POLICY_TYPES.MAJOR_MISMATCH]: {
+	[COMPATIBILITY_POLICY_TYPES.SERVER_OUTDATED]: {
 		compatible: false,
 		level: COMPATIBILITY_POLICY_ERROR_LEVELS.ERROR,
-		message: generateMajorMismatchMessage,
+		message: generateServerOutdatedMessage,
 	} as const,
 
 	/**
-	 * Behavior when MCP server has newer MINOR version than API server
-	 * - 'warning': Continue with warning only
-	 */
-	[COMPATIBILITY_POLICY_TYPES.NEWER_MINOR]: {
-		compatible: true,
-		level: COMPATIBILITY_POLICY_ERROR_LEVELS.WARNING,
-		message: generateNewerMinorMessage,
-	} as const,
-
-	/**
-	 * Behavior when API server has newer MINOR version than MCP server
+	 * Behavior when the component is older than the API version this release
+	 * ships with (but at or above the minimum)
 	 * - 'warning': Continue with warning
 	 */
-	[COMPATIBILITY_POLICY_TYPES.OLDER_MINOR]: {
+	[COMPATIBILITY_POLICY_TYPES.COMPONENT_OUTDATED]: {
 		compatible: true,
 		level: COMPATIBILITY_POLICY_ERROR_LEVELS.WARNING,
-		message: generateOlderMinorMessage,
+		message: generateComponentOutdatedMessage,
 	} as const,
 
 	/**
-	 * Behavior when PATCH versions differ
-	 * - 'allow': Allow without logging
+	 * Behavior when the component is newer than the API version this release
+	 * ships with (same generation)
+	 * - 'warning': Continue with warning
 	 */
-	[COMPATIBILITY_POLICY_TYPES.PATCH_DIFF]: {
+	[COMPATIBILITY_POLICY_TYPES.COMPONENT_NEWER]: {
 		compatible: true,
-		level: COMPATIBILITY_POLICY_ERROR_LEVELS.ALLOW,
-		message: generatePatchDiffMessage,
+		level: COMPATIBILITY_POLICY_ERROR_LEVELS.WARNING,
+		message: generateComponentNewerMessage,
 	} as const,
 
 	/**
@@ -99,13 +111,13 @@ const COMPATIBILITY_POLICY = {
 } as const;
 
 export const getCompatibilityPolicyType = (params: {
-	mcpVersion: string;
 	apiVersion: string;
+	expectedApiVersion: string;
 }): CompatibilityPolicyType => {
-	const mcpSemVer = semver.coerce(params.mcpVersion);
 	const apiSemVer = semver.coerce(params.apiVersion);
+	const expectedSemVer = semver.coerce(params.expectedApiVersion);
 
-	if (!mcpSemVer || !apiSemVer) {
+	if (!apiSemVer || !expectedSemVer) {
 		return COMPATIBILITY_POLICY_TYPES.NO_VERSION;
 	}
 
@@ -113,20 +125,16 @@ export const getCompatibilityPolicyType = (params: {
 		return COMPATIBILITY_POLICY_TYPES.BELOW_MIN_VERSION;
 	}
 
-	if (mcpSemVer.major !== apiSemVer.major) {
-		return COMPATIBILITY_POLICY_TYPES.MAJOR_MISMATCH;
+	if (apiSemVer.major > expectedSemVer.major) {
+		return COMPATIBILITY_POLICY_TYPES.SERVER_OUTDATED;
 	}
 
-	if (mcpSemVer.minor > apiSemVer.minor) {
-		return COMPATIBILITY_POLICY_TYPES.NEWER_MINOR;
+	if (semver.lt(apiSemVer, expectedSemVer)) {
+		return COMPATIBILITY_POLICY_TYPES.COMPONENT_OUTDATED;
 	}
 
-	if (mcpSemVer.minor < apiSemVer.minor) {
-		return COMPATIBILITY_POLICY_TYPES.OLDER_MINOR;
-	}
-
-	if (mcpSemVer.patch !== apiSemVer.patch) {
-		return COMPATIBILITY_POLICY_TYPES.PATCH_DIFF;
+	if (semver.gt(apiSemVer, expectedSemVer)) {
+		return COMPATIBILITY_POLICY_TYPES.COMPONENT_NEWER;
 	}
 
 	return COMPATIBILITY_POLICY_TYPES.COMPATIBLE;
@@ -154,10 +162,9 @@ For more details on compatibility, see: https://github.com/8beeeaaat/touchdesign
 /**
  * Generate error message for unknown version information
  */
-export function generateNoVersionMessage(args: {
-	apiVersion: string;
-	mcpVersion: string;
-}): string {
+export function generateNoVersionMessage(
+	args: CompatibilityMessageArgs,
+): string {
 	return `
 🚨 Version Information Missing
 
@@ -175,32 +182,11 @@ ${updateGuide}
 }
 
 /**
- * Generate error message for MAJOR version mismatch
- */
-export function generateMajorMismatchMessage(args: {
-	apiVersion: string;
-	mcpVersion: string;
-}): string {
-	return `
-🚨 Version Incompatibility Detected
-
-MCP Server:  ${args.mcpVersion}
-API Server:  ${args.apiVersion}
-
-MAJOR version mismatch indicates breaking changes.
-Please ensure both components are updated to compatible versions.
-
-${updateGuide}
-`.trim();
-}
-
-/**
  * Generate error message when API version is below minimum compatible version
  */
-export function generateMinVersionMessage(args: {
-	apiVersion: string;
-	minRequired: string;
-}): string {
+export function generateMinVersionMessage(
+	args: CompatibilityMessageArgs,
+): string {
 	return `
 ⚠️  TouchDesigner API Server Update Required
 
@@ -214,17 +200,35 @@ ${updateGuide}
 }
 
 /**
- * Generate warning message when MCP server has newer MINOR version
+ * Generate error message when the component's API generation is newer than
+ * this MCP server release supports
  */
-export function generateNewerMinorMessage(args: {
-	apiVersion: string;
-	mcpVersion: string;
-}): string {
+export function generateServerOutdatedMessage(
+	args: CompatibilityMessageArgs,
+): string {
+	return `
+🚨 MCP Server Update Required
+
+API Server:            ${args.apiVersion}
+Supported API version: ${args.expectedApiVersion}
+
+Your TouchDesigner components speak a newer API generation than this MCP server supports.
+Update the MCP server (e.g. restart the MCP client so \`npx -y touchdesigner-mcp-server@latest\` picks up the latest release, or update the pinned package version).
+`.trim();
+}
+
+/**
+ * Generate warning message when the component is older than the API version
+ * this release ships with
+ */
+export function generateComponentOutdatedMessage(
+	args: CompatibilityMessageArgs,
+): string {
 	return `
 💡 Update Recommended
 
-MCP Server:  ${args.mcpVersion}
-API Server:  ${args.apiVersion}
+API Server:         ${args.apiVersion}
+Latest API version: ${args.expectedApiVersion}
 
 The MCP server has newer features that may not work with your TouchDesigner components.
 Consider updating for the best experience.
@@ -234,56 +238,29 @@ ${updateGuide}
 }
 
 /**
- * Generate warning message when API server has newer MINOR version
+ * Generate warning message when the component is newer than the API version
+ * this release ships with (same generation)
  */
-export function generateOlderMinorMessage(args: {
-	apiVersion: string;
-	mcpVersion: string;
-}): string {
+export function generateComponentNewerMessage(
+	args: CompatibilityMessageArgs,
+): string {
 	return `
 💡 Update Recommended
 
-MCP Server:  ${args.mcpVersion}
-API Server:  ${args.apiVersion}
+API Server:            ${args.apiVersion}
+Supported API version: ${args.expectedApiVersion}
 
 Your TouchDesigner components have features that may not be supported by the MCP server.
 Consider updating the MCP server for the best experience.
-
-${updateGuide}
-`.trim();
-}
-
-/**
- * Generate warning message when PATCH versions differ
- */
-export function generatePatchDiffMessage(args: {
-	apiVersion: string;
-	mcpVersion: string;
-}): string {
-	return `
-💡 Patch Version Mismatch
-
-MCP Server:  ${args.mcpVersion}
-API Server:  ${args.apiVersion}
-
-The MCP server and TouchDesigner components have different PATCH versions.
-While generally compatible, updating both to the latest versions is recommended.
-
-${updateGuide}
 `.trim();
 }
 
 /**
  * Generate info message when versions are fully compatible
- *
- * @param mcpVersion MCP server version
- * @param apiVersion TouchDesigner API server version
- * @returns Info message
  */
-export function generateFullyCompatibleMessage(args: {
-	apiVersion: string;
-	mcpVersion: string;
-}): string {
+export function generateFullyCompatibleMessage(
+	args: CompatibilityMessageArgs,
+): string {
 	return `
 ✅ Versions Fully Compatible
 

@@ -6,6 +6,7 @@ type PackageJson = {
 	version?: string;
 	mcpCompatibility?: {
 		minApiVersion?: string;
+		expectedApiVersion?: string;
 	};
 };
 
@@ -23,9 +24,7 @@ export const MCP_SERVER_VERSION = getMcpServerVersion();
  * Loaded from package.json's mcpCompatibility.minApiVersion field.
  * Falls back to the current package version if undefined.
  *
- * API Server must be at or above this version.
- * - MAJOR mismatch: Error
- * - MINOR/PATCH differences: Warning or allow
+ * API Server components below this version are rejected with an error.
  *
  * Update when:
  * - Introducing breaking API changes
@@ -34,3 +33,19 @@ export const MCP_SERVER_VERSION = getMcpServerVersion();
 export const getMinCompatibleApiVersion = () =>
 	packageJson.mcpCompatibility?.minApiVersion ?? MCP_SERVER_VERSION;
 export const MIN_COMPATIBLE_API_VERSION = getMinCompatibleApiVersion();
+
+/**
+ * TouchDesigner API Server version this MCP server release ships with
+ *
+ * Loaded from package.json's mcpCompatibility.expectedApiVersion field
+ * (kept in sync with the API version axis by scripts/syncApiServerVersions.ts).
+ * Falls back to the minimum compatible version if undefined.
+ *
+ * The compatibility check compares the connected component against THIS value,
+ * not against the npm package version — the two version axes are independent,
+ * so a package major bump alone must never invalidate deployed components.
+ */
+export const getExpectedApiVersion = () =>
+	packageJson.mcpCompatibility?.expectedApiVersion ??
+	getMinCompatibleApiVersion();
+export const EXPECTED_API_VERSION = getExpectedApiVersion();
