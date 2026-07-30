@@ -8,6 +8,7 @@ import {
 import type { ILogger } from "../core/logger.js";
 import { createErrorResult, createSuccessResult } from "../core/result.js";
 import {
+	EXPECTED_API_VERSION,
 	MCP_SERVER_VERSION,
 	MIN_COMPATIBLE_API_VERSION,
 } from "../core/version.js";
@@ -592,10 +593,14 @@ Original error: ${error}`;
 	}
 
 	private checkVersionCompatibility(mcpVersion: string, apiVersion: string) {
-		const policyType = getCompatibilityPolicyType({ apiVersion, mcpVersion });
+		const policyType = getCompatibilityPolicyType({
+			apiVersion,
+			expectedApiVersion: EXPECTED_API_VERSION,
+		});
 		const policy = getCompatibilityPolicy(policyType);
 		const details = {
 			apiVersion,
+			expectedApiVersion: EXPECTED_API_VERSION,
 			mcpVersion,
 			minRequired: MIN_COMPATIBLE_API_VERSION,
 		};

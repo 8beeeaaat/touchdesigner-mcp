@@ -69,21 +69,15 @@ See the **[Developer Guide](docs/development.md)** for all developer-facing docu
 
 ### Troubleshooting version compatibility
 
-The MCP server uses **semantic versioning** for flexible compatibility checks
+The MCP server and the TouchDesigner component are versioned on **two independent axes**: the npm package version and the **API version** (the contract between the MCP server and the `.tox` component). Each release declares the API version it ships with (`expectedApiVersion`) and the minimum it supports (`minApiVersion`, currently 1.3.0). The connected component's API version is compared against those two values — **the npm package version itself never gates compatibility**, so updating the MCP server alone never invalidates a supported component.
 
-| MCP Server | API Server | Minimum compatible API version | Behavior | Status | Notes |
-|------------|------------|----------------|----------|--------|-------|
-| 1.3.x | 1.3.0 | 1.3.0 | ✅ Works normally | Compatible | Recommended baseline configuration |
-| 1.3.x | 1.4.0 | 1.3.0 | ⚠️ Warning shown, continues | Warning | Older MCP MINOR with newer API may lack new features |
-| 1.4.0 | 1.3.x | 1.3.0 | ⚠️ Warning shown, continues | Warning | Newer MCP MINOR may have additional features |
-| 1.3.2 | 1.3.1 | 1.3.2 | ❌ Execution stops | Error | API below minimum compatible version |
-| 2.0.0 | 1.x.x | N/A | ❌ Execution stops | Error | Different MAJOR = breaking changes |
-
-**Compatibility Rules**:
-
-- ✅ **Compatible**: Same MAJOR version AND API version ≥ 1.3.0 (minimum compatible version)
-- ⚠️ **Warning**: Different MINOR or PATCH versions within the same MAJOR version (shows warning but continues execution)
-- ❌ **Error**: Different MAJOR versions OR API server < 1.3.0 (execution stops immediately, update required)
+| API Server (component) | Condition | Behavior | Status |
+|------------------------|-----------|----------|--------|
+| = expected API version | Matches the shipped `.tox` | ✅ Works silently | Compatible |
+| ≥ minimum, < expected | Older component | ⚠️ "Update Recommended" notice appended to responses, continues | Warning |
+| > expected, same MAJOR | Newer component | ⚠️ Warning to update the MCP server, continues | Warning |
+| MAJOR above expected | Newer API generation | ❌ Execution stops — update the MCP server | Error |
+| < minimum (or missing) | Too old | ❌ Execution stops — update the component | Error |
 
 - **To resolve compatibility errors:**
   1. Download the latest [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) from the releases page.
@@ -91,7 +85,7 @@ The MCP server uses **semantic versioning** for flexible compatibility checks
   3. Remove the old `mcp_webserver_base` component from your TouchDesigner project and import the `.tox` from the new folder.
   4. Restart TouchDesigner and the AI agent running the MCP server (e.g., Claude Desktop).
 
-- **For developers:** When developing locally, run `npm run version` after editing `package.json` (or simply use `npm version ...`). This keeps the Python API (`pyproject.toml` + `td/modules/utils/version.py`), MCP bundle manifest, and registry metadata in sync so that the runtime compatibility check succeeds.
+- **For developers:** When developing locally, run `npm run version` after editing `package.json` (or simply use `npm version ...`). This keeps the Python API (`pyproject.toml` + `td/modules/utils/version.py`), `mcpCompatibility.expectedApiVersion`, MCP bundle manifest, and registry metadata in sync so that the runtime compatibility check succeeds.
 
 For a deeper look at how the MCP server enforces these rules, see [Version Compatibility Verification](docs/architecture.md#version-compatibility-verification).
 

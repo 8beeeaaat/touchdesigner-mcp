@@ -67,6 +67,9 @@ changed. If a **client would behave differently**, the axis moves. If not, rever
 - `src/api/index.yml` — `info.version`
 - `td/modules/utils/version.py` — `MCP_API_VERSION`
 - `pyproject.toml` — `version`
+- `package.json` — `mcpCompatibility.expectedApiVersion` (the API version this
+  release ships with; the runtime compatibility check compares the connected
+  component against THIS value, never against the package version)
 
 `npm version <level>` runs the `version` npm script, which is
 `run-p version:*` → **both** `version:api` and `version:mcp` fire. That is why
@@ -100,9 +103,13 @@ restore the three API files to their pre-bump values **after** running
 ```bash
 # Restore API-axis files to the last release's values (they must NOT show the new number).
 git checkout HEAD -- src/api/index.yml td/modules/utils/version.py pyproject.toml
+# expectedApiVersion lives inside package.json (which also holds the NEW package
+# version), so it cannot be reverted with git checkout — set it back explicitly:
+npm pkg set mcpCompatibility.expectedApiVersion=<OLD_API_VERSION>
 # Verify they still read the OLD API version (e.g. 1.4.3), not the new package version.
 grep -H version src/api/index.yml pyproject.toml
 grep MCP_API_VERSION td/modules/utils/version.py
+grep -A3 mcpCompatibility package.json
 ```
 
 The generated `td/modules/td_server/openapi_server/openapi/openapi.yaml` will

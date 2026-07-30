@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HTTP mode shares a single `TouchDesignerClient` across the request-scoped server instances, so the TouchDesigner version-compatibility check result stays cached for its TTL instead of re-running on every stateless request.
 - `ConsoleLogger` renders non-string log data with `util.inspect`, preserving structured details that the MCP logging channel used to carry.
 
+### Fixed
+
+- The TouchDesigner version-compatibility check no longer compares the npm package version against the component's API version. It now compares the component against the API version the release ships with (`mcpCompatibility.expectedApiVersion`) bounded by `minApiVersion`, so bumping the npm package version alone can never invalidate deployed `.tox` components. Previously a package MAJOR bump would have hard-stopped every tool call against every existing component even though the actual API contract was unchanged. A component with a newer API generation than the server supports now gets a clear "update the MCP server" error, and `scripts/syncApiServerVersions.ts` keeps `expectedApiVersion` in sync with the API version axis.
+
 ### Removed
 
 - Removed the session management layer (`TransportFactory`, `TransportRegistry`, `SessionManager`, `SessionConfig`) — protocol revision 2026-07-28 makes Streamable HTTP stateless, serving every request with a fresh server instance.
