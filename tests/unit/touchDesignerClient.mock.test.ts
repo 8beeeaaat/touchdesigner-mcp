@@ -30,6 +30,8 @@ vi.mock("../../src/gen/endpoints/TouchDesignerAPI", async () => {
 
 vi.mock("../../src/core/version", async () => {
 	return {
+		EXPECTED_API_VERSION: "1.3.1",
+		getExpectedApiVersion: vi.fn(() => "1.3.1"),
 		getMcpServerVersion: vi.fn(() => "1.3.1"),
 		getMinCompatibleApiVersion: vi.fn(() => "1.3.0"),
 		MCP_SERVER_VERSION: "1.3.1",
@@ -207,7 +209,7 @@ describe("TouchDesignerClient with mocks", () => {
 			expect(client.getAdditionalToolResultContents()).toBeNull();
 		});
 
-		test("should not surface compatibility notice for PATCH differences", async () => {
+		test("should surface compatibility notice for PATCH differences from the shipped API version", async () => {
 			vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
 				data: {
 					mcpApiVersion: "1.3.2",
@@ -224,7 +226,7 @@ describe("TouchDesignerClient with mocks", () => {
 			const result = await client.getTdInfo();
 
 			expect(result.success).toBe(true);
-			expect(client.getAdditionalToolResultContents()).toBeNull();
+			expect(client.getAdditionalToolResultContents()).not.toBeNull();
 
 			vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue(
 				compatibilityResponse,
@@ -233,7 +235,7 @@ describe("TouchDesignerClient with mocks", () => {
 			expect(client.getAdditionalToolResultContents()).toBeNull();
 		});
 
-		test("should reject different MAJOR version", async () => {
+		test("should reject a component from a newer API generation", async () => {
 			vi.mocked(touchDesignerAPI.getTdInfo).mockResolvedValue({
 				data: {
 					mcpApiVersion: "2.0.0",
@@ -247,7 +249,9 @@ describe("TouchDesignerClient with mocks", () => {
 			});
 
 			const client = new TouchDesignerClient({ logger: nullLogger });
-			await expect(client.getTdInfo()).rejects.toThrow("MAJOR version");
+			await expect(client.getTdInfo()).rejects.toThrow(
+				"MCP Server Update Required",
+			);
 		});
 
 		test("should reject version below minimum compatible version", async () => {
@@ -303,24 +307,26 @@ describe("TouchDesignerClient with mocks", () => {
 			);
 		});
 
-		test("should warn when MCP is newer MINOR", async () => {
+		test("should warn when the component is older than the shipped API version", async () => {
 			const mockLogger: ILogger = {
 				sendLog: vi.fn(),
 			};
 
-			vi.mocked(version.getMcpServerVersion).mockReturnValue("1.4.0");
-			vi.mocked(version).MCP_SERVER_VERSION = "1.4.0";
+			vi.mocked(version).EXPECTED_API_VERSION = "1.4.0";
+			try {
+				const client = new TouchDesignerClient({ logger: mockLogger });
+				const result = await client.getTdInfo();
 
-			const client = new TouchDesignerClient({ logger: mockLogger });
-			const result = await client.getTdInfo();
-
-			expect(result.success).toBe(true);
-			expect(mockLogger.sendLog).toHaveBeenCalledWith(
-				expect.objectContaining({
-					level: "warning",
-					logger: "TouchDesignerClient",
-				}),
-			);
+				expect(result.success).toBe(true);
+				expect(mockLogger.sendLog).toHaveBeenCalledWith(
+					expect.objectContaining({
+						level: "warning",
+						logger: "TouchDesignerClient",
+					}),
+				);
+			} finally {
+				vi.mocked(version).EXPECTED_API_VERSION = "1.3.1";
+			}
 		});
 
 		test("should allow API server with newer MINOR", async () => {
