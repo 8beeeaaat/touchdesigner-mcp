@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-07-30
 
 ### Upgrade Notes
 
@@ -26,19 +26,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated the MCP protocol implementation to specification revision 2026-07-28: migrated from `@modelcontextprotocol/sdk` 1.29.0 to the SDK v2 packages (`@modelcontextprotocol/server`, `@modelcontextprotocol/node`, `@modelcontextprotocol/express`, `@modelcontextprotocol/core` 2.0.0). stdio serving goes through `serveStdio` and HTTP serving through `createMcpHandler`, each serving 2026-07-28 and the 2025-era protocol from the same tool/prompt registrations. Responses now carry the revision's `resultType` field, list results the required `ttlMs`/`cacheScope` cache hints ([SEP-2549](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2549)), and the standard `Mcp-Method`/`Mcp-Name` request headers are validated on the modern HTTP path ([SEP-2243](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2243)).
-- Tools are registered through the v2 `registerTool` API and prompts through `registerPrompt` with Zod argument schemas (replacing the deprecated variadic `server.tool()` and hand-written low-level `prompts/list` / `prompts/get` handlers). Tool and prompt wire behavior is unchanged apart from the new protocol fields.
-- HTTP mode shares a single `TouchDesignerClient` across the request-scoped server instances, so the TouchDesigner version-compatibility check result stays cached for its TTL instead of re-running on every stateless request.
-- `ConsoleLogger` renders non-string log data with `util.inspect`, preserving structured details that the MCP logging channel used to carry.
+- Updated the MCP protocol implementation to specification revision 2026-07-28: migrated from `@modelcontextprotocol/sdk` 1.29.0 to the SDK v2 packages (`@modelcontextprotocol/server`, `@modelcontextprotocol/node`, `@modelcontextprotocol/express`, `@modelcontextprotocol/core` 2.0.0). stdio serving goes through `serveStdio` and HTTP serving through `createMcpHandler`, each serving 2026-07-28 and the 2025-era protocol from the same tool/prompt registrations. Responses now carry the revision's `resultType` field, list results the required `ttlMs`/`cacheScope` cache hints ([SEP-2549](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2549)), and the standard `Mcp-Method`/`Mcp-Name` request headers are validated on the modern HTTP path ([SEP-2243](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2243)) ([#206](https://github.com/8beeeaaat/touchdesigner-mcp/pull/206)).
+- Tools are registered through the v2 `registerTool` API and prompts through `registerPrompt` with Zod argument schemas (replacing the deprecated variadic `server.tool()` and hand-written low-level `prompts/list` / `prompts/get` handlers). Tool and prompt wire behavior is unchanged apart from the new protocol fields ([#206](https://github.com/8beeeaaat/touchdesigner-mcp/pull/206)).
+- HTTP mode shares a single `TouchDesignerClient` across the request-scoped server instances, so the TouchDesigner version-compatibility check result stays cached for its TTL instead of re-running on every stateless request ([#206](https://github.com/8beeeaaat/touchdesigner-mcp/pull/206)).
+- `ConsoleLogger` renders non-string log data with `util.inspect`, preserving structured details that the MCP logging channel used to carry ([#206](https://github.com/8beeeaaat/touchdesigner-mcp/pull/206)).
+- Released version `2.0.0` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), and server registry metadata (`server.json`), including the updated MCPB download URL and checksum so npm and MCPB installations resolve the same release. The major bump reflects the breaking changes above (Node.js 20+ requirement, HTTP session removal, MCP logging capability removal). The MCP API version (`src/api/index.yml`, `td/modules/utils/version.py`, `pyproject.toml`) stays at `1.5.0` since this release contains no server/API contract changes — no `.tox` re-import is required.
 
 ### Removed
 
-- Removed the session management layer (`TransportFactory`, `TransportRegistry`, `SessionManager`, `SessionConfig`) — protocol revision 2026-07-28 makes Streamable HTTP stateless, serving every request with a fresh server instance.
-- Removed the deprecated MCP `logging` capability and the `McpLogger`; logging now writes to stderr (SEP-2577 migration path).
+- Removed the session management layer (`TransportFactory`, `TransportRegistry`, `SessionManager`, `SessionConfig`) — protocol revision 2026-07-28 makes Streamable HTTP stateless, serving every request with a fresh server instance ([#206](https://github.com/8beeeaaat/touchdesigner-mcp/pull/206)).
+- Removed the deprecated MCP `logging` capability and the `McpLogger`; logging now writes to stderr (SEP-2577 migration path) ([#206](https://github.com/8beeeaaat/touchdesigner-mcp/pull/206)).
+
+### Security
+
+- Patched all open Dependabot alerts: bumped `brace-expansion` and `body-parser` ([#200](https://github.com/8beeeaaat/touchdesigner-mcp/pull/200)), then resolved the remaining 9 alerts in transitive dependencies via targeted bumps and npm `overrides` ([#201](https://github.com/8beeeaaat/touchdesigner-mcp/pull/201)).
 
 ### Technical
 
-- Added an E2E test suite (`npm run test:e2e`, also run in CI) that spawns the built `dist/cli.js` and drives it with the real MCP SDK v2 client (`@modelcontextprotocol/client`) over both transports: 2026-07-28 negotiation via `server/discover` (auto and pinned modes), the 2025-era legacy fallback, `tools/list` / `tools/call` / `prompts/get`, and the stateless `/health` shape. Readiness uses health-endpoint polling rather than fixed sleeps; no TouchDesigner instance is required.
+- Added an E2E test suite (`npm run test:e2e`, also run in CI) that spawns the built `dist/cli.js` and drives it with the real MCP SDK v2 client (`@modelcontextprotocol/client`) over both transports: 2026-07-28 negotiation via `server/discover` (auto and pinned modes), the 2025-era legacy fallback, `tools/list` / `tools/call` / `prompts/get`, and the stateless `/health` shape. Readiness uses health-endpoint polling rather than fixed sleeps; no TouchDesigner instance is required. The `integration-test-guard` pre-push hook accepts `tests/e2e/` changes as coverage evidence ([#206](https://github.com/8beeeaaat/touchdesigner-mcp/pull/206)).
+- Ported the maintainer release tooling to Codex and formalized the CHANGELOG's `Upgrade Notes` / `Contributors` sections in the release skills ([#198](https://github.com/8beeeaaat/touchdesigner-mcp/pull/198)); added and refined a pull-request template ([#203](https://github.com/8beeeaaat/touchdesigner-mcp/pull/203), [#204](https://github.com/8beeeaaat/touchdesigner-mcp/pull/204)).
+- **Dependency Updates**: replaced the MCP SDK and hardened transitive dependencies.
+  - `@modelcontextprotocol/sdk` 1.29.0 → `@modelcontextprotocol/server` / `node` / `express` / `core` ^2.0.0 (runtime), `@modelcontextprotocol/client` ^2.0.0 (dev, E2E tests)
+  - Dependabot fixes for `brace-expansion`, `body-parser`, and 9 transitive alerts via `overrides` ([#200](https://github.com/8beeeaaat/touchdesigner-mcp/pull/200), [#201](https://github.com/8beeeaaat/touchdesigner-mcp/pull/201))
+
+### Contributors
+
+- [@8beeeaaat](https://github.com/8beeeaaat) — MCP protocol revision 2026-07-28 migration, stateless transports, and E2E suite ([#206](https://github.com/8beeeaaat/touchdesigner-mcp/pull/206)); release tooling port ([#198](https://github.com/8beeeaaat/touchdesigner-mcp/pull/198)); dependency security patches ([#200](https://github.com/8beeeaaat/touchdesigner-mcp/pull/200), [#201](https://github.com/8beeeaaat/touchdesigner-mcp/pull/201)); PR template ([#203](https://github.com/8beeeaaat/touchdesigner-mcp/pull/203), [#204](https://github.com/8beeeaaat/touchdesigner-mcp/pull/204))
 
 ## [1.5.0] - 2026-07-11
 
