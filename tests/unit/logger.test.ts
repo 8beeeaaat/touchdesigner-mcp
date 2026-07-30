@@ -44,6 +44,27 @@ describe("Logger", () => {
 			expect(output).toContain("MyLogger");
 		});
 
+		it("should preserve structured error details in the output", () => {
+			const logger = new ConsoleLogger();
+
+			logger.sendLog({
+				data: {
+					error: new Error("TouchDesigner request failed"),
+					errorType: "api_response",
+					stack: "diagnostic stack",
+				},
+				level: "error",
+				logger: "TouchDesignerClient",
+			});
+
+			const output = consoleErrorSpy.mock.calls[0][0] as string;
+			expect(output).toContain("TouchDesigner request failed");
+			expect(output).toContain("errorType");
+			expect(output).toContain("api_response");
+			expect(output).toContain("diagnostic stack");
+			expect(output).not.toContain("[object Object]");
+		});
+
 		it("should never throw", () => {
 			const logger = new ConsoleLogger();
 

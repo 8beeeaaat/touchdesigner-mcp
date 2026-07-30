@@ -1,3 +1,5 @@
+import { inspect } from "node:util";
+
 /**
  * Log severity levels (RFC 5424, matching MCP logging levels)
  */
@@ -39,7 +41,15 @@ export class ConsoleLogger implements ILogger {
 		const timestamp = new Date().toISOString();
 		const level = args.level?.toUpperCase() || "INFO";
 		const logger = args.logger || "unknown";
-		const data = args.data;
+		const data =
+			typeof args.data === "string"
+				? args.data
+				: inspect(args.data, {
+						breakLength: Number.POSITIVE_INFINITY,
+						compact: true,
+						customInspect: false,
+						depth: null,
+					});
 
 		console.error(`[${timestamp}] [${level}] [${logger}] ${data}`);
 	}
