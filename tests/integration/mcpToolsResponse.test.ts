@@ -10,7 +10,7 @@ type ToolHandler = (params?: Record<string, unknown>) => Promise<unknown>;
 class MockMcpServer {
 	public tools = new Map<string, ToolHandler>();
 
-	tool(name: string, ...rest: unknown[]): void {
+	registerTool(name: string, ...rest: unknown[]): void {
 		const args = [...rest];
 		const handler = args.pop();
 		if (typeof handler === "function") {
@@ -168,7 +168,7 @@ DATA DESCRIPTORS
 describe("MCP tool responses", () => {
 	const server = new MockMcpServer();
 	registerTools(
-		server as unknown as import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
+		server as unknown as import("@modelcontextprotocol/server").McpServer,
 		logger,
 		createMockTdClient(),
 	);
@@ -260,7 +260,7 @@ describe("MCP tool responses", () => {
 		})) as TouchDesignerClient["execPythonScript"];
 
 		registerTools(
-			scriptServer as unknown as import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
+			scriptServer as unknown as import("@modelcontextprotocol/server").McpServer,
 			logger,
 			scriptClient,
 		);
@@ -289,7 +289,7 @@ describe("MCP tool responses", () => {
 		})) as TouchDesignerClient["execPythonScript"];
 
 		registerTools(
-			imageServer as unknown as import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
+			imageServer as unknown as import("@modelcontextprotocol/server").McpServer,
 			logger,
 			imageClient,
 		);
@@ -323,7 +323,7 @@ describe("MCP tool responses", () => {
 		})) as TouchDesignerClient["execPythonScript"];
 
 		registerTools(
-			failingServer as unknown as import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
+			failingServer as unknown as import("@modelcontextprotocol/server").McpServer,
 			logger,
 			failingClient,
 		);
@@ -380,7 +380,7 @@ describe("MCP tool responses", () => {
 		})) as TouchDesignerClient["getModuleHelp"];
 
 		registerTools(
-			failingServer as unknown as import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
+			failingServer as unknown as import("@modelcontextprotocol/server").McpServer,
 			logger,
 			failingClient,
 		);

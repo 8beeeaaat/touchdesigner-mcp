@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TouchDesignerServer } from "../../src/server/touchDesignerServer.js";
 
@@ -15,7 +15,7 @@ vi.mock("../../src/features/tools/index.js", () => ({
 	registerTools: vi.fn(),
 }));
 
-vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => ({
+vi.mock("@modelcontextprotocol/server", () => ({
 	McpServer: vi.fn(function MockMcpServer(this: Record<string, unknown>) {
 		this.connect = vi.fn().mockResolvedValue(undefined);
 		this.close = vi.fn().mockResolvedValue(undefined);

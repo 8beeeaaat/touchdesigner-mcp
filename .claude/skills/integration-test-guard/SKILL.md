@@ -7,14 +7,14 @@ description: >
   layer, or the TD-side Python API (src/api, src/features/tools, src/server,
   src/tdClient, src/transport, td/modules/mcp). Also triggered by the
   integration-test-guard PreToolUse hook, which blocks a `git push` whose
-  outgoing commits touch those paths without a tests/integration change.
-  Decide which suite fits, add or update the test, and run it.
+  outgoing commits touch those paths without a tests/integration or tests/e2e
+  change. Decide which suite fits, add or update the test, and run it.
 ---
 
 # Integration Test Guard
 
-When you change the **MCP server / API surface**, add or update an integration
-test in `tests/integration/`. The `integration-test-guard` hook blocks
+When you change the **MCP server / API surface**, add or update a test in
+`tests/integration/` or `tests/e2e/`. The `integration-test-guard` hook blocks
 `git push` when the outgoing commits touch API/MCP source without one (override
 with `SKIP_ITEST_GUARD=1` only when a test genuinely does not apply).
 
@@ -30,7 +30,8 @@ with `SKIP_ITEST_GUARD=1` only when a test genuinely does not apply).
 |---|---|---|
 | MCP tool **response shape / formatting**, tool registration, manifest | `tests/integration/mcpToolsResponse.test.ts` | No — uses `server.getTool(...)` with mocked client |
 | **Client ↔ WebServer behavior** (create/update/delete/exec, TD-side Python) | `tests/integration/touchDesignerClientAndWebServer.test.ts` | **Yes** — real `TouchDesignerClient` over HTTP |
-| **HTTP transport** (sessions, `/mcp`, `/health`) | `tests/integration/httpTransport.test.ts` | No live TD, but starts the HTTP server |
+| **HTTP transport** (stateless `/mcp` serving, `/health`) | `tests/integration/httpTransport.test.ts` | No live TD, but starts the HTTP server |
+| **Protocol-era behavior of the built CLI** (2026-07-28 negotiation via `server/discover`, 2025-era fallback, `serveStdio` / `createMcpHandler` wiring, CLI args) | `tests/e2e/*.e2e.test.ts` | No — spawns `dist/cli.js`, drives it with the real MCP SDK client |
 
 If the change spans two categories, cover each in its suite.
 
@@ -54,6 +55,7 @@ that can be satisfied without the behavior actually working.
 # TD-independent suites:
 npx vitest run tests/integration/mcpToolsResponse.test.ts
 npx vitest run tests/integration/httpTransport.test.ts
+npm run test:e2e   # builds dist/ then drives dist/cli.js with the real SDK client
 
 # Live-TD suite (needs TouchDesigner running with the .tox on 9981):
 TD_WEB_SERVER_HOST=http://127.0.0.1 TD_WEB_SERVER_PORT=9981 \

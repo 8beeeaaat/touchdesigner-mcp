@@ -1,4 +1,4 @@
-import type { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResultSchema } from "@modelcontextprotocol/core";
 import axios from "axios";
 import type { z } from "zod";
 import {

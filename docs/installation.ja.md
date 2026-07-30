@@ -28,7 +28,7 @@ TouchDesigner MCP を各種 AI エージェントおよびプラットフォー�
 ## 前提条件
 
 - **TouchDesigner**（最新版推奨）
-- NPM 利用の場合: **Node.js 18.x** 以上。 _Claude Desktopをご利用の場合は不要です_
+- NPM 利用の場合: **Node.js 20.x** 以上。 _Claude Desktopをご利用の場合は不要です_
 - Docker 利用の場合: **Docker** と **Docker Compose**
 
 ## TouchDesigner セットアップ（全方法共通）
@@ -94,7 +94,7 @@ Alt+T または Dialogs → Textport でログを確認可能です。
 
 #### 事前準備
 
-- Node.js 18.x 以上
+- Node.js 20.x 以上
 - TouchDesigner コンポーネント設置済み（[TouchDesigner セットアップ](#touchdesigner-セットアップ全方法共通)）
 
 準備ができたら、利用するクライアントに以下のいずれかの設定を登録します。
@@ -185,7 +185,7 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
 
 3. **コンテナを起動**
 
-##### オプションA: [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
+##### オプションA: [Streamable HTTP](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)
 
 <https://github.com/user-attachments/assets/4025f9cd-b19c-42f0-8274-7609650abd34>
 
@@ -326,7 +326,7 @@ curl http://localhost:6280/health
 | --- | --- | --- |
 | 接続方式 | 標準入出力 | HTTP/SSE |
 | 用途 | ローカル CLI / デスクトップツール | リモートエージェント、ブラウザ統合 |
-| セッション管理 | 単一接続 | TTL 付き複数セッション |
+| 状態モデル | 単一接続 | ステートレス（リクエスト単位） |
 | ポート要件 | 不要 | 必須 |
 
 ## 動作確認

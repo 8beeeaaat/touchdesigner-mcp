@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
+import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { ConsoleLogger } from "./core/logger.js";
 import { TouchDesignerServer } from "./server/touchDesignerServer.js";
+import { createTouchDesignerClient } from "./tdClient/index.js";
 import type {
 	StreamableHttpTransportConfig,
 	TransportConfig,
 } from "./transport/config.js";
 import { isStreamableHttpTransportConfig } from "./transport/config.js";
 import { ExpressHttpManager } from "./transport/expressHttpManager.js";
-import { TransportFactory } from "./transport/factory.js";
-import { SessionManager } from "./transport/sessionManager.js";
 
 // Note: Environment variables should be set by the MCP Bundle runtime or CLI arguments
 
@@ -83,7 +83,6 @@ export function parseTransportConfig(args?: string[]): TransportConfig {
 			endpoint: DEFAULT_MCP_ENDPOINT,
 			host,
 			port,
-			sessionConfig: { enabled: true },
 			type: "streamable-http",
 		};
 
@@ -98,6 +97,8 @@ export function parseTransportConfig(args?: string[]): TransportConfig {
  * Start TouchDesigner MCP server
  *
  * Supports both stdio and HTTP transport modes based on command line arguments.
+ * Both modes serve protocol revision 2026-07-28 and fall back to the 2025-era
+ * protocol for older clients.
  *
  * @param params - Server startup parameters
  * @param params.argv - Command line arguments
@@ -125,20 +126,12 @@ export async function startServer(params?: {
 		process.env.TD_WEB_SERVER_HOST = args.host;
 		process.env.TD_WEB_SERVER_PORT = args.port.toString();
 
-		// Create MCP server
-		const server = new TouchDesignerServer();
-
 		// Handle stdio mode
 		if (transportConfig.type === "stdio") {
-			const transportResult = TransportFactory.create(transportConfig);
-			if (!transportResult.success) {
-				throw transportResult.error;
-			}
-
-			const result = await server.connect(transportResult.data);
-			if (!result.success) {
-				throw new Error(`Failed to connect: ${result.error.message}`);
-			}
+			// serveStdio owns the protocol-era decision for the connection:
+			// the opening exchange selects 2026-07-28 or the legacy handshake,
+			// and one instance from the factory is pinned for the connection.
+			serveStdio(() => TouchDesignerServer.create());
 
 			console.error("MCP server started in stdio mode");
 			return;
@@ -146,24 +139,17 @@ export async function startServer(params?: {
 
 		// Handle HTTP mode
 		if (isStreamableHttpTransportConfig(transportConfig)) {
-			// Use ConsoleLogger for HTTP manager and session manager
-			// This avoids "Not connected" errors since HTTP mode doesn't have a global MCP connection
 			const logger = new ConsoleLogger();
+			const tdClient = createTouchDesignerClient({ logger });
 
-			// Create session manager if enabled
-			const sessionManager = transportConfig.sessionConfig?.enabled
-				? new SessionManager(transportConfig.sessionConfig, logger)
-				: null;
-
-			// Server factory for creating per-session instances
-			// Each session gets its own TouchDesignerServer with independent MCP protocol state
-			const serverFactory = () => TouchDesignerServer.create();
+			// MCP server state is request-scoped, while the TouchDesigner client
+			// retains compatibility results across requests for their configured TTL.
+			const serverFactory = () => TouchDesignerServer.create({ tdClient });
 
 			// Create Express HTTP manager with server factory
 			const httpManager = new ExpressHttpManager(
 				transportConfig,
 				serverFactory,
-				sessionManager,
 				logger,
 			);
 
@@ -177,19 +163,9 @@ export async function startServer(params?: {
 				`MCP server started in HTTP mode on ${transportConfig.host}:${transportConfig.port}${transportConfig.endpoint}`,
 			);
 
-			// Start session cleanup if enabled
-			if (sessionManager) {
-				sessionManager.startTTLCleanup();
-			}
-
 			// Set up graceful shutdown
 			const shutdown = async () => {
 				console.error("\nShutting down server...");
-
-				// Stop session cleanup
-				if (sessionManager) {
-					sessionManager.stopTTLCleanup();
-				}
 
 				// Stop HTTP server
 				const stopResult = await httpManager.stop();

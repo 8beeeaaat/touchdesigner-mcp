@@ -35,6 +35,7 @@ jobs:
       - run: npm run gen
       - run: npm run lint
       - run: npm run test:unit
+      - run: npm run test:e2e
       - name: Test MCPB package build
         run: |
           # Install MCPB CLI tool

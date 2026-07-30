@@ -1,37 +1,35 @@
 import type { Server as HttpServer } from "node:http";
-import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { RequestHandler } from "express";
+import { createMcpExpressApp } from "@modelcontextprotocol/express";
+import { toNodeHandler } from "@modelcontextprotocol/node";
+import type { McpHttpHandler, McpServer } from "@modelcontextprotocol/server";
+import { createMcpHandler } from "@modelcontextprotocol/server";
 import type { ILogger } from "../core/logger.js";
 import type { Result } from "../core/result.js";
 import { createErrorResult, createSuccessResult } from "../core/result.js";
 import type { StreamableHttpTransportConfig } from "./config.js";
-import { TransportRegistry } from "./transportRegistry.js";
 
 /**
  * Express HTTP Manager
  *
  * Manages HTTP server lifecycle for Streamable HTTP transport.
- * Handles multiple concurrent sessions by creating per-session transport and server instances.
+ *
+ * Serving is stateless per protocol revision 2026-07-28: there are no
+ * protocol-level sessions and no `Mcp-Session-Id` header. Every request is
+ * answered by a fresh server instance from the factory via the SDK's
+ * `createMcpHandler` entry, which speaks the 2026-07-28 revision and falls
+ * back to stateless serving for 2025-era clients on the same endpoint.
  *
  * Key Features:
- * - /mcp endpoint → routes to appropriate transport via TransportRegistry
- * - /health endpoint → reports active session count
- * - Per-session isolation → each client gets independent MCP protocol state
- * - Graceful shutdown → cleans up all active sessions
- *
- * Architecture:
- * ```
- * Client 1 → POST /mcp → TransportRegistry.getOrCreate() → Transport 1 + Server 1
- * Client 2 → POST /mcp → TransportRegistry.getOrCreate() → Transport 2 + Server 2
- * ```
+ * - /mcp endpoint → per-request stateless serving for both protocol eras
+ * - /health endpoint → liveness check
+ * - DNS rebinding protection → Host/Origin validation from the SDK Express app
+ * - Graceful shutdown → closes open subscription streams, then the HTTP server
  *
  * @example
  * ```typescript
  * const manager = new ExpressHttpManager(
  *   config,
  *   () => TouchDesignerServer.create(), // Server factory
- *   sessionManager,
  *   logger
  * );
  *
@@ -46,27 +44,24 @@ export class ExpressHttpManager {
 	private readonly config: StreamableHttpTransportConfig;
 	private readonly serverFactory: () => McpServer;
 	private readonly logger: ILogger;
-	private readonly registry: TransportRegistry;
+	private handler: McpHttpHandler | null = null;
 	private server: HttpServer | null = null;
 
 	/**
 	 * Create ExpressHttpManager with server factory
 	 *
 	 * @param config - Streamable HTTP transport configuration
-	 * @param serverFactory - Factory function to create new Server instances per session
-	 * @param sessionManager - Session manager for TTL tracking (optional)
+	 * @param serverFactory - Factory function creating a new server instance per request
 	 * @param logger - Logger instance
 	 */
 	constructor(
 		config: StreamableHttpTransportConfig,
 		serverFactory: () => McpServer,
-		sessionManager: import("./sessionManager.js").ISessionManager | null,
 		logger: ILogger,
 	) {
 		this.config = config;
 		this.serverFactory = serverFactory;
 		this.logger = logger;
-		this.registry = new TransportRegistry(config, sessionManager, logger);
 	}
 
 	/**
@@ -82,71 +77,38 @@ export class ExpressHttpManager {
 				);
 			}
 
+			const logHandlerError = (error: Error) => {
+				this.logger.sendLog({
+					data: `Error handling MCP request: ${error.message}`,
+					level: "error",
+					logger: "ExpressHttpManager",
+				});
+			};
+
+			// MCP handler serving the 2026-07-28 revision per request; 2025-era
+			// (non-envelope) traffic is served through the stateless fallback.
+			this.handler = createMcpHandler(() => this.serverFactory(), {
+				onerror: logHandlerError,
+			});
+
 			// Create Express app using SDK's factory
 			// This automatically includes DNS rebinding protection for localhost
 			const app = createMcpExpressApp({
 				host: this.config.host,
 			});
 
-			// MCP endpoint handler - routes to appropriate transport via registry
-			const handleMcpRequest: RequestHandler = async (req, res) => {
-				try {
-					// Extract session ID from header
-					const sessionId = req.headers["mcp-session-id"] as string | undefined;
-
-					// Get or create transport for this session
-					const transport = await this.registry.getOrCreate(
-						sessionId,
-						req.body,
-						this.serverFactory,
-					);
-
-					if (!transport) {
-						// Invalid session (session ID provided but not found, or non-initialize without session)
-						res.status(400).json({
-							error: {
-								code: -32000,
-								message: "Invalid session",
-							},
-							id: null,
-							jsonrpc: "2.0",
-						});
-						return;
-					}
-
-					// Delegate request to transport
-					await transport.handleRequest(req, res, req.body);
-				} catch (error) {
-					const errorMessage =
-						error instanceof Error ? error.message : String(error);
-					this.logger.sendLog({
-						data: `Error handling MCP request: ${errorMessage}`,
-						level: "error",
-						logger: "ExpressHttpManager",
-					});
-
-					if (!res.headersSent) {
-						res.status(500).json({
-							error: "Internal server error",
-						});
-					}
-				}
-			};
-
-			// Configure /mcp endpoints
-			// POST: JSON-RPC requests (initialize, tool calls, etc.)
-			// GET: SSE streaming for notifications
-			// DELETE: Session termination
-			app.post(this.config.endpoint, handleMcpRequest);
-			app.get(this.config.endpoint, handleMcpRequest);
-			app.delete(this.config.endpoint, handleMcpRequest);
+			// The SDK Express app already parses JSON bodies; hand the parsed body
+			// to the adapter so the request stream is not read twice.
+			const nodeHandler = toNodeHandler(this.handler, {
+				onerror: logHandlerError,
+			});
+			app.all(this.config.endpoint, (req, res) => {
+				void nodeHandler(req, res, req.body);
+			});
 
 			// Configure /health endpoint
 			app.get("/health", (_req, res) => {
-				const sessionCount = this.registry.getCount();
-
 				res.json({
-					sessions: sessionCount,
 					status: "ok",
 					timestamp: new Date().toISOString(),
 				});
@@ -194,7 +156,7 @@ export class ExpressHttpManager {
 	/**
 	 * Graceful shutdown
 	 *
-	 * Stops HTTP server and cleans up all active sessions.
+	 * Closes the MCP handler (open subscription streams) and the HTTP server.
 	 *
 	 * @returns Result indicating success or failure
 	 */
@@ -210,14 +172,10 @@ export class ExpressHttpManager {
 				logger: "ExpressHttpManager",
 			});
 
-			// Cleanup all active sessions first
-			const cleanupResult = await this.registry.cleanup();
-			if (!cleanupResult.success) {
-				this.logger.sendLog({
-					data: `Warning: Session cleanup failed: ${cleanupResult.error.message}`,
-					level: "warning",
-					logger: "ExpressHttpManager",
-				});
+			// Close the MCP handler first (ends open subscription streams)
+			if (this.handler) {
+				await this.handler.close();
+				this.handler = null;
 			}
 
 			// Close HTTP server
@@ -255,23 +213,5 @@ export class ExpressHttpManager {
 	 */
 	isRunning(): boolean {
 		return this.server?.listening ?? false;
-	}
-
-	/**
-	 * Get active session count
-	 *
-	 * @returns Number of active sessions
-	 */
-	getActiveSessionCount(): number {
-		return this.registry.getCount();
-	}
-
-	/**
-	 * Get all active session IDs
-	 *
-	 * @returns Array of session IDs
-	 */
-	getActiveSessionIds(): string[] {
-		return this.registry.getSessionIds();
 	}
 }

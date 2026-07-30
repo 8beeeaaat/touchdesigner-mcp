@@ -1,5 +1,5 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResultSchema } from "@modelcontextprotocol/core";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { TOOL_NAMES } from "../../../core/constants.js";
 import { handleToolError } from "../../../core/errorHandling.js";
@@ -31,10 +31,12 @@ export function registerTdTools(
 ): void {
 	// Register every TouchDesigner operation from the single source of truth.
 	for (const definition of TOOL_DEFINITIONS) {
-		server.tool(
+		server.registerTool(
 			definition.name,
-			definition.description,
-			definition.schema.strict().shape,
+			{
+				description: definition.description,
+				inputSchema: definition.schema.strict(),
+			},
 			async (params: Record<string, unknown> = {}) => {
 				try {
 					const output = await definition.run({ logger, params, tdClient });
@@ -54,10 +56,13 @@ export function registerTdTools(
 	// `describe_td_tools` is the meta tool: it documents the tools above rather
 	// than calling TouchDesigner, so it is registered on its own.
 	const toolMetadataEntries = buildToolMetadata(TOOL_DEFINITIONS);
-	server.tool(
+	server.registerTool(
 		TOOL_NAMES.DESCRIBE_TD_TOOLS,
-		"Generate a filesystem-oriented manifest of available TouchDesigner tools",
-		describeToolsSchema.strict().shape,
+		{
+			description:
+				"Generate a filesystem-oriented manifest of available TouchDesigner tools",
+			inputSchema: describeToolsSchema.strict(),
+		},
 		async (params: DescribeToolsParams = {}) => {
 			try {
 				const { detailLevel, responseFormat, filter } = params;

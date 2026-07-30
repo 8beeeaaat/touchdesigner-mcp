@@ -6,26 +6,6 @@ import { z } from "zod";
 export type TransportType = "stdio" | "streamable-http";
 
 /**
- * Session configuration for Streamable HTTP transport
- */
-export interface SessionConfig {
-	/**
-	 * Enable session management (default: true)
-	 */
-	enabled: boolean;
-
-	/**
-	 * Session TTL in milliseconds (default: 1 hour)
-	 */
-	ttl?: number;
-
-	/**
-	 * Interval for session cleanup in milliseconds (default: 5 minutes)
-	 */
-	cleanupInterval?: number;
-}
-
-/**
  * Configuration for stdio transport
  */
 export interface StdioTransportConfig {
@@ -34,6 +14,10 @@ export interface StdioTransportConfig {
 
 /**
  * Configuration for Streamable HTTP transport
+ *
+ * Protocol revision 2026-07-28 removed protocol-level sessions and the
+ * `Mcp-Session-Id` header, so the transport is stateless: there is no session
+ * configuration anymore. Each request is served by a fresh server instance.
  */
 export interface StreamableHttpTransportConfig {
 	type: "streamable-http";
@@ -52,17 +36,6 @@ export interface StreamableHttpTransportConfig {
 	 * MCP endpoint path (default: '/mcp')
 	 */
 	endpoint: string;
-
-	/**
-	 * Session management configuration
-	 */
-	sessionConfig?: SessionConfig;
-
-	/**
-	 * Retry interval in milliseconds for SSE polling behavior (optional)
-	 * When set, the server will send a retry field in SSE priming events
-	 */
-	retryInterval?: number;
 }
 
 /**
@@ -71,17 +44,6 @@ export interface StreamableHttpTransportConfig {
 export type TransportConfig =
 	| StdioTransportConfig
 	| StreamableHttpTransportConfig;
-
-/**
- * Zod schema for SessionConfig validation
- */
-const SessionConfigSchema = z
-	.object({
-		cleanupInterval: z.number().int().positive().optional(),
-		enabled: z.boolean(),
-		ttl: z.number().int().positive().optional(),
-	})
-	.strict();
 
 /**
  * Zod schema for StdioTransportConfig validation
@@ -108,8 +70,6 @@ const StreamableHttpTransportConfigSchema = z
 			.positive()
 			.min(1)
 			.max(65535, "Port must be between 1 and 65535"),
-		retryInterval: z.number().int().positive().optional(),
-		sessionConfig: SessionConfigSchema.optional(),
 		type: z.literal("streamable-http"),
 	})
 	.strict();
@@ -141,19 +101,9 @@ export function isStreamableHttpTransportConfig(
 }
 
 /**
- * Default values for SessionConfig
- */
-export const DEFAULT_SESSION_CONFIG: Required<SessionConfig> = {
-	cleanupInterval: 5 * 60 * 1000, // 5 minutes
-	enabled: true,
-	ttl: 60 * 60 * 1000, // 1 hour
-};
-
-/**
  * Default values for StreamableHttpTransportConfig (excluding required fields)
  */
 export const DEFAULT_HTTP_CONFIG = {
 	endpoint: "/mcp",
 	host: "127.0.0.1",
-	sessionConfig: DEFAULT_SESSION_CONFIG,
 } as const;

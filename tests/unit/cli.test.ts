@@ -1,42 +1,61 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parseArgs, parseTransportConfig, startServer } from "../../src/cli.js";
 
 const {
-	connectMock,
-	defaultTouchDesignerServerImpl,
-	defaultStdioTransportImpl,
-	TouchDesignerServerMock,
-	StdioServerTransportMock,
+	createTouchDesignerClientMock,
+	defaultServeStdioImpl,
+	ExpressHttpManagerMock,
+	httpManagerStartMock,
+	httpManagerStopMock,
+	serveStdioMock,
+	sharedTdClient,
+	TouchDesignerServerCreateMock,
 } = vi.hoisted(() => {
-	const connectMock = vi.fn();
-
-	const defaultTouchDesignerServerImpl =
-		function MockTouchDesignerServer(this: {
-			connect: typeof connectMock;
-		}) {
-			this.connect = connectMock;
-		};
-	const TouchDesignerServerMock = vi.fn(defaultTouchDesignerServerImpl);
-
-	const defaultStdioTransportImpl = function MockStdioServerTransport() {};
-	const StdioServerTransportMock = vi.fn(defaultStdioTransportImpl);
+	const defaultServeStdioImpl = () => ({ close: vi.fn() });
+	const serveStdioMock = vi.fn(defaultServeStdioImpl);
+	const TouchDesignerServerCreateMock = vi.fn(() => ({}));
+	const sharedTdClient = { kind: "shared TouchDesigner client" };
+	const createTouchDesignerClientMock = vi.fn(() => sharedTdClient);
+	const httpManagerStartMock = vi
+		.fn()
+		.mockResolvedValue({ data: undefined, success: true });
+	const httpManagerStopMock = vi
+		.fn()
+		.mockResolvedValue({ data: undefined, success: true });
+	const ExpressHttpManagerMock = vi.fn(function MockExpressHttpManager(
+		this: Record<string, unknown>,
+	) {
+		this.start = httpManagerStartMock;
+		this.stop = httpManagerStopMock;
+	});
 
 	return {
-		connectMock,
-		defaultStdioTransportImpl,
-		defaultTouchDesignerServerImpl,
-		StdioServerTransportMock,
-		TouchDesignerServerMock,
+		createTouchDesignerClientMock,
+		defaultServeStdioImpl,
+		ExpressHttpManagerMock,
+		httpManagerStartMock,
+		httpManagerStopMock,
+		serveStdioMock,
+		sharedTdClient,
+		TouchDesignerServerCreateMock,
 	};
 });
 
 // Mock dependencies
-vi.mock("@modelcontextprotocol/sdk/server/stdio.js", () => ({
-	StdioServerTransport: StdioServerTransportMock,
+vi.mock("@modelcontextprotocol/server/stdio", () => ({
+	serveStdio: serveStdioMock,
 }));
 
 vi.mock("../../src/server/touchDesignerServer.js", () => ({
-	TouchDesignerServer: TouchDesignerServerMock,
+	TouchDesignerServer: { create: TouchDesignerServerCreateMock },
+}));
+
+vi.mock("../../src/tdClient/index.js", () => ({
+	createTouchDesignerClient: createTouchDesignerClientMock,
+}));
+
+vi.mock("../../src/transport/expressHttpManager.js", () => ({
+	ExpressHttpManager: ExpressHttpManagerMock,
 }));
 
 describe("CLI", () => {
@@ -165,18 +184,21 @@ describe("CLI", () => {
 			delete process.env.TD_WEB_SERVER_HOST;
 			delete process.env.TD_WEB_SERVER_PORT;
 
-			connectMock.mockReset();
-			connectMock.mockResolvedValue({ success: true });
+			serveStdioMock.mockReset();
+			serveStdioMock.mockImplementation(defaultServeStdioImpl);
 
-			TouchDesignerServerMock.mockReset();
-			TouchDesignerServerMock.mockImplementation(
-				defaultTouchDesignerServerImpl,
-			);
-
-			StdioServerTransportMock.mockReset();
-			StdioServerTransportMock.mockImplementation(defaultStdioTransportImpl);
+			TouchDesignerServerCreateMock.mockReset();
+			TouchDesignerServerCreateMock.mockImplementation(() => ({}));
+			createTouchDesignerClientMock.mockClear();
+			ExpressHttpManagerMock.mockClear();
+			httpManagerStartMock.mockClear();
+			httpManagerStopMock.mockClear();
 
 			vi.clearAllMocks();
+		});
+
+		afterEach(() => {
+			vi.restoreAllMocks();
 		});
 
 		it("should set environment variables from parsed arguments", async () => {
@@ -189,41 +211,55 @@ describe("CLI", () => {
 			expect(process.env.TD_WEB_SERVER_PORT).toBe("8080");
 		});
 
-		it("should create TouchDesigner server and connect in stdio mode", async () => {
+		it("should call serveStdio with a server factory in stdio mode", async () => {
 			await startServer({
 				argv: ["node", "cli.js", "--stdio", "--host=127.0.0.1", "--port=8080"],
 				nodeEnv: "cli",
 			});
 
-			expect(TouchDesignerServerMock).toHaveBeenCalled();
-			expect(StdioServerTransportMock).toHaveBeenCalled();
-			expect(connectMock).toHaveBeenCalled();
+			expect(serveStdioMock).toHaveBeenCalledTimes(1);
+			expect(serveStdioMock).toHaveBeenCalledWith(expect.any(Function));
+
+			// The factory is invoked per connection, not eagerly by startServer;
+			// invoking it here confirms it is wired to TouchDesignerServer.create().
+			const factory = serveStdioMock.mock.calls[0][0] as () => unknown;
+			factory();
+			expect(TouchDesignerServerCreateMock).toHaveBeenCalledTimes(1);
 		});
 
-		it("should handle connection failure gracefully", async () => {
-			connectMock.mockResolvedValue({
-				error: { message: "Connection failed" },
-				success: false,
+		it("should reuse one TouchDesigner client across HTTP server instances", async () => {
+			vi.spyOn(console, "error").mockImplementation(() => {});
+			vi.spyOn(process, "on").mockImplementation(() => process);
+
+			await startServer({
+				argv: [
+					"node",
+					"cli.js",
+					"--mcp-http-port=6280",
+					"--host=127.0.0.1",
+					"--port=9981",
+				],
+				nodeEnv: "cli",
 			});
 
-			await expect(
-				startServer({
-					argv: [
-						"node",
-						"cli.js",
-						"--stdio",
-						"--host=127.0.0.1",
-						"--port=8080",
-					],
-					nodeEnv: "cli",
-				}),
-			).rejects.toThrow(
-				"Failed to initialize server: Failed to connect: Connection failed",
-			);
+			expect(createTouchDesignerClientMock).toHaveBeenCalledTimes(1);
+			const serverFactory = ExpressHttpManagerMock.mock
+				.calls[0][1] as () => unknown;
+
+			serverFactory();
+			serverFactory();
+
+			expect(TouchDesignerServerCreateMock).toHaveBeenCalledTimes(2);
+			expect(TouchDesignerServerCreateMock).toHaveBeenNthCalledWith(1, {
+				tdClient: sharedTdClient,
+			});
+			expect(TouchDesignerServerCreateMock).toHaveBeenNthCalledWith(2, {
+				tdClient: sharedTdClient,
+			});
 		});
 
 		it("should handle unexpected errors gracefully", async () => {
-			TouchDesignerServerMock.mockImplementation(function ThrowingServer() {
+			serveStdioMock.mockImplementation(() => {
 				throw new Error("Unexpected error");
 			});
 
@@ -242,7 +278,7 @@ describe("CLI", () => {
 		});
 
 		it("should handle non-Error exceptions", async () => {
-			TouchDesignerServerMock.mockImplementation(function ThrowingServer() {
+			serveStdioMock.mockImplementation(() => {
 				throw "String error";
 			});
 
