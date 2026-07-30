@@ -68,21 +68,15 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 
 ### バージョン互換性のトラブルシューティング
 
-柔軟な互換性チェックのために**セマンティックバージョニング**を使用しています
+MCP サーバーと TouchDesigner コンポーネントは**独立した2つのバージョン軸**で管理されています: npm パッケージバージョンと、MCP サーバー ↔ `.tox` コンポーネント間の契約である **API バージョン**です。各リリースは同梱する API バージョン（`expectedApiVersion`）とサポートする最小バージョン（`minApiVersion`、現在 1.3.0）を宣言し、接続されたコンポーネントの API バージョンはこの2つの値と比較されます。**npm パッケージバージョン自体は互換性判定に関与しない**ため、MCP サーバーの更新だけでサポート範囲内のコンポーネントが使えなくなることはありません。
 
-| MCP Server | API Server | 最小互換APIバージョン | 動作 | ステータス | 備考 |
-|------------|------------|----------------|----------|--------|-------|
-| 1.3.x | 1.3.0 | 1.3.0 | ✅ 正常動作 | 互換 | 推奨ベースライン構成 |
-| 1.3.x | 1.4.0 | 1.3.0 | ⚠️ 警告表示、実行継続 | 警告 | 旧MCP MINORと新API、新機能未対応の可能性 |
-| 1.4.0 | 1.3.x | 1.3.0 | ⚠️ 警告表示、実行継続 | 警告 | 新MCP MINORに追加機能がある可能性 |
-| 1.3.2 | 1.3.1 | 1.3.2 | ❌ 実行停止 | エラー | APIが最小互換バージョン未満 |
-| 2.0.0 | 1.x.x | N/A | ❌ 実行停止 | エラー | MAJORバージョン相違 = 破壊的変更 |
-
-**互換性ルール**:
-
-- ✅ **互換**: 同じMAJORバージョン、かつAPIバージョン ≥ 最小互換バージョン
-- ⚠️ **警告**: 同じMAJOR内でMINORまたはPATCHバージョンが異なる（警告表示、実行継続）
-- ❌ **エラー**: MAJORバージョンが異なる、またはAPIサーバー < 最小互換バージョン（即座に実行停止、更新が必要）
+| API Server（コンポーネント） | 条件 | 動作 | ステータス |
+|------------------------------|------|------|-----------|
+| = expected API バージョン | 同梱 `.tox` と一致 | ✅ 無音で正常動作 | 互換 |
+| 最小以上、expected 未満 | コンポーネントが古い | ⚠️ レスポンスに「Update Recommended」通知を付加、実行継続 | 警告 |
+| expected より新しい（同一 MAJOR） | コンポーネントが新しい | ⚠️ MCP サーバーの更新を推奨する警告、実行継続 | 警告 |
+| expected より上の MAJOR | 新しい API 世代 | ❌ 実行停止 — MCP サーバーを更新してください | エラー |
+| 最小未満（またはバージョン情報なし） | 古すぎる | ❌ 実行停止 — コンポーネントを更新してください | エラー |
 
 - **互換性エラーを解決するには：**
   1. リリースページから最新の [touchdesigner-mcp-td.zip](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp-td.zip) をダウンロードします。
@@ -90,7 +84,7 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
   3. TouchDesignerプロジェクトから古い `mcp_webserver_base` コンポーネントを削除し、新しいフォルダから `.tox` をインポートします。
   4. TouchDesignerとMCPサーバーを実行しているAIエージェント（例：Claude Desktop）を再起動します。
 
-- **開発者向け：** ローカルで開発している場合は、`package.json` を編集した後に `npm run version` を実行してください（または単に `npm version ...` を使用してください）。これにより、Python API（`pyproject.toml` + `td/modules/utils/version.py`）、MCPバンドルマニフェスト、およびレジストリメタデータが同期され、ランタイム互換性チェックが成功するようになります。
+- **開発者向け：** ローカルで開発している場合は、`package.json` を編集した後に `npm run version` を実行してください（または単に `npm version ...` を使用してください）。これにより、Python API（`pyproject.toml` + `td/modules/utils/version.py`）、`mcpCompatibility.expectedApiVersion`、MCPバンドルマニフェスト、およびレジストリメタデータが同期され、ランタイム互換性チェックが成功するようになります。
 
 互換性チェックの内部動作については [Version Compatibility Verification](docs/architecture.md#version-compatibility-verification) も参照してください。
 
