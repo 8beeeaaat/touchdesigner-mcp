@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { TOOL_NAMES } from "../../src/core/constants.js";
 import { TOOL_DEFINITIONS } from "../../src/features/tools/toolDefinitions.js";
 
-// The README tool tables are hand-written while the server registers tools from
-// TOOL_NAMES, so the tables are the only place that can drift from the
-// implementation. This suite fails whenever a tool is added, renamed, or
-// removed without updating both READMEs.
+// The README tool tables and the MCPB manifest are hand-written while the
+// server registers tools from TOOL_NAMES, so those listings are the only
+// places that can drift from the implementation. This suite fails whenever a
+// tool is added, renamed, or removed without updating every published listing.
 
 const REGISTERED_TOOL_NAMES = Object.values(TOOL_NAMES).sort();
 
@@ -40,6 +40,15 @@ describe("README tool tables", () => {
 
 	it("lists every registered tool in README.ja.md", async () => {
 		expect(extractToolTableNames(await readRepoFile("README.ja.md"))).toEqual(
+			REGISTERED_TOOL_NAMES,
+		);
+	});
+
+	it("lists every registered tool in mcpb/manifest.json", async () => {
+		const manifest = JSON.parse(await readRepoFile("mcpb/manifest.json")) as {
+			tools: Array<{ name: string }>;
+		};
+		expect(manifest.tools.map((tool) => tool.name).sort()).toEqual(
 			REGISTERED_TOOL_NAMES,
 		);
 	});
