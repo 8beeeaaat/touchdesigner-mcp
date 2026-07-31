@@ -35,15 +35,17 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 | :-------------------------- | :--------------------------------------------- |
 | `create_td_node`            | 新しいノードを作成します。                     |
 | `delete_td_node`            | 既存のノードを削除します。                     |
+| `describe_td_tools`         | 利用可能なTouchDesignerツールのマニフェストを生成します。 |
 | `exec_node_method`          | ノードに対してPythonメソッドを呼び出します。   |
 | `execute_python_script`     | TD内で任意のPythonスクリプトを実行します。     |
-| `get_module_help`           | TouchDesignerモジュール/クラスのPython help()ドキュメントを取得します。 |
 | `get_td_class_details`      | TD Pythonクラス/モジュールの詳細情報を取得します。 |
 | `get_td_classes`            | TouchDesigner Pythonクラスのリストを取得します。 |
 | `get_td_info`           | TDサーバー環境に関する情報を取得します。       |
+| `get_td_module_help`        | TouchDesignerモジュール/クラスのPython help()ドキュメントを取得します。 |
 | `get_td_node_errors`        | 指定されたノードとその子ノードのエラーをチェックします。 |
 | `get_td_node_parameters`    | 特定ノードのパラメータを取得します。           |
 | `get_td_nodes`              | 親パス内のノードを取得します（オプションでフィルタリング）。 |
+| `get_top_image`             | TOPノードの現在の出力を画像として取得します。  |
 | `update_td_node_parameters` | 特定ノードのパラメータを更新します。           |
 
 ### プロンプト (Prompts)

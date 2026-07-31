@@ -395,6 +395,9 @@ MCP tool implementations categorized as follows:
    - `create_td_node`: Create node
    - `delete_td_node`: Delete node
    - `get_td_nodes`: Get node list
+   - `get_td_node_errors`: Get node errors (recursive over children)
+   - `exec_node_method`: Call a Python method on a node
+   - `get_top_image`: Capture a TOP node's output as an image
 
 2. **Parameter Operations**:
    - `get_td_node_parameters`: Get parameters
@@ -407,6 +410,10 @@ MCP tool implementations categorized as follows:
    - `get_td_classes`: Get TouchDesigner class list
    - `get_td_class_details`: Get class details
    - `get_td_module_help`: Get module help
+
+5. **Server/Meta**:
+   - `get_td_info`: Get TouchDesigner server environment info
+   - `describe_td_tools`: Generate a manifest of the registered tools (see Registration above)
 
 ### TouchDesignerClient
 

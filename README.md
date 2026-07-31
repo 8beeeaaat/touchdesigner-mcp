@@ -35,15 +35,17 @@ Tools allow AI agents to perform actions in TouchDesigner.
 | :---------------------- | :----------------------------------------------------------------- |
 | `create_td_node`        | Creates a new node.                                                |
 | `delete_td_node`        | Deletes an existing node.                                          |
+| `describe_td_tools`     | Generates a manifest of the available TouchDesigner tools.         |
 | `exec_node_method`      | Calls a Python method on a node.                                   |
 | `execute_python_script` | Executes an arbitrary Python script in TouchDesigner.              |
-| `get_module_help`       | Gets Python help() documentation for TouchDesigner modules/classes.|
 | `get_td_class_details`  | Gets details of a TouchDesigner Python class or module.            |
 | `get_td_classes`        | Gets a list of TouchDesigner Python classes.                       |
 | `get_td_info`           | Gets information about the TouchDesigner server environment.       |
+| `get_td_module_help`    | Gets Python help() documentation for TouchDesigner modules/classes.|
 | `get_td_node_errors`    | Checks for errors on a specified node and its children. |
 | `get_td_node_parameters`| Gets the parameters of a specific node.                            |
 | `get_td_nodes`          | Gets nodes under a parent path, with optional filtering.           |
+| `get_top_image`         | Captures the current output of a TOP node as an image.             |
 | `update_td_node_parameters` | Updates the parameters of a specific node.                     |
 
 ### Prompts
