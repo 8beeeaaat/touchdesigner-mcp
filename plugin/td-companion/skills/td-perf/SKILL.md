@@ -18,7 +18,7 @@ Diagnose TouchDesigner performance bottlenecks by measuring per-operator cook ti
 
 3. Resolve `root` to the `root-path` argument if given, otherwise `/project1` if it exists, else `/` (a project launched by opening the tox as a document has no `/project1`).
 
-4. With the user's consent, run a measurement script through `execute_python_script` that collects `root`'s descendants with `findChildren()` (the same confirmed-stable traversal the td-performance skill describes), and for each operator records its `path`, `name`, `opType`, and `cookTime` (skipping operators where `cookTime` isn't a meaningful attribute rather than erroring out). Sort the collected results by `cookTime` descending and keep roughly the top 20. For example:
+4. With the user's consent, run a measurement script through `execute_python_script` with `detailLevel: "detailed"` so the complete ranking is returned rather than the summary formatter's 500-character preview. Collect `root`'s descendants with `findChildren()` (the same confirmed-stable traversal the td-performance skill describes), and for each operator record its `path`, `name`, `opType`, and `cookTime` (skipping operators where `cookTime` isn't a meaningful attribute rather than erroring out). Sort the collected results by `cookTime` descending and keep roughly the top 20. For example:
 
    ```python
    results = []

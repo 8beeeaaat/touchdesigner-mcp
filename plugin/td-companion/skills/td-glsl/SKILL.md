@@ -20,7 +20,7 @@ out vec4 fragColor;
 void main()
 {
     vec4 color = texture(sTD2DInputs[0], vUV.st);
-    fragColor = color;
+    fragColor = TDOutputSwizzle(color);
 }
 ```
 
@@ -31,6 +31,8 @@ Do not write:
 - A custom output variable name in place of `fragColor` — TD's wrapper expects that exact identifier.
 
 Declaring any of the above yourself produces a redefinition error, because TD's injected code and your declaration collide. When `get_td_node_errors` reports something like "redefinition of 'vUV'" or "extension directive must occur before any non-preprocessor tokens," the fix is almost always to delete a declaration you added rather than to add one.
+
+Pass every final pixel color through `TDOutputSwizzle` before assigning it to `fragColor`. TouchDesigner uses this helper to map channels correctly for the destination texture format across Windows and macOS. It is required for pixel-shader outputs; TouchDesigner's compute-output helpers apply the equivalent conversion internally.
 
 ### Sampling inputs
 
@@ -73,6 +75,7 @@ If uncertain what a given node type or family exposes beyond its parameters, `ge
 ## Common Mistakes
 
 - **Using `gl_FragColor`.** This is a deprecated GLSL built-in and is not available in TD's GLSL TOP pipeline. Declare and write to `out vec4 fragColor;` instead.
+- **Omitting `TDOutputSwizzle`.** Assign pixel-shader output as `fragColor = TDOutputSwizzle(color);`; direct assignment can put values in the wrong destination channels on another platform or texture format.
 - **Writing a `#version` header.** TD injects its own; a second one causes a syntax error, since a `#version` directive is only valid on the very first line.
 - **Forgetting `.st` on `vUV`.** `texture(sampler2D, vec2)` expects a 2-component vector; passing the raw `vUV` (which may carry more components) without swizzling can produce a type error or, worse, silently sample incorrectly.
 - **Wrong sampler array indexing.** `sTD2DInputs` indices correspond to the GLSL TOP's input connections in order; reordering or removing an input connection shifts every subsequent index, so re-check indices after rewiring inputs.
