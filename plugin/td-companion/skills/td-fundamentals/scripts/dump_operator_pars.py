@@ -1,11 +1,10 @@
-# dump_operator_pars.py — regenerate source data for references/operator-guide.md.
+# dump_operator_pars.py — batch-inspect operator parameters from live TouchDesigner.
 #
 # Send this through the execute_python_script MCP tool against a live
 # TouchDesigner instance. Set OPS to the operator class names to dump
-# (batch a handful per call to keep responses small), then rewrite the
-# guide's parameter tables from the returned JSON: `help` is TouchDesigner's
-# official rollover help text, `label` the UI label, `name` the Python name
-# to use with update_td_node_parameters.
+# (batch a handful per call to keep responses small), then inspect the returned
+# JSON: `help` is TouchDesigner's official rollover help text, `label` the UI
+# label, and `name` the Python name to use with update_td_node_parameters.
 import json
 
 import td
