@@ -80,7 +80,19 @@ Parameter and class names below were verified against a live TouchDesigner 2025.
 - `math1.fromrange1`/`fromrange2` → `torange1`/`torange2` — map the analyzed value's real range onto 0–1 (or whatever the target expects).
 - `lag1.lag1` / `lag1.lag2` — smoothing time in seconds, up and down respectively.
 
-**Verify.** After step 3, call `get_td_node_parameters` on `analyze1` to confirm a channel with plausible values (not flat zero) is present — this catches a disconnected or silent audio source early. After step 6, call `get_td_node_parameters` on `audioLevel1` repeatedly (or once while audio is playing) to confirm the value moves in the expected 0–1-ish range before wiring it to anything visual.
+**Verify.** After steps 3 and 6, inspect the actual CHOP output through `execute_python_script`, once for `analyze1` and again for `audioLevel1` while audio is playing:
+
+```python
+node = op('.../audioLevel1')
+limit = min(node.numSamples, 8)
+snapshot = {
+	channel.name: [float(channel[i]) for i in range(limit)]
+	for channel in node.chans()
+}
+print(snapshot)
+```
+
+Expect at least one channel, non-flat values from `analyze1`, and values in the intended remapped range from `audioLevel1`. `get_td_node_parameters` cannot perform this check because it returns operator settings, not CHOP channels or samples.
 
 ---
 
@@ -150,7 +162,7 @@ Parameter and class names below were verified against a live TouchDesigner 2025.
    ```
    update_td_node_parameters({ nodePath: ".../geo1", properties: { instancing: 1, instanceop: "../positions1" } })
    ```
-4. Once instancing is on and pointed at the source, set the per-axis channel-name parameters (`instancetx`/`instancety`/`instancetz` at minimum) to match the channel names actually present in `positions1` — call `get_td_node_parameters` on `positions1` to see its channel names (e.g. `chan1`, `chan2`, `chan3` for a default `noiseCHOP`, or `tx`/`ty`/`tz` if renamed) before wiring them into the instance channel parameters.
+4. Once instancing is on and pointed at the source, set the per-axis channel-name parameters (`instancetx`/`instancety`/`instancetz` at minimum) to match the channel names actually present in `positions1`. Inspect them through `execute_python_script` before configuring the Geometry COMP: `print([channel.name for channel in op('.../positions1').chans()])`. A default `noiseCHOP` may expose names such as `chan1`, `chan2`, and `chan3`; use only the names returned by the live node.
 5. Add a camera, light, and render TOP per the basic 3D render network recipe above if none already exist in the project, so the instanced result is actually visible.
 
 **Key parameters**
@@ -177,9 +189,17 @@ Parameter and class names below were verified against a live TouchDesigner 2025.
 **Build order**
 
 1. Create `noise1`. Use `noiseCHOP` when the output will drive a parameter via a channel reference or export; use `noiseTOP` when the noise itself is the visual content (e.g. feeding a displace or as a texture).
-2. TouchDesigner's noise operators are already time-based by default — a `noiseCHOP`/`noiseTOP` left at its defaults evolves continuously because its internal time reference advances every frame. Confirm this is happening by calling `get_td_node_parameters` on `noise1` twice a moment apart and observing the values change; if the values are static, the node likely has "Time Slice" or an equivalent time-driving option disabled, or a `period`/`translate` parameter's time reference has been overridden — check with `get_td_node_parameters` before adding manual time-expressions.
-3. Where explicit time control is wanted (e.g. changing the rate of evolution independent of playback), drive a translate parameter with an expression referencing `absTime.seconds`, e.g. setting `translatex` to an expression string such as `absTime.seconds * 0.1` via `update_td_node_parameters`. Use `me.time.frame` instead when the animation should be tied to frame count rather than wall-clock time (e.g. for frame-accurate export/render).
-4. Connect the noise output to `target1`'s transform. For a CHOP driving a COMP's transform parameters, this is typically done with a parameter expression on the COMP (e.g. `target1.tx` set to an expression referencing `op('../noise1')[0]`) rather than a direct `inputConnectors` wire, since COMP transform parameters aren't CHOP inputs. For a `transformTOP`, similarly set its translate/rotate/scale parameters to expressions referencing the noise CHOP's channels.
+2. TouchDesigner's noise operators are already time-based by default — a `noiseCHOP`/`noiseTOP` left at its defaults evolves continuously because its internal time reference advances every frame. For a `noiseCHOP`, confirm this by using `execute_python_script` to read channel samples twice at different moments, as shown in the audio recipe above. For a `noiseTOP`, capture two images with `get_top_image`. If the output is static, inspect its time-related settings with `get_td_node_parameters` before adding a manual time expression.
+3. Where explicit time control is wanted (e.g. changing the rate of evolution independent of playback), set the parameter's expression through `execute_python_script`, because `update_td_node_parameters` writes literal values through `par.val` and cannot switch a parameter to expression mode:
+   ```python
+   op('.../noise1').par.translatex.expr = "absTime.seconds * 0.1"
+   ```
+   Use `me.time.frame` instead when the animation should be tied to frame count rather than wall-clock time (e.g. for frame-accurate export/render).
+4. Connect the noise output to `target1`'s transform. For a CHOP driving a COMP's transform parameters, set an expression on the destination parameter through `execute_python_script`, since COMP transform parameters are not CHOP inputs:
+   ```python
+   op('.../target1').par.tx.expr = "op('../noise1')[0]"
+   ```
+   For a `transformTOP`, use the same `.expr` approach on its translate, rotate, or scale parameter.
 
 **Key parameters**
 
@@ -187,7 +207,7 @@ Parameter and class names below were verified against a live TouchDesigner 2025.
 - `noise1.translate` (or `translatex`/`translatey`/`translatez`) — scrolling the noise field over time is what produces continuous, non-looping motion; this is the parameter to drive with an `absTime.seconds`-based expression when explicit rate control is needed.
 - `noise1.type` — selects the noise algorithm; the default is usually adequate for organic motion, but sparser or blockier variants exist for more angular results.
 
-**Verify.** Call `get_td_node_parameters` on `noise1` at two different moments and confirm the values differ, confirming animation is actually live rather than frozen. Then call `get_top_image` (if visual) or `get_td_node_parameters` on `target1` to confirm the driven parameter is actually changing in step with the noise.
+**Verify.** Inspect a `noiseCHOP`'s channel samples twice through `execute_python_script`, or capture a `noiseTOP` twice with `get_top_image`, and confirm the output changes. Then call `get_top_image` for a visual target or `get_td_node_parameters` on `target1` to confirm the destination parameter's evaluated value changes with the noise.
 
 ---
 

@@ -43,24 +43,23 @@ Start TouchDesigner, open a project containing `mcp_webserver_base.tox`, then ta
 
 ## Configuration
 
-The bundled server targets TouchDesigner on `http://127.0.0.1:9981`. If your WebServer DAT uses a different host or port, override the server in your project's `.mcp.json` (project config takes precedence over the plugin's):
+The plugin asks for the TouchDesigner WebServer host and port when it is enabled. The defaults are `http://127.0.0.1` and `9981`. These values configure the bundled server directly, so its `mcp__plugin_td-companion_touchdesigner__...` tool namespace stays unchanged.
 
-```json
-{
-  "mcpServers": {
-    "touchdesigner": {
-      "command": "npx",
-      "args": ["-y", "touchdesigner-mcp-server@^2", "--stdio", "--host=http://127.0.0.1", "--port=9981"]
-    }
-  }
-}
+When installing from a marketplace with the CLI, the same options can be supplied explicitly:
+
+```bash
+claude plugin install td-companion@<marketplace-name> \
+  --config touchdesigner_host=http://192.168.1.100 \
+  --config touchdesigner_port=9982
 ```
+
+After changing the plugin configuration, run `/reload-plugins` or start a new Claude Code session before retrying the connection. Do not add a second project-scoped `touchdesigner` MCP server: it receives a different tool namespace and does not replace the bundled server used by these skills.
 
 ## Troubleshooting
 
 | Symptom | Check |
 |---|---|
-| `get_td_info` fails / tools time out | TouchDesigner running? `.tox` imported? WebServer DAT active on 9981? Run `/td-companion:td-setup` |
+| `get_td_info` fails / tools time out | TouchDesigner running? `.tox` imported? WebServer DAT active on the configured port? Run `/td-companion:td-setup` |
 | Tools missing in `/mcp` | Restart Claude Code after enabling the plugin; check `npx` can reach the npm registry |
 | Snapshot is black | Upstream node errors (`/td-companion:td-debug`), or the TOP has zero resolution |
 
