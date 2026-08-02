@@ -15,7 +15,7 @@ void main()
     vec4 overlay = texture(sTD2DInputs[1], vUV.st);
     vec4 mask = texture(sTD2DInputs[2], vUV.st);
 
-    fragColor = mix(base, overlay, mask.r);
+    fragColor = TDOutputSwizzle(mix(base, overlay, mask.r));
 }
 ```
 
@@ -55,7 +55,7 @@ void main()
     c.rgb = (c.rgb - 0.5) * uContrast + 0.5;
     float gray = dot(c.rgb, vec3(0.299, 0.587, 0.114));
     c.rgb = mix(vec3(gray), c.rgb, uSaturation);
-    fragColor = c;
+    fragColor = TDOutputSwizzle(c);
 }
 ```
 
@@ -73,7 +73,7 @@ uniform float uStrength;
 void main()
 {
     vec2 disp = (texture(sTD2DInputs[1], vUV.st).rg - 0.5) * uStrength;
-    fragColor = texture(sTD2DInputs[0], vUV.st + disp);
+    fragColor = TDOutputSwizzle(texture(sTD2DInputs[0], vUV.st + disp));
 }
 ```
 
@@ -92,7 +92,7 @@ void main()
 {
     vec4 a = texture(sTD2DInputs[0], vUV.st);
     vec4 b = texture(sTD2DInputs[1], vUV.st);
-    fragColor = mix(a, b, clamp(uMix, 0.0, 1.0));
+    fragColor = TDOutputSwizzle(mix(a, b, clamp(uMix, 0.0, 1.0)));
 }
 ```
 
@@ -110,7 +110,7 @@ void main()
     vec2 uv = vUV.st;
     float stripes = fract(uv.x * 20.0 + uTime);
     float pulse = sin(uv.y * 40.0 - uTime * 3.0) * 0.5 + 0.5;
-    fragColor = vec4(vec3(stripes * pulse), 1.0);
+    fragColor = TDOutputSwizzle(vec4(vec3(stripes * pulse), 1.0));
 }
 ```
 
@@ -134,7 +134,7 @@ void main()
 
     float dist = length(uv) - uRadius;
     float shape = smoothstep(0.01, 0.0, dist);
-    fragColor = vec4(vec3(shape), 1.0);
+    fragColor = TDOutputSwizzle(vec4(vec3(shape), 1.0));
 }
 ```
 
@@ -156,7 +156,7 @@ void main()
     vec4 prev = texture(sTD2DInputs[0], vUV.st);  // feedback input
     vec4 fresh = texture(sTD2DInputs[1], vUV.st);  // new frame
 
-    fragColor = max(prev * 0.95, fresh);  // decay + accumulate
+    fragColor = TDOutputSwizzle(max(prev * 0.95, fresh));  // decay + accumulate
 }
 ```
 
@@ -186,9 +186,9 @@ The fastest way to debug GLSL logic inside TD is to output intermediate values a
 
 ```glsl
 // Temporarily replace the real output to inspect a value in isolation.
-fragColor = vec4(vec3(someScalarValue), 1.0);      // visualize a scalar as grayscale
-fragColor = vec4(someVec2Value, 0.0, 1.0);          // visualize a vec2 as red/green
-fragColor = vec4(abs(someSignedValue) * vec3(1.0, 0.0, 0.0), 1.0);  // visualize sign via color
+fragColor = TDOutputSwizzle(vec4(vec3(someScalarValue), 1.0));  // scalar as grayscale
+fragColor = TDOutputSwizzle(vec4(someVec2Value, 0.0, 1.0));  // vec2 as red/green
+fragColor = TDOutputSwizzle(vec4(abs(someSignedValue) * vec3(1.0, 0.0, 0.0), 1.0));  // sign via color
 ```
 
 Swap the real `fragColor` assignment for one of these, check the result with `get_top_image`, then swap back once the value under inspection looks correct. This is far faster than trying to mentally trace vector math, especially for coordinate transforms, displacement vectors, and mask thresholds. Combine this with the SKILL.md compile-check loop: fix compile errors first (via `get_td_node_errors`), then use color-visualization to debug logic errors that compile cleanly but produce the wrong image.

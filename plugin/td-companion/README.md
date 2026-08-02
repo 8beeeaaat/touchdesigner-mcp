@@ -14,7 +14,7 @@ A Claude Code plugin that turns Claude into a TouchDesigner companion: it bundle
 | | `/td-companion:td-snapshot [top-path]` | Capture and review a TOP's rendered output |
 | | `/td-companion:td-overview [root-path]` | Structured report of the project network |
 | | `/td-companion:td-perf [root-path]` | Measure cook times and get an optimization plan |
-| Automation | PostToolUse hook | After any network-mutating tool call, reminds Claude to verify node errors instead of assuming success |
+| Automation | SessionStart + PostToolUse hooks | Injects the configured TD endpoint into Claude's context, then reminds Claude to verify every network mutation |
 
 ## Prerequisites
 
@@ -44,6 +44,8 @@ Start TouchDesigner, open a project containing `mcp_webserver_base.tox`, then ta
 ## Configuration
 
 The plugin asks for the TouchDesigner WebServer host and port when it is enabled. The defaults are `http://127.0.0.1` and `9981`. These values configure the bundled server directly, so its `mcp__plugin_td-companion_touchdesigner__...` tool namespace stays unchanged.
+
+A SessionStart hook reads the same options from `CLAUDE_PLUGIN_OPTION_TOUCHDESIGNER_HOST` / `CLAUDE_PLUGIN_OPTION_TOUCHDESIGNER_PORT` and injects the resolved endpoint into Claude's context for the setup and launch skills.
 
 When installing from a marketplace with the CLI, the same options can be supplied explicitly:
 
