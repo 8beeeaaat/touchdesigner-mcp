@@ -92,4 +92,5 @@ Return to step 1 after any unexpected result — re-inspect the live state rathe
 ## Additional Resources
 
 - `references/operator-guide.md` — the most-used operators in each family with their key lowercase parameters, and a typical render network (geometryCOMP + cameraCOMP + lightCOMP + a render TOP + a MAT).
+- `scripts/dump_operator_pars.py` — maintenance utility: send through `execute_python_script` to dump an operator's parameter names, labels, defaults, menus, and official help text from a live TouchDesigner, for regenerating the operator guide.
 - `references/python-patterns.md` — `op()`/`parent()`/`me`, absolute vs. relative paths, reading and setting parameters, export vs. expression, iterating children, creating operators from Python, `run()`/delayed execution, and debugging via `execute_python_script`.

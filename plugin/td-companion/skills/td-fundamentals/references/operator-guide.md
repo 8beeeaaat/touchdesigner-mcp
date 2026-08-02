@@ -1,5 +1,7 @@
 # TouchDesigner Operator Guide
 
+**Maintenance.** The parameter facts in this file are regenerable from a live TouchDesigner instance — do not hand-edit names from memory. Send `../scripts/dump_operator_pars.py` through the `execute_python_script` MCP tool with `OPS` set to the operators to refresh: the returned JSON carries each parameter's Python `name`, UI `label`, `default`, menu options, and TouchDesigner's official rollover `help` text, straight from the running build. Rewrite the affected entries from that output.
+
 Use this reference to pick a starting `nodeType` and its most relevant parameters when building a network. Parameter names below reflect stable, widely-documented TouchDesigner conventions. Treat them as a strong starting guess, not ground truth — confirm the exact lowercase spelling for any operator with `get_td_node_parameters` (on an existing instance) or `get_td_class_details` (for the full parameter list of a class) before writing a value, since spelling can vary subtly by TouchDesigner version or by operator variant. Where confidence in an exact literal name is lower, that is called out explicitly below rather than stated as fact.
 
 ## TOP — Textures and Images
