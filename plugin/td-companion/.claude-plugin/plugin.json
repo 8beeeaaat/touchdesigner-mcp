@@ -10,6 +10,24 @@
 	"homepage": "https://github.com/8beeeaaat/touchdesigner-mcp",
 	"repository": "https://github.com/8beeeaaat/touchdesigner-mcp",
 	"license": "MIT",
+	"userConfig": {
+		"touchdesigner_host": {
+			"type": "string",
+			"title": "TouchDesigner host",
+			"description": "Base URL of the TouchDesigner WebServer DAT",
+			"required": true,
+			"default": "http://127.0.0.1"
+		},
+		"touchdesigner_port": {
+			"type": "number",
+			"title": "TouchDesigner port",
+			"description": "Port of the TouchDesigner WebServer DAT",
+			"required": true,
+			"default": 9981,
+			"min": 1,
+			"max": 65535
+		}
+	},
 	"keywords": [
 		"touchdesigner",
 		"mcp",

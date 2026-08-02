@@ -42,7 +42,7 @@ Where a parameter's exact name is not certain, do not guess — call `get_td_nod
 
 - `get_td_node_errors` on each new node — TouchDesigner surfaces cook errors, missing inputs, and bad expressions here immediately.
 - `get_top_image` on the nearest TOP downstream of the change — for anything visual, look at the actual pixels rather than trusting that "no error" means "looks right." A network can cook without errors and still be black, blown out, or wired to the wrong input.
-- For CHOP chains with no visual output yet, `get_td_node_parameters` on the terminal node shows the current channel values, which is usually enough to confirm data is flowing.
+- For CHOP chains with no visual output yet, use `execute_python_script` to inspect the terminal CHOP's actual channel names and sample values. `get_td_node_parameters` only reports operator settings; it does not expose CHOP output data.
 
 Repeat create → wire → configure → verify per stage. A recipe with six nodes is six short loops, not one long one.
 

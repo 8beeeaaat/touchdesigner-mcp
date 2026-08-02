@@ -1,6 +1,12 @@
 {
 	"touchdesigner": {
 		"command": "npx",
-		"args": ["-y", "touchdesigner-mcp-server@^2", "--stdio"]
+		"args": [
+			"-y",
+			"touchdesigner-mcp-server@^2",
+			"--stdio",
+			"--host=${user_config.touchdesigner_host}",
+			"--port=${user_config.touchdesigner_port}"
+		]
 	}
 }
