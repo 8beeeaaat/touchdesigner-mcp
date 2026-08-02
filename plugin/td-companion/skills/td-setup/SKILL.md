@@ -1,0 +1,31 @@
+---
+name: td-setup
+description: This skill should be used when the user runs /td-companion:td-setup or asks to verify, check, fix, or set up the TouchDesigner connection — trigger phrases include "check my TD connection", "is TouchDesigner connected", "set up touchdesigner-mcp", "TD isn't responding", "fix the TouchDesigner connection", or "verify TouchDesigner is reachable".
+argument-hint: "[host] [port]"
+allowed-tools: ["mcp__plugin_td-companion_touchdesigner__get_td_info", "mcp__plugin_td-companion_touchdesigner__describe_td_tools"]
+version: 0.1.0
+---
+
+# TD Setup
+
+Verify that the bundled touchdesigner-mcp server can reach a running TouchDesigner instance, and walk through a fix when it cannot.
+
+## Workflow
+
+1. Parse the command arguments as `[host] [port]`. These are informational only — `get_td_info` takes no connection parameters; the actual endpoint is fixed at MCP server startup by the `--host`/`--port` CLI flags recorded in the plugin's `.mcp.json`. If the user supplied a host or port, remember it for step 4; otherwise assume the defaults (`http://localhost`, port `9981`), which match TouchDesigner's WebServer DAT default.
+
+2. Call `get_td_info` with no parameters.
+
+3. If it succeeds, the response carries TouchDesigner's build metadata (server name, version, operating system). Report these values back to the user in plain language (e.g. "Connected to TouchDesigner <version> on <os>") and confirm the connection is ready. Optionally call `describe_td_tools` (e.g. with `detailLevel: "summary"`) to summarize the available tool categories so the user sees what's usable from here. Stop here — no further diagnostics are needed.
+
+4. If `get_td_info` fails, walk the following diagnostic ladder one step at a time, asking the user to confirm each fix before moving to the next, and re-calling `get_td_info` after every confirmed fix:
+   a. **Is TouchDesigner running?** Ask the user to confirm the TouchDesigner application is open with a project loaded. If not, ask them to launch it and load their project, then retry.
+   b. **Is `mcp_webserver_base.tox` imported?** The project must have this component dragged into `/project1`. It ships in the `td/` directory of the touchdesigner-mcp GitHub repository (also attached to GitHub releases). If the user hasn't imported it — or TouchDesigner isn't running at all — offer `/td-companion:td-launch`, which automates downloading the tox, launching TouchDesigner with it imported, and waiting for the connection; otherwise point them to the repo/release and ask them to drag it in, then retry.
+   c. **Is the WebServer DAT active on port 9981?** Inside the imported component, the WebServer DAT must be running and bound to port 9981 (TouchDesigner's default). Ask the user to check the DAT's Active parameter and its port field, then retry.
+   d. **Non-default host/port.** If the user supplied a host or port in step 1 that differs from `http://localhost` / `9981`, explain that `get_td_info` will keep failing against the default endpoint no matter what TD-side fixes are made — the MCP server itself needs to be told the new endpoint. That means editing the plugin's MCP server launch entry (the `touchdesigner` entry in `.mcp.json`) to add `--host=<host>` and `--port=<port>` to its `args` array, then reloading the MCP connection (restarting the Claude Code session or plugin) before retrying.
+
+5. Once `get_td_info` succeeds after a fix, proceed as in step 3. If every step in the ladder has been confirmed and it still fails, report that clearly rather than guessing further — see Failure handling.
+
+## Failure handling
+
+If `get_td_info` still fails after the full diagnostic ladder, report the exact error text returned by the tool, state which ladder steps were confirmed by the user, and stop rather than speculating about further causes — TouchDesigner-side network or firewall issues are outside what this skill can diagnose remotely. If `describe_td_tools` fails while `get_td_info` succeeded, report that the connection itself is healthy but the tool manifest could not be generated, and include the raw error. Never claim the connection is verified based on anything other than a successful `get_td_info` call.
