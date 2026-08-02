@@ -1,0 +1,17 @@
+{
+	"description": "Reminds Claude to verify TouchDesigner state after network-mutating tool calls",
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "mcp__.+__(create_td_node|update_td_node_parameters|delete_td_node|exec_node_method|execute_python_script)",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/td-verify-reminder.sh\"",
+						"timeout": 10
+					}
+				]
+			}
+		]
+	}
+}

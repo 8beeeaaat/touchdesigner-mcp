@@ -1,0 +1,6 @@
+{
+	"touchdesigner": {
+		"command": "npx",
+		"args": ["-y", "touchdesigner-mcp-server@^2", "--stdio"]
+	}
+}
