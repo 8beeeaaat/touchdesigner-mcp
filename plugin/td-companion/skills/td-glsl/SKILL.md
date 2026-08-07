@@ -102,7 +102,7 @@ If uncertain what a given node type or family exposes beyond its parameters, `ge
 
 ## Compute Shaders
 
-The GLSL TOP also supports compute shader mode, used for workgroup-based parallel operations (e.g., particle simulation, custom filters operating over arbitrary buffer layouts) rather than per-pixel fragment output. Compute mode shifts the entry point, output mechanism, and workgroup declarations away from the pixel shader skeleton above, and its exact output-image binding syntax is version-sensitive enough to be worth verifying live rather than assuming. See the reference file for a starting skeleton and the verification approach for compute-specific details.
+The GLSL TOP also supports compute shader mode, used for workgroup-based parallel operations (e.g., particle simulation, custom filters operating over arbitrary buffer layouts) rather than per-pixel fragment output. Compute mode shifts the entry point, output mechanism, and workgroup declarations away from the pixel shader skeleton above: results are written with `imageStore` into `mTDComputeOutputs[0]` rather than assigned to `fragColor`, and the shader source hangs off the `computedat` parameter with `mode` set to `compute`. Compile results appear in the same Info DAT as in pixel mode. See the reference file for a working skeleton verified against TD 2025.33070.
 
 ## Additional Resources
 
