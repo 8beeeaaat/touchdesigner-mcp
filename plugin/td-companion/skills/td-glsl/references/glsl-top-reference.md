@@ -167,22 +167,22 @@ The decay/accumulate logic (the `0.95` factor and the `max` above) is where the 
 Compute mode on the GLSL TOP is for workgroup-parallel operations that don't map cleanly onto a per-pixel fragment pass — particle updates, arbitrary buffer scatter/gather, multi-pass algorithms that need explicit control over which invocations touch which data. A minimal compute shader skeleton looks conceptually like:
 
 ```glsl
-layout(local_size_x = 16, local_size_y = 16) in;
+layout(local_size_x = 8, local_size_y = 8) in;
 
 void main()
 {
     ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-    // read, compute, write via TD's compute-mode output image binding
+    imageStore(mTDComputeOutputs[0], texel, TDOutputSwizzle(vec4(1.0, 0.0, 0.0, 1.0)));
 }
 ```
 
 The `local_size_x`/`local_size_y` workgroup dimensions are a genuine design choice (matched to the problem's data shape, commonly a power of two like 8, 16, or 32) rather than a fixed constant to copy — an image-processing pass over a 2D texture typically uses a 2D workgroup shape that divides the texture dimensions reasonably evenly, while a 1D particle buffer typically uses a 1D workgroup.
 
-The output image binding name and the exact declaration syntax for writing results in compute mode (as opposed to the pixel shader's `fragColor` output) are more version-sensitive than the pixel shader dialect above, since compute support was added to the GLSL TOP later and its conventions have moved.
+Compute mode writes through `mTDComputeOutputs`, an **array** binding indexed by output — `mTDComputeOutputs[0]` for the first. Verified in TD 2025.33070: the skeleton above compiles and the resulting TOP reads back `[1.0, 0.0, 0.0, 1.0]`, while the singular spelling fails with `'mTDComputeOutput' : undeclared identifier`. `TDOutputSwizzle` is accepted here as in pixel mode and compiles either way, so use it for channel correctness rather than to satisfy the compiler.
 
-**This section is the one part of this reference not verified against a live build** — unlike the pixel-shader dialect above, the compute binding name here is not asserted, only the procedure for discovering it. Do not fill the gap from memory or from desktop-GLSL habit.
+Set the GLSL TOP's `mode` parameter to `compute` (its menu values are `vertexpixel` and `compute`) and point `computedat` at the DAT holding this source.
 
-To discover it on the installed build: create a `glslTOP`, set its `mode` parameter to compute, point `computedat` at a `textDAT` holding the skeleton above, then attach an `infoDAT` (`par.op` = the glslTOP) and read its `.text`. The Info DAT is the only place the compile log appears — `get_td_node_errors` reads `errors()`, and GLSL compile failures are reported through `warnings()` instead, so it will report a clean node for a shader that did not compile. Writing an intentionally wrong binding name and reading the resulting `ERROR:` line in that log is the fastest way to confirm the real one. Official Derivative documentation for the GLSL TOP's compute mode is the fallback when the compile log alone doesn't resolve it.
+Compile results reach the same place as in pixel mode: an `infoDAT` with `par.op` set to the glslTOP, whose text reads `Compute Shader Compile Results:` followed by `Compiled Successfully` or `ERROR:` lines. `get_td_node_errors` is no help here either — a compute shader that fails to compile still returns `""` from `errors()` and reports only `Warning: The GLSL Shader has compile errors (Use Info DAT to see details).` through `warnings()`. Error line numbers map 1:1 onto the DAT source, exactly as in pixel mode (a bad identifier on line 6 reports `ERROR: /<DAT path>:6:`).
 
 ## Debugging Techniques
 
