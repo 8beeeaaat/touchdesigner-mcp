@@ -1,7 +1,6 @@
 ---
 name: td-setup
-description: This skill should be used when the user runs /td-companion:td-setup or asks to verify, check, fix, or set up the TouchDesigner connection — trigger phrases include "check my TD connection", "is TouchDesigner connected", "set up touchdesigner-mcp", "TD isn't responding", "fix the TouchDesigner connection", or "verify TouchDesigner is reachable".
-allowed-tools: ["mcp__plugin_td-companion_touchdesigner__get_td_info", "mcp__plugin_td-companion_touchdesigner__describe_td_tools"]
+description: This skill should be used when the user runs /td-companion:td-setup or asks to verify, check, fix, or set up the TouchDesigner connection — trigger phrases include "check my TD connection", "is TouchDesigner connected", "set up touchdesigner-mcp", "TD isn't responding", "fix the TouchDesigner connection", or "verify TouchDesigner is reachable". If TouchDesigner is not running at all and needs to be started, the td-launch skill applies instead.
 version: 0.1.0
 ---
 

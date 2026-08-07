@@ -191,9 +191,9 @@ fragColor = TDOutputSwizzle(vec4(someVec2Value, 0.0, 1.0));  // vec2 as red/gree
 fragColor = TDOutputSwizzle(vec4(abs(someSignedValue) * vec3(1.0, 0.0, 0.0), 1.0));  // sign via color
 ```
 
-Swap the real `fragColor` assignment for one of these, check the result with `get_top_image`, then swap back once the value under inspection looks correct. This is far faster than trying to mentally trace vector math, especially for coordinate transforms, displacement vectors, and mask thresholds. Combine this with the SKILL.md compile-check loop: fix compile errors first (via `get_td_node_errors`), then use color-visualization to debug logic errors that compile cleanly but produce the wrong image.
+Swap the real `fragColor` assignment for one of these, check the result with `get_top_image`, then swap back once the value under inspection looks correct. This is far faster than trying to mentally trace vector math, especially for coordinate transforms, displacement vectors, and mask thresholds. Combine this with the SKILL.md compile-check loop: fix compile errors first (read the glslTOP's Info DAT — `get_td_node_errors` does not report GLSL compile failures), then use color-visualization to debug logic errors that compile cleanly but produce the wrong image.
 
-Reported error line numbers are offset from the DAT's own line numbers because TD prepends injected declarations before the shader body — always match the reported error to its actual source line by content (a variable or function name), not by counting lines from the top of the DAT.
+Reported error line numbers map 1:1 onto the DAT's own line numbers. The Info DAT compile log cites `/<DAT path>:<line>` and that line is the DAT source line (verified in TD 2025.33070), so go straight to it rather than searching by content.
 
 ## Performance Notes
 

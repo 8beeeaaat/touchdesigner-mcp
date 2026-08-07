@@ -2,7 +2,6 @@
 name: td-snapshot
 description: This skill should be used when the user runs /td-companion:td-snapshot or asks to see, preview, capture, or confirm the visual output of a TouchDesigner TOP — trigger phrases include "show me the output", "what does this look like", "capture the render", "snapshot the TOP", "check the visual output", or "is this TOP rendering correctly".
 argument-hint: "[top-path]"
-allowed-tools: ["mcp__plugin_td-companion_touchdesigner__get_td_nodes", "mcp__plugin_td-companion_touchdesigner__get_top_image"]
 version: 0.1.0
 ---
 
@@ -14,7 +13,7 @@ Capture and visually confirm the current output of a TouchDesigner TOP.
 
 1. Resolve the target TOP. If the user supplied a `top-path` argument, use it directly and skip to step 3.
 
-2. Otherwise, discover candidates: call `get_td_nodes` with `parentPath` set to `/project1` — or `/` when `/project1` doesn't exist (a project launched by opening the tox as a document) — or a path the user mentioned, and inspect the returned nodes' `opType` values for ones ending in `TOP`. Prefer, in order: a node literally named `out1` or `output`, a node named like `null_final` or containing `final`/`out`, or — failing a naming match — the last TOP-family node in the list. State explicitly which node was picked and why (e.g. "picked `/project1/out1` because it's the conventional output name") so the user can correct the guess if it's wrong. If several equally plausible candidates exist and none is a clear "final output," list them and ask the user to pick rather than guessing silently.
+2. Otherwise, discover candidates: call `get_td_nodes` with `parentPath` set to `/project1` — or `/` when `/project1` doesn't exist (a project launched by opening the tox as a document) — or a path the user mentioned, and inspect the returned nodes' `opType` values for ones ending in `TOP`. Prefer, in order: a node literally named `out1` or `output`, a node named like `null_final` or containing `final`/`out`, or — failing a naming match — the TOP whose `path` is deepest in the chain being inspected (note that `get_td_nodes` returns the whole subtree by default, so list order carries no "last node" meaning; pass `pattern: ""` if only direct children are wanted). State explicitly which node was picked and why (e.g. "picked `/project1/out1` because it's the conventional output name") so the user can correct the guess if it's wrong. If several equally plausible candidates exist and none is a clear "final output," list them and ask the user to pick rather than guessing silently.
 
    If the target is nested inside a sub-COMP rather than sitting directly under `/project1`, narrow `parentPath` to that COMP first (using whatever path context the user's request implies) instead of scanning the whole project — this keeps the candidate list relevant and avoids surfacing unrelated TOPs from other parts of the network.
 

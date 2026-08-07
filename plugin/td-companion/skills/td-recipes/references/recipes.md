@@ -17,7 +17,7 @@ Parameter and class names below were verified against a live TouchDesigner 2025.
 | Node name | nodeType | Purpose |
 |---|---|---|
 | `geo1` | `geometryCOMP` | Holds the geometry to render; contains a SOP network inside it. |
-| `torus1` (inside `geo1`) | `torusSOP` | A default piece of geometry to render (swap for any SOP). |
+| `torus1` (inside `geo1`) | `torusPOP` | A default piece of geometry to render (swap for any SOP/POP). |
 | `phong1` | `phongMAT` | Shades the geometry — the default, general-purpose material. |
 | `cam1` | `cameraCOMP` | The viewpoint the scene is rendered from. |
 | `light1` | `lightCOMP` | Illuminates the geometry — without one, a Phong-shaded object renders black or unlit. |
@@ -26,11 +26,11 @@ Parameter and class names below were verified against a live TouchDesigner 2025.
 
 **Build order**
 
-1. Create `geo1` (`geometryCOMP`) at the container path. A default `geometryCOMP` is created with a `torusSOP` already inside it — verify this with `get_td_nodes` on `geo1`'s path before adding your own SOP; only create `torus1` explicitly if the default geometry is missing or needs to be replaced.
+1. Create `geo1` (`geometryCOMP`) at the container path. A default `geometryCOMP` is created with a `torusPOP` already inside it — verify this with `get_td_nodes` on `geo1`'s path before adding your own SOP; only create `torus1` explicitly if the default geometry is missing or needs to be replaced.
 2. Create `cam1` (`cameraCOMP`) and `light1` (`lightCOMP`) as siblings of `geo1`, not inside it.
 3. Create `phong1` (`phongMAT`) as a sibling as well — MATs live alongside COMPs, not wired into the node network.
 4. Assign the material to the geometry: `update_td_node_parameters({ nodePath: ".../geo1", properties: { material: "../phong1" } })`. `material` is the verified parameter name on the geometry COMP's Render page; the string path format matters (relative path from the geo COMP).
-5. Create `render1` (`renderTOP`). Point it at the scene: `update_td_node_parameters({ nodePath: ".../render1", properties: { camera: "../cam1", geometry: "../geo1", light: "../light1" } })`.
+5. Create `render1` (`renderTOP`). Point it at the scene: `update_td_node_parameters({ nodePath: ".../render1", properties: { camera: "../cam1", geometry: "../geo1", lights: "../light1" } })`.
 6. Create `null1` (`nullTOP`) and wire it downstream of `render1`:
    ```python
    op('.../null1').inputConnectors[0].connect(op('.../render1'))
@@ -38,7 +38,7 @@ Parameter and class names below were verified against a live TouchDesigner 2025.
 
 **Key parameters**
 
-- `render1.camera`, `render1.geometry`, `render1.light` — the three references that make the render TOP actually show something. A render TOP with any of these unset produces a black or empty image with no cook error, so double-check them first if the output looks wrong (see "Silent black output" in `SKILL.md`).
+- `render1.camera`, `render1.geometry`, `render1.lights` — the three references that make the render TOP actually show something. A render TOP with any of these unset produces a black or empty image with no cook error, so double-check them first if the output looks wrong (see "Silent black output" in `SKILL.md`).
 - `cam1.tx` / `ty` / `tz` / `rx` / `ry` / `rz` — standard COMP transform parameters, used to position and aim the camera. Move the camera back along `tz` (e.g. `tz: 5`) if the default position is inside the geometry.
 - `light1`'s exact shading parameters (color, dimmer/intensity) vary slightly by light type — confirm names with `get_td_node_parameters` before adjusting brightness or color.
 
@@ -137,7 +137,7 @@ Expect at least one channel, non-flat values from `analyze1`, and values in the 
 
 - `feedback1.top` — which TOP's output is captured and re-supplied as feedback.
 - `level1.opacity` — the decay factor; this is what makes trails fade rather than saturate to white/solid over time.
-- `composite1`'s operation parameter (commonly `operation`) — set to an "over" or "add" style blend depending on whether trails should occlude or accumulate with new input.
+- `composite1`'s blend-mode parameter (`operand`) — set to an "over" or "add" style blend depending on whether trails should occlude or accumulate with new input.
 
 **Verify.** Watch for the most common feedback mistake: nothing decaying (trails never fade, image washes out) means the level/decay value is too close to 1 or missing entirely; nothing appearing at all (permanently black) means the composite chain isn't actually receiving new input each frame, only the loop — see "Feedback loops that never start" in `SKILL.md`. Use `get_top_image` on `null1` across a couple of calls to visually confirm trails both appear and fade.
 
@@ -156,20 +156,20 @@ Expect at least one channel, non-flat values from `analyze1`, and values in the 
 
 **Build order**
 
-1. Create `geo1` (`geometryCOMP`) with whatever geometry should be repeated inside it (a default `torusSOP`, or a custom one).
+1. Create `geo1` (`geometryCOMP`) with whatever geometry should be repeated inside it (a default `torusPOP`, or a custom one).
 2. Create the instance-data source. For a CHOP-driven layout, `noiseCHOP` with enough samples to cover the desired instance count works well as a starting point (each sample becomes one instance's transform data); for point-based placement, a SOP's points can be used directly instead.
 3. Turn on instancing on `geo1` and point it at the data source. TouchDesigner's Geometry COMP exposes an Instance page whose parameter names are verified: the `instancing` toggle, the `instanceop` source reference, and per-component channel-name parameters — `instancetx`/`instancety`/`instancetz` (position), `instancerx`/`instancery`/`instancerz` (rotation), `instancesx`/`instancesy`/`instancesz` (scale), `instancer`/`instanceg`/`instanceb`/`instancea` (color).
    ```
    update_td_node_parameters({ nodePath: ".../geo1", properties: { instancing: 1, instanceop: "../positions1" } })
    ```
-4. Once instancing is on and pointed at the source, set the per-axis channel-name parameters (`instancetx`/`instancety`/`instancetz` at minimum) to match the channel names actually present in `positions1`. Inspect them through `execute_python_script` before configuring the Geometry COMP: `print([channel.name for channel in op('.../positions1').chans()])`. A default `noiseCHOP` may expose names such as `chan1`, `chan2`, and `chan3`; use only the names returned by the live node.
+4. Once instancing is on and pointed at the source, set the per-axis channel-name parameters (`instancetx`/`instancety`/`instancetz` at minimum) to match the channel names actually present in `positions1`. Inspect them through `execute_python_script` before configuring the Geometry COMP: `print([channel.name for channel in op('.../positions1').chans()])`. A default `noiseCHOP` exposes a single channel named `chan1` (verified in TD 2025.33070); channel count and names change with its parameters; use only the names returned by the live node.
 5. Add a camera, light, and render TOP per the basic 3D render network recipe above if none already exist in the project, so the instanced result is actually visible.
 
 **Key parameters**
 
 - `geo1.instancing` / `geo1.instanceop` — the toggle and the instance-data source path.
 - `geo1`'s per-axis instance channel-name parameters (position at minimum; rotation and scale optional) — must match real channel names in the source CHOP/SOP/DAT.
-- `positions1`'s own parameters (e.g. `noiseCHOP`'s `period`, `translate`) if using noise to drive layout — animating these moves the whole instance field over time.
+- `positions1`'s own parameters (e.g. `noiseCHOP`'s `period`, `tx`/`ty`/`tz`) if using noise to drive layout — animating these moves the whole instance field over time.
 
 **Verify.** After enabling instancing, call `get_td_node_errors` on `geo1` first — a mismatched channel name or a bad `instanceop` reference typically surfaces there as a clear error rather than a silent single-instance render. Then call `get_top_image` on the render chain's output to confirm multiple copies of the geometry actually appear, not just one instance at the origin (which usually means the instance source path or channel names didn't take).
 
@@ -192,7 +192,7 @@ Expect at least one channel, non-flat values from `analyze1`, and values in the 
 2. TouchDesigner's noise operators are already time-based by default — a `noiseCHOP`/`noiseTOP` left at its defaults evolves continuously because its internal time reference advances every frame. For a `noiseCHOP`, confirm this by using `execute_python_script` to read channel samples twice at different moments, as shown in the audio recipe above. For a `noiseTOP`, capture two images with `get_top_image`. If the output is static, inspect its time-related settings with `get_td_node_parameters` before adding a manual time expression.
 3. Where explicit time control is wanted (e.g. changing the rate of evolution independent of playback), set the parameter's expression through `execute_python_script`, because `update_td_node_parameters` writes literal values through `par.val` and cannot switch a parameter to expression mode:
    ```python
-   op('.../noise1').par.translatex.expr = "absTime.seconds * 0.1"
+   op('.../noise1').par.tx.expr = "absTime.seconds * 0.1"
    ```
    Use `me.time.frame` instead when the animation should be tied to frame count rather than wall-clock time (e.g. for frame-accurate export/render).
 4. Connect the noise output to `target1`'s transform. For a CHOP driving a COMP's transform parameters, set an expression on the destination parameter through `execute_python_script`, since COMP transform parameters are not CHOP inputs:
@@ -204,7 +204,7 @@ Expect at least one channel, non-flat values from `analyze1`, and values in the 
 **Key parameters**
 
 - `noise1.period` — controls how quickly the noise pattern changes; larger values = slower, smoother evolution.
-- `noise1.translate` (or `translatex`/`translatey`/`translatez`) — scrolling the noise field over time is what produces continuous, non-looping motion; this is the parameter to drive with an `absTime.seconds`-based expression when explicit rate control is needed.
+- `noise1.tx` (or `ty`/`tz`) — scrolling the noise field over time is what produces continuous, non-looping motion; this is the parameter to drive with an `absTime.seconds`-based expression when explicit rate control is needed.
 - `noise1.type` — selects the noise algorithm; the default is usually adequate for organic motion, but sparser or blockier variants exist for more angular results.
 
 **Verify.** Inspect a `noiseCHOP`'s channel samples twice through `execute_python_script`, or capture a `noiseTOP` twice with `get_top_image`, and confirm the output changes. Then call `get_top_image` for a visual target or `get_td_node_parameters` on `target1` to confirm the destination parameter's evaluated value changes with the noise.

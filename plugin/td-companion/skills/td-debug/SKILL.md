@@ -2,7 +2,6 @@
 name: td-debug
 description: This skill should be used when the user runs /td-companion:td-debug or asks to debug, investigate, or find TouchDesigner node errors — trigger phrases include "debug my TouchDesigner project", "why is this node broken", "find errors in TD", "investigate node errors", "what's wrong with /project1/geo1", or "fix this TouchDesigner error".
 argument-hint: "[node-path]"
-allowed-tools: ["mcp__plugin_td-companion_touchdesigner__get_td_info", "mcp__plugin_td-companion_touchdesigner__get_td_nodes", "mcp__plugin_td-companion_touchdesigner__get_td_node_errors", "mcp__plugin_td-companion_touchdesigner__get_td_node_parameters"]
 version: 0.1.0
 ---
 
@@ -18,13 +17,13 @@ Systematically investigate TouchDesigner node errors within a scope, classify ea
 
 3. Call `get_td_node_errors` with `nodePath` set to the resolved scope. This tool requires a `nodePath` but aggregates errors from that node **and all of its descendants**, so one call against `/project1` (or whatever scope was resolved) covers the whole subtree — there's no need to call it once per node.
 
-4. If the response's `hasErrors` is false, report that no errors were found in scope and stop. Suggest widening or narrowing the scope if the user expected to find something.
+4. `get_td_node_errors` returns formatted text by default, not the raw schema — a clean scope reads `Node <path> has no reported errors.` and each error line reads `- <nodePath> (<opType>): <message>`. Pass `responseFormat: "json"` (or `detailLevel: "detailed"`) when the raw `hasErrors` / `errors[]` fields are actually needed. If no errors are reported, say so and stop. Suggest widening or narrowing the scope if the user expected to find something.
 
-5. If `hasErrors` is true, iterate the `errors` array. Each entry carries `nodePath`, `nodeName`, `opType`, and `message`. For a large error set, triage rather than processing every entry one by one: group by `opType` and by similar `message` text, and prioritize distinct root causes over duplicate symptoms.
+5. Otherwise iterate the reported errors. The default text carries `nodePath`, `opType`, and `message` per entry (`nodeName` appears only in the JSON form). For a large error set, triage rather than processing every entry one by one: group by `opType` and by similar `message` text, and prioritize distinct root causes over duplicate symptoms.
 
 6. For each distinct errored node (or a representative of a group), call `get_td_node_parameters` with that node's `nodePath` to inspect its current parameter values.
 
-7. Inspect upstream context with `get_td_nodes` (`parentPath` set to the errored node's parent) to see sibling/input nodes feeding it, using naming and `opType` as a proxy for likely wiring since this tool does not report connections directly. When the error message or parameter values don't make the root cause clear enough this way, use `execute_python_script` for deeper probing (e.g. reading `op(path).inputs` or a DAT's script text) — this tool is not pre-authorized for this skill, so calling it will trigger a permission prompt; that's expected, not a bug.
+7. Inspect upstream context with `get_td_nodes` (`parentPath` set to the errored node's parent, plus `pattern: ""` — the default `"*"` returns that parent's entire subtree rather than just its direct children) to see sibling/input nodes feeding it, using naming and `opType` as a proxy for likely wiring since this tool does not report connections directly. When the error message or parameter values don't make the root cause clear enough this way, use `execute_python_script` for deeper probing (e.g. reading `op(path).inputs` or a DAT's script text) — this tool is not pre-authorized for this skill, so calling it will trigger a permission prompt; that's expected, not a bug.
 
 8. Classify each distinct error using the message text and the context gathered so far, into one of: **missing input** (message references no/disconnected input), **bad parameter or expression** (parameter or expression syntax/evaluation failure), **file not found** (a file-based TOP/DAT/SOP path doesn't resolve), **script error** (a DAT's Python/GLSL raised an exception), or **other/unclassified** when none fit.
 

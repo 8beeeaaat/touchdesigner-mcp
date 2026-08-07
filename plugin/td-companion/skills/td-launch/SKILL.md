@@ -2,7 +2,6 @@
 name: td-launch
 description: This skill should be used when the user runs /td-companion:td-launch or asks to "start TouchDesigner", "launch TD", "open TouchDesigner with the MCP component", "set up TouchDesigner from scratch", or says TouchDesigner isn't running yet — it launches the TouchDesigner application with mcp_webserver_base.tox imported and waits until the MCP connection is live. For diagnosing an already-running TouchDesigner, the td-setup skill applies instead.
 argument-hint: "[tox-path]"
-allowed-tools: ["mcp__plugin_td-companion_touchdesigner__get_td_info", "mcp__plugin_td-companion_touchdesigner__describe_td_tools"]
 version: 0.1.0
 ---
 

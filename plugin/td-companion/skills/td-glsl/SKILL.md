@@ -1,6 +1,6 @@
 ---
 name: td-glsl
-description: This skill should be used when the user wants to write a shader, work with a GLSL TOP, build a pixel shader or compute shader in TouchDesigner, port GLSL code into a TD project, or diagnose shader compile errors in TD. Concrete triggers include "write a shader", "GLSL TOP", "pixel shader", "compute shader", "fragment shader in TouchDesigner", and shader compile errors surfaced by get_td_node_errors.
+description: This skill should be used when the user wants to write a shader, work with a GLSL TOP, build a pixel shader or compute shader in TouchDesigner, port GLSL code into a TD project, or diagnose shader compile errors in TD. Concrete triggers include "write a shader", "GLSL TOP", "pixel shader", "compute shader", "fragment shader in TouchDesigner", and shader compile errors reported by a GLSL TOP's Info DAT.
 version: 0.1.0
 ---
 
@@ -28,11 +28,12 @@ Do not write:
 
 - `#version` — TD prepends its own version directive and extension pragmas before compiling.
 - `in vec3 vUV;` or any other input/varying declaration for `vUV` — TD injects these automatically based on the TOP's inputs.
-- A custom output variable name in place of `fragColor` — TD's wrapper expects that exact identifier.
 
-Declaring any of the above yourself produces a redefinition error, because TD's injected code and your declaration collide. When `get_td_node_errors` reports something like "redefinition of 'vUV'" or "extension directive must occur before any non-preprocessor tokens," the fix is almost always to delete a declaration you added rather than to add one.
+Declaring either of the above yourself collides with TD's injected code. The compile log reports these as `'#version' : must occur first in shader` and `'vUV' : redefinition`; the fix is almost always to delete a declaration you added rather than to add one.
 
-Pass every final pixel color through `TDOutputSwizzle` before assigning it to `fragColor`. TouchDesigner uses this helper to map channels correctly for the destination texture format across Windows and macOS. It is required for pixel-shader outputs; TouchDesigner's compute-output helpers apply the equivalent conversion internally.
+A custom output variable name in place of `fragColor` *does* compile — verified in TD 2025.33070, `out vec4 myColor;` with `myColor = TDOutputSwizzle(...)` reports `Compiled Successfully`. Prefer `fragColor` because it is what TD's own examples use, not because the wrapper requires it; do not "fix" a working shader that uses another name.
+
+Pass every final pixel color through `TDOutputSwizzle` before assigning it to `fragColor`. TouchDesigner uses this helper to map channels correctly for the destination texture format across Windows and macOS. Omitting it still compiles, so treat it as a correctness requirement rather than a compile-time one; TouchDesigner's compute-output helpers apply the equivalent conversion internally.
 
 ### Sampling inputs
 
@@ -47,7 +48,7 @@ vec4 b = texture(sTD2DInputs[1], vUV.st);
 
 ### Built-in uniforms
 
-TD exposes rendering context through built-in uniform structs, the most commonly used being `uTDOutputInfo`, which carries information about the output resolution and related render state (for example a resolution-style member accessed as `uTDOutputInfo.res` in many TD versions). The exact member names and layout of these built-in structs have changed across TouchDesigner releases and are not something to assert from memory. Before relying on a specific member name, verify it directly against the current build: check the GLSL TOP's compile error report (an unknown-member error will name the actual struct fields available), or create a minimal test GLSL TOP and call `get_td_node_errors` after intentionally referencing a guessed member name — the compiler's error message is the fastest ground truth. Derivative's own documentation for the GLSL TOP is the authoritative reference when compile errors alone aren't enough context.
+TD exposes rendering context through built-in uniform structs, the most commonly used being `uTDOutputInfo`, which carries information about the output resolution and related render state (for example a resolution-style member accessed as `uTDOutputInfo.res` in many TD versions). The exact member names and layout of these built-in structs have changed across TouchDesigner releases and are not something to assert from memory. Before relying on a specific member name, verify it directly against the current build: create a minimal test GLSL TOP referencing the guessed member and read its Info DAT (see the workflow below). Note the error only confirms the guess was wrong — it does *not* enumerate the valid fields. TD 2025.33070 reports exactly `'zzzNope' : no such field in structure 'anon@0'` and nothing more, so use it to reject a name, not to discover one. Derivative's own documentation for the GLSL TOP is the authoritative reference when compile errors alone aren't enough context.
 
 ### Custom uniforms
 
@@ -65,9 +66,26 @@ Building a GLSL effect in a live TD project is an edit-compile-check loop, not a
 1. **Create the nodes.** Use `create_td_node` to add a `glslTOP` under the target parent, and a separate `textDAT` to hold the shader source (e.g. `{parentPath: "/project1", nodeType: "glslTOP", nodeName: "shader1"}` and `{parentPath: "/project1", nodeType: "textDAT", nodeName: "shader1_pixel"}`).
 2. **Wire the DAT into the GLSL TOP.** Point the GLSL TOP's `pixeldat` parameter (verified in TD 2025.33070) at the text DAT's path via `update_td_node_parameters`. Related verified parameters on the same page: `glslversion`, `mode` (pixel vs. compute), `computedat` (compute-shader DAT), and `errorbehavior`.
 3. **Write the shader source into the DAT.** Either call `update_td_node_parameters` on the text DAT's `text` property with the full shader body, or use `execute_python_script` to assign it directly, e.g. `op('/project1/shader1_pixel').text = '''...shader source...'''`. The `execute_python_script` route is convenient for multi-line shader text with embedded quotes.
-4. **Check for compile errors before trusting the output.** Call `get_td_node_errors` on the glslTOP immediately after writing new shader text. A failed compile leaves the TOP showing stale or black output, so looking at `get_top_image` first can be actively misleading — always check errors first, image second.
-5. **Read the error against the DAT source, accounting for line offset.** TD prepends its own injected declarations before the shader body, so a reported error line number is typically offset from the line count in the DAT. When an error cites a line number, don't assume it maps 1:1 to the source — locate the actual offending token by content (a variable name, a function call) rather than by counting lines literally, and treat the reported number as an approximate hint, not an exact address.
-6. **Fix and repeat.** Re-write the DAT text, re-check `get_td_node_errors`, and only call `get_top_image` for a visual check once the error list is empty. Iterate this loop rather than writing a large shader in one pass — TD's dialect differences mean even experienced GLSL authors trip on the `#version`/`in`/`out` rules on a first draft.
+4. **Attach an Info DAT — this is the only place compile errors are readable.** `get_td_node_errors` does **not** surface GLSL compile failures. Verified in TD 2025.33070: a glslTOP with a broken shader returns `""` from `op.errors()` (which is all `get_td_node_errors` reads, including a recursive check from the parent), and reports the failure through `op.warnings()` instead, as the single line `Warning: The GLSL Shader has compile errors (Use Info DAT to see details.)`. The `errorbehavior` parameter does not change this — its menu values (`showcheckerboard` / `showblack` / `showprevious`) only affect what the TOP displays.
+
+   Create an `infoDAT` once and point it at the glslTOP, then read its text for the actual compile log:
+
+   ```
+   create_td_node({parentPath: "/project1", nodeType: "infoDAT", nodeName: "shader1_info"})
+   update_td_node_parameters({nodePath: "/project1/shader1_info", properties: {op: "/project1/shader1"}})
+   execute_python_script({script: "result = op('/project1/shader1_info').text"})
+   ```
+
+   A successful compile reports `Compiled Successfully`; a failure looks like:
+
+   ```
+   Pixel Shader Compile Results:
+   ERROR: /project1/shader1_pixel:2: 'zzzNope' : no such field in structure 'anon@0'
+   ```
+
+   A failed compile leaves the TOP showing stale or black output, so calling `get_top_image` first is actively misleading — always read the Info DAT first, image second.
+5. **Read the error line number directly against the DAT source — it maps 1:1.** The compile log cites `/<DAT path>:<line>`, and that line number is the DAT's own source line (verified: a bad token placed on line 5 of the DAT reports `:5`). Go straight to that line; there is no injected-declaration offset to compensate for.
+6. **Fix and repeat.** Re-write the DAT text, re-read the Info DAT, and only call `get_top_image` for a visual check once the log says `Compiled Successfully`. Iterate this loop rather than writing a large shader in one pass — TD's dialect differences mean even experienced GLSL authors trip on the `#version`/`in` rules on a first draft.
 7. **Confirm visually.** Once errors are clear, use `get_top_image` on the glslTOP (or a downstream node) to inspect the actual rendered result at a reasonable `maxSize`, and compare it against what the effect was meant to produce.
 
 If uncertain what a given node type or family exposes beyond its parameters, `get_td_class_details` on the relevant class (e.g. `glslTOP`) surfaces its documented members and can shortcut trial-and-error before writing Python that touches the node programmatically.
@@ -80,7 +98,7 @@ If uncertain what a given node type or family exposes beyond its parameters, `ge
 - **Forgetting `.st` on `vUV`.** `texture(sampler2D, vec2)` expects a 2-component vector; passing the raw `vUV` (which may carry more components) without swizzling can produce a type error or, worse, silently sample incorrectly.
 - **Wrong sampler array indexing.** `sTD2DInputs` indices correspond to the GLSL TOP's input connections in order; reordering or removing an input connection shifts every subsequent index, so re-check indices after rewiring inputs.
 - **Declaring uniforms that don't exist on the parameter page.** A `uniform` in the shader with no matching entry on the GLSL TOP's parameter pages does not error reliably — it can just read as zero. Always cross-check with `get_td_node_parameters`.
-- **Assuming built-in struct members from memory or from other engines.** `uTDOutputInfo` and similar built-ins are TD-specific and version-dependent; verify member names against compile errors or official docs rather than guessing from Unity/Unreal/Shadertoy conventions.
+- **Assuming built-in struct members from memory or from other engines.** `uTDOutputInfo` and similar built-ins are TD-specific and version-dependent; verify member names against the Info DAT compile log or official docs rather than guessing from Unity/Unreal/Shadertoy conventions.
 
 ## Compute Shaders
 
