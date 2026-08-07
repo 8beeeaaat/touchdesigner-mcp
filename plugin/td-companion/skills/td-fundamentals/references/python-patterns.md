@@ -56,7 +56,7 @@ op('/project1/geo1').par.tx.expr = "op('lfo1')[0]"
 
 Assigning a plain value to the parameter directly (`par.tx = 5`) clears any existing expression and switches the parameter back to a constant. These are mutually exclusive states for a given parameter — decide which one is wanted before writing to it, and confirm the parameter's current mode with `get_td_node_parameters` if the prior state is unknown, rather than assuming it was already a constant.
 
-Fetch several related parameters at once with `.pars(pattern)`, which returns a tuple of `Par` objects matching a name pattern rather than a single named lookup:
+Fetch several related parameters at once with `.pars(pattern)`, which returns a list of `Par` objects matching a name pattern rather than a single named lookup:
 
 ```python
 for p in op('/project1/geo1').pars('t?'):   # tx, ty, tz
@@ -76,7 +76,7 @@ Do not treat these as interchangeable. An expression re-evaluates only when its 
 
 ## Iterating Children
 
-Every operator exposes its direct children as a tuple:
+Every operator exposes its direct children as a list:
 
 ```python
 for child in op('/project1/container1').children:
@@ -87,10 +87,10 @@ for child in op('/project1/container1').children:
 
 ```python
 import td
-all_tops = op('/project1').findChildren(type=td.TOP, depth=0)
+all_tops = op('/project1').findChildren(type=td.TOP)
 ```
 
-`depth=0` conventionally means "no depth limit" (search the entire subtree) in TD's `findChildren`-style APIs, while a positive integer limits how many levels deep the search goes — confirm this against the installed TD version with `get_td_class_details` before relying on it in an unfamiliar context, since the exact default and the full set of accepted filter keyword arguments (by name, by path pattern, by tag) are worth checking rather than assumed wholesale from a single remembered example.
+`findChildren()` with no depth argument searches the entire subtree. `depth` is an **exact-match filter, not a limit** — direct children are depth 1, their children depth 2, and so on, so `findChildren(depth=1)` returns only direct children and `findChildren(depth=0)` returns an empty list. Use `maxDepth` to cap how far down the search goes. Verified against TD 2025.33070 on a project root: `findChildren()` → 72, `depth=0` → 0, `depth=1` → 13, `depth=2` → 12, `maxDepth=1` → 13. The full set of accepted filter keyword arguments (by name, by path pattern, by tag) is worth confirming with `get_td_class_details` rather than assumed from a single remembered example.
 
 ## Creating Operators from Python
 

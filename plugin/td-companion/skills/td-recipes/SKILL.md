@@ -71,7 +71,7 @@ Full node lists, wiring order, and parameter details for each of these live in `
 
 ## Common pitfalls
 
-**Silent black output.** A `renderTOP` (or any TOP) that cooks with no errors but shows a black image usually means a reference is missing rather than broken — no camera assigned, no light in the scene, or geometry facing away from the camera. Check the render TOP's `camera`, `geometry`, and `light` parameters with `get_td_node_parameters` before assuming the network itself is wrong.
+**Silent black output.** A `renderTOP` (or any TOP) that cooks with no errors but shows a black image usually means a reference is missing rather than broken — no camera assigned, no light in the scene, or geometry facing away from the camera. Check the render TOP's `camera`, `geometry`, and `lights` parameters with `get_td_node_parameters` before assuming the network itself is wrong.
 
 **Feedback loops that never start.** A `feedbackTOP` with nothing upstream yet composited in will just hold whatever its initial state was — usually black — forever, because there is nothing new for it to blend with. Confirm the compositing chain actually feeds new input into the loop, not only the previous frame, before concluding the feedback parameter is misconfigured.
 

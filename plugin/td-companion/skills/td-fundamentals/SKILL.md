@@ -1,6 +1,6 @@
 ---
 name: td-fundamentals
-description: This skill should be used when working with TouchDesigner through the touchdesigner-mcp tools — for example when asked to "build a network in TouchDesigner", "create a node", "wire operators together", add or configure a TOP/CHOP/SOP/DAT/COMP/MAT, inspect or edit a .toe or .tox file, set node parameters, or otherwise construct or modify a TouchDesigner project. Provides the operator family model, node path conventions, nodeType naming, the cook model, and the inspect-create-verify workflow needed to use the MCP tools correctly.
+description: This skill should be used when working with TouchDesigner through the touchdesigner-mcp tools — for example when asked to "build a network in TouchDesigner", "create a node", "wire operators together", add or configure a TOP/CHOP/SOP/DAT/COMP/MAT, inspect or edit a .toe or .tox file, set node parameters, or otherwise construct or modify a TouchDesigner project. Provides the operator family model, node path conventions, nodeType naming, the cook model, and the inspect-create-verify workflow needed to use the MCP tools correctly. For a step-by-step recipe for a specific named effect (audio reactive, feedback, instancing), the td-recipes skill applies instead; this skill covers the model those recipes assume.
 version: 0.1.0
 ---
 
@@ -16,16 +16,17 @@ Work through the bundled MCP tools rather than assuming network contents by memo
 
 ## Operator Families
 
-Every operator belongs to exactly one of six families, distinguished by the kind of data flowing through it. Family membership determines which wires are legal and which nodeType suffix to use when creating a node.
+Every operator belongs to exactly one of seven families, distinguished by the kind of data flowing through it. Family membership determines which wires are legal and which nodeType suffix to use when creating a node.
 
 - **TOP** (Texture Operator) — images and textures, processed on the GPU: cameras, video files, generative noise, compositing, rendering. Suffix `TOP` (e.g. `noiseTOP`, `moviefileinTOP`, `textTOP`).
 - **CHOP** (Channel Operator) — numeric channels over time: audio, control signals, MIDI, OSC, animation curves, sensor data. Suffix `CHOP` (e.g. `noiseCHOP`, `audiodeviceinCHOP`, `lfoCHOP`).
 - **SOP** (Surface Operator) — 3D geometry: points, polygons, curves. Suffix `SOP` (e.g. `boxSOP`, `sphereSOP`, `mergeSOP`).
 - **DAT** (Data Operator) — text and tables: scripts, JSON, CSV-like tables, web requests. Suffix `DAT` (e.g. `textDAT`, `tableDAT`, `webclientDAT`).
 - **COMP** (Component Operator) — containers: 3D objects (geometry, camera, light), UI panels, and organizational containers that hold networks of other operators. Suffix `COMP` (e.g. `geometryCOMP`, `cameraCOMP`, `lightCOMP`, `baseCOMP`).
-- **MAT** (Material Operator) — shading definitions applied to SOPs for rendering. Suffix `MAT` (e.g. `phongMAT`, `pbrMAT`).
+- **MAT** (Material Operator) — shading definitions applied to geometry for rendering. Suffix `MAT` (e.g. `phongMAT`, `pbrMAT`).
+- **POP** — GPU-resident geometry, alongside the CPU-side SOP family. Suffix `POP` (e.g. `torusPOP`). Present in TD 2025.33070 with 103 classes, and `torusPOP().family` returns `"POP"`, so it is a real family rather than a naming convention. A newly created `geometryCOMP` contains a `torusPOP`, not a `torusSOP`. Use `get_td_classes` for the roster on the installed build.
 
-Wire operators of the **same family** together directly (an output connector into an input connector). Never assume a wire crosses families — a TOP output cannot feed a CHOP input, and vice versa. Crossing families needs an explicit converter operator: `toptoCHOP`/`choptoTOP` (image ↔ channels), `dattoCHOP`/`choptoDAT` (table ↔ channels), `soptoDAT`/`dattoSOP` (geometry ↔ table). Materials attach to SOPs through a render operator's geometry reference rather than a direct wire. CHOP values commonly drive TOP/SOP/COMP parameters through parameter export or an expression rather than a wire at all — see Wiring below.
+Wire operators of the **same family** together directly (an output connector into an input connector). Never assume a wire crosses families — a TOP output cannot feed a CHOP input, and vice versa. Crossing families needs an explicit converter operator: `toptoCHOP`/`choptoTOP` (image ↔ channels), `dattoCHOP`/`choptoDAT` (table ↔ channels), `soptoDAT`/`dattoSOP` (geometry ↔ table). Materials attach through the Geometry COMP's `material` parameter (e.g. `geo1.material`), not through a wire. CHOP values commonly drive TOP/SOP/COMP parameters through parameter export or an expression rather than a wire at all — see Wiring below.
 
 ## Node Paths and Hierarchy
 

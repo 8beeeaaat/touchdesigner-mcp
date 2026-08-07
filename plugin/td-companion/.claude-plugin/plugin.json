@@ -1,7 +1,7 @@
 {
 	"name": "td-companion",
 	"version": "0.1.0",
-	"description": "TouchDesigner companion for Claude Code: bundles the touchdesigner-mcp server, TouchDesigner expertise skills (operators, Python API, GLSL, recipes, performance), setup/debug/snapshot/overview/perf commands, and a post-edit verification hook",
+	"description": "TouchDesigner companion for Claude Code: bundles the touchdesigner-mcp server, TouchDesigner expertise skills (operators, Python API, GLSL, recipes, performance), launch/setup/debug/snapshot/overview/perf skills invocable as slash commands, and a post-edit verification hook",
 	"author": {
 		"name": "sadao komaki",
 		"email": "8beeeaaat@gmail.com",

@@ -2,7 +2,6 @@
 name: td-perf
 description: This skill should be used when the user runs /td-companion:td-perf, or explicitly requests a guided, measured performance audit of a TouchDesigner project — a cook-time profiling pass across the network producing a ranked optimization report. For general performance questions, advice, or optimization knowledge without a measurement run, the td-performance knowledge skill applies instead.
 argument-hint: "[root-path]"
-allowed-tools: ["mcp__plugin_td-companion_touchdesigner__get_td_info", "mcp__plugin_td-companion_touchdesigner__get_td_nodes"]
 version: 0.1.0
 ---
 
