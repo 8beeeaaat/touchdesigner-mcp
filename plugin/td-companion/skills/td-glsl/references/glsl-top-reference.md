@@ -178,7 +178,11 @@ void main()
 
 The `local_size_x`/`local_size_y` workgroup dimensions are a genuine design choice (matched to the problem's data shape, commonly a power of two like 8, 16, or 32) rather than a fixed constant to copy — an image-processing pass over a 2D texture typically uses a 2D workgroup shape that divides the texture dimensions reasonably evenly, while a 1D particle buffer typically uses a 1D workgroup.
 
-The output image binding name and the exact declaration syntax for writing results in compute mode (as opposed to the pixel shader's `fragColor` output) are more version-sensitive than the pixel shader dialect above, since compute support was added to the GLSL TOP later and its conventions have moved. Do not assume a specific binding name from memory. Verify it by creating a glslTOP, switching it to compute mode, and reading either its default template shader text (via `execute_python_script`, e.g. `op('...').text`) or the compile error produced by an intentionally wrong binding name — either will reveal the actual expected declaration for the installed TD build. Official Derivative documentation for the GLSL TOP's compute mode is the fallback when the compile error alone doesn't resolve it.
+The output image binding name and the exact declaration syntax for writing results in compute mode (as opposed to the pixel shader's `fragColor` output) are more version-sensitive than the pixel shader dialect above, since compute support was added to the GLSL TOP later and its conventions have moved.
+
+**This section is the one part of this reference not verified against a live build** — unlike the pixel-shader dialect above, the compute binding name here is not asserted, only the procedure for discovering it. Do not fill the gap from memory or from desktop-GLSL habit.
+
+To discover it on the installed build: create a `glslTOP`, set its `mode` parameter to compute, point `computedat` at a `textDAT` holding the skeleton above, then attach an `infoDAT` (`par.op` = the glslTOP) and read its `.text`. The Info DAT is the only place the compile log appears — `get_td_node_errors` reads `errors()`, and GLSL compile failures are reported through `warnings()` instead, so it will report a clean node for a shader that did not compile. Writing an intentionally wrong binding name and reading the resulting `ERROR:` line in that log is the fastest way to confirm the real one. Official Derivative documentation for the GLSL TOP's compute mode is the fallback when the compile log alone doesn't resolve it.
 
 ## Debugging Techniques
 

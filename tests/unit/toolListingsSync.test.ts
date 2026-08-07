@@ -73,6 +73,25 @@ describe("README tool tables", () => {
 		).toEqual([]);
 	});
 
+	it("names only real tools in the td-verify-reminder hook script", async () => {
+		const script = await readRepoFile(
+			`${PLUGIN_DIR}/hooks/scripts/td-verify-reminder.sh`,
+		);
+		// The reminder text tells Claude which tools to verify a mutation with,
+		// so a renamed tool leaves it advising a call that no longer exists.
+		const mentioned = [
+			...script.matchAll(
+				/\b(?:get|create|update|delete|exec|describe)_[a-z0-9_]+\b/g,
+			),
+		].map((match) => match[0]);
+		expect(mentioned.length).toBeGreaterThan(0);
+		expect(
+			[...new Set(mentioned)].filter(
+				(name) => !REGISTERED_TOOL_NAMES.includes(name),
+			),
+		).toEqual([]);
+	});
+
 	it("names only real tools in every td-companion skill's allowed-tools", async () => {
 		const { name: pluginName } = JSON.parse(
 			await readRepoFile(`${PLUGIN_DIR}/.claude-plugin/plugin.json`),

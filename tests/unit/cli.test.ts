@@ -88,9 +88,53 @@ describe("CLI", () => {
 			});
 		});
 
-		it("should handle invalid port number", () => {
-			const result = parseArgs(["--port=invalid"]);
-			expect(result.port).toBeNaN();
+		it("should exit with error for an invalid --port value", () => {
+			for (const value of ["invalid", "0", "70000"]) {
+				const mockExit = vi
+					.spyOn(process, "exit")
+					.mockImplementation(() => undefined as never);
+				const mockConsoleError = vi
+					.spyOn(console, "error")
+					.mockImplementation(() => {});
+
+				parseArgs([`--port=${value}`]);
+
+				expect(mockConsoleError).toHaveBeenCalledWith(
+					expect.stringContaining(`Invalid value for --port: "${value}"`),
+				);
+				expect(mockExit).toHaveBeenCalledWith(1);
+
+				mockExit.mockRestore();
+				mockConsoleError.mockRestore();
+			}
+		});
+
+		it("should warn about an unrecognized flag instead of discarding it", () => {
+			const mockConsoleError = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {});
+
+			// A typo like this used to silently fall back to the default port.
+			expect(parseArgs(["--prot=9981"])).toEqual({
+				host: "http://127.0.0.1",
+				port: 9981,
+			});
+			expect(mockConsoleError).toHaveBeenCalledWith(
+				expect.stringContaining('ignoring unrecognized argument "--prot=9981"'),
+			);
+
+			mockConsoleError.mockRestore();
+		});
+
+		it("should not warn about flags parseTransportConfig owns", () => {
+			const mockConsoleError = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {});
+
+			parseArgs(["--mcp-http-port=6280", "--mcp-http-host=127.0.0.1"]);
+
+			expect(mockConsoleError).not.toHaveBeenCalled();
+			mockConsoleError.mockRestore();
 		});
 	});
 
