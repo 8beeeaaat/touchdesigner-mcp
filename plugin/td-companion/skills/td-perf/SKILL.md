@@ -31,7 +31,11 @@ Diagnose TouchDesigner performance bottlenecks by measuring per-operator cook ti
 
    Adjust the traversal to the actual project structure as needed — the shape above is illustrative, not a fixed template.
 
-5. Caveat the numbers before analyzing them: cook time is only meaningful while the project is actually cooking (playing/performing), so if the project was paused or idle when measured, say so and ask to re-measure while it's running. Also flag that TOP `cookTime` is a CPU-side figure and tends to understate real GPU cost, particularly for GPU-heavy TOPs (renders, feedback, blurs) — treat it as a ranking signal for relative cost, not an absolute GPU budget.
+5. Bound the numbers before analyzing them, on two axes.
+
+   **Was anything actually measured?** Cook time is only meaningful while the project is cooking — playing or performing. If it was paused or idle during the run, say so and ask to re-measure while it runs, rather than ranking stale or all-zero values as though they meant something.
+
+   **What does the figure cover?** `cookTime` records CPU-side cook duration. It ranks relative CPU cost and does not measure GPU time, so an operator sitting low in the ranking is *unmeasured on the GPU axis, not exonerated*. Report that limit rather than concluding such an operator is cheap — and rather than guessing which operators it hides, which this measurement cannot tell you.
 
 6. Report the ranking as data: the top offenders with their `path`, `opType`, and `cookTime`, plus each one's share of the measured total so the figures are comparable rather than absolute. Do not pad the report with generic optimization advice the measurement itself doesn't support.
 
