@@ -604,7 +604,7 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
      "mcpServers": {
        "touchdesigner": {
          "command": "npx",
-         "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
+         "args": ["-y", "touchdesigner-mcp-server@latest"]
        }
      }
    }
@@ -614,10 +614,10 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
 
    ```bash
    # Direct MCP server execution
-   npx touchdesigner-mcp-server --stdio
+   npx touchdesigner-mcp-server
 
    # With MCP Inspector for debugging
-   npx @modelcontextprotocol/inspector node dist/cli.js --stdio
+   npx @modelcontextprotocol/inspector node dist/cli.js
    ```
 
 3. **Docker Integration** (Local)
@@ -630,7 +630,7 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
          "args": [
            "compose", "-f", "/path/to/docker-compose.yml",
            "exec", "-i", "touchdesigner-mcp-server",
-           "node", "dist/cli.js", "--stdio",
+           "node", "dist/cli.js", 
            "--host=http://host.docker.internal"
          ]
        }
@@ -760,7 +760,6 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
       "args": [
         "-y",
         "touchdesigner-mcp-server@latest",
-        "--stdio",
         "--host=http://127.0.0.1",
         "--port=9981"
       ]
@@ -788,7 +787,7 @@ services:
 docker-compose up -d
 # Connect via docker compose exec
 docker compose exec -i touchdesigner-mcp-server \
-  node dist/cli.js --stdio --host=http://host.docker.internal
+  node dist/cli.js --host=http://host.docker.internal
 ```
 
 #### HTTP Mode Configuration
@@ -881,7 +880,7 @@ Both modes support these TouchDesigner connection options:
 **Before** (Stdio):
 
 ```bash
-npx touchdesigner-mcp-server --stdio
+npx touchdesigner-mcp-server
 ```
 
 **After** (HTTP):
@@ -897,7 +896,7 @@ npx touchdesigner-mcp-server \
 ```javascript
 // Before: Stdio (via child_process)
 const { spawn } = require('child_process');
-const server = spawn('npx', ['touchdesigner-mcp-server', '--stdio']);
+const server = spawn('npx', ['touchdesigner-mcp-server']);
 
 // After: HTTP (via fetch/EventSource)
 const response = await fetch('http://localhost:6280/mcp', {
@@ -918,7 +917,7 @@ touchdesigner-mcp-server --mcp-http-port=6280
 **After** (Stdio):
 
 ```bash
-touchdesigner-mcp-server --stdio
+touchdesigner-mcp-server
 ```
 
 **Note**: Health checking is not available in Stdio mode (no HTTP endpoint). HTTP mode serves every request statelessly, so there is no session state to migrate either way.
