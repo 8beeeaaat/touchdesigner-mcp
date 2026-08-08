@@ -25,7 +25,7 @@ If you are updating, please refer to the procedure in the **[Latest Release](htt
 
 ### Claude Code users: the td-companion plugin
 
-This repository doubles as a Claude Code plugin marketplace. The **td-companion** plugin installs this MCP server for you and adds TouchDesigner expertise on top of it:
+This repository doubles as a Claude Code plugin marketplace. The **td-companion** plugin installs this MCP server for you and makes its tools easy to drive:
 
 ```bash
 claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
@@ -37,7 +37,7 @@ Then run `/td-companion:td-setup` to verify the connection, or `/td-companion:td
 | Layer | What it adds |
 | :--- | :--- |
 | Tools | This MCP server, bundled and preconfigured (host and port are plugin options) |
-| Knowledge | Auto-loaded skills for operator families, TD Python discipline, the GLSL TOP dialect, network recipes, and performance |
+| Conventions | Auto-loaded skills for the operator-family model, the node paths and `nodeType` naming the tools expect, and resolving TD Python APIs through the lookup tools instead of guessing |
 | Commands | `/td-companion:` `td-launch`, `td-setup`, `td-debug`, `td-snapshot`, `td-overview`, `td-perf` |
 | Automation | A hook that reminds Claude to verify every network mutation instead of assuming it worked |
 

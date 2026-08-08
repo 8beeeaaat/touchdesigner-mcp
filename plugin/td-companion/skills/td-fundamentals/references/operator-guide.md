@@ -1,8 +1,53 @@
-# TouchDesigner Operator Live Lookup
+# TouchDesigner Live Lookup
 
-Parameter names, defaults, menu options, and documentation must be fetched from the running TouchDesigner instance when needed. This avoids stale static references and makes the installed TouchDesigner build the ground truth.
+Operator families, type names, parameter names, defaults, menu options, and documentation all belong to the **installed TouchDesigner build**, not to this plugin. Fetch them from the running instance when needed.
 
-## Live lookup procedure
+Nothing below is a roster to memorize. Every section is a procedure that produces the current answer, so the installed build stays the ground truth and this file cannot go stale against it.
+
+## Discovering families and operator types
+
+Families are the direct subclasses of `td.OP`. A concrete operator class carries a `family` class attribute; abstract intermediates (the family classes themselves, and types like `ObjectCOMP` / `PanelCOMP`) do not. That structure — not a pattern match on names, and not a hardcoded list — is what identifies them:
+
+```python
+import td, json
+from collections import Counter
+
+families = sorted(cls.__name__ for cls in td.OP.__subclasses__())
+
+counts = Counter()
+for name in dir(td):
+    cls = getattr(td, name, None)
+    if not (isinstance(cls, type) and issubclass(cls, td.OP)):
+        continue
+    family = getattr(cls, 'family', None)   # abstract intermediates drop out here
+    if family is not None:
+        counts[family] += 1
+
+result = json.dumps({'families': families, 'operators_per_family': dict(counts)})
+```
+
+Send it through `execute_python_script`. Both the family roster and the per-family counts move between TouchDesigner builds — that is why this is a script rather than a table.
+
+Family membership decides which wires are legal: operators of the same family connect directly, output connector into input connector. Crossing families always needs an explicit converter operator (see below) or a parameter-level link, never a plain wire.
+
+### Confirming a single type name
+
+`getattr(td, 'someTOP', None)` through `execute_python_script` is the cheapest existence check for one class name — use it before passing an uncertain `nodeType` to `create_td_node`. To browse the roster instead, `get_td_classes` returns it; pass `limit` and `detailLevel`, because the full listing runs to tens of thousands of characters on a current build.
+
+### Finding a cross-family converter
+
+Converters follow a `<source>to<TARGET>` naming pattern. Discover the ones the installed build actually ships rather than recalling a pair from memory:
+
+```python
+import td, re
+
+pattern = re.compile(r'^[a-z]+to(' + '|'.join(cls.__name__ for cls in td.OP.__subclasses__()) + r')$')
+result = sorted(name for name in dir(td) if pattern.match(name))
+```
+
+The real set is substantially larger than the handful usually cited, and it grows whenever a new family lands.
+
+## Discovering an operator's parameters
 
 Fetch parameter facts on demand, in this order:
 
@@ -32,4 +77,4 @@ Fetch parameter facts on demand, in this order:
 
 3. **Methods and properties of the operator's Python class** — `get_td_class_details` (and `get_td_module_help` for module-level docs). These cover the scripting surface, not parameters.
 
-Never write a parameter value from a name recalled from memory — look the name up first via step 1 or 2. Class-name existence is also checkable cheaply: `getattr(td, 'someTOP', None)` (e.g. `geometryCOMP` and `cameraCOMP` exist; `geoCOMP`/`camCOMP` do not).
+Never write a parameter value from a name recalled from memory — look the name up first via step 1 or 2.
