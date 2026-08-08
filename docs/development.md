@@ -47,7 +47,6 @@ Use these snippets to point your preferred MCP client at a local build of the se
       "args": [
         "-y",
         "/path/to/your/touchdesigner-mcp/dist/cli.js",
-        "--stdio",
         "--port=9981"
       ]
     },
@@ -67,14 +66,13 @@ Use these snippets to point your preferred MCP client at a local build of the se
 ```json
 {
   "mcpServers": {
-    // claude mcp add -s user touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --stdio --port=9981
+    // claude mcp add -s user touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --port=9981
     "touchdesigner-stdio": {
       "type": "stdio",
       "command": "npx",
       "args": [
         "-y",
         "/path/to/your/touchdesigner-mcp/dist/cli.js",
-        "--stdio",
         "--port=9981"
       ],
       "env": {}
@@ -101,10 +99,10 @@ Use these snippets to point your preferred MCP client at a local build of the se
 ### Codex (`~/.codex/config.toml`)
 
 ```toml
-# codex mcp add touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --stdio --port=9981
+# codex mcp add touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --port=9981
 [mcp_servers.touchdesigner-stdio]
 command = "npx"
-args = ["-y", "/path/to/your/touchdesigner-mcp/dist/cli.js", "--stdio", "--port=9981"]
+args = ["-y", "/path/to/your/touchdesigner-mcp/dist/cli.js", "--port=9981"]
 
 # codex mcp add touchdesigner-http --url http://localhost:6280/mcp
 [mcp_servers.touchdesigner-http]

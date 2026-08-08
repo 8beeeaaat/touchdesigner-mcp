@@ -17,6 +17,14 @@ const DEFAULT_HOST = "http://127.0.0.1";
 const DEFAULT_PORT = 9981;
 const DEFAULT_MCP_ENDPOINT = "/mcp";
 
+/** Every flag the CLI acts on, across parseArgs and parseTransportConfig. */
+const RECOGNIZED_FLAGS = [
+	"--host=",
+	"--port=",
+	"--mcp-http-host=",
+	"--mcp-http-port=",
+];
+
 /**
  * Parse command line arguments for TouchDesigner connection
  */
@@ -32,7 +40,23 @@ export function parseArgs(args?: string[]) {
 		if (arg.startsWith("--host=")) {
 			parsed.host = arg.split("=")[1];
 		} else if (arg.startsWith("--port=")) {
-			parsed.port = Number.parseInt(arg.split("=")[1], 10);
+			const portStr = arg.split("=")[1];
+			const port = Number.parseInt(portStr, 10);
+			if (Number.isNaN(port) || port < 1 || port > 65535) {
+				console.error(
+					`Invalid value for --port: "${portStr}". Please specify a valid port number (1-65535).`,
+				);
+				process.exit(1);
+			}
+			parsed.port = port;
+		} else if (
+			arg.startsWith("--") &&
+			!RECOGNIZED_FLAGS.some((flag) => arg.startsWith(flag))
+		) {
+			// Unrecognized flags used to be discarded in silence, so a typo like
+			// --prot=9981 connected to the default port with no hint that the
+			// requested one had been ignored.
+			console.error(`Warning: ignoring unrecognized argument "${arg}".`);
 		}
 	}
 

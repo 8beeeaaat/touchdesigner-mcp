@@ -1,0 +1,38 @@
+{
+	"name": "td-companion",
+	"version": "0.1.0",
+	"description": "TouchDesigner companion for Claude Code: bundles the touchdesigner-mcp server and makes its tools easy to drive — launch/setup/debug/snapshot/overview/perf skills invocable as slash commands, skills covering the node-path and Python-lookup conventions the tools expect, and a post-edit verification hook",
+	"author": {
+		"name": "sadao komaki",
+		"email": "8beeeaaat@gmail.com",
+		"url": "https://github.com/8beeeaaat"
+	},
+	"homepage": "https://github.com/8beeeaaat/touchdesigner-mcp",
+	"repository": "https://github.com/8beeeaaat/touchdesigner-mcp",
+	"license": "MIT",
+	"userConfig": {
+		"touchdesigner_host": {
+			"type": "string",
+			"title": "TouchDesigner host",
+			"description": "Base URL of the TouchDesigner WebServer DAT",
+			"required": false,
+			"default": "http://127.0.0.1"
+		},
+		"touchdesigner_port": {
+			"type": "number",
+			"title": "TouchDesigner port",
+			"description": "Port of the TouchDesigner WebServer DAT",
+			"required": false,
+			"default": 9981,
+			"min": 1,
+			"max": 65535
+		}
+	},
+	"keywords": [
+		"touchdesigner",
+		"mcp",
+		"creative-coding",
+		"generative-art",
+		"visual-programming"
+	]
+}

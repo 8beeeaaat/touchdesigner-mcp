@@ -23,6 +23,26 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 
 アップデートする場合は **[最新リリース](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)** の手順を参照してください。
 
+### Claude Code ユーザー向け: td-companion プラグイン
+
+このリポジトリは Claude Code のプラグインマーケットプレイスも兼ねています。**td-companion** プラグインは、この MCP サーバーの導入を代行し、そのツール群を扱いやすくします。
+
+```bash
+claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
+claude plugin install td-companion@touchdesigner-mcp
+```
+
+導入後、`/td-companion:td-setup` で接続を検証するか、`/td-companion:td-launch` でコンポーネントを読み込んだ状態の TouchDesigner を起動できます。
+
+| レイヤ | 追加されるもの |
+| :--- | :--- |
+| ツール | この MCP サーバー本体（ホスト・ポートはプラグインオプションとして設定） |
+| 規約 | オペレータファミリーのモデル、ツールが期待するノードパスと `nodeType` の命名、TD Python API を推測せず lookup ツールで解決する作法を自動ロード |
+| コマンド | `/td-companion:` `td-launch` / `td-setup` / `td-debug` / `td-snapshot` / `td-overview` / `td-perf` |
+| 自動化 | ネットワークを変更するたびに「確認したつもり」を防ぎ、検証を促すフック |
+
+プラグイン自体の設定とトラブルシューティングは [plugin/td-companion/README.md](plugin/td-companion/README.md) を参照してください。
+
 ## MCPサーバーの機能
 
 このサーバーは、Model Context Protocol (MCP) を通じてTouchDesigner への操作、および各種実装ドキュメントへの参照を可能にします。

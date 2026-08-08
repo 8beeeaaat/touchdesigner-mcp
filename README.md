@@ -23,6 +23,26 @@ Please refer to the **[Installation Guide](docs/installation.md)**.
 
 If you are updating, please refer to the procedure in the **[Latest Release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)**.
 
+### Claude Code users: the td-companion plugin
+
+This repository doubles as a Claude Code plugin marketplace. The **td-companion** plugin installs this MCP server for you and makes its tools easy to drive:
+
+```bash
+claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
+claude plugin install td-companion@touchdesigner-mcp
+```
+
+Then run `/td-companion:td-setup` to verify the connection, or `/td-companion:td-launch` to start TouchDesigner with the component already imported.
+
+| Layer | What it adds |
+| :--- | :--- |
+| Tools | This MCP server, bundled and preconfigured (host and port are plugin options) |
+| Conventions | Auto-loaded skills for the operator-family model, the node paths and `nodeType` naming the tools expect, and resolving TD Python APIs through the lookup tools instead of guessing |
+| Commands | `/td-companion:` `td-launch`, `td-setup`, `td-debug`, `td-snapshot`, `td-overview`, `td-perf` |
+| Automation | A hook that reminds Claude to verify every network mutation instead of assuming it worked |
+
+Configuration and troubleshooting for the plugin itself live in [plugin/td-companion/README.md](plugin/td-companion/README.md).
+
 ## MCP Server Features
 
 This server enables AI agents to perform operations in TouchDesigner using the Model Context Protocol (MCP).
