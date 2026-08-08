@@ -108,7 +108,7 @@ Alt+T または Dialogs → Textport でログを確認可能です。
   "mcpServers": {
     "touchdesigner": {
       "command": "npx",
-      "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
+      "args": ["-y", "touchdesigner-mcp-server@latest"]
     }
   }
 }
@@ -130,7 +130,7 @@ claude plugin install td-companion@touchdesigner-mcp
 プラグインを使わず MCP サーバー単体を追加する場合は、コマンドで追加:
 
 ```bash
-claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest --stdio
+claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest
 ```
 
 または `~/.claude.json` を直接編集:
@@ -140,7 +140,7 @@ claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest -
   "mcpServers": {
     "touchdesigner": {
       "command": "npx",
-      "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
+      "args": ["-y", "touchdesigner-mcp-server@latest"]
     }
   }
 }
@@ -149,7 +149,7 @@ claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest -
 #### Codex の例
 
 ```bash
-codex mcp add touchdesigner -- npx -y touchdesigner-mcp-server@latest --stdio
+codex mcp add touchdesigner -- npx -y touchdesigner-mcp-server@latest
 ```
 
 または `~/.codex/config.toml` を直接編集:
@@ -157,13 +157,13 @@ codex mcp add touchdesigner -- npx -y touchdesigner-mcp-server@latest --stdio
 ```toml
 [mcp_servers.touchdesigner]
 command = "npx"
-args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
+args = ["-y", "touchdesigner-mcp-server@latest"]
 ```
 
 #### その他の MCP クライアント
 
 - **command**: `npx`
-- **args**: `["-y", "touchdesigner-mcp-server@latest", "--stdio"]`
+- **args**: `["-y", "touchdesigner-mcp-server@latest"]`
 - **オプション**: `--host=<url>`、`--port=<number>`
 
 ホスト/ポートのオプションは TouchDesigner の接続先を変更する場合のみ追加します。
@@ -274,7 +274,6 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
             "touchdesigner-mcp-server",
             "node",
             "dist/cli.js",
-            "--stdio",
             "--host=http://host.docker.internal"
           ]
         }

@@ -247,7 +247,7 @@ describe("CLI", () => {
 
 		it("should set environment variables from parsed arguments", async () => {
 			await startServer({
-				argv: ["node", "cli.js", "--stdio", "--host=127.0.0.1", "--port=8080"],
+				argv: ["node", "cli.js", "--host=127.0.0.1", "--port=8080"],
 				nodeEnv: "cli",
 			});
 
@@ -257,7 +257,7 @@ describe("CLI", () => {
 
 		it("should call serveStdio with a server factory in stdio mode", async () => {
 			await startServer({
-				argv: ["node", "cli.js", "--stdio", "--host=127.0.0.1", "--port=8080"],
+				argv: ["node", "cli.js", "--host=127.0.0.1", "--port=8080"],
 				nodeEnv: "cli",
 			});
 
@@ -309,13 +309,7 @@ describe("CLI", () => {
 
 			await expect(
 				startServer({
-					argv: [
-						"node",
-						"cli.js",
-						"--stdio",
-						"--host=127.0.0.1",
-						"--port=8080",
-					],
+					argv: ["node", "cli.js", "--host=127.0.0.1", "--port=8080"],
 					nodeEnv: "cli",
 				}),
 			).rejects.toThrow("Failed to initialize server: Unexpected error");
@@ -328,13 +322,7 @@ describe("CLI", () => {
 
 			await expect(
 				startServer({
-					argv: [
-						"node",
-						"cli.js",
-						"--stdio",
-						"--host=127.0.0.1",
-						"--port=8080",
-					],
+					argv: ["node", "cli.js", "--host=127.0.0.1", "--port=8080"],
 					nodeEnv: "cli",
 				}),
 			).rejects.toThrow("Failed to initialize server: String error");

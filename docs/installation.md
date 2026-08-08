@@ -114,7 +114,7 @@ Edit your `claude_desktop_config.json`:
   "mcpServers": {
     "touchdesigner": {
       "command": "npx",
-      "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
+      "args": ["-y", "touchdesigner-mcp-server@latest"]
     }
   }
 }
@@ -136,7 +136,7 @@ Then run `/td-companion:td-setup` to confirm the connection end to end. The plug
 To add the server on its own, without the plugin, run the following command:
 
 ```bash
-claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest --stdio
+claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest
 ```
 
 Or manually edit `~/.claude.json`:
@@ -146,7 +146,7 @@ Or manually edit `~/.claude.json`:
   "mcpServers": {
     "touchdesigner": {
       "command": "npx",
-      "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"],
+      "args": ["-y", "touchdesigner-mcp-server@latest"]
     }
   }
 }
@@ -157,7 +157,7 @@ Or manually edit `~/.claude.json`:
 Run the following command:
 
 ```bash
-codex mcp add touchdesigner -- npx -y touchdesigner-mcp-server@latest --stdio
+codex mcp add touchdesigner -- npx -y touchdesigner-mcp-server@latest
 ```
 
 Or manually edit `~/.codex/config.toml`:
@@ -165,7 +165,7 @@ Or manually edit `~/.codex/config.toml`:
 ```toml
 [mcp_servers.touchdesigner]
 command = "npx"
-args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
+args = ["-y", "touchdesigner-mcp-server@latest"]
 ```
 
 #### For Other MCP Clients
@@ -173,7 +173,7 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
 Any MCP-compatible client can use the NPM package via stdio transport:
 
 - **Command**: `npx`
-- **Args**: `["-y", "touchdesigner-mcp-server@latest", "--stdio"]`
+- **Args**: `["-y", "touchdesigner-mcp-server@latest"]`
 - **Optional Args**: `--host=<url>`, `--port=<number>`
 
 Add the optional flags only when TouchDesigner is not running on `http://127.0.0.1:9981`.
@@ -286,7 +286,6 @@ Choose a transport configuration:
            "touchdesigner-mcp-server",
            "node",
            "dist/cli.js",
-           "--stdio",
            "--host=http://host.docker.internal"
          ]
        }

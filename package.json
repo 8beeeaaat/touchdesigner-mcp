@@ -86,7 +86,7 @@
 		"format:biome": "biome check --fix",
 		"format:python": "ruff format td/ plugin/ && ruff check --fix td/ plugin/",
 		"format:yaml": "prettier --write \"**/*.{yml,yaml}\"",
-		"dev": "npx @modelcontextprotocol/inspector node dist/cli.js --stdio",
+		"dev": "npx @modelcontextprotocol/inspector node dist/cli.js",
 		"http": "npm run build && node dist/cli.js --mcp-http-port=6280 --mcp-http-host=127.0.0.1 --host=http://127.0.0.1 --port=9981",
 		"test": "run-p test:*",
 		"test:e2e": "npm run build:dist && vitest run ./tests/e2e",
