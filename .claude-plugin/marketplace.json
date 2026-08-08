@@ -1,0 +1,17 @@
+{
+	"$schema": "https://www.schemastore.org/claude-code-marketplace.json",
+	"name": "touchdesigner-mcp",
+	"description": "TouchDesigner integration plugins for Claude Code",
+	"owner": {
+		"name": "sadao komaki",
+		"email": "8beeeaaat@gmail.com"
+	},
+	"plugins": [
+		{
+			"name": "td-companion",
+			"source": "./plugin/td-companion",
+			"description": "TouchDesigner companion for Claude Code: bundles the touchdesigner-mcp server, TouchDesigner expertise skills (operators, Python API, GLSL, recipes, performance), launch/setup/debug/snapshot/overview/perf skills invocable as slash commands, and a post-edit verification hook",
+			"version": "0.1.0"
+		}
+	]
+}
