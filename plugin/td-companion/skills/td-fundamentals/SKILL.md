@@ -1,6 +1,6 @@
 ---
 name: td-fundamentals
-description: This skill should be used when working with TouchDesigner through the touchdesigner-mcp tools — for example when asked to "build a network in TouchDesigner", "create a node", "wire operators together", add or configure a TOP/CHOP/SOP/DAT/COMP/MAT, inspect or edit a .toe or .tox file, set node parameters, or otherwise construct or modify a TouchDesigner project. Provides the operator family model, node path conventions, nodeType naming, the cook model, and the inspect-create-verify workflow needed to use the MCP tools correctly. For a step-by-step recipe for a specific named effect (audio reactive, feedback, instancing), the td-recipes skill applies instead; this skill covers the model those recipes assume.
+description: This skill should be used when working with TouchDesigner through the touchdesigner-mcp tools — for example when asked to "build a network in TouchDesigner", "create a node", "wire operators together", add or configure a TOP/CHOP/SOP/DAT/COMP/MAT, inspect or edit a .toe or .tox file, set node parameters, or otherwise construct or modify a TouchDesigner project. Provides the conventions the tools expect (node paths, nodeType and parameter naming, family-bound wiring), the cook model that explains what the tools report, the inspect-create-verify workflow, and the procedures for reading families, operator types, and parameter names live from the running TouchDesigner instead of recalling them.
 version: 0.1.0
 ---
 
@@ -16,17 +16,16 @@ Work through the bundled MCP tools rather than assuming network contents by memo
 
 ## Operator Families
 
-Every operator belongs to exactly one of seven families, distinguished by the kind of data flowing through it. Family membership determines which wires are legal and which nodeType suffix to use when creating a node.
+Every operator belongs to exactly one **family**, determined by the kind of data flowing through it. Family membership decides which wires are legal and which suffix the operator's `nodeType` carries.
 
-- **TOP** (Texture Operator) — images and textures, processed on the GPU: cameras, video files, generative noise, compositing, rendering. Suffix `TOP` (e.g. `noiseTOP`, `moviefileinTOP`, `textTOP`).
-- **CHOP** (Channel Operator) — numeric channels over time: audio, control signals, MIDI, OSC, animation curves, sensor data. Suffix `CHOP` (e.g. `noiseCHOP`, `audiodeviceinCHOP`, `lfoCHOP`).
-- **SOP** (Surface Operator) — 3D geometry: points, polygons, curves. Suffix `SOP` (e.g. `boxSOP`, `sphereSOP`, `mergeSOP`).
-- **DAT** (Data Operator) — text and tables: scripts, JSON, CSV-like tables, web requests. Suffix `DAT` (e.g. `textDAT`, `tableDAT`, `webclientDAT`).
-- **COMP** (Component Operator) — containers: 3D objects (geometry, camera, light), UI panels, and organizational containers that hold networks of other operators. Suffix `COMP` (e.g. `geometryCOMP`, `cameraCOMP`, `lightCOMP`, `baseCOMP`).
-- **MAT** (Material Operator) — shading definitions applied to geometry for rendering. Suffix `MAT` (e.g. `phongMAT`, `pbrMAT`).
-- **POP** — GPU-resident geometry, alongside the CPU-side SOP family. Suffix `POP` (e.g. `torusPOP`). Present in TD 2025.33070 with 103 classes, and `torusPOP().family` returns `"POP"`, so it is a real family rather than a naming convention. A newly created `geometryCOMP` contains a `torusPOP`, not a `torusSOP`. Use `get_td_classes` for the roster on the installed build.
+Which families exist, and which operator types belong to each, is a property of the **installed TouchDesigner build** — the roster grows between releases, and a family that did not exist in an older build appears without warning in a newer one. Do not work from a remembered list. Discover the current one with the procedure in `references/operator-guide.md`, which reads it structurally from `td.OP.__subclasses__()` and each class's `family` attribute.
 
-Wire operators of the **same family** together directly (an output connector into an input connector). Never assume a wire crosses families — a TOP output cannot feed a CHOP input, and vice versa. Crossing families needs an explicit converter operator: `toptoCHOP`/`choptoTOP` (image ↔ channels), `dattoCHOP`/`choptoDAT` (table ↔ channels), `soptoDAT`/`dattoSOP` (geometry ↔ table). Materials attach through the Geometry COMP's `material` parameter (e.g. `geo1.material`), not through a wire. CHOP values commonly drive TOP/SOP/COMP parameters through parameter export or an expression rather than a wire at all — see Wiring below.
+The rules that hold regardless of the roster:
+
+- Operators of the **same family** wire together directly, an output connector into an input connector.
+- A wire **never** crosses families. Crossing needs an explicit converter operator, named `<source>to<TARGET>` — look up which ones the build actually ships rather than recalling a pair; the real set is much larger than the few commonly cited.
+- Materials attach through the Geometry COMP's `material` parameter, not through a wire.
+- CHOP values commonly drive parameters of other families through a parameter export or an expression rather than a wire at all — see Wiring below.
 
 ## Node Paths and Hierarchy
 
@@ -38,13 +37,15 @@ Node names must be unique among siblings; if a requested `nodeName` collides wit
 
 ## Creating Nodes: nodeType and Parameter Naming
 
-`create_td_node` takes a `nodeType` matching TouchDesigner's Python class-name convention: lowercase-first, family-suffixed CamelCase, e.g. `noiseTOP`, `moviefileinTOP`, `constantCHOP`, `audiodeviceinCHOP`, `boxSOP`, `textDAT`, `geometryCOMP`, `phongMAT`. Getting the spelling wrong — an extra or missing letter, wrong case on the suffix — is the single most common tool-call failure. Confirm an unfamiliar or uncertain nodeType with `get_td_classes` or `get_td_class_details` instead of guessing from memory.
+`create_td_node` takes a `nodeType` matching TouchDesigner's Python class-name convention: lowercase-first, family-suffixed CamelCase — `textTOP` has the shape, `TextTop` and `text_top` do not. The convention is stable; the set of names obeying it is not. Getting a name wrong — an extra or missing letter, wrong case on the suffix — is the single most common tool-call failure, and a plausible-looking name is exactly the kind that fails.
+
+Confirm every unfamiliar `nodeType` before using it. The cheapest check is `getattr(td, '<name>', None)` through `execute_python_script`; `references/operator-guide.md` covers that and the roster-browsing alternatives.
 
 ```json
 { "parentPath": "/project1", "nodeType": "textTOP", "nodeName": "title" }
 ```
 
-Set parameters through `update_td_node_parameters`'s `properties` map, keyed by TouchDesigner's **lowercase parameter name**, not the capitalized label shown in the UI — e.g. `tx`, `resolutionw`, `text`, `play`. Do not infer a parameter name from its UI label; confirm the exact lowercase name with `get_td_node_parameters` on the node before writing to it, since the mapping between label and name is not always a literal lowercasing and varies by operator.
+Set parameters through `update_td_node_parameters`'s `properties` map, keyed by TouchDesigner's **lowercase parameter name**, not the capitalized label shown in the UI. The mapping from label to name is not always a literal lowercasing and varies by operator, so never infer it — read the exact name from `get_td_node_parameters` on the node (or the type-level lookup in `references/operator-guide.md`, which also returns each parameter's default, legal menu values, and official help text) before writing to it.
 
 ## The Cook Model
 
@@ -52,7 +53,7 @@ TouchDesigner is pull-based and lazy: an operator recomputes ("cooks") only when
 
 ## Wiring Operators Together
 
-No dedicated "connect nodes" MCP tool exists. Wire operators together with `execute_python_script`, using the input/output connector arrays each operator exposes:
+No dedicated "connect nodes" MCP tool exists. Wire operators together with `execute_python_script`, using the input/output connector arrays each operator exposes. Connector indices are operator-specific — an operator's second input is not always index `1` in the sense a caller assumes, and some operators expose more connectors than their UI suggests — so read the actual arrays (`print(len(op(path).inputConnectors))`) or `get_td_class_details` on the operator's class when wiring anything beyond a single-input chain:
 
 ```python
 op('/project1/noise1').outputConnectors[0].connect(op('/project1/level1').inputConnectors[0])

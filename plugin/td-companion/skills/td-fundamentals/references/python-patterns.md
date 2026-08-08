@@ -90,7 +90,18 @@ import td
 all_tops = op('/project1').findChildren(type=td.TOP)
 ```
 
-`findChildren()` with no depth argument searches the entire subtree. `depth` is an **exact-match filter, not a limit** — direct children are depth 1, their children depth 2, and so on, so `findChildren(depth=1)` returns only direct children and `findChildren(depth=0)` returns an empty list. Use `maxDepth` to cap how far down the search goes. Verified against TD 2025.33070 on a project root: `findChildren()` → 72, `depth=0` → 0, `depth=1` → 13, `depth=2` → 12, `maxDepth=1` → 13. The full set of accepted filter keyword arguments (by name, by path pattern, by tag) is worth confirming with `get_td_class_details` rather than assumed from a single remembered example.
+`findChildren()` with no depth argument searches the entire subtree. `depth` is an **exact-match filter, not a limit** — direct children are depth 1, their children depth 2, and so on, so `findChildren(depth=1)` returns only direct children and `findChildren(depth=0)` returns an empty list. Use `maxDepth` to cap how far down the search goes.
+
+Confirm this on the project at hand rather than trusting it, because getting it wrong returns a plausible-looking result with no error — an empty or truncated list reads exactly like "nothing matched":
+
+```python
+root = op('/project1') or op('/')
+result = {k: len(root.findChildren(**kw)) for k, kw in {
+    'all': {}, 'depth=0': {'depth': 0}, 'depth=1': {'depth': 1}, 'maxDepth=1': {'maxDepth': 1},
+}.items()}
+```
+
+Expect `depth=0` to come back empty and `depth=1` to equal `maxDepth=1`; if they don't, the semantics have changed and every traversal built on them needs rechecking. The full set of accepted filter keyword arguments (by name, by path pattern, by tag) is worth confirming with `get_td_class_details` rather than assumed from a single remembered example.
 
 ## Creating Operators from Python
 
