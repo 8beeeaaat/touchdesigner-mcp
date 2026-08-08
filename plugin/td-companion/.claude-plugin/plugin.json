@@ -15,14 +15,14 @@
 			"type": "string",
 			"title": "TouchDesigner host",
 			"description": "Base URL of the TouchDesigner WebServer DAT",
-			"required": true,
+			"required": false,
 			"default": "http://127.0.0.1"
 		},
 		"touchdesigner_port": {
 			"type": "number",
 			"title": "TouchDesigner port",
 			"description": "Port of the TouchDesigner WebServer DAT",
-			"required": true,
+			"required": false,
 			"default": 9981,
 			"min": 1,
 			"max": 65535
