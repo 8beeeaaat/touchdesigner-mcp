@@ -124,16 +124,7 @@ _Optional:_ Add `--host` / `--port` arguments if TouchDesigner is not running on
 
 #### For Claude Code
 
-**Recommended: install the touchdesigner plugin instead.** It bundles this server and adds TouchDesigner skills, `/touchdesigner:` slash commands, and a hook that keeps network changes verified:
-
-```bash
-claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
-claude plugin install touchdesigner@touchdesigner-mcp
-```
-
-Then run `/touchdesigner:setup` to confirm the connection end to end. The plugin exposes the TouchDesigner host and port as plugin options (defaults `http://127.0.0.1` and `9981`), so no manual MCP entry is needed. See [plugin/touchdesigner/README.md](../plugin/touchdesigner/README.md) for configuration and troubleshooting.
-
-To add the server on its own, without the plugin, run the following command:
+Run the following command:
 
 ```bash
 claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest

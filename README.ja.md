@@ -7,60 +7,6 @@ TouchDesignerのためのMCP(Model Context Protocol) サーバー実装です。
 
 [English](README.md) / [日本語](README.ja.md)
 
-## まずはプラグインでセットアップ（推奨）
-
-**初めて MCP を導入する方で、Claude Code または Codex をお使いなら、`touchdesigner` プラグインから始めてください。** AI クライアントが MCP サーバーの設定と起動を行います。設定 JSON の手書き、リポジトリのクローン、npm ビルドは不要です。
-
-1. パソコンに **TouchDesigner** と **Node.js 22.18 以降の 22 系・24 系・26 以降**をインストールします。
-2. 以下からお使いのクライアントを選び、コマンドでプラグインを導入します。
-3. クライアントで新しいセッションを開始し、以下の起動・接続確認を実行します。ローカルのシェル操作が可能なら、起動スキルが MCP コンポーネントのダウンロードと TouchDesigner への読み込みを支援します。既存プロジェクトに手動で導入する場合は、[最新リリースの TouchDesigner Components](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest) をダウンロード・展開し、`mcp_webserver_base.tox` をプロジェクトにドラッグしてください。展開したファイルは同じ場所に保管してください。
-
-### Claude Code ユーザー向け: touchdesigner プラグイン
-
-このリポジトリは Claude Code のプラグインマーケットプレイスも兼ねています。**touchdesigner** プラグインは、この MCP サーバーの導入を代行し、そのツール群を扱いやすくします。
-
-```bash
-claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
-claude plugin install touchdesigner@touchdesigner-mcp
-```
-
-導入後、`/touchdesigner:setup` で接続を検証するか、`/touchdesigner:launch` でコンポーネントを読み込んだ状態の TouchDesigner を起動できます。
-
-プラグイン自体の設定とトラブルシューティングは [plugin/touchdesigner/README.md](plugin/touchdesigner/README.md) を参照してください。
-
-### Codex ユーザー向け: touchdesigner プラグイン
-
-このリポジトリの Codex マーケットプレイスから **touchdesigner** プラグインを導入できます。利用者による npm ビルドは不要です。
-
-```bash
-codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
-codex plugin add touchdesigner@touchdesigner-openai
-```
-
-導入後、「TouchDesigner の接続を確認して」や「TouchDesigner を起動して」と依頼してください。MCP サーバーと、接続確認・起動・デバッグ・画像取得・プロジェクト概要・パフォーマンス計測のスキルが利用できます。
-
-設定、ChatGPT 接続は [OpenAI プラグインガイド](docs/openai-plugin.md)を参照してください。
-
-### ChatGPT デスクトップユーザー向け（Work / Codex）
-
-ローカルプラグインに対応したデスクトップ版では、同じパソコンの **Codex CLI** からマーケットプレイスを登録します。
-
-```bash
-codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
-```
-
-1. ChatGPT デスクトップアプリを再起動します。
-2. Work / Codex の **Plugins Directory** を開き、配布元に **TouchDesigner**（`touchdesigner-openai`）を選びます。
-3. **TouchDesigner** をインストールし、プラグインを有効にした新しいローカル会話で「TouchDesigner の接続を確認して」と依頼します。
-
-Codex CLI ですでに登録済みなら、再登録は不要です。ローカルマーケットプレイスの利用可否はクライアントとワークスペースの設定に依存します。[公式の登録手順](https://developers.openai.com/plugins/build/plugins#add-a-marketplace-from-the-cli)も参照してください。Web・クラウド上の会話では、[ChatGPT の接続設定](docs/openai-plugin.md#chatgpt-connect-the-local-server)が必要です。
-
-### その他のクライアント・アップデート
-
-**Claude Desktop（MCPB）**、その他の MCP クライアント、手動設定は [インストールガイド](docs/installation.ja.md)を参照してください。**ChatGPT Web** は [OpenAI 接続ガイド](docs/openai-plugin.md#chatgpt-connect-the-local-server)で案内しています。
-
-すでに利用中の方は、[最新リリースのアップデート手順](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)を参照してください。
-
 ## 概要
 
 [![demo clip](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/particle_on_youtube.png)](https://youtu.be/V2znaqGU7f4?si=6HDFbcBHCFPdttkM&t=635)
@@ -70,6 +16,12 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 - ノードの作成、変更、削除
 - ノードプロパティやプロジェクト構造の照会
 - PythonスクリプトによるTouchDesignerのプログラム的制御
+
+## インストール方法
+
+**[インストールガイド](docs/installation.ja.md)** を参照してください。
+
+アップデートする場合は **[最新リリース](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)** の手順を参照してください。
 
 ## MCPサーバーの機能
 
