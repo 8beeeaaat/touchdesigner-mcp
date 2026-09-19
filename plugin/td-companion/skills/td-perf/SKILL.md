@@ -17,7 +17,7 @@ Diagnose TouchDesigner performance bottlenecks by measuring per-operator cook ti
 
 3. Resolve `root` to the `root-path` argument if given, otherwise `/project1` if it exists, else `/` (a project launched by opening the tox as a document has no `/project1`).
 
-4. With the user's consent, run a measurement script through `execute_python_script` with `detailLevel: "detailed"` so the complete ranking is returned rather than the summary formatter's 500-character preview. Collect `root`'s descendants with `findChildren()` (called with no arguments it walks the whole subtree; `maxDepth` limits it, while `depth` is an exact-match filter, not a limit), and for each operator record its `path`, `name`, `opType`, and `cookTime` (skipping operators where `cookTime` isn't a meaningful attribute rather than erroring out). Sort the collected results by `cookTime` descending and keep roughly the top 20. For example:
+4. With the user's consent, run a measurement script through `execute_python_script` with `detailLevel: "detailed"` so the complete ranking is returned rather than the summary formatter's 500-character preview. Collect `root`'s descendants with `findChildren()` (called with no arguments it walks the whole subtree; `maxDepth` limits it, while `depth` is an exact-match filter, not a limit), and for each operator record its `path`, `name`, `opType`, and `cookTime` (skipping operators where `cookTime` isn't a meaningful attribute rather than erroring out). Sort the collected results by `cookTime` descending and keep roughly the top 20 — but return the number of operators measured and the sum of *all* their cook times alongside that slice. The slice is the only thing that survives the call, so a denominator left behind cannot be recovered afterwards. For example:
 
    ```python
    results = []
@@ -33,7 +33,11 @@ Diagnose TouchDesigner performance bottlenecks by measuring per-operator cook ti
    			}
    		)
    results.sort(key=lambda r: r["cookTime"], reverse=True)
-   result = results[:20]
+   result = {
+   	"measuredCount": len(results),
+   	"totalCookTime": sum(r["cookTime"] for r in results),
+   	"top": results[:20],
+   }
    ```
 
    Adjust the traversal to the actual project structure as needed — the shape above is illustrative, not a fixed template.
@@ -44,7 +48,7 @@ Diagnose TouchDesigner performance bottlenecks by measuring per-operator cook ti
 
    **What does the figure cover?** `cookTime` records CPU-side cook duration. It ranks relative CPU cost and does not measure GPU time, so an operator sitting low in the ranking is *unmeasured on the GPU axis, not exonerated*. Report that limit rather than concluding such an operator is cheap — and rather than guessing which operators it hides, which this measurement cannot tell you.
 
-6. Report the ranking as data: the top offenders with their `path`, `opType`, and `cookTime`, plus each one's share of the measured total so the figures are comparable rather than absolute. Do not pad the report with generic optimization advice the measurement itself doesn't support.
+6. Report the ranking as data: the top offenders with their `path`, `opType`, and `cookTime`, plus each one's share of `totalCookTime` — the total across every operator measured, not the sum of the rows shown. Dividing by the visible rows alone inflates every share and presents a slice of the network as the whole of it. State `measuredCount` and what fraction of `totalCookTime` the listed rows account for, so a long tail reads as a long tail rather than disappearing. Do not pad the report with generic optimization advice the measurement itself doesn't support.
 
 7. For the few worst offenders, gather evidence from the live project before suggesting any change: `get_td_node_parameters` on the node (resolution, file paths, and other cost-bearing parameters are visible there) and `get_td_nodes` on its parent for surrounding context. Tie every suggestion to a specific measured number or parameter value, and name which one. When the tools don't reveal why an operator is expensive, report the measurement and say the cause is undetermined — an honest gap is more useful than a plausible guess.
 
