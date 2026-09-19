@@ -73,14 +73,17 @@ describe("getCompatibilityPolicyType", () => {
 			["2.0.0", "1.5.0"],
 			["3.1.4", "1.5.0"],
 			["2.0.0", "1.9.9"],
-		])("apiVersion=%s expected=%s → SERVER_OUTDATED", (apiVersion, expected) => {
-			expect(
-				getCompatibilityPolicyType({
-					apiVersion,
-					expectedApiVersion: expected,
-				}),
-			).toBe(COMPATIBILITY_POLICY_TYPES.SERVER_OUTDATED);
-		});
+		])(
+			"apiVersion=%s expected=%s → SERVER_OUTDATED",
+			(apiVersion, expected) => {
+				expect(
+					getCompatibilityPolicyType({
+						apiVersion,
+						expectedApiVersion: expected,
+					}),
+				).toBe(COMPATIBILITY_POLICY_TYPES.SERVER_OUTDATED);
+			},
+		);
 	});
 
 	describe("COMPONENT_OUTDATED cases (min ≤ api < expected)", () => {
@@ -88,28 +91,34 @@ describe("getCompatibilityPolicyType", () => {
 			["1.3.0", "1.5.0"],
 			["1.4.9", "1.5.0"],
 			["1.5.0", "1.5.2"],
-		])("apiVersion=%s expected=%s → COMPONENT_OUTDATED", (apiVersion, expected) => {
-			expect(
-				getCompatibilityPolicyType({
-					apiVersion,
-					expectedApiVersion: expected,
-				}),
-			).toBe(COMPATIBILITY_POLICY_TYPES.COMPONENT_OUTDATED);
-		});
+		])(
+			"apiVersion=%s expected=%s → COMPONENT_OUTDATED",
+			(apiVersion, expected) => {
+				expect(
+					getCompatibilityPolicyType({
+						apiVersion,
+						expectedApiVersion: expected,
+					}),
+				).toBe(COMPATIBILITY_POLICY_TYPES.COMPONENT_OUTDATED);
+			},
+		);
 	});
 
 	describe("COMPONENT_NEWER cases (same generation, api > expected)", () => {
 		test.each([
 			["1.5.1", "1.5.0"],
 			["1.6.0", "1.5.0"],
-		])("apiVersion=%s expected=%s → COMPONENT_NEWER", (apiVersion, expected) => {
-			expect(
-				getCompatibilityPolicyType({
-					apiVersion,
-					expectedApiVersion: expected,
-				}),
-			).toBe(COMPATIBILITY_POLICY_TYPES.COMPONENT_NEWER);
-		});
+		])(
+			"apiVersion=%s expected=%s → COMPONENT_NEWER",
+			(apiVersion, expected) => {
+				expect(
+					getCompatibilityPolicyType({
+						apiVersion,
+						expectedApiVersion: expected,
+					}),
+				).toBe(COMPATIBILITY_POLICY_TYPES.COMPONENT_NEWER);
+			},
+		);
 	});
 
 	describe("COMPATIBLE cases", () => {
