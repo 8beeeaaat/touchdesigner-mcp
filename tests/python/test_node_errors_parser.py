@@ -452,3 +452,40 @@ class TestLineEndings:
 		# it from the last line of every entry — so a sample whose entries
 		# were all single-line would pass whatever the split does.
 		assert "\n" in crlf[0]["message"]
+
+	def test_a_payload_character_is_not_a_line_ending(self, scene):
+		"""str.splitlines() breaks on characters that are message content.
+
+		\v, \f, \x1c-\x1e, \x85, U+2028 and U+2029 all end a line for
+		splitlines(). In a TouchDesigner message they are payload — a DAT's
+		contents quoted back inside a traceback, say. Splitting on one rewrites
+		the text a JSON/YAML client is handed, and when what follows resembles
+		an anchor the parser starts a second entry and hands it to an operator
+		that never failed. Measured before the fix: this blob produced two
+		entries, the second attributed to /project1/probe/b.
+		"""
+
+		node = scene(PROBE, [f"{PROBE}/a", f"{PROBE}/b"])
+		raw = (
+			f"{PROBE}/a:  Error: bad thing\n"
+			f"    quoted DAT text:\x0c{PROBE}/b:  Error: not a real anchor\n"
+		)
+
+		entries = _parse_op_messages(raw, "error", node)
+
+		assert len(entries) == 1
+		assert entries[0]["nodePath"] == f"{PROBE}/a"
+		# The form feed stays in the message rather than becoming a break.
+		assert "\x0c" in entries[0]["message"]
+		assert f"{PROBE}/b" in entries[0]["message"]
+
+	def test_a_lone_cr_still_ends_a_line(self, scene):
+		# Narrowing the split must not drop the endings it exists to handle.
+		node = scene(PROBE, [f"{PROBE}/a"])
+		lf = _parse_op_messages(ERRORS_RAW, "error", node)
+
+		for ending in ("\r\n", "\r"):
+			assert (
+				_parse_op_messages(ERRORS_RAW.replace("\n", ending), "error", node)
+				== lf
+			), ending

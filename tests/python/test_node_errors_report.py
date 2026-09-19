@@ -73,7 +73,12 @@ class TestStreamsThatCouldNotBeRead:
 		node.errors = lambda recurse=True: ["not", "a", "string"]
 		node.warnings = lambda recurse=True: ""
 
-		with pytest.raises(AttributeError):
+		# The contract is that it propagates, not which exception carries it:
+		# the type follows from how the parser first touches the blob, and
+		# pinning it once turned a correct narrowing of the line split into a
+		# failing test. What must not happen is the error being swallowed into
+		# skippedStreams, and that is what pytest.raises still catches.
+		with pytest.raises((AttributeError, TypeError)):
 			TouchDesignerApiService().get_node_errors(node.path)
 
 	def test_both_streams_readable_reports_a_complete_result(self, scene):
