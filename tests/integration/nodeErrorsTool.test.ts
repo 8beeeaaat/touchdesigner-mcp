@@ -222,6 +222,30 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(text).not.toContain("Incomplete");
 	});
 
+	it("keeps each notice in its own blockquote", async () => {
+		// The rendered breaks have to fall where the meanings differ, or the
+		// separation between "counts have no ceiling" and "counts are exact,
+		// attribution is not" is lost the moment Markdown renders it.
+		const text = await runTool({
+			...mixed,
+			fallbackAttributions: [
+				{ path: "/project1/probe/adder", stream: "errors" },
+			],
+			incomplete: true,
+			skippedStreams: [{ reason: "cook in progress", stream: "warnings" }],
+			unresolvedAnchors: [{ path: "/project1/probe/gone", stream: "errors" }],
+		});
+
+		const quoteBlocks = text
+			.split("\n\n")
+			.filter((block) => block.trimStart().startsWith(">"));
+
+		expect(quoteBlocks).toHaveLength(3);
+		expect(quoteBlocks[0]).toContain("Incomplete");
+		expect(quoteBlocks[1]).toContain("attributions are ambiguous");
+		expect(quoteBlocks[2]).toContain("fell back");
+	});
+
 	it("reports a node with neither errors nor warnings as clean", async () => {
 		const text = await runTool({
 			...warningOnly,
