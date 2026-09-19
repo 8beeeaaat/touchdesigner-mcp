@@ -56,7 +56,12 @@ Set a live formula instead of a constant by writing to `.expr`, a Python express
 op("/project1/geo1").par.tx.expr = "op('lfo1')[0]"
 ```
 
-Assigning a plain value to the parameter directly (`par.tx = 5`) clears any existing expression and switches the parameter back to a constant. These are mutually exclusive states for a given parameter — decide which one is wanted before writing to it, and confirm the parameter's current mode with `get_td_node_parameters` if the prior state is unknown, rather than assuming it was already a constant.
+Assigning a plain value to the parameter directly (`par.tx = 5`) clears any existing expression and switches the parameter back to a constant. These are mutually exclusive states for a given parameter — decide which one is wanted before writing to it, and read the parameter's current mode if the prior state is unknown, rather than assuming it was already a constant. `get_td_node_parameters` cannot answer that question: it reports `par.eval()` per parameter and nothing else, so a parameter driven by an expression or an export is indistinguishable there from a constant holding the same value — exactly the case where an unwitting write destroys a live link. Read the mode itself with `execute_python_script`:
+
+```python
+par = op("/project1/geo1").par.tx
+result = {"mode": str(par.mode), "expr": par.expr, "value": par.eval()}
+```
 
 Fetch several related parameters at once with `.pars(pattern)`, which returns a list of `Par` objects matching a name pattern rather than a single named lookup:
 

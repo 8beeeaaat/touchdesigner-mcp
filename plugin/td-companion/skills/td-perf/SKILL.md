@@ -17,11 +17,12 @@ Diagnose TouchDesigner performance bottlenecks by measuring per-operator cook ti
 
 3. Resolve `root` to the `root-path` argument if given, otherwise `/project1` if it exists, else `/` (a project launched by opening the tox as a document has no `/project1`).
 
-4. With the user's consent, run a measurement script through `execute_python_script` with `detailLevel: "detailed"` so the complete ranking is returned rather than the summary formatter's 500-character preview. Collect `root`'s descendants with `findChildren()` (called with no arguments it walks the whole subtree; `maxDepth` limits it, while `depth` is an exact-match filter, not a limit), and for each operator record its `path`, `name`, `opType`, and `cookTime` (skipping operators where `cookTime` isn't a meaningful attribute rather than erroring out). Sort the collected results by `cookTime` descending and keep roughly the top 20 — but return the number of operators measured and the sum of *all* their cook times alongside that slice. The slice is the only thing that survives the call, so a denominator left behind cannot be recovered afterwards. For example:
+4. With the user's consent, run a measurement script through `execute_python_script` with `detailLevel: "detailed"` so the complete ranking is returned rather than the summary formatter's 500-character preview. Collect the resolved root **and** its descendants: `findChildren()` walks the whole subtree when called with no arguments (`maxDepth` limits it, while `depth` is an exact-match filter, not a limit), but it never returns the operator it was called on — that operator is depth 0, and `findChildren(depth=0)` is empty. Leave the root out and a `root-path` naming a single TOP measures nothing at all, while a COMP's own cook time goes missing from `totalCookTime`, and for each operator record its `path`, `name`, `opType`, and `cookTime` (skipping operators where `cookTime` isn't a meaningful attribute rather than erroring out). Sort the collected results by `cookTime` descending and keep roughly the top 20 — but return the number of operators measured and the sum of *all* their cook times alongside that slice. The slice is the only thing that survives the call, so a denominator left behind cannot be recovered afterwards. For example:
 
    ```python
+   root_op = op(root)
    results = []
-   for child in op(root).findChildren():
+   for child in [root_op, *root_op.findChildren()]:
    	ct = getattr(child, "cookTime", None)
    	if ct is not None:
    		results.append(

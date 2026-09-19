@@ -91,6 +91,36 @@ describe("td-companion userConfig wiring", () => {
 		expect(read.length).toBeGreaterThan(0);
 		expect(read.filter((key) => !declared.includes(key))).toEqual([]);
 	});
+
+	// The PostToolUse matcher used to accept any server's `mcp__…__` namespace,
+	// so another MCP server exposing a tool called `execute_python_script`
+	// collected a TouchDesigner verification reminder it had nothing to do with.
+	// Binding it to the bundled server's namespace fixes that but trades a
+	// visible false positive for an invisible false negative: if the namespace
+	// ever changes shape, the hook simply stops firing and nothing says so.
+	// `allowed-tools` names the same namespace and would break loudly, so pin
+	// the two together and let this fail instead of the hook going quiet.
+	it("matches the same server namespace the skills name in allowed-tools", async () => {
+		const hooks = JSON.parse(
+			await readRepoFile(`${PLUGIN_DIR}/hooks/hooks.json`),
+		);
+		const overview = await readRepoFile(
+			`${PLUGIN_DIR}/skills/td-overview/SKILL.md`,
+		);
+
+		const matcher: string = hooks.hooks.PostToolUse[0].matcher;
+		const hookNamespace = matcher.match(/mcp__[A-Za-z0-9_-]+__/)?.[0];
+		const skillNamespaces = [
+			...new Set(
+				[...overview.matchAll(/mcp__[A-Za-z0-9_-]+__/g)].map((m) => m[0]),
+			),
+		];
+
+		expect(skillNamespaces).toHaveLength(1);
+		expect(hookNamespace).toBe(skillNamespaces[0]);
+		// A wildcard namespace would match another server's tools.
+		expect(matcher.startsWith("^mcp__")).toBe(true);
+	});
 });
 
 describe("marketplace entry", () => {
