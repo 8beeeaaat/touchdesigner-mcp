@@ -1,0 +1,168 @@
+import type { McpServer } from "@modelcontextprotocol/server";
+import { describe, expect, it } from "vitest";
+import { TOOL_NAMES } from "../../src/core/constants.js";
+import type { ILogger } from "../../src/core/logger.js";
+import { registerTools } from "../../src/features/tools/register.js";
+import type { TdNodeErrorReport } from "../../src/gen/endpoints/TouchDesignerAPI.js";
+import type { TouchDesignerClient } from "../../src/tdClient/index.js";
+
+type ToolHandler = (params?: Record<string, unknown>) => Promise<{
+	content?: Array<{ type: string; text?: string }>;
+}>;
+
+class MockMcpServer {
+	public tools = new Map<string, ToolHandler>();
+
+	registerTool(name: string, ...rest: unknown[]): void {
+		const handler = [...rest].pop();
+		if (typeof handler === "function") {
+			this.tools.set(name, handler as ToolHandler);
+		}
+	}
+
+	getTool(name: string): ToolHandler {
+		const tool = this.tools.get(name);
+		if (!tool) throw new Error(`Tool ${name} not registered`);
+		return tool;
+	}
+}
+
+const logger: ILogger = { sendLog: () => {} };
+
+/**
+ * Drive GET_TD_NODE_ERRORS end to end over a client that returns `report`.
+ */
+async function runTool(
+	report: TdNodeErrorReport,
+	params: Record<string, unknown> = {},
+): Promise<string> {
+	const client = {
+		getAdditionalToolResultContents: () => null,
+		getNodeErrors: async (_params: unknown) => ({
+			data: report,
+			success: true,
+		}),
+	} as unknown as TouchDesignerClient;
+
+	const server = new MockMcpServer();
+	registerTools(server as unknown as McpServer, logger, client);
+
+	const result = await server.getTool(TOOL_NAMES.GET_TD_NODE_ERRORS)({
+		nodePath: report.nodePath,
+		responseFormat: "markdown",
+		...params,
+	});
+
+	return result.content?.find((c) => c.type === "text")?.text ?? "";
+}
+
+describe("GET_TD_NODE_ERRORS", () => {
+	// Shapes taken from TouchDesigner 099.2025.33230 against a scene of
+	// deliberately broken operators.
+	const warningOnly: TdNodeErrorReport = {
+		errorCount: 0,
+		errors: [
+			{
+				level: "warning",
+				message: "Failed to open file.",
+				nodeName: "missing_movie",
+				nodePath: "/project1/probe/missing_movie",
+				opType: "moviefileinTOP",
+			},
+			{
+				level: "warning",
+				message:
+					'Invalid path for node "/project1/does_not_exist" referenced by parameter "TOP"',
+				nodeName: "bad_select",
+				nodePath: "/project1/probe/bad_select",
+				opType: "selectTOP",
+			},
+		],
+		hasErrors: false,
+		hasWarnings: true,
+		nodeName: "probe",
+		nodePath: "/project1/probe",
+		opType: "baseCOMP",
+		warningCount: 2,
+	};
+
+	const mixed: TdNodeErrorReport = {
+		errorCount: 1,
+		errors: [
+			{
+				level: "warning",
+				message: "The GLSL Shader has compile errors",
+				nodeName: "bad_glsl",
+				nodePath: "/project1/probe/bad_glsl",
+				opType: "glslTOP",
+			},
+			{
+				level: "error",
+				message:
+					"AttributeError: 'NoneType' object has no attribute 'par'\n" +
+					", line 1, in <module>\n" +
+					"Context:(Parameter: Resolution)",
+				nodeName: "bad_res",
+				nodePath: "/project1/probe/bad_res",
+				opType: "constantTOP",
+			},
+		],
+		hasErrors: true,
+		hasWarnings: true,
+		nodeName: "probe",
+		nodePath: "/project1/probe",
+		opType: "baseCOMP",
+		warningCount: 1,
+	};
+
+	it("surfaces warnings even when no errors were reported", async () => {
+		// TouchDesigner reports missing files and dangling operator references
+		// as warnings, so hasErrors=false must not be treated as a clean node.
+		const text = await runTool(warningOnly);
+
+		expect(text).toContain("Failed to open file.");
+		expect(text).toContain("Invalid path for node");
+		expect(text).not.toContain("No errors or warnings reported");
+	});
+
+	it("reports error and warning counts separately", async () => {
+		const text = await runTool(mixed);
+
+		expect(text).toContain("Errors: 1");
+		expect(text).toContain("Warnings: 1");
+	});
+
+	it("attributes each entry to the operator that failed", async () => {
+		const text = await runTool(mixed);
+
+		expect(text).toContain("/project1/probe/bad_res");
+		expect(text).toContain("/project1/probe/bad_glsl");
+	});
+
+	it("keeps a multi-line traceback on one row", async () => {
+		const text = await runTool(mixed);
+
+		expect(text).toContain(
+			"AttributeError: 'NoneType' object has no attribute 'par' ⏎ , line 1, in <module> ⏎ Context:(Parameter: Resolution)",
+		);
+	});
+
+	it("lists errors ahead of warnings", async () => {
+		const text = await runTool(mixed);
+
+		expect(text.indexOf("AttributeError")).toBeLessThan(
+			text.indexOf("GLSL Shader"),
+		);
+	});
+
+	it("reports a node with neither errors nor warnings as clean", async () => {
+		const text = await runTool({
+			...warningOnly,
+			errors: [],
+			hasWarnings: false,
+			warningCount: 0,
+		});
+
+		expect(text).toContain("No errors or warnings reported");
+	});
+});
