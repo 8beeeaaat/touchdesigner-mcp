@@ -26,7 +26,7 @@ high-level view of components and data flow, see **[Architecture](./architecture
 3. **Available commands:**
 
    ```bash
-   npm run test      # Run unit and integration tests
+   npm run test      # Run unit, integration, e2e and TD-side Python tests
    npm run dev       # Launch the MCP inspector for debugging
    ```
 
@@ -140,6 +140,11 @@ args = ["mcp-remote", "http://localhost:6280/mcp"]
    npm test       # Run all tests
    npm run dev    # Launch MCP inspector
    ```
+
+   The TD-side Python tests under `tests/python/` need Python 3.10+ and pytest.
+   `uv` is used automatically when present; otherwise install pytest with
+   `pip install pytest`. Without either they are skipped locally with a notice,
+   and CI always runs them.
 
 See `CLAUDE.md` for additional developer-focused commands.
 

@@ -24,7 +24,7 @@
 3. **利用可能なコマンド:**
 
    ```bash
-   npm run test      # ユニットテストと統合テスト
+   npm run test      # ユニット・統合・e2e・TD 側 Python テスト
    npm run dev       # デバッグ用の MCP Inspector
    ```
 
@@ -137,6 +137,10 @@ args = ["mcp-remote", "http://localhost:6280/mcp"]
    npm test       # すべてのテストを実行
    npm run dev    # MCP Inspector を起動
    ```
+
+   `tests/python/` の TD 側 Python テストには Python 3.10+ と pytest が必要です。
+   `uv` があれば自動的に使用します。無い場合は `pip install pytest` を実行して
+   ください。どちらも無い環境では通知を出してスキップし、CI では必ず実行します。
 
 詳細な開発コマンドは `CLAUDE.md` を参照してください。
 
