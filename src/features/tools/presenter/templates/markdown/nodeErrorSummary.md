@@ -22,26 +22,35 @@
 > ℹ️ Some attributions are ambiguous. These paths began a message but name no
 > operator we can see, so their lines stayed with the entry above them and a
 > failure may be folded into another operator's message:
-{{#unresolvedAnchors}}
+{{#unresolvedAnchors.items}}
 > - `{{{path}}}` (on `{{stream}}`)
-{{/unresolvedAnchors}}
+{{/unresolvedAnchors.items}}
+{{#unresolvedAnchors.omitted}}
+> - _… and {{unresolvedAnchors.omitted}} more._
+{{/unresolvedAnchors.omitted}}
 
 {{/unresolvedAnchors.length}}
 {{#fallbackAttributions.length}}
 > ℹ️ Some entries name an owner we could not resolve, so their node fell back
 > to the one queried. Nothing is missing from the counts; the owner named in
 > the message text is the one that failed:
-{{#fallbackAttributions}}
+{{#fallbackAttributions.items}}
 > - `{{{path}}}` (on `{{stream}}`)
-{{/fallbackAttributions}}
+{{/fallbackAttributions.items}}
+{{#fallbackAttributions.omitted}}
+> - _… and {{fallbackAttributions.omitted}} more._
+{{/fallbackAttributions.omitted}}
 
 {{/fallbackAttributions.length}}
 {{#lookupFailures.length}}
 > ℹ️ Some operators could not be looked up, so their type is undetermined
 > rather than absent. The entries themselves are still counted:
-{{#lookupFailures}}
+{{#lookupFailures.items}}
 > - `{{{path}}}` (on `{{stream}}`)
-{{/lookupFailures}}
+{{/lookupFailures.items}}
+{{#lookupFailures.omitted}}
+> - _… and {{lookupFailures.omitted}} more._
+{{/lookupFailures.omitted}}
 
 {{/lookupFailures.length}}
 {{#entries.length}}

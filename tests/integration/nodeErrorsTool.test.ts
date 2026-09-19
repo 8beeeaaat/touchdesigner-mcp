@@ -246,6 +246,28 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(quoteBlocks[2]).toContain("fell back");
 	});
 
+	it("caps the caveat lists with the same limit as the rows", async () => {
+		// limit is the only control a caller has over response size. Capping
+		// the rows while leaving the notes about them unbounded answers a
+		// request for a few entries with a footnote longer than the content.
+		const many = Array.from({ length: 40 }, (_, i) => ({
+			path: `/project1/probe/gone${i}`,
+			stream: "errors",
+		}));
+
+		const text = await runTool(
+			{ ...mixed, unresolvedAnchors: many },
+			{ limit: 3 },
+		);
+
+		const bullets = text
+			.split("\n")
+			.filter((line) => line.startsWith("> - `/project1/probe/gone"));
+
+		expect(bullets).toHaveLength(3);
+		expect(text).toContain("and 37 more");
+	});
+
 	it("reports a node with neither errors nor warnings as clean", async () => {
 		const text = await runTool({
 			...warningOnly,

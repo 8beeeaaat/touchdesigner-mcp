@@ -65,19 +65,13 @@ export function formatNodeErrors(
 				opType: opts.detailLevel === "minimal" ? "" : entry.opType,
 			})),
 			errorCount: data.errorCount,
-			fallbackAttributions: fallbacks.map((f) => ({
-				path: f.path,
-				stream: f.stream,
-			})),
+			fallbackAttributions: limitPaths(fallbacks, opts.limit),
 			// Only an unread stream leaves the counts without a ceiling. A
 			// declined anchor keeps its content, so it is reported on its own
 			// rather than folded into this claim.
 			incomplete: Boolean(data.incomplete) || skipped.length > 0,
 			listedCount: entries.length,
-			lookupFailures: lookupFailures.map((f) => ({
-				path: f.path,
-				stream: f.stream,
-			})),
+			lookupFailures: limitPaths(lookupFailures, opts.limit),
 			nodeName: data.nodeName,
 			nodePath: data.nodePath,
 			omittedCount: Math.max(entries.length - items.length, 0),
@@ -86,16 +80,35 @@ export function formatNodeErrors(
 				reason: s.reason,
 				stream: s.stream,
 			})),
+			skippedStreamsOmitted: 0,
 			truncated,
-			unresolvedAnchors: unresolved.map((a) => ({
-				path: a.path,
-				stream: a.stream,
-			})),
+			unresolvedAnchors: limitPaths(unresolved, opts.limit),
 			warningCount,
 		},
 		structured: data,
 		template: "nodeErrorSummary",
 	});
+}
+
+/**
+ * Cap a caveat list the way the entries are capped.
+ *
+ * `limit` is the only control a caller has over response size, and it used to
+ * bind the rows while leaving the notes about them unbounded — a root-scope
+ * query on a project mid-edit could answer a request for five rows with a
+ * hundred-line footnote, which is the content being displaced by the caveat
+ * about it. The whole list stays available through detailLevel "detailed".
+ */
+function limitPaths(
+	list: ReadonlyArray<{ path: string; stream: string }>,
+	limit: number | undefined,
+) {
+	const { items } = limitArray([...list], limit);
+	return {
+		items: items.map((item) => ({ path: item.path, stream: item.stream })),
+		length: items.length,
+		omitted: Math.max(list.length - items.length, 0),
+	};
 }
 
 /**
