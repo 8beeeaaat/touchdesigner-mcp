@@ -158,3 +158,6 @@ td/modules/td_server
 
 # Generated when the TD-side Python tests provision an interpreter
 uv.lock
+
+# Python build metadata, written when the project is installed (e.g. `uv run`)
+*.egg-info/

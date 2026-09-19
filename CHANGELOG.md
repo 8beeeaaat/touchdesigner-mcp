@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-09-19
+
+### Upgrade Notes
+
+**Re-import the TouchDesigner component.** The MCP API version moves to `1.6.0`, so `td/mcp_webserver_base.tox` must be re-imported to get the new behaviour. The Node server self-updates — the documented config is `npx -y touchdesigner-mcp-server@latest`, so it is picked up on the next MCP client restart.
+
+- **Without re-importing**, nothing breaks. A `1.5.0` component is above `minApiVersion` (`1.3.0`), so the connection is accepted, every tool keeps working, and each response carries an "Update Recommended" notice. Verified live against this release: the full TouchDesigner suite passes 25/25 with a `1.5.0` component connected.
+- **What re-importing gets you**: warning collection, multi-line message grouping, correct attribution, and the fields that say what the report could not see. An older component sends none of them, and `get_td_node_errors` now states that explicitly instead of rendering the absence as zero.
+- Components older than `1.3.0` are still refused at connection time.
+
+**`TdNodeError.message` no longer repeats the owning operator path.** The `<path>: ` prefix and the trailing `(<path>)` TouchDesigner appends are both gone, because both duplicate the `nodePath` field. Anything matching on the old string form needs the field instead.
+
+**`get_td_classes` now honours its default cap of 50.** The cap was always declared, but `limit` was silently dropped for `responseFormat: "json"` and `"yaml"` — a TouchDesigner with 812 classes returned all 812. It now returns 50 and says how many it left out. Pass an explicit `limit` for more.
+
+**Supported Node.js narrows to `^22.18.0 || ^24.0.0 || >=26.0.0`.** This is a development-toolchain requirement — vitest 5 and orval 8.34 — not a runtime one: the server itself still runs on Node 20. It is declared in `engines` and the MCPB manifest, so an npm install on an unsupported version warns. Odd-numbered releases (23.x, 25.x) are not supported.
+
+### Added
+
+- `get_td_node_errors` now collects **warnings** as well as errors, as a separate `warnings` collection with its own `warningCount`/`hasWarnings`. TouchDesigner reports missing files, dangling operator references and shader compile failures as warnings, so a node with six of them used to come back completely clean ([#216](https://github.com/8beeeaaat/touchdesigner-mcp/pull/216)).
+- The report now says **what it could not see**, rather than letting absence read as health: `incomplete`/`skippedStreams` when a message stream could not be read, and `unresolvedAnchors`/`fallbackAttributions`/`lookupFailures` when an attribution is uncertain. The all-clear is withheld unless every one of them is ruled out ([#216](https://github.com/8beeeaaat/touchdesigner-mcp/pull/216)).
+- Each entry carries a `level`, so errors and warnings stay distinguishable through the payload and the rendered table ([#216](https://github.com/8beeeaaat/touchdesigner-mcp/pull/216)).
+- A truncated structured payload now says so. `limit` adds `truncated` and a per-collection `truncation` record naming which list ran out and by how much, so a capped response cannot be mistaken for a complete one ([#224](https://github.com/8beeeaaat/touchdesigner-mcp/pull/224)).
+
+### Changed
+
+- Released version `2.1.0` across package metadata (`package.json`), MCP bundle manifest (`mcpb/manifest.json`), and server registry metadata (`server.json`), including the updated MCPB download URL and checksum so npm and MCPB installations resolve the same release. **The MCP API version moves to `1.6.0`** (`src/api/index.yml`, `td/modules/utils/version.py`, `pyproject.toml`, and `mcpCompatibility.expectedApiVersion` in `package.json`) because the server/API contract changed — the node error report gained fields and its `message` format changed — so users must re-import the `.tox`.
+- The agent-facing contract for `get_td_node_errors` was rewritten. Its `description`, `returns` and `example` described errors only, and the example branched on `hasErrors`, so a model following it would have called a warnings-only node healthy ([#216](https://github.com/8beeeaaat/touchdesigner-mcp/pull/216)). It now also states that a Script OP callback exception reaches neither message stream, and names `scriptOp.addError(msg)` as the way to make one visible ([#223](https://github.com/8beeeaaat/touchdesigner-mcp/pull/223), [#219](https://github.com/8beeeaaat/touchdesigner-mcp/issues/219)).
+- CI now gates the mock-backed integration suites and the TouchDesigner-side Python tests, on both 3.13 and the 3.9 floor `pyproject.toml` declares. `tests/integration/` previously never ran on a pull request ([#216](https://github.com/8beeeaaat/touchdesigner-mcp/pull/216)).
+
+### Fixed
+
+- A single failure spanning several lines — a Python traceback from a parameter expression, for example — was reported as several separate failures, most of them attributed to the wrong operator. Messages are now grouped by their owning operator, which is resolved and verified rather than inferred from the text ([#216](https://github.com/8beeeaaat/touchdesigner-mcp/pull/216)).
+- Every "here is what went wrong" message from the TouchDesigner side was unreachable. Nine call sites passed a result object to `raise`, which Python rejects before reading it, so asking about a node that is not there answered `Handler for 'get_nodes' failed: exceptions must derive from BaseException` instead of naming the path ([#216](https://github.com/8beeeaaat/touchdesigner-mcp/pull/216)).
+- A single non-ASCII character in the OpenAPI schema took down every route, because the schema was read with the platform default encoding and the failure was swallowed into an empty route table. It is now read as UTF-8 and fails loudly ([#216](https://github.com/8beeeaaat/touchdesigner-mcp/pull/216)).
+- `limit` was silently ignored for `responseFormat: "json"` and `"yaml"` across every formatter, and the class list ignored it in markdown too ([#224](https://github.com/8beeeaaat/touchdesigner-mcp/pull/224), [#220](https://github.com/8beeeaaat/touchdesigner-mcp/issues/220)).
+- Message blobs are split on CR, LF and CRLF only. Splitting on `\n` alone left a carriage return on every interior line of a Windows blob; `str.splitlines()`, the first fix, split on characters that are message payload and could turn one failure into two attributed entries ([#222](https://github.com/8beeeaaat/touchdesigner-mcp/pull/222), [#225](https://github.com/8beeeaaat/touchdesigner-mcp/pull/225), [#221](https://github.com/8beeeaaat/touchdesigner-mcp/issues/221)).
+- The generated client sent every request to a literal `${process.env.TD_WEB_SERVER_HOST}`, so every tool answered `TypeError: Invalid URL`. The base URL is now applied per request ([#217](https://github.com/8beeeaaat/touchdesigner-mcp/pull/217)).
+- Two test-suite defects that produced intermittent failures for contributors and never for CI: the live suite shared one hard-coded sandbox name, so a run inherited the previous run's nodes while deleting the wrong one on teardown ([#216](https://github.com/8beeeaaat/touchdesigner-mcp/pull/216)); and a unit test moved a shared markdown template out of the working tree while the integration suite was rendering it in a parallel process ([#218](https://github.com/8beeeaaat/touchdesigner-mcp/pull/218)).
+
+### Security
+
+- `npm audit` goes from 8 findings to 0. Both runtime findings are resolved by the updates — `hono` 4.13.8 (the fix for the incomplete patch of CVE-2026-39408) and `qs` 6.16.0. The remaining development-only findings sat underneath dependencies already at their latest release, so they are pinned through `overrides`: `js-yaml` `^4.3.2` and `undici` `^7.29.0` ([#227](https://github.com/8beeeaaat/touchdesigner-mcp/pull/227)).
+
+### Technical
+
+- **Dependency Updates**: every direct dependency moved to its latest release, including three majors. The generated client was regenerated on the new orval and the full pipeline re-run, because a dependency bump had already taken the server down once this cycle ([#215](https://github.com/8beeeaaat/touchdesigner-mcp/pull/215), [#217](https://github.com/8beeeaaat/touchdesigner-mcp/pull/217)).
+  - `typescript` 6.0.3 → 7.0.2
+  - `vitest` 4.1.9 → 5.0.1
+  - `@vitest/coverage-v8` 4.1.9 → 5.0.1
+  - `@biomejs/biome` 2.5.1 → 2.5.14
+  - `@redocly/cli` 2.35.1 → 2.53.3
+  - `orval` 8.22.0 → 8.34.0
+  - `axios` 1.18.1 → 1.20.0
+  - `prettier` 3.8.5 → 3.9.8
+  - `zod` 4.4.3 → 4.6.5
+  - `yaml` 2.9.0 → 2.9.1
+  - `@types/node` 26.0.1 → 26.6.2
+  - `@types/semver` 7.7.1 → 7.8.0
+- A TouchDesigner-side Python test suite was added (64 cases against a stubbed `td` module), because the TypeScript tests hand-write the parser's output as their input and cannot catch a parser defect by construction. The live TouchDesigner suite also gained its first test for the release's headline feature — warnings observed from a real TouchDesigner rather than a fixture ([#216](https://github.com/8beeeaaat/touchdesigner-mcp/pull/216), [#229](https://github.com/8beeeaaat/touchdesigner-mcp/pull/229)).
+
+### Contributors
+
+- [@katsugtgz](https://github.com/katsugtgz) — bumped orval to 8.22.0 ([#215](https://github.com/8beeeaaat/touchdesigner-mcp/pull/215))
+
 ## [2.0.0] - 2026-07-30
 
 ### Upgrade Notes
