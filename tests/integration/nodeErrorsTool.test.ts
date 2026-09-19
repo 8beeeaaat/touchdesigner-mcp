@@ -672,5 +672,14 @@ describe("GET_TD_NODE_ERRORS contract: Script OP cook exceptions", () => {
 			"Out of scope: a Script OP whose callback raised",
 		);
 		expect(definition?.example).toContain("call scriptOp.addError(msg)");
+		// The remedy is named; where the exception otherwise goes is not. That
+		// is the one thing this contract could not verify — OP.scriptErrors()
+		// exists and may be where TouchDesigner records it — so naming the
+		// Textport as the only destination would be a fresh confident-wrong
+		// claim of exactly the kind this caveat exists to remove.
+		expect(definition?.example).toContain(
+			"it reaches only places this tool does not read",
+		);
+		expect(definition?.example).not.toContain("Textport");
 	});
 });
