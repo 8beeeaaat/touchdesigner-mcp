@@ -110,9 +110,12 @@ class TestAnchorsThatCouldNotBeResolved:
 		report = report_for(node)
 
 		assert report["errorCount"] == 2
-		assert report["unresolvedAnchors"] == [f"{PROBE}/gone"]
-		assert report["incomplete"] is True
-		# The text is not lost, only folded into the preceding entry.
+		assert report["unresolvedAnchors"] == [
+			{"path": f"{PROBE}/gone", "stream": "errors"}
+		]
+		# Not `incomplete`: both streams were read. The content is present,
+		# just folded into the entry above, which is a different claim.
+		assert report["incomplete"] is False
 		assert "second" in report["errors"][0]["message"]
 
 	def test_every_anchor_unresolvable_collapses_but_says_so(self, scene):
@@ -130,16 +133,17 @@ class TestAnchorsThatCouldNotBeResolved:
 
 		assert report["errorCount"] == 1
 		assert report["errors"][0]["nodePath"] == PROBE
-		assert report["unresolvedAnchors"] == [
+		assert [a["path"] for a in report["unresolvedAnchors"]] == [
 			f"{PROBE}/a",
 			f"{PROBE}/b",
 			f"{PROBE}/c",
 		]
-		assert report["incomplete"] is True
+		assert report["incomplete"] is False
 
-	def test_a_quoted_file_path_is_reported_the_same_way(self, scene):
-		# Indistinguishable from the deleted-operator case by construction,
-		# which is the reason the ambiguity is surfaced instead of decided.
+	def test_a_quoted_file_path_is_not_even_ambiguous(self, scene):
+		# TouchDesigner refuses to create an operator whose name contains a
+		# dot, so "data.csv" cannot be one. Nothing is uncertain here, and
+		# reporting it would train a caller to ignore the list.
 		node = scene(PROBE, [f"{PROBE}/cb"])
 		node.with_streams(
 			errors=(
@@ -153,7 +157,56 @@ class TestAnchorsThatCouldNotBeResolved:
 
 		assert report["errorCount"] == 1
 		assert report["errors"][0]["nodePath"] == f"{PROBE}/cb"
-		assert report["unresolvedAnchors"] == [f"{PROBE}/data.csv"]
+		assert report["unresolvedAnchors"] == []
+		assert report["incomplete"] is False
+		assert "bad row" in report["errors"][0]["message"]
+
+
+	def test_a_warning_side_ambiguity_does_not_taint_the_error_verdict(self, scene):
+		# The two streams are tracked separately, so a declined anchor while
+		# reading warnings says nothing about whether errorCount is exact.
+		node = scene(PROBE, [f"{PROBE}/a"])
+		node.with_streams(
+			errors="",
+			warnings=(
+				f"{PROBE}/a:Warning: Failed to open file. ({PROBE}/a)\n"
+				f"{PROBE}/gone:Warning: Failed to open file."
+			),
+		)
+
+		report = report_for(node)
+
+		assert (report["errorCount"], report["warningCount"]) == (0, 1)
+		assert report["incomplete"] is False
+		assert report["unresolvedAnchors"] == [
+			{"path": f"{PROBE}/gone", "stream": "warnings"}
+		]
+
+
+	def test_a_broken_lookup_does_not_collapse_every_anchor(self, scene, td_stub):
+		# Nothing resolving is evidence against the lookup, not against the
+		# anchors: three operators vanishing between the message being
+		# recorded and the report being read is the less likely story. A
+		# lookup that raises is therefore not read as "absent".
+		node = scene(PROBE, [])
+		node.with_streams(
+			errors=(
+				f"{PROBE}/a:  Error: first\n"
+				f"{PROBE}/b:  Error: second\n"
+				f"{PROBE}/c:  Error: third"
+			),
+			warnings="",
+		)
+		td_stub.op_raises_for = {f"{PROBE}/a", f"{PROBE}/b", f"{PROBE}/c"}
+
+		report = report_for(node)
+
+		assert report["errorCount"] == 3
+		assert [e["nodePath"] for e in report["errors"]] == [
+			f"{PROBE}/a",
+			f"{PROBE}/b",
+			f"{PROBE}/c",
+		]
 
 
 class TestMissingNode:

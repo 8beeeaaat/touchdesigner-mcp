@@ -63,8 +63,10 @@ export function formatNodeErrors(
 				opType: opts.detailLevel === "minimal" ? "" : entry.opType,
 			})),
 			errorCount: data.errorCount,
-			incomplete:
-				Boolean(data.incomplete) || skipped.length > 0 || unresolved.length > 0,
+			// Only an unread stream leaves the counts without a ceiling. A
+			// declined anchor keeps its content, so it is reported on its own
+			// rather than folded into this claim.
+			incomplete: Boolean(data.incomplete) || skipped.length > 0,
 			listedCount: entries.length,
 			nodeName: data.nodeName,
 			nodePath: data.nodePath,
@@ -75,7 +77,10 @@ export function formatNodeErrors(
 				stream: s.stream,
 			})),
 			truncated,
-			unresolvedAnchors: unresolved.map((path) => ({ path })),
+			unresolvedAnchors: unresolved.map((a) => ({
+				path: a.path,
+				stream: a.stream,
+			})),
 			warningCount,
 		},
 		structured: data,

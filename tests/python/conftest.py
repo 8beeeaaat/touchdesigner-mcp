@@ -53,10 +53,11 @@ class FakeTd:
 	def __init__(self):
 		self.ops: dict[str, FakeOp] = {}
 		self.op_raises = False
+		self.op_raises_for: set[str] = set()
 
 	def op(self, path: str):
-		if self.op_raises:
-			# td.op() takes a glob, so malformed text reaching it can raise.
+		# td.op() takes a glob, so malformed text reaching it can raise.
+		if self.op_raises or path in self.op_raises_for:
 			raise RuntimeError(f"bad pattern: {path}")
 		return self.ops.get(path)
 
@@ -74,6 +75,7 @@ def scene():
 	def make(queried: str = "/project1/probe", ops=(), op_type: str = "baseCOMP"):
 		_fake_td.ops.clear()
 		_fake_td.op_raises = False
+		_fake_td.op_raises_for = set()
 		for path in ops:
 			_fake_td.ops[path] = FakeOp(path)
 		node = FakeOp(queried, op_type)
@@ -83,6 +85,7 @@ def scene():
 	yield make
 	_fake_td.ops.clear()
 	_fake_td.op_raises = False
+	_fake_td.op_raises_for = set()
 
 
 @pytest.fixture

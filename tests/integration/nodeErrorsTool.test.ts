@@ -181,6 +181,22 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(row.split(/(?<!\\)\|/).length).toBe(6);
 	});
 
+	it("does not claim a stream failed when only an attribution is ambiguous", async () => {
+		// The seam a bug lived in: the payload said incomplete false, the
+		// markdown said a stream could not be read. Rendering is what the
+		// agent reads, so it is what has to be asserted.
+		const text = await runTool({
+			...mixed,
+			incomplete: false,
+			skippedStreams: [],
+			unresolvedAnchors: [{ path: "/project1/probe/gone", stream: "errors" }],
+		});
+
+		expect(text).not.toContain("could not be read");
+		expect(text).not.toContain("Incomplete");
+		expect(text).toContain("attributions are ambiguous");
+	});
+
 	it("reports a node with neither errors nor warnings as clean", async () => {
 		const text = await runTool({
 			...warningOnly,
@@ -207,23 +223,24 @@ describe("GET_TD_NODE_ERRORS", () => {
 		});
 
 		expect(text).toContain("Incomplete");
-		expect(text).toContain("warnings");
+		expect(text).toContain("no ceiling");
 		expect(text).toContain("OP.warnings is not available");
+		expect(text).not.toContain("attributions are ambiguous");
 	});
 
-	it("warns when an anchor could not be resolved", async () => {
+	it("flags an ambiguous attribution without calling the report incomplete", async () => {
 		// An operator deleted since the message was recorded looks exactly like
 		// a file path quoted in a traceback, so its lines stay with the entry
-		// above and the count is a floor. The caller has to be told.
+		// above. Both streams were read, though, so the counts still have a
+		// ceiling — a different claim from "a stream went unread".
 		const text = await runTool({
 			...mixed,
-			incomplete: true,
-			unresolvedAnchors: ["/project1/probe/gone"],
+			unresolvedAnchors: [{ path: "/project1/probe/gone", stream: "errors" }],
 		});
 
-		expect(text).toContain("Incomplete");
+		expect(text).toContain("attributions are ambiguous");
 		expect(text).toContain("/project1/probe/gone");
-		expect(text).toContain("may not be counted");
+		expect(text).not.toContain("Incomplete");
 	});
 
 	it("renders the counts the server sent, not the row count", async () => {

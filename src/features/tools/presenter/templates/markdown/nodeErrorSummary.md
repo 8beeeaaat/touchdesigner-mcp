@@ -4,19 +4,22 @@
 
 {{#incomplete}}
 > ⚠️ **Incomplete.** A message stream could not be read, so the counts above
-> are a floor, not a total. Do not read this as a clean node.
+> have no ceiling. Do not read this as a clean node.
 {{#skippedStreams}}
 > - stream `{{stream}}` — {{reason}}
 {{/skippedStreams}}
-{{#unresolvedAnchors}}
-> - `{{{path}}}` started a message but could not be resolved; its lines were
->   kept with the entry above it, so a failure there may not be counted
->   separately.
-{{/unresolvedAnchors}}
 {{/incomplete}}
 {{#countsDisagree}}
 > ⚠️ The reported counts do not match the {{listedCount}} entr(ies) returned.
 {{/countsDisagree}}
+{{#unresolvedAnchors.length}}
+> ℹ️ Some attributions are ambiguous. These paths began a message but name no
+> operator we can see, so their lines stayed with the entry above them and a
+> failure may be folded into another operator's message:
+{{#unresolvedAnchors}}
+> - `{{{path}}}` (on `{{stream}}`)
+{{/unresolvedAnchors}}
+{{/unresolvedAnchors.length}}
 
 {{#entries.length}}
 | Level | Node | Type | Message |

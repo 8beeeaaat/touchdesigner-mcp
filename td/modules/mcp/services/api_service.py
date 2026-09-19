@@ -177,15 +177,17 @@ class TouchDesignerApiService(IApiService):
 		``level`` so callers can tell them apart.
 		"""
 
-		node = td.op(node_path)
-
-		if node is None or not node.valid:
+		node, outcome = _resolve_op(node_path)
+		if outcome == _LOOKUP_FAILED:
+			return error_result(f"Could not look up node at path: {node_path}")
+		if node is None:
 			return error_result(f"Node not found at path: {node_path}")
 
 		entries = []
 		skipped = []
 		unresolved = []
 		for level, getter in (("error", "errors"), ("warning", "warnings")):
+			declined = []
 			method = getattr(node, getter, None)
 			if not callable(method):
 				# An older TouchDesigner build may not expose this stream.
@@ -208,7 +210,10 @@ class TouchDesignerApiService(IApiService):
 					# Parsing stays inside the try. A stream we cannot read is
 					# a stream to record, not a reason to lose the other one.
 					entries.extend(
-						_parse_op_messages(raw, level, node, unresolved)
+						_parse_op_messages(raw, level, node, declined)
+					)
+					unresolved.extend(
+						{"path": path, "stream": getter} for path in declined
 					)
 			except Exception as e:
 				log_message(
@@ -220,10 +225,13 @@ class TouchDesignerApiService(IApiService):
 
 		error_count = sum(1 for entry in entries if entry["level"] == "error")
 
-		# A stream we could not read is not a stream with nothing in it. Say so
-		# in the payload: the log only reaches TouchDesigner's textport, and a
-		# caller branching on hasErrors would otherwise be told a project it
-		# never finished inspecting is clean.
+		# `incomplete` answers one question: did a stream go unread, leaving the
+		# counts with no ceiling? Declined anchors are reported separately
+		# because they are a different situation - the content is present, just
+		# folded into a neighbouring entry - and a caller's next move differs.
+		# The log only reaches TouchDesigner's textport, so an unread stream has
+		# to be said here or a caller branching on hasErrors is told a project
+		# nobody finished inspecting is clean.
 		return success_result(
 			{
 				"nodePath": node.path,
@@ -233,7 +241,7 @@ class TouchDesignerApiService(IApiService):
 				"warningCount": len(entries) - error_count,
 				"hasErrors": error_count > 0,
 				"hasWarnings": len(entries) > error_count,
-				"incomplete": bool(skipped or unresolved),
+				"incomplete": bool(skipped),
 				"skippedStreams": skipped,
 				"unresolvedAnchors": unresolved,
 				"errors": entries,
@@ -807,35 +815,59 @@ _MESSAGE_ANCHOR = re.compile(r"^(/\S*?):\s*(Error|Warning):\s*(.*)$")
 _TRAILING_PATH = re.compile(r"\((/[^()\s]*)\)\s*$")
 
 
+# TouchDesigner rejects an operator name containing anything outside this set:
+# creating one raises "Illegal node name specified". A path component with a
+# dot, a hyphen or a space therefore cannot name an operator, which is how a
+# file path quoted in a traceback is told apart from a deleted operator.
+_OP_NAME = re.compile(r"^[A-Za-z0-9_]+$")
+
+# Outcomes of looking a path up, kept distinct because they call for opposite
+# treatment: a lookup that failed says nothing about the path.
+_FOUND = "found"
+_MISSING = "missing"
+_LOOKUP_FAILED = "lookup_failed"
+
+
+def _looks_like_op_path(path: str) -> bool:
+	"""Whether path could name an operator at all, by spelling alone"""
+
+	parts = [part for part in path.split("/") if part]
+	return bool(parts) and all(_OP_NAME.match(part) for part in parts)
+
+
 def _resolve_op(path: str):
-	"""Look up path, returning None instead of raising
+	"""Look the path up, returning (op_or_None, outcome)
 
 	`path` comes out of message text, and td.op() does glob matching, so a
-	stray bracket can raise rather than return None. One odd line must not
-	discard every entry parsed before it.
+	stray bracket can raise rather than return None. A raise means the lookup
+	failed, not that the operator is absent - callers must not read it as
+	evidence against the path.
 	"""
 
 	try:
 		owner = td.op(path)
 	except Exception:
-		return None
-	return owner if owner is not None and owner.valid else None
+		return None, _LOOKUP_FAILED
+	if owner is not None and owner.valid:
+		return owner, _FOUND
+	return None, _MISSING
 
 
 def _is_owner_path(path: str, queried_node) -> bool:
-	"""Whether path names a real operator inside the inspected subtree
+	"""Whether path names an operator inside the inspected subtree
 
-	Both halves are load-bearing. Message text can quote a path that resolves
-	to a real operator elsewhere in the project, and it can quote one that
-	sits under the queried node but is a file rather than an operator - a
-	callback raising ValueError("/project1/probe/data.csv: Error: bad row")
-	produces exactly that. Either alone lets a line of someone's traceback
-	become an entry for an operator that never failed, which inflates the
-	counts and tears the rest of the traceback off the error it belongs to.
+	Three things have to hold, and each rules out a different way for message
+	text to be mistaken for the start of a new message:
 
-	The cost is an operator destroyed between the message being recorded and
-	the report being read: its lines merge into the preceding entry rather
-	than standing alone. That is the better trade against inventing one.
+	- inside the queried subtree, so a path quoting an operator elsewhere in
+	  the project cannot split a traceback and blame it;
+	- spelled like an operator, so "/project1/probe/data.csv" raised from
+	  somebody's callback is rejected outright;
+	- known to TouchDesigner, or unknown only because the lookup itself
+	  failed. A path that spells like an operator but resolves to nothing is
+	  most likely one deleted since the message was recorded; declining it
+	  folds its lines into the entry above, so the caller is told through
+	  unresolvedAnchors.
 	"""
 
 	root = queried_node.path
@@ -846,20 +878,35 @@ def _is_owner_path(path: str, queried_node) -> bool:
 	if not path.startswith(prefix):
 		return False
 
-	return _resolve_op(path) is not None
+	if not _looks_like_op_path(path):
+		return False
+
+	return _resolve_op(path)[1] != _MISSING
 
 
-def _owner_from_trailing_path(message: str, queried_node):
+def _owner_from_trailing_path(message: str, queried_node, unresolved=None):
 	"""Recover the owning operator from a trailing "(<path>)", or None
 
 	Output captured with recurse=False carries no "<path>:" prefix but still
 	names the owner at the end of its last line. Preferring that over the
 	queried node keeps attribution right for callers that pass such a blob.
+
+	A path we decline here is reported the same way a declined anchor is:
+	falling back to the queried node is a misattribution either way.
 	"""
 
 	match = _TRAILING_PATH.search(message)
-	if match and _is_owner_path(match.group(1), queried_node):
-		return match.group(1)
+	if not match:
+		return None
+	path = match.group(1)
+	if _is_owner_path(path, queried_node):
+		return path
+	if (
+		unresolved is not None
+		and _looks_like_op_path(path)
+		and path not in unresolved
+	):
+		unresolved.append(path)
 	return None
 
 
@@ -911,9 +958,13 @@ def _parse_op_messages(
 			# someone's traceback. We cannot tell which from the string, so the
 			# line is kept with the entry above it and the ambiguity is
 			# reported rather than silently decided.
-			declined = _MESSAGE_ANCHOR.match(line)
-			if declined and declined.group(1) not in unresolved:
-				unresolved.append(declined.group(1))
+			match = _MESSAGE_ANCHOR.match(line)
+			if (
+				match
+				and _looks_like_op_path(match.group(1))
+				and match.group(1) not in unresolved
+			):
+				unresolved.append(match.group(1))
 
 		if anchor:
 			if current:
@@ -948,10 +999,13 @@ def _parse_op_messages(
 		message = "\n".join(group["lines"]).strip()
 		path = group["path"]
 		if not group["anchored"]:
-			path = _owner_from_trailing_path(message, queried_node) or path
+			path = (
+				_owner_from_trailing_path(message, queried_node, unresolved)
+				or path
+			)
 		message = _strip_redundant_path_suffix(message, path)
 
-		owner = _resolve_op(path)
+		owner = _resolve_op(path)[0]
 		entries.append(
 			{
 				"nodePath": owner.path if owner else path,

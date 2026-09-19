@@ -40,10 +40,10 @@ properties:
     type: boolean
     default: false
     description: >-
-      True when a stream could not be read, or when a line that looked like a
-      new message named an operator that could not be resolved. Either way the
-      counts below are a floor rather than a total, so do not read hasErrors
-      false as "clean" while this is set.
+      True when a message stream could not be read, so the counts have no
+      ceiling and hasErrors false does not mean clean. Declined anchors are
+      reported in unresolvedAnchors instead: that content is present, so it is
+      an attribution caveat rather than a completeness one.
   skippedStreams:
     type: array
     description: Streams that could not be read, with the reason for each
@@ -62,13 +62,27 @@ properties:
   unresolvedAnchors:
     type: array
     description: >-
-      Operator paths that began a message but could not be resolved. Their
-      lines were kept with the preceding entry, so a failure they describe may
-      be folded into another operator's message rather than counted on its own.
-      A deleted operator and a file path quoted inside a traceback are
-      indistinguishable here, which is why the ambiguity is reported.
+      Paths that began a message but could not be resolved to an operator.
+      Their lines were kept with the preceding entry, so a failure they
+      describe may be folded into another operator's message rather than
+      counted on its own. Paths repeat across messages and are listed once, so
+      this is a lower bound on folded failures, not a ceiling. Only paths
+      spelled like an operator reach this list: TouchDesigner rejects a name
+      containing a dot, hyphen or space, so a file path quoted in a traceback
+      is ruled out without ever being called ambiguous. What remains is most
+      likely an operator deleted after its message was recorded.
     items:
-      type: string
+      type: object
+      required:
+        - path
+        - stream
+      properties:
+        path:
+          type: string
+          description: The path that looked like the start of a message
+        stream:
+          type: string
+          description: Which stream it appeared on ("errors" or "warnings")
   errors:
     type: array
     description: >-

@@ -178,28 +178,68 @@ class TestAttribution:
 		assert entries[0]["nodePath"] == PROBE
 
 
+	def test_a_path_spelled_like_a_file_is_never_an_anchor(self, scene):
+		# TouchDesigner refuses an operator name containing a dot, so this is
+		# decidable without asking it, and nothing about it is ambiguous.
+		node = scene(PROBE, [f"{PROBE}/cb"])
+		declined = []
+
+		entries = _parse_op_messages(
+			f"{PROBE}/cb:  Error: ValueError raised\n"
+			f"{PROBE}/data.csv: Error: bad row",
+			"error",
+			node,
+			declined,
+		)
+
+		assert len(entries) == 1
+		assert declined == []
+
+	def test_a_declined_trailing_path_is_reported_too(self, scene):
+		# Falling back to the queried node is a misattribution whichever code
+		# path got there, so the anchor branch is not the only one that says so.
+		node = scene(PROBE, [])
+		declined = []
+
+		_parse_op_messages(
+			f"  Error: boom ({PROBE}/gone)", "error", node, declined
+		)
+
+		assert declined == [f"{PROBE}/gone"]
+
+
 class TestRobustness:
-	def test_a_raising_op_lookup_does_not_discard_the_report(self, scene, td_stub):
+	def test_a_raising_op_lookup_keeps_every_entry(self, scene, td_stub):
 		# td.op() takes a glob, and the path handed to it comes from message
-		# text, so a stray bracket can raise. The line cannot be anchored when
-		# that happens, so it falls back to the queried node — but it must
-		# still come back, rather than taking the whole report down with it.
+		# text, so a stray bracket can raise. A lookup that fails says nothing
+		# about whether the operators exist, so the anchors are still trusted
+		# and no entry is lost.
 		node = scene(PROBE, [])
 		td_stub.op_raises = True
 
-		entries = _parse_op_messages(f"{PROBE}/a[:  Error: boom", "error", node)
+		entries = _parse_op_messages(
+			f"{PROBE}/a:  Error: first\n"
+			f"{PROBE}/b:  Error: second\n"
+			f"{PROBE}/c:  Error: third",
+			"error",
+			node,
+		)
 
-		assert len(entries) == 1
-		assert "boom" in entries[0]["message"]
+		assert [e["nodePath"] for e in entries] == [
+			f"{PROBE}/a",
+			f"{PROBE}/b",
+			f"{PROBE}/c",
+		]
 
-	def test_no_content_is_silently_dropped(self, scene):
+	def test_lines_that_start_no_entry_join_the_one_above(self, scene):
+		# Merging is the intended handling, not an accident: a line that does
+		# not begin a message belongs to the message before it.
 		node = scene(PROBE, [])
 
 		entries = _parse_op_messages("mystery line\nsecond line", "error", node)
 
 		assert len(entries) == 1
-		assert "mystery line" in entries[0]["message"]
-		assert "second line" in entries[0]["message"]
+		assert entries[0]["message"] == "mystery line\nsecond line"
 
 	def test_blank_input_yields_nothing(self, scene):
 		node = scene(PROBE, [])
