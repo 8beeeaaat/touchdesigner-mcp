@@ -268,6 +268,27 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(text).toContain("and 37 more");
 	});
 
+	it("flags a disagreement on the error count alone", async () => {
+		// mixed lists one error and one warning. Only the error side is wrong
+		// here, so a test that skews both would pass even with this half of
+		// the check removed.
+		const text = await runTool({ ...mixed, errorCount: 5, warningCount: 1 });
+
+		expect(text).toContain("do not match");
+	});
+
+	it("flags a disagreement on the warning count alone", async () => {
+		const text = await runTool({ ...mixed, errorCount: 1, warningCount: 9 });
+
+		expect(text).toContain("do not match");
+	});
+
+	it("says nothing when the counts and the rows agree", async () => {
+		const text = await runTool({ ...mixed, errorCount: 1, warningCount: 1 });
+
+		expect(text).not.toContain("do not match");
+	});
+
 	it("reports a node with neither errors nor warnings as clean", async () => {
 		const text = await runTool({
 			...warningOnly,
