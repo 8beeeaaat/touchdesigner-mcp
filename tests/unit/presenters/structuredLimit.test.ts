@@ -204,6 +204,29 @@ describe("limit in the structured formats", () => {
 			expect(payload).not.toHaveProperty("fallbackAttributions");
 		});
 
+		it("does not give a legacy report an empty warnings list", () => {
+			// A component predating warning collection sends no `warnings` at
+			// all, which is not the same as a node having none — the whole
+			// point of `warningsUnknown`. Capping the report must not answer
+			// that question on the component's behalf.
+			const legacy: TdNodeErrorReport = {
+				errorCount: 6,
+				errors: Array.from({ length: 6 }, (_, i) => entry(`err${i}`, "error")),
+				hasErrors: true,
+				nodeName: "probe",
+				nodePath: "/project1/probe",
+				opType: "baseCOMP",
+			};
+
+			const payload = payloadOf(
+				formatNodeErrors(legacy, { limit: 2, responseFormat: "json" }),
+				"json",
+			);
+
+			expect(payload.errors).toHaveLength(2);
+			expect(payload).not.toHaveProperty("warnings");
+		});
+
 		it.each(
 			structuredFormats,
 		)("leaves detailLevel 'detailed' uncapped in %s", (responseFormat) => {

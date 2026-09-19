@@ -172,7 +172,7 @@ export function formatNodeErrors(
 			warningCountMissing: !warningsKnown && data.hasWarnings !== undefined,
 			warningsUnknown: !warningsKnown && data.hasWarnings === undefined,
 		},
-		structured: capReport(data, truncation !== undefined, {
+		structured: capReport(data, {
 			errors: reportedErrors.slice(0, shownErrors),
 			fallbackAttributions: shownFallbacks,
 			lookupFailures: shownLookupFailures,
@@ -194,12 +194,17 @@ export function formatNodeErrors(
  * match the shortened arrays would make the payload self-consistent and wrong.
  *
  * A collection the report never sent stays absent: `unresolvedAnchors` missing
- * means the component said nothing about ambiguous attributions, which an
- * empty array would turn into "none found".
+ * means the component said nothing about ambiguous attributions, and
+ * `warnings` missing means the component predates warning collection
+ * entirely — an empty array would turn either into "none found".
+ *
+ * This runs whether or not anything was cut. An uncapped call rebuilds the
+ * report from the same values in the same order, so the caller sees what the
+ * server sent either way, and there is no "nothing was removed" shortcut here
+ * to go stale against the caps above.
  */
 function capReport(
 	data: NodeErrorReportData,
-	capped: boolean,
 	caps: {
 		errors: NodeErrorReportData["errors"];
 		warnings: NonNullable<NodeErrorReportData["warnings"]>;
@@ -210,11 +215,6 @@ function capReport(
 		>;
 	},
 ): NodeErrorReportData {
-	if (!capped) {
-		// Nothing was removed, so the caller gets the object the server sent,
-		// untouched down to its key order.
-		return data;
-	}
 	const report: NodeErrorReportData = { ...data, errors: caps.errors };
 	if (data.warnings !== undefined) report.warnings = caps.warnings;
 	if (data.unresolvedAnchors !== undefined)
