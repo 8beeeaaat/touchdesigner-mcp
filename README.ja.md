@@ -7,21 +7,13 @@ TouchDesignerのためのMCP(Model Context Protocol) サーバー実装です。
 
 [English](README.md) / [日本語](README.ja.md)
 
-## 概要
+## まずはプラグインでセットアップ（推奨）
 
-[![demo clip](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/particle_on_youtube.png)](https://youtu.be/V2znaqGU7f4?si=6HDFbcBHCFPdttkM&t=635)
+**初めて MCP を導入する方で、Claude Code または Codex をお使いなら、`touchdesigner` プラグインから始めてください。** AI クライアントが MCP サーバーの設定と起動を行います。設定 JSON の手書き、リポジトリのクローン、npm ビルドは不要です。
 
-TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッジとして機能し、AIエージェントが以下のことが可能になります
-
-- ノードの作成、変更、削除
-- ノードプロパティやプロジェクト構造の照会
-- PythonスクリプトによるTouchDesignerのプログラム的制御
-
-## インストール方法
-
-**[インストールガイド](docs/installation.ja.md)** を参照してください。
-
-アップデートする場合は **[最新リリース](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)** の手順を参照してください。
+1. パソコンに **TouchDesigner** と **Node.js 22.18 以降の 22 系・24 系・26 以降**をインストールします。
+2. 以下からお使いのクライアントを選び、コマンドでプラグインを導入します。
+3. クライアントで新しいセッションを開始し、以下の起動・接続確認を実行します。ローカルのシェル操作が可能なら、起動スキルが MCP コンポーネントのダウンロードと TouchDesigner への読み込みを支援します。既存プロジェクトに手動で導入する場合は、[最新リリースの TouchDesigner Components](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest) をダウンロード・展開し、`mcp_webserver_base.tox` をプロジェクトにドラッグしてください。展開したファイルは同じ場所に保管してください。
 
 ### Claude Code ユーザー向け: touchdesigner プラグイン
 
@@ -33,13 +25,6 @@ claude plugin install touchdesigner@touchdesigner-mcp
 ```
 
 導入後、`/touchdesigner:setup` で接続を検証するか、`/touchdesigner:launch` でコンポーネントを読み込んだ状態の TouchDesigner を起動できます。
-
-| レイヤ | 追加されるもの |
-| :--- | :--- |
-| ツール | この MCP サーバー本体（ホスト・ポートはプラグインオプションとして設定） |
-| 規約 | オペレータファミリーのモデル、ツールが期待するノードパスと `nodeType` の命名、TD Python API を推測せず lookup ツールで解決する作法を自動ロード |
-| コマンド | `/touchdesigner:` `launch` / `setup` / `debug` / `snapshot` / `overview` / `perf` |
-| 自動化 | ネットワークを変更するたびに「確認したつもり」を防ぎ、検証を促すフック |
 
 プラグイン自体の設定とトラブルシューティングは [plugin/touchdesigner/README.md](plugin/touchdesigner/README.md) を参照してください。
 
@@ -54,7 +39,23 @@ codex plugin add touchdesigner@touchdesigner-openai
 
 導入後、「TouchDesigner の接続を確認して」や「TouchDesigner を起動して」と依頼してください。MCP サーバーと、接続確認・起動・デバッグ・画像取得・プロジェクト概要・パフォーマンス計測のスキルが利用できます。
 
-必要環境、PR 版の試用、設定、ChatGPT 接続は [OpenAI プラグインガイド](docs/openai-plugin.md)を参照してください。
+設定、ChatGPT 接続は [OpenAI プラグインガイド](docs/openai-plugin.md)を参照してください。
+
+### その他のクライアント・アップデート
+
+**Claude Desktop（MCPB）**、その他の MCP クライアント、手動設定は [インストールガイド](docs/installation.ja.md)を参照してください。**ChatGPT Web** は [OpenAI 接続ガイド](docs/openai-plugin.md#chatgpt-connect-the-local-server)で案内しています。
+
+すでに利用中の方は、[最新リリースのアップデート手順](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)を参照してください。
+
+## 概要
+
+[![demo clip](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/particle_on_youtube.png)](https://youtu.be/V2znaqGU7f4?si=6HDFbcBHCFPdttkM&t=635)
+
+TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッジとして機能し、AIエージェントが以下のことが可能になります
+
+- ノードの作成、変更、削除
+- ノードプロパティやプロジェクト構造の照会
+- PythonスクリプトによるTouchDesignerのプログラム的制御
 
 ## MCPサーバーの機能
 

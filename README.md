@@ -7,21 +7,13 @@ This is an implementation of an MCP (Model Context Protocol) server for TouchDes
 
 [English](README.md) / [日本語](README.ja.md)
 
-## Overview
+## Quick start: install the plugin (recommended)
 
-[![demo clip](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/particle_on_youtube.png)](https://youtu.be/V2znaqGU7f4?si=6HDFbcBHCFPdttkM&t=635)
+**New to MCP? If you use Claude Code or Codex, start with the `touchdesigner` plugin.** Your AI client configures and starts the MCP server for you. You do not need to write MCP configuration JSON, clone this repository, or run an npm build.
 
-TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebServer DAT, enabling AI agents to:
-
-- Create, modify, and delete nodes
-- Query node properties and project structure
-- Programmatically control TouchDesigner via Python scripts
-
-## Installation
-
-Please refer to the **[Installation Guide](docs/installation.md)**.
-
-If you are updating, please refer to the procedure in the **[Latest Release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)**.
+1. Install **TouchDesigner** and **Node.js 22.18+, 24.x, or 26+** on your computer.
+2. Install the plugin using the commands for your client below.
+3. Start a new client session and use the launch or setup instructions below. The launch skill can help download the MCP component and open it in TouchDesigner when local shell access is available. To prepare an existing project yourself, download [TouchDesigner Components from the latest release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest), extract the archive, and drag `mcp_webserver_base.tox` into your project. Keep the extracted files together.
 
 ### Claude Code users: the touchdesigner plugin
 
@@ -33,13 +25,6 @@ claude plugin install touchdesigner@touchdesigner-mcp
 ```
 
 Then run `/touchdesigner:setup` to verify the connection, or `/touchdesigner:launch` to start TouchDesigner with the component already imported.
-
-| Layer | What it adds |
-| :--- | :--- |
-| Tools | This MCP server, bundled and preconfigured (host and port are plugin options) |
-| Conventions | Auto-loaded skills for the operator-family model, the node paths and `nodeType` naming the tools expect, and resolving TD Python APIs through the lookup tools instead of guessing |
-| Commands | `/touchdesigner:` `launch`, `setup`, `debug`, `snapshot`, `overview`, `perf` |
-| Automation | A hook that reminds Claude to verify every network mutation instead of assuming it worked |
 
 Configuration and troubleshooting for the plugin itself live in [plugin/touchdesigner/README.md](plugin/touchdesigner/README.md).
 
@@ -54,7 +39,23 @@ codex plugin add touchdesigner@touchdesigner-openai
 
 Then ask “Use TouchDesigner setup to check my connection” or “Launch TouchDesigner.” The plugin includes the MCP server and skills for setup, launch, debugging, snapshots, project overviews, and performance measurement.
 
-See the [OpenAI plugin guide](docs/openai-plugin.md) for prerequisites, the PR preview, configuration, and ChatGPT connections.
+See the [OpenAI plugin guide](docs/openai-plugin.md) for configuration and ChatGPT connections.
+
+### Other clients and updates
+
+For **Claude Desktop (MCPB)**, other MCP clients, or manual configuration, see the [Installation Guide](docs/installation.md). For **ChatGPT Web**, see the [OpenAI connection guide](docs/openai-plugin.md#chatgpt-connect-the-local-server).
+
+Already using the server? Follow the [update instructions in the latest release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions).
+
+## Overview
+
+[![demo clip](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/assets/particle_on_youtube.png)](https://youtu.be/V2znaqGU7f4?si=6HDFbcBHCFPdttkM&t=635)
+
+TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebServer DAT, enabling AI agents to:
+
+- Create, modify, and delete nodes
+- Query node properties and project structure
+- Programmatically control TouchDesigner via Python scripts
 
 ## MCP Server Features
 
