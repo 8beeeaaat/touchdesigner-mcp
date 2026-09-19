@@ -1,6 +1,6 @@
 ---
-name: td-snapshot
-description: This skill should be used when the user runs /td-companion:td-snapshot or asks to see, preview, capture, or confirm the visual output of a TouchDesigner TOP — trigger phrases include "show me the output", "what does this look like", "capture the render", "snapshot the TOP", "check the visual output", or "is this TOP rendering correctly".
+name: snapshot
+description: This skill should be used when the user runs /touchdesigner:snapshot or asks to see, preview, capture, or confirm the visual output of a TouchDesigner TOP — trigger phrases include "show me the output", "what does this look like", "capture the render", "snapshot the TOP", "check the visual output", or "is this TOP rendering correctly".
 argument-hint: "[top-path]"
 version: 0.1.0
 ---

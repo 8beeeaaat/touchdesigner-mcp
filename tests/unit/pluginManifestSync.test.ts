@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// The td-companion plugin wires its TouchDesigner endpoint through Claude Code's
+// The touchdesigner plugin wires its TouchDesigner endpoint through Claude Code's
 // `userConfig` mechanism, which is real but undocumented: the Claude Code binary
 // substitutes `${user_config.<key>}` in .mcp.json, and skips the MCP server
 // entirely when a *required* option has no value ("has missing required
@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 // still announces it as configured truth. This suite pins the files that have
 // to agree.
 
-const PLUGIN_DIR = "plugin/td-companion";
+const PLUGIN_DIR = "plugin/touchdesigner";
 
 async function readRepoFile(relativePath: string): Promise<string> {
 	return fs.readFile(
@@ -38,7 +38,7 @@ async function readPluginManifest(): Promise<{
 	);
 }
 
-describe("td-companion userConfig wiring", () => {
+describe("touchdesigner userConfig wiring", () => {
 	it("declares every option that .mcp.json interpolates", async () => {
 		const { userConfig } = await readPluginManifest();
 		const mcpConfig = await readRepoFile(`${PLUGIN_DIR}/.mcp.json`);
@@ -105,7 +105,7 @@ describe("td-companion userConfig wiring", () => {
 			await readRepoFile(`${PLUGIN_DIR}/hooks/hooks.json`),
 		);
 		const overview = await readRepoFile(
-			`${PLUGIN_DIR}/skills/td-overview/SKILL.md`,
+			`${PLUGIN_DIR}/skills/overview/SKILL.md`,
 		);
 
 		const matcher: string = hooks.hooks.PostToolUse[0].matcher;

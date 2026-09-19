@@ -1,5 +1,5 @@
 ---
-name: td-fundamentals
+name: fundamentals
 description: This skill should be used when working with TouchDesigner through the touchdesigner-mcp tools — for example when asked to "build a network in TouchDesigner", "create a node", "wire operators together", add or configure a TOP/CHOP/SOP/DAT/COMP/MAT, inspect or edit a .toe or .tox file, set node parameters, or otherwise construct or modify a TouchDesigner project. Provides the conventions the tools expect (node paths, nodeType and parameter naming, family-bound wiring), the cook model that explains what the tools report, the inspect-create-verify workflow, and the procedures for reading families, operator types, and parameter names live from the running TouchDesigner instead of recalling them.
 version: 0.1.0
 ---
@@ -12,7 +12,7 @@ TouchDesigner is a node-based visual programming environment for real-time proce
 
 The MCP tools substitute for the two things a human normally does with the mouse: browsing the OP Create dialog (its category tabs mirror the six operator families below) and dragging wires between operators in the network editor. Every action described in this skill has a direct tool equivalent — there is no need to open TouchDesigner's UI to inspect, build, or debug a network reachable through these tools.
 
-Work through the bundled MCP tools rather than assuming network contents by memory: `get_td_info`, `get_td_nodes`, `get_td_node_parameters`, `get_td_node_errors`, `create_td_node`, `update_td_node_parameters`, `delete_td_node`, `exec_node_method`, `execute_python_script`, `get_td_classes`, `get_td_class_details`, `get_td_module_help`, `get_top_image`, and `describe_td_tools`. At runtime these are namespaced (e.g. `mcp__plugin_td-companion_touchdesigner__create_td_node`); refer to them by their logical name below and let the runtime prefix resolve automatically. When a tool's exact input shape is unclear, call `describe_td_tools` rather than guessing at parameter names.
+Work through the bundled MCP tools rather than assuming network contents by memory: `get_td_info`, `get_td_nodes`, `get_td_node_parameters`, `get_td_node_errors`, `create_td_node`, `update_td_node_parameters`, `delete_td_node`, `exec_node_method`, `execute_python_script`, `get_td_classes`, `get_td_class_details`, `get_td_module_help`, `get_top_image`, and `describe_td_tools`. At runtime these are namespaced (e.g. `mcp__plugin_touchdesigner_touchdesigner__create_td_node`); refer to them by their logical name below and let the runtime prefix resolve automatically. When a tool's exact input shape is unclear, call `describe_td_tools` rather than guessing at parameter names.
 
 ## Operator Families
 

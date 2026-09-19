@@ -1,8 +1,8 @@
 ---
-name: td-overview
-description: This skill should be used when the user runs /td-companion:td-overview or asks for a project structure report, hierarchy summary, or health check of a TouchDesigner project — trigger phrases include "give me an overview of this TD project", "summarize the project structure", "what's in this TouchDesigner file", "map out the node hierarchy", or "audit this TouchDesigner project".
+name: overview
+description: This skill should be used when the user runs /touchdesigner:overview or asks for a project structure report, hierarchy summary, or health check of a TouchDesigner project — trigger phrases include "give me an overview of this TD project", "summarize the project structure", "what's in this TouchDesigner file", "map out the node hierarchy", or "audit this TouchDesigner project".
 argument-hint: "[root-path]"
-allowed-tools: ["mcp__plugin_td-companion_touchdesigner__get_td_info", "mcp__plugin_td-companion_touchdesigner__get_td_nodes", "mcp__plugin_td-companion_touchdesigner__get_td_node_errors", "mcp__plugin_td-companion_touchdesigner__get_td_node_parameters"]
+allowed-tools: ["mcp__plugin_touchdesigner_touchdesigner__get_td_info", "mcp__plugin_touchdesigner_touchdesigner__get_td_nodes", "mcp__plugin_touchdesigner_touchdesigner__get_td_node_errors", "mcp__plugin_touchdesigner_touchdesigner__get_td_node_parameters"]
 version: 0.1.0
 ---
 

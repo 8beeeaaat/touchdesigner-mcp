@@ -1,6 +1,6 @@
 ---
-name: td-debug
-description: This skill should be used when the user runs /td-companion:td-debug or asks to debug, investigate, or find TouchDesigner node errors — trigger phrases include "debug my TouchDesigner project", "why is this node broken", "find errors in TD", "investigate node errors", "what's wrong with /project1/geo1", or "fix this TouchDesigner error".
+name: debug
+description: This skill should be used when the user runs /touchdesigner:debug or asks to debug, investigate, or find TouchDesigner node errors — trigger phrases include "debug my TouchDesigner project", "why is this node broken", "find errors in TD", "investigate node errors", "what's wrong with /project1/geo1", or "fix this TouchDesigner error".
 argument-hint: "[node-path]"
 version: 0.1.0
 ---
@@ -13,7 +13,7 @@ Systematically investigate TouchDesigner node errors within a scope, classify ea
 
 1. Resolve the scope to inspect: use the `node-path` argument if the user supplied one; otherwise default to `/project1` if it exists, else `/` (a project launched by opening the tox as a document has no `/project1` — the component sits at the root). If neither is available and the default seems wrong for the user's project (e.g. they referenced a specific component earlier), ask which path to scope to before continuing.
 
-2. Optionally call `get_td_info` first if connectivity hasn't been confirmed this session — if it fails, stop and point the user at `/td-companion:td-setup` rather than proceeding against a dead connection.
+2. Optionally call `get_td_info` first if connectivity hasn't been confirmed this session — if it fails, stop and point the user at `/touchdesigner:setup` rather than proceeding against a dead connection.
 
 3. Call `get_td_node_errors` with `nodePath` set to the resolved scope. This tool requires a `nodePath` but aggregates errors from that node **and all of its descendants**, so one call against `/project1` (or whatever scope was resolved) covers the whole subtree — there's no need to call it once per node.
 
@@ -43,4 +43,4 @@ Systematically investigate TouchDesigner node errors within a scope, classify ea
 
 ## Failure handling
 
-If `get_td_node_errors` itself fails (connection lost, invalid path), report the raw error and suggest `/td-companion:td-setup` or ask for a corrected path — don't fabricate an error report. If the user declines to apply a proposed fix, leave the node untouched and report the diagnosis as the final output. If a fix is applied but the re-check still shows the same error, say so plainly and reconsider the classification rather than repeating the same fix.
+If `get_td_node_errors` itself fails (connection lost, invalid path), report the raw error and suggest `/touchdesigner:setup` or ask for a corrected path — don't fabricate an error report. If the user declines to apply a proposed fix, leave the node untouched and report the diagnosis as the final output. If a fix is applied but the re-check still shows the same error, say so plainly and reconsider the classification rather than repeating the same fix.

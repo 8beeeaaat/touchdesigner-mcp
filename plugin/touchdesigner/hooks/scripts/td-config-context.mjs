@@ -23,7 +23,7 @@ const port =
 process.stdout.write(
 	JSON.stringify({
 		hookSpecificOutput: {
-			additionalContext: `td-companion configuration: TouchDesigner host is ${host}; port is ${port}; endpoint is ${host}:${port}. Use these values for td-setup and td-launch diagnostics.`,
+			additionalContext: `TouchDesigner MCP endpoint: host is ${host}; port is ${port}; endpoint is ${host}:${port}. Use these values for the setup and launch diagnostics.`,
 			hookEventName: "SessionStart",
 		},
 	}),

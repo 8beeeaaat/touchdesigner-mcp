@@ -14,7 +14,7 @@
 		],
 		"PostToolUse": [
 			{
-				"matcher": "^mcp__plugin_td-companion_touchdesigner__(create_td_node|update_td_node_parameters|delete_td_node|exec_node_method|execute_python_script)$",
+				"matcher": "^mcp__plugin_touchdesigner_touchdesigner__(create_td_node|update_td_node_parameters|delete_td_node|exec_node_method|execute_python_script)$",
 				"hooks": [
 					{
 						"type": "command",

@@ -8,9 +8,9 @@
 	},
 	"plugins": [
 		{
-			"name": "td-companion",
-			"source": "./plugin/td-companion",
-			"description": "TouchDesigner companion for Claude Code: bundles the touchdesigner-mcp server and makes its tools easy to drive — launch/setup/debug/snapshot/overview/perf skills invocable as slash commands, skills covering the node-path and Python-lookup conventions the tools expect, and a post-edit verification hook",
+			"name": "touchdesigner",
+			"source": "./plugin/touchdesigner",
+			"description": "Drives the touchdesigner-mcp server from Claude Code: bundles and preconfigures the server, adds launch/setup/debug/snapshot/overview/perf as slash commands, teaches the node-path and Python-lookup conventions its tools expect, and reminds Claude to verify every network mutation",
 			"version": "0.1.0"
 		}
 	]

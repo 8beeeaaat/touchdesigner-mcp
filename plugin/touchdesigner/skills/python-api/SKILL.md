@@ -1,5 +1,5 @@
 ---
-name: td-python-api
+name: python-api
 description: This skill should be used when writing, editing, or debugging Python code that runs inside TouchDesigner — scripts, expressions, DAT callbacks, Extensions, or one-off snippets passed to execute_python_script — or whenever there is uncertainty about a `td` class's methods, members, or module-level API. Trigger phrases include "TD Python", "op()", "AttributeError in TouchDesigner", "what method does X have", "write a Python expression for this parameter", "does this CHOP/TOP/DAT support Y", and any request to script TouchDesigner behavior.
 version: 0.1.0
 ---

@@ -23,25 +23,25 @@ Please refer to the **[Installation Guide](docs/installation.md)**.
 
 If you are updating, please refer to the procedure in the **[Latest Release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)**.
 
-### Claude Code users: the td-companion plugin
+### Claude Code users: the touchdesigner plugin
 
-This repository doubles as a Claude Code plugin marketplace. The **td-companion** plugin installs this MCP server for you and makes its tools easy to drive:
+This repository doubles as a Claude Code plugin marketplace. The **touchdesigner** plugin installs this MCP server for you and makes its tools easy to drive:
 
 ```bash
 claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
-claude plugin install td-companion@touchdesigner-mcp
+claude plugin install touchdesigner@touchdesigner-mcp
 ```
 
-Then run `/td-companion:td-setup` to verify the connection, or `/td-companion:td-launch` to start TouchDesigner with the component already imported.
+Then run `/touchdesigner:setup` to verify the connection, or `/touchdesigner:launch` to start TouchDesigner with the component already imported.
 
 | Layer | What it adds |
 | :--- | :--- |
 | Tools | This MCP server, bundled and preconfigured (host and port are plugin options) |
 | Conventions | Auto-loaded skills for the operator-family model, the node paths and `nodeType` naming the tools expect, and resolving TD Python APIs through the lookup tools instead of guessing |
-| Commands | `/td-companion:` `td-launch`, `td-setup`, `td-debug`, `td-snapshot`, `td-overview`, `td-perf` |
+| Commands | `/touchdesigner:` `launch`, `setup`, `debug`, `snapshot`, `overview`, `perf` |
 | Automation | A hook that reminds Claude to verify every network mutation instead of assuming it worked |
 
-Configuration and troubleshooting for the plugin itself live in [plugin/td-companion/README.md](plugin/td-companion/README.md).
+Configuration and troubleshooting for the plugin itself live in [plugin/touchdesigner/README.md](plugin/touchdesigner/README.md).
 
 ## MCP Server Features
 

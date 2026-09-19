@@ -1,6 +1,6 @@
 ---
-name: td-perf
-description: This skill should be used when the user runs /td-companion:td-perf, or asks to measure where frame time is going in a TouchDesigner project — a cook-time profiling pass across the network producing a ranked list of the slowest operators. Trigger phrases include "measure cook times", "profile my TD project", "which operator is slowest", "fps dropped", and "why is this project slow". It measures and reports the numbers; it does not carry general TouchDesigner optimization advice.
+name: perf
+description: This skill should be used when the user runs /touchdesigner:perf, or asks to measure where frame time is going in a TouchDesigner project — a cook-time profiling pass across the network producing a ranked list of the slowest operators. Trigger phrases include "measure cook times", "profile my TD project", "which operator is slowest", "fps dropped", and "why is this project slow". It measures and reports the numbers; it does not carry general TouchDesigner optimization advice.
 argument-hint: "[root-path]"
 version: 0.1.0
 ---
@@ -13,7 +13,7 @@ Diagnose TouchDesigner performance bottlenecks by measuring per-operator cook ti
 
 1. Explain up front that real measurement requires running a script via `execute_python_script`, which is not pre-authorized for this skill — the permission prompt that follows is expected, not a malfunction.
 
-2. Call `get_td_info` to confirm TouchDesigner is reachable before doing anything else; if it fails, point the user at `/td-companion:td-setup` instead of proceeding.
+2. Call `get_td_info` to confirm TouchDesigner is reachable before doing anything else; if it fails, point the user at `/touchdesigner:setup` instead of proceeding.
 
 3. Resolve `root` to the `root-path` argument if given, otherwise `/project1` if it exists, else `/` (a project launched by opening the tox as a document has no `/project1`).
 

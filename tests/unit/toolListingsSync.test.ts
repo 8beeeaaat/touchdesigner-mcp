@@ -6,13 +6,13 @@ import { TOOL_DEFINITIONS } from "../../src/features/tools/toolDefinitions.js";
 
 // The server registers tools from TOOL_NAMES, but several listings restate
 // those names by hand: the README tool tables, the MCPB manifest, the
-// td-companion plugin's PostToolUse hook matcher, and its skills'
+// touchdesigner plugin's PostToolUse hook matcher, and its skills'
 // allowed-tools frontmatter. Each can drift from the implementation
 // independently. This suite fails whenever a tool is added, renamed, or
 // removed without updating every listing that names it.
 
 const REGISTERED_TOOL_NAMES = Object.values(TOOL_NAMES).sort();
-const PLUGIN_DIR = "plugin/td-companion";
+const PLUGIN_DIR = "plugin/touchdesigner";
 
 function extractToolTableNames(markdown: string): string[] {
 	const heading = markdown.match(/^### (?:Tools|ツール).*$/m);
@@ -56,7 +56,7 @@ describe("README tool tables", () => {
 		);
 	});
 
-	it("names only real tools in the td-companion PostToolUse hook matcher", async () => {
+	it("names only real tools in the touchdesigner PostToolUse hook matcher", async () => {
 		const hooks = JSON.parse(
 			await readRepoFile(`${PLUGIN_DIR}/hooks/hooks.json`),
 		) as { hooks: { PostToolUse: Array<{ matcher: string }> } };
@@ -92,7 +92,7 @@ describe("README tool tables", () => {
 		).toEqual([]);
 	});
 
-	it("names only real tools in every td-companion skill's allowed-tools", async () => {
+	it("names only real tools in every touchdesigner skill's allowed-tools", async () => {
 		const { name: pluginName } = JSON.parse(
 			await readRepoFile(`${PLUGIN_DIR}/.claude-plugin/plugin.json`),
 		) as { name: string };
