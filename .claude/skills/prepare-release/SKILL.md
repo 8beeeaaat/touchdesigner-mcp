@@ -103,6 +103,35 @@ grep -A3 mcpCompatibility package.json
 > The `server.json` `fileSha256` will not match the CI-rebuilt release asset —
 > that mismatch is a known, expected issue. See version-policy.md.
 
+### Step 4b — if (and only if) the npm MAJOR changed
+
+The bundled `touchdesigner` plugin is **not** one of the version-bearing files, and
+`npm version` does not touch it. It resolves the server from npm rather than from
+this tree:
+
+```
+plugin/touchdesigner/.mcp.json → --package=touchdesigner-mcp-server@^2
+```
+
+On a MAJOR bump that pin silently keeps resolving the *old* major, so the plugin
+stops tracking releases without anything failing. When — and only when — the npm
+major moved:
+
+1. Update the `^N` pin in `plugin/touchdesigner/.mcp.json` to the new major.
+2. Re-read the skills under `plugin/touchdesigner/skills/` for claims about server
+   behaviour the new major changed — response shapes, `detailLevel` truncation,
+   `get_td_nodes`' `pattern` default, tool argument names.
+   `tests/unit/toolListingsSync.test.ts` catches renamed *tools*; nothing catches
+   changed *behaviour*.
+3. Bump `version` in `plugin/touchdesigner/.claude-plugin/plugin.json`. That is the
+   plugin's own axis and moves only when the plugin itself changes. It is the
+   only copy: the marketplace entry deliberately carries no `version`, so that
+   this step cannot leave a stale one behind. Should one ever be added there, it
+   has to move with this one — `tests/unit/pluginManifestSync.test.ts` compares
+   them whenever the marketplace names a version, and would fail this release.
+
+On a MINOR or PATCH release, leave all three alone — `^N` already covers it.
+
 ## Step 5 — commit and open the release PR
 
 ```bash
@@ -123,4 +152,6 @@ Do not merge, tag, or `npm publish` yourself.
 - Never edit the six version files by hand — let `npm version` write them, then
   revert the API trio if needed. Hand edits drift from the sync scripts.
 - `build:mcpb` **before** `version:mcp`, always.
+- On a MAJOR bump, don't forget Step 4b — the `touchdesigner` plugin pins the
+  server by major and `npm version` leaves it behind.
 - Don't "fix" the `server.json` SHA256 mismatch during a release.

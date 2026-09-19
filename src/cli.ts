@@ -17,6 +17,48 @@ const DEFAULT_HOST = "http://127.0.0.1";
 const DEFAULT_PORT = 9981;
 const DEFAULT_MCP_ENDPOINT = "/mcp";
 
+/** Every flag the CLI acts on, across parseArgs and parseTransportConfig. */
+const RECOGNIZED_FLAGS = [
+	"--host=",
+	"--port=",
+	"--mcp-http-host=",
+	"--mcp-http-port=",
+];
+
+/**
+ * The text after a flag's first `=`.
+ *
+ * `split("=")[1]` keeps only the text up to the *second* `=` and drops the
+ * rest, which truncates before anything downstream can object: `--port=9981=x`
+ * reached the port check as a clean `9981`, and `--host=http://h/?a=b` silently
+ * became `http://h/?a`. Taking everything after the first `=` hands validation
+ * what the user actually typed.
+ */
+function flagValue(arg: string): string {
+	return arg.slice(arg.indexOf("=") + 1);
+}
+
+/**
+ * Read a port from a `--flag=value` argument, or exit.
+ *
+ * `Number.parseInt` stops at the first character it cannot read, so it accepts
+ * a numeric prefix and discards the rest: `9981junk` parses as 9981, and both
+ * `1.5` and `1e3` parse as 1. Those all passed the range check and connected
+ * somewhere the user never asked for, which is the opposite of the fail-fast
+ * this validation exists to provide. Demand the whole value be decimal digits
+ * before converting it.
+ */
+function parsePort(flag: string, raw: string): number {
+	const port = /^\d+$/.test(raw) ? Number.parseInt(raw, 10) : Number.NaN;
+	if (Number.isNaN(port) || port < 1 || port > 65535) {
+		console.error(
+			`Invalid value for ${flag}: "${raw}". Please specify a valid port number (1-65535).`,
+		);
+		process.exit(1);
+	}
+	return port;
+}
+
 /**
  * Parse command line arguments for TouchDesigner connection
  */
@@ -30,9 +72,17 @@ export function parseArgs(args?: string[]) {
 	for (let i = 0; i < argsToProcess.length; i++) {
 		const arg = argsToProcess[i];
 		if (arg.startsWith("--host=")) {
-			parsed.host = arg.split("=")[1];
+			parsed.host = flagValue(arg);
 		} else if (arg.startsWith("--port=")) {
-			parsed.port = Number.parseInt(arg.split("=")[1], 10);
+			parsed.port = parsePort("--port", flagValue(arg));
+		} else if (
+			arg.startsWith("--") &&
+			!RECOGNIZED_FLAGS.some((flag) => arg.startsWith(flag))
+		) {
+			// Unrecognized flags used to be discarded in silence, so a typo like
+			// --prot=9981 connected to the default port with no hint that the
+			// requested one had been ignored.
+			console.error(`Warning: ignoring unrecognized argument "${arg}".`);
 		}
 	}
 
@@ -66,18 +116,11 @@ export function parseTransportConfig(args?: string[]): TransportConfig {
 	);
 
 	if (httpPortArg) {
-		const portStr = httpPortArg.split("=")[1];
-		const port = Number.parseInt(portStr, 10);
-		if (Number.isNaN(port) || port < 1 || port > 65535) {
-			console.error(
-				`Invalid value for --mcp-http-port: "${portStr}". Please specify a valid port number (1-65535).`,
-			);
-			process.exit(1);
-		}
+		const port = parsePort("--mcp-http-port", flagValue(httpPortArg));
 		const hostArg = argsToProcess.find((arg) =>
 			arg.startsWith("--mcp-http-host="),
 		);
-		const host = hostArg ? hostArg.split("=")[1] : "127.0.0.1";
+		const host = hostArg ? flagValue(hostArg) : "127.0.0.1";
 
 		const config: StreamableHttpTransportConfig = {
 			endpoint: DEFAULT_MCP_ENDPOINT,
