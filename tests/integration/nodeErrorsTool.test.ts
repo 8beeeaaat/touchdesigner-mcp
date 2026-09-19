@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { TOOL_NAMES } from "../../src/core/constants.js";
 import type { ILogger } from "../../src/core/logger.js";
 import { registerTools } from "../../src/features/tools/register.js";
+import { TOOL_DEFINITIONS } from "../../src/features/tools/toolDefinitions.js";
 import type { TdNodeErrorReport } from "../../src/gen/endpoints/TouchDesignerAPI.js";
 import type { TouchDesignerClient } from "../../src/tdClient/index.js";
 
@@ -12,11 +13,20 @@ type ToolHandler = (params?: Record<string, unknown>) => Promise<{
 
 class MockMcpServer {
 	public tools = new Map<string, ToolHandler>();
+	// The config is what `tools/list` sends, and it is the only place a
+	// model sees `description`. Dropping it here — as this mock used to —
+	// left that string untested at the layer it is written for.
+	public configs = new Map<string, { description?: string }>();
 
 	registerTool(name: string, ...rest: unknown[]): void {
-		const handler = [...rest].pop();
+		const args = [...rest];
+		const handler = args.pop();
 		if (typeof handler === "function") {
 			this.tools.set(name, handler as ToolHandler);
+		}
+		const config = args[0];
+		if (config && typeof config === "object") {
+			this.configs.set(name, config as { description?: string });
 		}
 	}
 
@@ -24,6 +34,12 @@ class MockMcpServer {
 		const tool = this.tools.get(name);
 		if (!tool) throw new Error(`Tool ${name} not registered`);
 		return tool;
+	}
+
+	getDescription(name: string): string {
+		const config = this.configs.get(name);
+		if (!config) throw new Error(`Tool ${name} not registered`);
+		return config.description ?? "";
 	}
 }
 
@@ -583,5 +599,87 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(full).toContain("constantTOP");
 		expect(minimal).not.toContain("constantTOP");
 		expect(minimal).toContain("AttributeError");
+	});
+});
+
+/**
+ * The contract the model reads, as opposed to the payload it reads.
+ *
+ * A Script OP whose callback raises leaves the report in exactly the shape of
+ * a clean node — errorCount 0, hasErrors false, incomplete false, no skipped
+ * streams — because the exception is on neither of the two streams the report
+ * is built from. Nothing in the payload can say so, so the three agent-facing
+ * strings have to, and each reaches the model by its own route: only
+ * `description` is sent with `tools/list`, while `returns` and `example` come
+ * through `describe_td_tools`. Each is asserted separately, so a caveat lost
+ * from one field cannot be masked by another field still carrying its own.
+ */
+describe("GET_TD_NODE_ERRORS contract: Script OP cook exceptions", () => {
+	function registerOn(): MockMcpServer {
+		// Neither assertion below reaches TouchDesigner: the contract is built
+		// from TOOL_DEFINITIONS at registration time, and describe_td_tools
+		// never touches the client.
+		const client = {
+			getAdditionalToolResultContents: () => null,
+		} as unknown as TouchDesignerClient;
+		const server = new MockMcpServer();
+		registerTools(server as unknown as McpServer, logger, client);
+		return server;
+	}
+
+	async function describeNodeErrorsTool(): Promise<string> {
+		const server = registerOn();
+		// No detailLevel: a filtered call defaults to "summary", which is the
+		// route a model actually takes to this text.
+		const result = await server.getTool(TOOL_NAMES.DESCRIBE_TD_TOOLS)({
+			filter: "getTdNodeErrors",
+			responseFormat: "markdown",
+		});
+		return result.content?.find((c) => c.type === "text")?.text ?? "";
+	}
+
+	it("says so in the description tools/list sends", () => {
+		const description = registerOn().getDescription(
+			TOOL_NAMES.GET_TD_NODE_ERRORS,
+		);
+
+		expect(description).toContain("Script OP callback");
+		expect(description).toContain(
+			"an empty report is not evidence the node cooked",
+		);
+	});
+
+	it("says so in the returns describe_td_tools renders", async () => {
+		const text = await describeNodeErrorsTool();
+
+		expect(text).toContain("Returns:");
+		expect(text).toContain("leaves errorCount 0 with incomplete false");
+	});
+
+	it("says so in the example, with the way to make one visible", () => {
+		// Asserted on the definition rather than on rendered output, because
+		// `example` currently reaches no output at all: it is rendered only by
+		// formatToolMetadata's `formatDetailed`, whose text the detailedPayload
+		// template discards, and it is absent from the `structured` payload
+		// every other format serializes. That is a separate defect; the field
+		// is still the contract's source of truth and is pinned here so the
+		// caveat cannot be dropped from it silently.
+		const definition = TOOL_DEFINITIONS.find(
+			(entry) => entry.name === TOOL_NAMES.GET_TD_NODE_ERRORS,
+		);
+
+		expect(definition?.example).toContain(
+			"Out of scope: a Script OP whose callback raised",
+		);
+		expect(definition?.example).toContain("call scriptOp.addError(msg)");
+		// The remedy is named; where the exception otherwise goes is not. That
+		// is the one thing this contract could not verify — OP.scriptErrors()
+		// exists and may be where TouchDesigner records it — so naming the
+		// Textport as the only destination would be a fresh confident-wrong
+		// claim of exactly the kind this caveat exists to remove.
+		expect(definition?.example).toContain(
+			"it reaches only places this tool does not read",
+		);
+		expect(definition?.example).not.toContain("Textport");
 	});
 });

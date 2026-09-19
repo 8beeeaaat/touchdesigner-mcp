@@ -175,6 +175,16 @@ class TouchDesignerApiService(IApiService):
 		dangling operator references, shader compile failures) as warnings
 		rather than errors, so both streams are collected. Each entry carries a
 		``level`` so callers can tell them apart.
+
+		Only those two streams are read. An exception raised inside a Script OP
+		callback - a ``scriptCHOP``'s ``onCook``, say - reaches neither, so it
+		leaves ``errorCount`` 0 and ``incomplete`` False: the shape of a clean
+		node. The tool contract in ``toolDefinitions.ts`` says so, because this
+		payload has no way to. ``OP.scriptErrors()`` exists and may be where
+		such an exception is recorded - ``clearScriptErrors``'s own docstring
+		names "Script Nodes" as a source - but that is unverified against a
+		live failure, and adding it needs a message format and an attribution
+		rule of its own. See #219.
 		"""
 
 		node, outcome = _resolve_op(node_path)

@@ -257,7 +257,7 @@ console.log(node.properties?.Text);`,
 	defineTool({
 		category: "nodes",
 		description:
-			"Check errors and warnings on a node and its descendants. TouchDesigner reports missing files, dangling operator references and shader compile failures as warnings, so do not treat hasErrors=false as a healthy node",
+			"Check errors and warnings on a node and its descendants. TouchDesigner reports missing files, dangling operator references and shader compile failures as warnings, so do not treat hasErrors=false as a healthy node. Reads the operator errors and warnings streams only: an exception raised inside a Script OP callback, a scriptCHOP onCook for example, lands on neither and is reported nowhere here, so an empty report is not evidence the node cooked",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { getTdNodeErrors } from './servers/touchdesigner/getTdNodeErrors';
 
@@ -281,10 +281,17 @@ if (report.hasWarnings === undefined) {
 if (report.incomplete) {
   // A message stream could not be read, so the counts are a floor.
   console.warn('Incomplete report:', report.skippedStreams);
-}`,
+}
+
+// Out of scope: a Script OP whose callback raised. A scriptCHOP onCook
+// exception lands on neither stream this report is built from, so it leaves
+// errorCount 0 and incomplete false — the same shape as a healthy node, and
+// nothing above distinguishes the two. To make one visible to this tool,
+// catch it in the callback and call scriptOp.addError(msg), which writes to
+// the errors stream; otherwise it reaches only places this tool does not read.`,
 		name: TOOL_NAMES.GET_TD_NODE_ERRORS,
 		returns:
-			"Report with `errors` and `warnings` as separate collections, each entry carrying its level, message and owning node, plus counts. Carries incomplete/skippedStreams when a stream could not be read, and unresolvedAnchors/fallbackAttributions/lookupFailures when an attribution is uncertain.",
+			"Report with `errors` and `warnings` as separate collections, each entry carrying its level, message and owning node, plus counts. Carries incomplete/skippedStreams when a stream could not be read, and unresolvedAnchors/fallbackAttributions/lookupFailures when an attribution is uncertain. Built from the operator errors and warnings streams only, so nothing in it — incomplete included — speaks to a Script OP whose callback raised: such an exception is on neither stream and leaves errorCount 0 with incomplete false.",
 		run: async ({ params, tdClient }) => {
 			const { detailLevel, limit, responseFormat, ...queryParams } = params;
 			const result = await tdClient.getNodeErrors(queryParams);
