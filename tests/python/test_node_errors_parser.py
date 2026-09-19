@@ -176,12 +176,16 @@ class TestAttribution:
 		# separator. "/project1/probe2" starts with "/project1/probe" and is a
 		# different container; without the trailing slash its operators would
 		# be treated as anchors and blamed for the queried node's failures.
-		node = scene(PROBE, [f"{PROBE}/cb", "/project1/probe2/x"])
+		# Derived from PROBE, not written out: a literal drifts from the
+		# constant the code reads, and then the line is declined by the
+		# containment check instead of reaching it — which is how this test
+		# passed under the very mutation it was written to catch.
+		node = scene(PROBE, [f"{PROBE}/cb", f"{PROBE}2/x"])
 		declined = []
 
 		entries = _parse_op_messages(
 			f"{PROBE}/cb:  Error: ValueError raised\n"
-			"/project1/probe2/x: Error: quoted by the callback",
+			f"{PROBE}2/x: Error: quoted by the callback",
 			"error",
 			node,
 			declined,

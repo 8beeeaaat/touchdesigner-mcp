@@ -26,6 +26,8 @@ that starts accepting them fails visibly through the lookup rather than
 silently through the spelling check.
 """
 
+import pytest
+
 # Verbatim from the recorded run. Kept as a literal rather than derived from
 # the rule, so a change to the rule shows up here as a diff to be justified.
 REJECTED_BY_TOUCHDESIGNER = set(" !\"#$%&'()*+,-./:;<=>?@[\\]^`{|}~")
@@ -86,10 +88,24 @@ def test_the_generated_schema_is_ascii():
 		/ "openapi"
 		/ "openapi.yaml"
 	)
-	if not schema.exists():  # generated output; absent before `npm run gen`
-		return
+	if not schema.exists():
+		# Generated output, gitignored. Skipping is visible in the report;
+		# returning would show a green tick for a check that never ran.
+		pytest.skip("run `npm run gen` first: the schema is generated output")
 
 	schema.read_bytes().decode("ascii")
+
+
+def test_a_non_ascii_name_is_left_to_the_lookup():
+	# TouchDesigner refuses these too, but they are deliberately absent from
+	# the rule: a build that starts accepting them should fail visibly through
+	# the lookup rather than silently through the spelling check. Stated in
+	# the module docstring, and pinned here because an unpinned prose contract
+	# is what this branch has had to correct twice already.
+	_, looks_like_op_path = _rule()
+
+	for name in ("\u30ce\u30fc\u30c91", "caf\u00e9", "\u03a9"):
+		assert looks_like_op_path(f"{PROBE}/{name}"), name
 
 
 def test_a_component_anywhere_in_the_path_is_checked():

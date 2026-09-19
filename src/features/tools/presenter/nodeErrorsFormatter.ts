@@ -45,8 +45,11 @@ export function formatNodeErrors(
 	// empty, which is the confident-but-wrong report this tool exists to stop
 	// producing — and the reader has no way to tell it from a genuinely clean
 	// node.
-	const warningsKnown =
-		data.warningCount !== undefined || data.hasWarnings !== undefined;
+	// The count is the field that gets rendered, so it is the one that has to
+	// be present. `hasWarnings` alone would flip this true and then `?? 0`
+	// would invent the number every check below is computed from — a payload
+	// saying it has warnings, rendered as "Warnings: 0" with an all-clear.
+	const warningsKnown = data.warningCount !== undefined;
 	const warningCount = data.warningCount ?? 0;
 	const skipped = data.skippedStreams ?? [];
 	const unresolved = data.unresolvedAnchors ?? [];
@@ -67,9 +70,14 @@ export function formatNodeErrors(
 	// The counts come from the server; the rows are what we were given. When
 	// they disagree, say so rather than quietly presenting one as the other.
 	const listedErrors = entries.filter((e) => e.level === "error").length;
+	const listedWarnings = entries.length - listedErrors;
 	const countsDisagree =
 		listedErrors !== data.errorCount ||
-		(warningsKnown && entries.length - listedErrors !== warningCount);
+		data.hasErrors !== listedErrors > 0 ||
+		(warningsKnown &&
+			(listedWarnings !== warningCount ||
+				(data.hasWarnings !== undefined &&
+					data.hasWarnings !== listedWarnings > 0)));
 
 	// Whether the entries are everything there was to find. Each notice this
 	// formatter can print is a way that claim fails, so anything asserting
