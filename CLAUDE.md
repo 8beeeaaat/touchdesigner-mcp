@@ -153,7 +153,7 @@ The project uses OpenAPI 3.0.0 schema (`src/api/index.yml`) for maintaining cons
 - Both transports serve protocol revision 2026-07-28 with transparent 2025-era fallback (`serveStdio` / `createMcpHandler`)
 - Streamable HTTP is stateless: `TransportFactory` / `TransportRegistry` / `SessionManager` were deleted
 - Tools use `registerTool`, prompts use `registerPrompt` (Zod schemas); the deprecated MCP `logging` capability was dropped (stderr logging instead)
-- Node.js 20+ required
+- Node.js 22.18+ required
 
 **Previous Update**: Generation pipeline simplification
 

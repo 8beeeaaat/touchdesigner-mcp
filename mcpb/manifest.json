@@ -118,7 +118,7 @@
       "linux"
     ],
     "runtimes": {
-      "node": ">=20.0.0"
+      "node": ">=22.18.0"
     }
   },
   "keywords": [
