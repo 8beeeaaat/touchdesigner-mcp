@@ -332,6 +332,9 @@ describe("GET_TD_NODE_ERRORS", () => {
 
 		expect(text).toContain("Warnings were not inspected");
 		expect(text).not.toContain("No errors or warnings reported");
+		// The same component cannot report a stream it failed to read, so the
+		// absence of that notice is unknown rather than an assurance.
+		expect(text).toContain("message stream could not be read");
 	});
 
 	it("withholds the clean verdict when a stream could not be read", async () => {

@@ -9,8 +9,10 @@
 {{#warningsUnknown}}
 > ⚠️ **Warnings were not inspected.** This TouchDesigner component predates
 > warning collection, so a missing file, a dangling operator reference or a
-> shader that will not compile would not appear here. Update the component to
-> see them.
+> shader that will not compile would not appear here. It also has no way to
+> say when a message stream could not be read, so treat the absence of that
+> notice as unknown rather than as an assurance. Update the component to see
+> both.
 
 {{/warningsUnknown}}
 {{#incomplete}}
