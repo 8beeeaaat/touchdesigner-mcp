@@ -430,14 +430,14 @@ class TestRobustness:
 
 
 class TestLineEndings:
-	"""The one sample here that is not verbatim TD output.
+	"""Not verbatim TD output: ERRORS_RAW with its endings rewritten to CRLF.
 
-	It is ERRORS_RAW with its line endings rewritten to CRLF. Nobody has
-	confirmed on a Windows TouchDesigner that errors()/warnings() answers that
-	way, so the shape is inferred from the platform, not measured. Splitting
-	on the newline character alone leaves a trailing CR on every interior line
-	of a multi-line entry whenever a blob does arrive that way, and
-	splitlines() is the right call for a blob of unknown provenance either way.
+	Nobody has confirmed on a Windows TouchDesigner that errors()/warnings()
+	answers that way, so the shape is inferred from the platform, not
+	measured. Splitting on the newline character alone leaves a trailing CR on
+	every interior line of a multi-line entry whenever a blob does arrive that
+	way, and splitlines() is the right call for a blob of unknown provenance
+	either way.
 	"""
 
 	def test_crlf_blob_parses_like_the_lf_blob(self, scene):
