@@ -130,7 +130,10 @@ export function formatNodeErrors(
 			warningCount: warningsKnown ? warningCount : "not reported",
 			// Two different payloads land here and they deserve different
 			// sentences: one predates warning collection entirely, the other
-			// says it has warnings and did not send the count.
+			// answered whether there are warnings but not how many. The
+			// condition is presence, so it admits `hasWarnings: false` as
+			// readily as `true` — the sentence it selects has to hold in both
+			// directions, which is why it says "whether" rather than "has".
 			warningCountMissing: !warningsKnown && data.hasWarnings !== undefined,
 			warningsUnknown: !warningsKnown && data.hasWarnings === undefined,
 		},

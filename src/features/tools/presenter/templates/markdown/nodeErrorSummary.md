@@ -16,8 +16,9 @@
 
 {{/warningsUnknown}}
 {{#warningCountMissing}}
-> ⚠️ **The warning count was not reported.** This component says the node has
-> warnings but did not say how many, so the number below is not a total.
+> ⚠️ **The warning count was not reported.** This component said whether the
+> node has warnings but not how many, so the count above is unknown rather
+> than zero.
 
 {{/warningCountMissing}}
 {{#incomplete}}

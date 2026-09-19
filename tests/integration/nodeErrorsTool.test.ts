@@ -439,6 +439,32 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(neverLooked).not.toContain("warning count was not reported");
 	});
 
+	it("does not say the node has warnings when the payload said it has none", async () => {
+		// `warningCountMissing` tests presence, so `hasWarnings: false` with
+		// no count selects the same banner as `true`. The banner therefore has
+		// to be true in both directions — the previous wording said "this
+		// component says the node has warnings", which is the opposite of what
+		// this payload says, and pointed at "the number below" when the count
+		// renders as "not reported".
+		const saysNoneButGaveNoCount = await runTool({
+			errorCount: 0,
+			errors: [],
+			hasErrors: false,
+			hasWarnings: false,
+			nodeName: "probe",
+			nodePath: "/project1/probe",
+			opType: "baseCOMP",
+		} as never);
+
+		expect(saysNoneButGaveNoCount).toContain("warning count was not reported");
+		expect(saysNoneButGaveNoCount).not.toContain("the node has warnings");
+		expect(saysNoneButGaveNoCount).not.toContain("the number below");
+		// Still no all-clear: an unreported count is not a count of zero.
+		expect(saysNoneButGaveNoCount).not.toContain(
+			"No errors or warnings reported",
+		);
+	});
+
 	it("trusts skippedStreams even when incomplete is absent", async () => {
 		// The formatter ORs the two because a server can send one without the
 		// other — which is the whole compatibility story. Every other test
