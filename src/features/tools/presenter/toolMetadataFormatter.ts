@@ -28,9 +28,23 @@ export function formatToolMetadata(
 		a.modulePath.localeCompare(b.modulePath),
 	);
 
+	// `example` is carried only at `detailed`. It used to reach no output at
+	// all: the only thing that read it built a string handed over as `text`,
+	// and neither path out renders that — the detailedPayload template prints
+	// the title and the serialized payload, and json/yaml serialize this
+	// object, which did not carry the field. So thirteen examples were written
+	// and maintained for nothing, and two changes to them this cycle were made
+	// on the assumption they landed somewhere.
+	//
+	// Detailed only, because that is the level whose job is "give me
+	// everything": measured at 3613 bytes across the thirteen tools, roughly
+	// 900 tokens, which is worth paying once on an explicit request and not on
+	// every summary listing.
+	const withExamples = detailLevel === "detailed";
 	const structured = sortedEntries.map((entry) => ({
 		category: entry.category,
 		description: entry.description,
+		...(withExamples ? { example: entry.example } : {}),
 		functionName: entry.functionName,
 		modulePath: entry.modulePath,
 		notes: entry.notes,

@@ -180,11 +180,23 @@ class TouchDesignerApiService(IApiService):
 		callback - a ``scriptCHOP``'s ``onCook``, say - reaches neither, so it
 		leaves ``errorCount`` 0 and ``incomplete`` False: the shape of a clean
 		node. The tool contract in ``toolDefinitions.ts`` says so, because this
-		payload has no way to. ``OP.scriptErrors()`` exists and may be where
-		such an exception is recorded - ``clearScriptErrors``'s own docstring
-		names "Script Nodes" as a source - but that is unverified against a
-		live failure, and adding it needs a message format and an attribution
-		rule of its own. See #219.
+		payload has no way to.
+
+		There is no third stream to read. Measured on 099.2025.33230 against a
+		``scriptCHOP`` whose ``onCook`` raises - with the callback proven to run,
+		by giving it a side effect first - every candidate came back empty:
+		``errors()``, ``warnings()``, ``scriptErrors()``, and an ``errorDAT``
+		scoped over the operator with ``source``/``severity``/``type`` all at
+		``*``, read on a later frame. ``scriptErrors()`` carries what
+		``addScriptError()`` puts there, not what the cook threw.
+
+		The traceback goes to stderr and nowhere else - captured with
+		``contextlib.redirect_stderr`` around a forced cook, naming the callbacks
+		DAT as its source file. Reading it would therefore mean *causing* a cook,
+		which would turn this query into a side effect. What does work, and is
+		what the tool contract recommends, is catching it in the callback and
+		calling ``scriptOp.addError(msg)``: that lands on ``errors()`` in exactly
+		the format parsed below, verified live. See #219.
 		"""
 
 		node, outcome = _resolve_op(node_path)
