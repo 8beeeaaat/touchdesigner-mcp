@@ -376,6 +376,18 @@ class TestAnchorsThatCouldNotBeResolved:
 
 
 class TestMissingNode:
+	def test_a_glob_says_what_it_matched_rather_than_not_found(self, scene):
+		# td.op() takes a glob, so a pattern resolves to whichever operator it
+		# matched. Refusing it is right — a report on an arbitrary match is
+		# worse than none — but "not found" is untrue: something is there.
+		scene(PROBE, [f"{PROBE}/alpha"])
+
+		result = TouchDesignerApiService().get_node_errors(f"{PROBE}/al*")
+
+		assert result["success"] is False
+		assert "matched" in result["error"]
+		assert f"{PROBE}/alpha" in result["error"]
+
 	def test_an_unknown_path_fails_rather_than_reporting_clean(self, scene):
 		scene(PROBE, [])
 

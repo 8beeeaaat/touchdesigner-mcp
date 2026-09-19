@@ -15,6 +15,11 @@
 > both.
 
 {{/warningsUnknown}}
+{{#warningCountMissing}}
+> ⚠️ **The warning count was not reported.** This component says the node has
+> warnings but did not say how many, so the number below is not a total.
+
+{{/warningCountMissing}}
 {{#incomplete}}
 > ⚠️ **Incomplete.** A message stream could not be read, so the counts above
 > have no ceiling. Do not read this as a clean node.

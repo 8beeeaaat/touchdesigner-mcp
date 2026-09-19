@@ -496,8 +496,11 @@ describe("TouchDesigner Client E2E Tests", () => {
 		const entry = errors.find((e) => e.nodePath === addNodePath);
 		expect(entry).toBeDefined();
 		expect(entry?.message).toBe("Not enough sources specified");
-		expect(entry?.level ?? "error").toBe("error");
-		expect(response.data?.incomplete ?? false).toBe(false);
+		// No `??`: this runs against the component this branch ships, so an
+		// absent field is a real failure, and a fallback would hide exactly
+		// what a live run is here to catch.
+		expect(entry?.level).toBe("error");
+		expect(response.data?.incomplete).toBe(false);
 	});
 
 	test("Module help should return documentation for TouchDesigner classes", async () => {

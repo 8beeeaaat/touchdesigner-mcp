@@ -128,7 +128,11 @@ export function formatNodeErrors(
 			truncated,
 			unresolvedAnchors: limitPaths(unresolved, opts.limit),
 			warningCount: warningsKnown ? warningCount : "not reported",
-			warningsUnknown: !warningsKnown,
+			// Two different payloads land here and they deserve different
+			// sentences: one predates warning collection entirely, the other
+			// says it has warnings and did not send the count.
+			warningCountMissing: !warningsKnown && data.hasWarnings !== undefined,
+			warningsUnknown: !warningsKnown && data.hasWarnings === undefined,
 		},
 		structured: data,
 		template: "nodeErrorSummary",

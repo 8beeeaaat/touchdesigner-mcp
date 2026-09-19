@@ -249,6 +249,34 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(quoteBlocks[2]).toContain("fell back");
 	});
 
+	it("caps every caveat list, not just the first", async () => {
+		// The helper is shared, but each list passes through its own call, so
+		// one of them could lose the cap without the others noticing.
+		const many = (prefix: string) =>
+			Array.from({ length: 12 }, (_, i) => ({
+				path: `/project1/probe/${prefix}${i}`,
+				stream: "errors",
+			}));
+
+		const text = await runTool(
+			{
+				...mixed,
+				fallbackAttributions: many("fb"),
+				lookupFailures: many("lf"),
+				unresolvedAnchors: many("ua"),
+			},
+			{ limit: 2 },
+		);
+
+		for (const prefix of ["ua", "fb", "lf"]) {
+			const bullets = text
+				.split("\n")
+				.filter((line) => line.startsWith(`> - \`/project1/probe/${prefix}`));
+			expect(bullets, prefix).toHaveLength(2);
+		}
+		expect(text.match(/and 10 more/g)).toHaveLength(3);
+	});
+
 	it("caps the caveat lists with the same limit as the rows", async () => {
 		// limit is the only control a caller has over response size. Capping
 		// the rows while leaving the notes about them unbounded answers a
@@ -379,6 +407,36 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(text).not.toContain("| error |");
 		expect(text).toContain("Errors: 0");
 		expect(text).not.toContain("do not match");
+	});
+
+	it("tells a missing count apart from a component that never looked", async () => {
+		// Both leave warningCount undefined and both withhold the all-clear,
+		// but only one of them predates warning collection. Saying so about a
+		// payload that states it has warnings is a confident wrong answer.
+		const countMissing = await runTool({
+			errorCount: 0,
+			errors: [],
+			hasErrors: false,
+			hasWarnings: true,
+			nodeName: "probe",
+			nodePath: "/project1/probe",
+			opType: "baseCOMP",
+		} as never);
+
+		expect(countMissing).toContain("warning count was not reported");
+		expect(countMissing).not.toContain("Warnings were not inspected");
+
+		const neverLooked = await runTool({
+			errorCount: 0,
+			errors: [],
+			hasErrors: false,
+			nodeName: "probe",
+			nodePath: "/project1/probe",
+			opType: "baseCOMP",
+		} as never);
+
+		expect(neverLooked).toContain("Warnings were not inspected");
+		expect(neverLooked).not.toContain("warning count was not reported");
 	});
 
 	it("reports a node with neither errors nor warnings as clean", async () => {

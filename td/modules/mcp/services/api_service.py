@@ -181,6 +181,20 @@ class TouchDesignerApiService(IApiService):
 		if outcome == _LOOKUP_FAILED:
 			return error_result(f"Could not look up node at path: {node_path}")
 		if node is None:
+			# td.op() takes a glob, so it can answer with an operator whose
+			# path is not the one asked for. _resolve_op refuses that, and
+			# saying "not found" would be untrue: something is there, it is
+			# just not what the caller named.
+			matched = None
+			try:
+				matched = td.op(node_path)
+			except Exception:
+				matched = None
+			if matched is not None and getattr(matched, "valid", False):
+				return error_result(
+					f"Path {node_path} matched {matched.path} rather than "
+					"naming it; pass the exact operator path."
+				)
 			return error_result(f"Node not found at path: {node_path}")
 
 		entries = []
