@@ -67,8 +67,8 @@ class TestStreamsThatCouldNotBeRead:
 		# dead call that loses the stream next to it.
 		node = scene(PROBE, [f"{PROBE}/a"])
 		node.errors = lambda recurse=True: ["not", "a", "string"]
-		node.warnings = (
-			lambda recurse=True: f"{PROBE}/a:Warning: Failed to open file. ({PROBE}/a)"
+		node.warnings = lambda recurse=True: (
+			f"{PROBE}/a:Warning: Failed to open file. ({PROBE}/a)"
 		)
 
 		report = report_for(node)
@@ -209,7 +209,6 @@ class TestAnchorsThatCouldNotBeResolved:
 		assert report["incomplete"] is False
 		assert "bad row" in report["errors"][0]["message"]
 
-
 	def test_a_warning_side_ambiguity_does_not_taint_the_error_verdict(self, scene):
 		# The two streams are tracked separately, so a declined anchor while
 		# reading warnings says nothing about whether errorCount is exact.
@@ -229,7 +228,6 @@ class TestAnchorsThatCouldNotBeResolved:
 		assert report["unresolvedAnchors"] == [
 			{"path": f"{PROBE}/gone", "stream": "warnings"}
 		]
-
 
 	def test_a_broken_lookup_does_not_collapse_every_anchor(self, scene, td_stub):
 		# Nothing resolving is evidence against the lookup, not against the
@@ -266,7 +264,6 @@ class TestAnchorsThatCouldNotBeResolved:
 		assert report["unresolvedAnchors"] == []
 		assert [e["nodeName"] for e in report["errors"]] == ["a", "b", "c"]
 
-
 	def test_a_path_outside_the_subtree_is_not_called_ambiguous(self, scene):
 		# With recurse=True TouchDesigner attributes every message to its
 		# owning operator and names referenced operators in the body, never
@@ -288,7 +285,6 @@ class TestAnchorsThatCouldNotBeResolved:
 		assert report["unresolvedAnchors"] == []
 		assert report["lookupFailures"] == []
 		assert "quoted by the callback" in report["errors"][0]["message"]
-
 
 	def test_a_fallback_owner_is_not_called_a_folded_failure(self, scene):
 		# Declining a trailing "(<path>)" has the opposite consequence to
@@ -327,7 +323,6 @@ class TestAnchorsThatCouldNotBeResolved:
 		assert report["fallbackAttributions"] == []
 		assert report["unresolvedAnchors"] == []
 
-
 	def test_one_path_lands_in_one_list_only(self, scene, td_stub):
 		# A flaky td.op can answer differently on two lines naming the same
 		# path. The lists are presented as a disjoint categorisation, so the
@@ -339,10 +334,7 @@ class TestAnchorsThatCouldNotBeResolved:
 				self.seen = 0
 
 			def __call__(self, recurse=True):
-				return (
-					f"{PROBE}/gone:  Error: first\n"
-					f"{PROBE}/gone:  Error: second"
-				)
+				return f"{PROBE}/gone:  Error: first\n{PROBE}/gone:  Error: second"
 
 		node.errors = Flaky()
 		node.warnings = lambda recurse=True: ""

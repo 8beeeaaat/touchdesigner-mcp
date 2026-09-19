@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-`src/` contains the TypeScript MCP server: shared logic is in `core/`, MCP features in `features/`, transport code in `transport/`, and TouchDesigner communication in `tdClient/`. The OpenAPI contract starts at `src/api/index.yml`. TouchDesigner-side Python, templates, generated artifacts, and `.tox` components live in `td/`. Tests belong in `tests/unit/` or `tests/integration/`, documentation in `docs/`, and media in `assets/`. Treat `dist/`, `src/gen/`, and `td/modules/td_server/` as generated output; edit their source schemas or templates instead.
+`src/` contains the TypeScript MCP server: shared logic is in `core/`, MCP features in `features/`, transport code in `transport/`, and TouchDesigner communication in `tdClient/`. The OpenAPI contract starts at `src/api/index.yml`. TouchDesigner-side Python, templates, generated artifacts, and `.tox` components live in `td/`. Tests belong in `tests/unit/` or `tests/integration/` for the TypeScript side and `tests/python/` for TouchDesigner-side Python, documentation in `docs/`, and media in `assets/`. Treat `dist/`, `src/gen/`, and `td/modules/td_server/` as generated output; edit their source schemas or templates instead.
 
 ## Build, Test, and Development Commands
 
@@ -11,13 +11,15 @@
 - `make build` performs the Docker-based TouchDesigner module build.
 - `npm run dev` opens the MCP Inspector against the built stdio server.
 - `npm run http` starts HTTP mode on `127.0.0.1:6280`, targeting TouchDesigner on `9981`.
-- `npm test`, `npm run test:unit`, and `npm run test:integration` run all or scoped Vitest suites.
+- `npm test` runs every suite, including `test:python`; `npm run test:unit` and `npm run test:integration` scope to Vitest.
+- `npm run test:python` runs the TouchDesigner-side Python suite against a stubbed `td` module. It needs Python 3.9+ with pytest, or `uv`; without either it reports and skips, while CI always runs it.
+- `npm run ci:test:integration` is the subset of `tests/integration/` that needs no live TouchDesigner. It sits outside the `test:` namespace deliberately, so `npm test` does not run it twice.
 - `npm run coverage` writes V8 reports; `npm run lint` runs all static checks.
 - `npm run gen` refreshes OpenAPI, Python handler, and TypeScript client output.
 
 ## Coding Style & Naming Conventions
 
-Use ESM TypeScript, tabs, and double quotes; let Biome organize imports. Use camelCase for files and functions, PascalCase for types, and generally kebab-case for directories. Python targets 3.9; Ruff enforces tabs, double quotes, and an 88-character line length. Run `npm run format` for automatic fixes. Keep changes focused.
+Use ESM TypeScript, tabs, and double quotes; let Biome organize imports. Use camelCase for files and functions, PascalCase for types, and generally kebab-case for directories. Python targets 3.9, which is the floor older TouchDesigner builds ship — PEP 604 unions (`X | None`) break import there, so use `Optional[X]`. Ruff enforces tabs, double quotes, and an 88-character line length over `td/` and `tests/python/`; `npm run lint` checks formatting as well as lint rules. Run `npm run format` for automatic fixes. Keep changes focused.
 
 ## Testing Guidelines
 

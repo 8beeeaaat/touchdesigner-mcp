@@ -65,7 +65,7 @@
     },
     {
       "name": "get_td_node_errors",
-      "description": "Check for errors on a specified node and its children"
+      "description": "Check errors and warnings on a node and its descendants. TouchDesigner reports missing files, dangling operator references and shader compile failures as warnings, so an absence of errors is not a healthy node"
     },
     {
       "name": "get_td_node_parameters",

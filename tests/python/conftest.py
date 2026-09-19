@@ -7,9 +7,9 @@ avoids ``import td`` outright so its geometry can be verified here.
 """
 
 import fnmatch
+from pathlib import Path
 import sys
 import types
-from pathlib import Path
 
 import pytest
 

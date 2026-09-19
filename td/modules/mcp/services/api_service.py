@@ -169,7 +169,7 @@ class TouchDesignerApiService(IApiService):
 		return success_result(node_info)
 
 	def get_node_errors(self, node_path: str) -> Result:
-		"""Collect error and warning messages for the specified node and its children
+		"""Collect error and warning messages for a node and all its descendants
 
 		TouchDesigner reports many of the most common failures (missing files,
 		dangling operator references, shader compile failures) as warnings
@@ -224,9 +224,7 @@ class TouchDesignerApiService(IApiService):
 						# KeyError rather than a default: a kind with no home
 						# would otherwise be filed under whichever list the
 						# fallback picked and read as a TouchDesigner fault.
-						targets[kind].append(
-							{"path": note_path, "stream": getter}
-						)
+						targets[kind].append({"path": note_path, "stream": getter})
 			except Exception as e:
 				log_message(
 					f"Error reading {getter} from node {node_path}: {str(e)}",
@@ -852,11 +850,13 @@ _TRAILING_PATH = re.compile(r"\((/[^()\s]*)\)\s*$")
 # rather than encoded here, so a build that starts accepting them fails
 # visibly instead of silently.
 #
-# A spelling decline is the one decline that says nothing, which is what keeps
-# the data.csv case clean. So adding a character here needs the same live
-# evidence these have: get it wrong and a real failure folds into its
-# neighbour with nothing in the payload to show for it.
+# A spelling decline says nothing in the payload, as do the out-of-subtree and
+# reports-nothing declines; only an unresolvable path is recorded. So adding a
+# character here needs the same live evidence these have: get it wrong and a
+# real failure folds into its neighbour with nothing to show for it. The
+# probe that produced this set is tests/python/test_op_name_rule.py.
 _ILLEGAL_IN_OP_NAME = set(". -*?[]{}()/\\:;,'\"`!@#$%^&|<>~=+")
+
 
 # Outcomes of looking a path up, kept distinct because they call for opposite
 # treatment: a lookup that failed says nothing about the path.
@@ -893,18 +893,19 @@ def _looks_like_op_path(path: str) -> bool:
 	parts = [part for part in path.split("/") if part]
 	if not parts:
 		return False
-	return all(
-		part and not (set(part) & _ILLEGAL_IN_OP_NAME) for part in parts
-	)
+	return all(part and not (set(part) & _ILLEGAL_IN_OP_NAME) for part in parts)
 
 
 def _resolve_op(path: str):
 	"""Look the path up, returning (op_or_None, outcome)
 
-	`path` comes out of message text, and td.op() takes a glob, so a stray
-	bracket can raise rather than return None. A raise means the lookup
-	failed, not that the operator is absent - callers must not read it as
-	evidence against the path.
+	`path` comes out of message text rather than from TouchDesigner, so the
+	lookup is treated as fallible. No input has been observed to make td.op()
+	raise - malformed globs such as "/project1/[" return None on
+	099.2025.33230 - so _LOOKUP_FAILED is defensive rather than a response to
+	a known trigger. It earns its place by what it means: a raise would say
+	the lookup failed, not that the operator is absent, and reading one as
+	the other is the mistake this module keeps having to correct.
 
 	Only an exact match counts. td.op("/project1/probe/*") answers with
 	whichever descendant it matched first, so a pattern reaching here would
@@ -925,15 +926,15 @@ def _resolve_op(path: str):
 def _owner_reports_on(owner, level: str) -> bool:
 	"""Whether this operator has a message of its own on the stream being read
 
-	The evidence that separates a real anchor from a path quoted inside
-	somebody's traceback. Both spell alike and both resolve, but TouchDesigner
-	only writes a prefixed line for an operator that actually has something to
-	say, and an operator that is fine reports an empty string.
+	Evidence separating a real anchor from a path quoted inside somebody's
+	traceback: measured on 099.2025.33230, a working operator returns "" from
+	errors() and warnings() while a failing one returns its message, and
+	TouchDesigner writes a prefixed line only for the latter. It does not
+	separate them when the quoted operator has a message of its own on the
+	same stream; that residue is accepted.
 	"""
 
-	getter = getattr(
-		owner, "errors" if level == _LEVEL_ERROR else "warnings", None
-	)
+	getter = getattr(owner, "errors" if level == _LEVEL_ERROR else "warnings", None)
 	if not callable(getter):
 		# Nothing to check against, so this evidence is simply unavailable and
 		# the caller's other checks stand on their own.
@@ -951,14 +952,17 @@ def _classify_anchor(path: str, queried_node, level: str):
 	caller should report. Pairing it here keeps a caller from attaching the
 	wrong path to a kind.
 
-	Three things have to hold for an anchor to be accepted, and each rules out
+	Four things have to hold for an anchor to be accepted, and each rules out
 	a different way for message text to be mistaken for the start of a new
 	message:
 
-	- inside the queried subtree. With recurse=True TouchDesigner attributes
-	  every message to its owning operator and names referenced operators in
-	  the body, never the prefix, so an outside path is quoted text by
-	  definition - declined without comment, since nothing was under-counted;
+	- inside the queried subtree. Measured on 099.2025.33230, with operators
+	  referencing ops outside the queried subtree by parameter and by
+	  expression, every anchor recurse=True emitted was the owning operator
+	  and referenced ops appeared only in message bodies - so an outside path
+	  is quoted text, declined without comment. That is an observation about
+	  one build, not a guarantee; if it stops holding, the symptom is a real
+	  failure folding into its neighbour silently;
 	- spelled like an operator, so "/project1/probe/data.csv" raised from
 	  somebody's callback is ruled out before TouchDesigner is asked;
 	- known to TouchDesigner, or unknown only because the lookup itself
@@ -1081,17 +1085,20 @@ def _parse_op_messages(
 	belong to the entry that preceded them, so splitting on newlines alone
 	would report one failure as several and attribute most of them wrongly.
 
-	`notes` collects Note entries for paths the caller should hear about:
-	an anchor declined because it resolved to nothing, or one accepted despite
-	the lookup failing. Each path is listed once.
+	`notes` collects Note entries for paths the caller should hear about: an
+	anchor declined because it resolved to nothing, the same on a trailing
+	path, or one accepted despite the lookup failing. Each path is listed once
+	per call, and get_node_errors calls this once per stream, so a path seen
+	on both streams can appear under both.
 	"""
 
 	def note(entry):
 		"""Record a path once, keeping the first outcome seen for it
 
 		A flaky td.op can answer differently on two lines naming the same
-		path. The report presents these lists as a disjoint categorisation, so
-		a path must not turn up in two of them.
+		path. Within one stream the lists are a disjoint categorisation, so a
+		path must not turn up in two of them; across streams it can, carrying
+		its own stream tag.
 		"""
 
 		if entry is None or notes is None:

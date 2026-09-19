@@ -142,8 +142,8 @@ args = ["mcp-remote", "http://localhost:6280/mcp"]
    ```
 
    The TD-side Python tests under `tests/python/` need Python 3.9+ and pytest.
-   `uv` is used automatically when present; otherwise install pytest with
-   `pip install pytest`. Without either they are skipped locally with a notice,
+   An installed `python3 -m pytest` is used when there is one; otherwise `uv`
+   provisions an interpreter, which needs network access. Without either they are skipped locally with a notice,
    and CI always runs them.
 
 See `CLAUDE.md` for additional developer-focused commands.

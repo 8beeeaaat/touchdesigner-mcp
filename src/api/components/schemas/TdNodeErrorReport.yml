@@ -67,10 +67,10 @@ properties:
       describe may be folded into another operator's message rather than
       counted on its own. Paths repeat across messages and are listed once, so
       this is a lower bound on folded failures, not a ceiling. Only paths
-      spelled like an operator reach this list: TouchDesigner rejects a name
-      containing a dot, hyphen or space, so a file path quoted in a traceback
-      is ruled out without ever being called ambiguous. What remains is most
-      likely an operator deleted after its message was recorded.
+      spelled like an operator reach this list: TouchDesigner refuses a name
+      containing a dot, hyphen, space or other punctuation, so a path carrying
+      one is ruled out without ever being called ambiguous. What remains is
+      most likely an operator deleted after its message was recorded.
     items:
       type: object
       required:

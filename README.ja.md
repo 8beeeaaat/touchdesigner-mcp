@@ -42,7 +42,7 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 | `get_td_classes`            | TouchDesigner Pythonクラスのリストを取得します。 |
 | `get_td_info`           | TDサーバー環境に関する情報を取得します。       |
 | `get_td_module_help`        | TouchDesignerモジュール/クラスのPython help()ドキュメントを取得します。 |
-| `get_td_node_errors`        | 指定されたノードとその子ノードのエラーをチェックします。 |
+| `get_td_node_errors`        | ノードとその全子孫のエラー**および警告**をチェックします。ファイル欠落・参照先 op の不在・シェーダのコンパイル失敗は警告として報告されるため、エラーが無いことは健全を意味しません。 |
 | `get_td_node_parameters`    | 特定ノードのパラメータを取得します。           |
 | `get_td_nodes`              | 親パス内のノードを取得します（オプションでフィルタリング）。 |
 | `get_top_image`             | TOPノードの現在の出力を画像として取得します。  |

@@ -148,8 +148,7 @@ class TestAttribution:
 		node = scene(PROBE, [f"{PROBE}/cb"])
 
 		entries = _parse_op_messages(
-			f"{PROBE}/cb:  Error: ValueError raised\n"
-			f"{PROBE}/data.csv: Error: bad row",
+			f"{PROBE}/cb:  Error: ValueError raised\n{PROBE}/data.csv: Error: bad row",
 			"error",
 			node,
 		)
@@ -194,12 +193,9 @@ class TestAttribution:
 	def test_unprefixed_output_ignores_a_suffix_outside_the_subtree(self, scene):
 		node = scene(PROBE, ["/project1/shared"])
 
-		entries = _parse_op_messages(
-			"  Error: boom (/project1/shared)", "error", node
-		)
+		entries = _parse_op_messages("  Error: boom (/project1/shared)", "error", node)
 
 		assert entries[0]["nodePath"] == PROBE
-
 
 	def test_a_path_spelled_like_a_file_is_never_an_anchor(self, scene):
 		# TouchDesigner refuses an operator name containing a dot, so this is
@@ -208,8 +204,7 @@ class TestAttribution:
 		declined = []
 
 		entries = _parse_op_messages(
-			f"{PROBE}/cb:  Error: ValueError raised\n"
-			f"{PROBE}/data.csv: Error: bad row",
+			f"{PROBE}/cb:  Error: ValueError raised\n{PROBE}/data.csv: Error: bad row",
 			"error",
 			node,
 			declined,
@@ -218,9 +213,7 @@ class TestAttribution:
 		assert len(entries) == 1
 		assert declined == []
 
-	def test_a_lookup_answering_with_another_operator_is_rejected(
-		self, scene, td_stub
-	):
+	def test_a_lookup_answering_with_another_operator_is_rejected(self, scene, td_stub):
 		# td.op() takes a glob and answers with whichever operator it matched,
 		# so what comes back is not necessarily what was asked for. The
 		# spelling rule cannot catch this - the path is spelled cleanly - so
@@ -240,9 +233,7 @@ class TestAttribution:
 		# Without the guard the second anchor is accepted and an entry is
 		# fabricated blaming alpha, which never failed.
 		assert [e["nodePath"] for e in entries] == [f"{PROBE}/cb"]
-		assert [(n.path, n.kind) for n in declined] == [
-			(f"{PROBE}/beta", "unresolved")
-		]
+		assert [(n.path, n.kind) for n in declined] == [(f"{PROBE}/beta", "unresolved")]
 
 	def test_a_wildcard_is_rejected_before_any_lookup(self, scene):
 		node = scene(PROBE, [f"{PROBE}/cb", f"{PROBE}/alpha"])
@@ -264,8 +255,7 @@ class TestAttribution:
 		declined = []
 
 		_parse_op_messages(
-			f"{PROBE}/cb:  Error: raised\n"
-			f"{PROBE}/my.folder/op1:  Error: quoted",
+			f"{PROBE}/cb:  Error: raised\n{PROBE}/my.folder/op1:  Error: quoted",
 			"error",
 			node,
 			declined,
@@ -279,9 +269,7 @@ class TestAttribution:
 		node = scene(PROBE, [])
 		declined = []
 
-		_parse_op_messages(
-			f"  Error: boom ({PROBE}/gone)", "error", node, declined
-		)
+		_parse_op_messages(f"  Error: boom ({PROBE}/gone)", "error", node, declined)
 
 		assert [(n.path, n.kind) for n in declined] == [
 			(f"{PROBE}/gone", "misattributed")

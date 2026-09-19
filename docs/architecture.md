@@ -395,7 +395,7 @@ MCP tool implementations categorized as follows:
    - `create_td_node`: Create node
    - `delete_td_node`: Delete node
    - `get_td_nodes`: Get node list
-   - `get_td_node_errors`: Get node errors (recursive over children)
+   - `get_td_node_errors`: Get node errors and warnings (recursive over descendants)
    - `exec_node_method`: Call a Python method on a node
    - `get_top_image`: Capture a TOP node's output as an image
 

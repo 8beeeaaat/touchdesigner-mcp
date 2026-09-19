@@ -8,9 +8,11 @@
  * suite. CI is the opposite — a missing interpreter there means the tests
  * silently stopped running, so it exits non-zero.
  *
- * The floor is the version `pyproject.toml` declares, so these tests exercise
- * what the project says it supports rather than only the newest interpreter
- * to hand.
+ * The floor here matches the one `pyproject.toml` declares, so an interpreter
+ * too old to import the modules is rejected rather than failing confusingly
+ * at collection. It is a floor, not a pin: locally this runs on whatever
+ * suitable interpreter is to hand. Exercising the floor itself is a separate
+ * CI step, which installs 3.9 and runs pytest against it directly.
  */
 
 import { spawnSync } from "node:child_process";

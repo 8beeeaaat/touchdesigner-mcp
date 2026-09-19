@@ -11,6 +11,9 @@ from utils.types import LogLevel
 from .config import DEBUG
 
 
+# Optional[...] rather than `TextIO | None`: pyproject declares a 3.9 floor for
+# older TouchDesigner builds, and PEP 604 unions are evaluated at import time
+# from 3.10. This module failing to import takes the whole TD side with it.
 def _safe_write(stream: Optional[TextIO], message: str) -> bool:
 	"""Attempt to write to the provided stream while swallowing blocking errors."""
 

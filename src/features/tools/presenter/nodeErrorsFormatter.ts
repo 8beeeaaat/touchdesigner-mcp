@@ -59,13 +59,13 @@ export function formatNodeErrors(
 	);
 	const { items, truncated } = limitArray(ordered, opts.limit);
 
-	// The counts come from the server; the rows are what we were given. When
-	// they disagree, say so rather than quietly presenting one as the other.
 	// Only an unread stream leaves the counts without a ceiling. A declined
 	// anchor keeps its content, so it is reported on its own rather than
 	// folded into this claim.
 	const reportIncomplete = Boolean(data.incomplete) || skipped.length > 0;
 
+	// The counts come from the server; the rows are what we were given. When
+	// they disagree, say so rather than quietly presenting one as the other.
 	const listedErrors = entries.filter((e) => e.level === "error").length;
 	const countsDisagree =
 		listedErrors !== data.errorCount ||
@@ -81,7 +81,9 @@ export function formatNodeErrors(
 	const text =
 		entries.length === 0
 			? `Node ${data.nodePath}: nothing listed.`
-			: `Node ${data.nodePath}: ${data.errorCount} error(s), ${warningCount} warning(s).`;
+			: `Node ${data.nodePath}: ${data.errorCount} error(s), ${
+					warningsKnown ? warningCount : "an unreported number of"
+				} warning(s).`;
 
 	return finalizeFormattedText(text, opts, {
 		context: {
@@ -115,7 +117,6 @@ export function formatNodeErrors(
 				reason: s.reason,
 				stream: s.stream,
 			})),
-			skippedStreamsOmitted: 0,
 			truncated,
 			unresolvedAnchors: limitPaths(unresolved, opts.limit),
 			warningCount: warningsKnown ? warningCount : "not reported",
@@ -129,11 +130,12 @@ export function formatNodeErrors(
 /**
  * Cap a caveat list the way the entries are capped.
  *
- * `limit` is the only control a caller has over response size, and it used to
- * bind the rows while leaving the notes about them unbounded — a root-scope
- * query on a project mid-edit could answer a request for five rows with a
- * hundred-line footnote, which is the content being displaced by the caveat
- * about it. The whole list stays available through detailLevel "detailed".
+ * `limit` is the only control a caller has over response size, so it binds
+ * the notes about the rows as well as the rows themselves — a root-scope
+ * query on a project mid-edit can have a hundred distinct unresolvable
+ * owners, and a footnote longer than the content displaces the thing the
+ * caller asked for. The whole list stays available through detailLevel
+ * "detailed".
  */
 function limitPaths(
 	list: ReadonlyArray<{ path: string; stream: string }>,
