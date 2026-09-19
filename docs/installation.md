@@ -30,7 +30,7 @@ component is running.
 ## Prerequisites
 
 - **TouchDesigner** (latest version recommended)
-- For NPM-based installations: **Node.js** 22.18+, 24.x or 26+ _(not required when you only use Claude Desktop with the MCP bundle)_
+- For NPM-based installations: **Node.js** 22.18+, 24.x or 26+, odd-numbered releases such as 23.x and 25.x are not supported _(not required when you only use Claude Desktop with the MCP bundle)_
 - For Docker-based installations: **Docker** and **Docker Compose**
 
 ## TouchDesigner Setup (Required for All Methods)

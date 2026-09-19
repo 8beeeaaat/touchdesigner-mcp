@@ -93,15 +93,44 @@ describe("the declared Node floor", () => {
 		expect(unsatisfied).toEqual([]);
 	});
 
-	it("is the version the installation docs quote", () => {
-		// The floor is a promise made to readers, not only to npm, and the
-		// documents are where people actually look for it.
+	it("is what the lockfile records too", () => {
+		// npm writes the root package's engines into the lockfile, so editing
+		// package.json alone leaves a stale claim there and hands the next
+		// contributor a dirty worktree the moment they run `npm install`.
+		const lock = readJson("package-lock.json") as unknown as {
+			packages?: Record<string, { engines?: { node?: string } }>;
+		};
+
+		expect(lock.packages?.[""]?.engines?.node).toBe(declaredRange);
+	});
+
+	it("is quoted in the installation docs, with the exclusion, every time", () => {
+		// The range is a promise made to readers, and readers stop early. One
+		// prerequisites section said "22.18+, 24.x or 26+" while the detailed
+		// one below it named the unsupported odd majors — so a reader who read
+		// only the first was still free to pick 23.x. Every statement of the
+		// requirement has to carry the exclusion, not just the thorough one.
 		const lowest = semver.coerce(floor());
 		const quoted = `${lowest?.major}.${lowest?.minor}`;
 
 		for (const doc of ["docs/installation.md", "docs/installation.ja.md"]) {
 			const text = readFileSync(path.join(root, doc), "utf-8");
 			expect(text, `${doc} should quote Node ${quoted}`).toContain(quoted);
+
+			const statements = text
+				.split("\n")
+				.filter((line) => line.includes(quoted));
+			expect(
+				statements.length,
+				`${doc} states the requirement`,
+			).toBeGreaterThan(0);
+			for (const line of statements) {
+				// Naming 23.x is the shortest thing every phrasing of the
+				// exclusion has in common, in either language.
+				expect(line, `${doc}: unqualified requirement — ${line}`).toContain(
+					"23",
+				);
+			}
 		}
 	});
 });
