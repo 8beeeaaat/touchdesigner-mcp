@@ -26,6 +26,19 @@ const RECOGNIZED_FLAGS = [
 ];
 
 /**
+ * The text after a flag's first `=`.
+ *
+ * `split("=")[1]` keeps only the text up to the *second* `=` and drops the
+ * rest, which truncates before anything downstream can object: `--port=9981=x`
+ * reached the port check as a clean `9981`, and `--host=http://h/?a=b` silently
+ * became `http://h/?a`. Taking everything after the first `=` hands validation
+ * what the user actually typed.
+ */
+function flagValue(arg: string): string {
+	return arg.slice(arg.indexOf("=") + 1);
+}
+
+/**
  * Read a port from a `--flag=value` argument, or exit.
  *
  * `Number.parseInt` stops at the first character it cannot read, so it accepts
@@ -59,9 +72,9 @@ export function parseArgs(args?: string[]) {
 	for (let i = 0; i < argsToProcess.length; i++) {
 		const arg = argsToProcess[i];
 		if (arg.startsWith("--host=")) {
-			parsed.host = arg.split("=")[1];
+			parsed.host = flagValue(arg);
 		} else if (arg.startsWith("--port=")) {
-			parsed.port = parsePort("--port", arg.split("=")[1]);
+			parsed.port = parsePort("--port", flagValue(arg));
 		} else if (
 			arg.startsWith("--") &&
 			!RECOGNIZED_FLAGS.some((flag) => arg.startsWith(flag))
@@ -103,11 +116,11 @@ export function parseTransportConfig(args?: string[]): TransportConfig {
 	);
 
 	if (httpPortArg) {
-		const port = parsePort("--mcp-http-port", httpPortArg.split("=")[1]);
+		const port = parsePort("--mcp-http-port", flagValue(httpPortArg));
 		const hostArg = argsToProcess.find((arg) =>
 			arg.startsWith("--mcp-http-host="),
 		);
-		const host = hostArg ? hostArg.split("=")[1] : "127.0.0.1";
+		const host = hostArg ? flagValue(hostArg) : "127.0.0.1";
 
 		const config: StreamableHttpTransportConfig = {
 			endpoint: DEFAULT_MCP_ENDPOINT,

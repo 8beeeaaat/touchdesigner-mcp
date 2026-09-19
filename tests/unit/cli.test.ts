@@ -74,6 +74,14 @@ describe("CLI", () => {
 			});
 		});
 
+		it("should keep everything after a host argument's first =", () => {
+			// `split("=")[1]` used to drop the query string.
+			expect(parseArgs(["--host=http://example.test/?token=abc"])).toEqual({
+				host: "http://example.test/?token=abc",
+				port: 9981,
+			});
+		});
+
 		it("should parse both host and port arguments", () => {
 			expect(parseArgs(["--host=127.0.0.1", "--port=9090"])).toEqual({
 				host: "127.0.0.1",
@@ -92,7 +100,15 @@ describe("CLI", () => {
 			// The trailing three are what `Number.parseInt` used to swallow: it
 			// stops at the first character it cannot read, so each one arrived
 			// as a plausible port (9981, 1, 1) that nobody asked for.
-			for (const value of ["invalid", "0", "70000", "9981junk", "1.5", "1e3"]) {
+			for (const value of [
+				"invalid",
+				"0",
+				"70000",
+				"9981junk",
+				"1.5",
+				"1e3",
+				"9981=junk",
+			]) {
 				const mockExit = vi
 					.spyOn(process, "exit")
 					.mockImplementation(() => undefined as never);
@@ -167,7 +183,7 @@ describe("CLI", () => {
 			}
 		});
 
-		it("should exit with error for a partially numeric --mcp-http-port", () => {
+		it("should exit with error for an --mcp-http-port carrying a second =", () => {
 			const mockExit = vi
 				.spyOn(process, "exit")
 				.mockImplementation(() => undefined as never);
@@ -175,11 +191,11 @@ describe("CLI", () => {
 				.spyOn(console, "error")
 				.mockImplementation(() => {});
 
-			parseTransportConfig(["--mcp-http-port=6280junk"]);
+			parseTransportConfig(["--mcp-http-port=6280=bad"]);
 
 			expect(mockConsoleError).toHaveBeenCalledWith(
 				expect.stringContaining(
-					'Invalid value for --mcp-http-port: "6280junk"',
+					'Invalid value for --mcp-http-port: "6280=bad"',
 				),
 			);
 			expect(mockExit).toHaveBeenCalledWith(1);

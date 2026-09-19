@@ -124,7 +124,11 @@ major moved:
    `tests/unit/toolListingsSync.test.ts` catches renamed *tools*; nothing catches
    changed *behaviour*.
 3. Bump `version` in `plugin/touchdesigner/.claude-plugin/plugin.json`. That is the
-   plugin's own axis and moves only when the plugin itself changes.
+   plugin's own axis and moves only when the plugin itself changes. It is the
+   only copy: the marketplace entry deliberately carries no `version`, so that
+   this step cannot leave a stale one behind. Should one ever be added there, it
+   has to move with this one — `tests/unit/pluginManifestSync.test.ts` compares
+   them whenever the marketplace names a version, and would fail this release.
 
 On a MINOR or PATCH release, leave all three alone — `^N` already covers it.
 
