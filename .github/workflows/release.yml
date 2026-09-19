@@ -98,6 +98,14 @@ jobs:
             2. Extract `touchdesigner-mcp-td.zip` and import `mcp_webserver_base.tox` into your TouchDesigner project
             3. Double-click `touchdesigner-mcp.mcpb` to install in Claude Desktop
 
+            ### Quick Start (Claude Code)
+            This repository is also a Claude Code plugin marketplace. The `touchdesigner` plugin installs and preconfigures this server for you:
+            ```
+            claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
+            claude plugin install touchdesigner@touchdesigner-mcp
+            ```
+            Then run `/touchdesigner:setup` to verify the connection, or `/touchdesigner:launch` to start TouchDesigner with the component already imported. You still need the TouchDesigner Components from the Downloads section above.
+
             ### Other AI Agents
             See the [Installation Guide](https://github.com/${{ github.repository }}/blob/main/docs/installation.md) _[日本語](https://github.com/${{ github.repository }}/blob/main/docs/installation.ja.md)_ for:
             - Claude Code
