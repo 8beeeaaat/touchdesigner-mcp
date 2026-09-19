@@ -490,13 +490,14 @@ describe("TouchDesigner Client E2E Tests", () => {
 
 		const errors = response.data?.errors ?? [];
 		expect(errors.length).toBeGreaterThan(0);
-		expect(
-			errors.some(
-				(msg) =>
-					msg.message ===
-					`${addNodePath}:  Error: Not enough sources specified`,
-			),
-		).toBe(true);
+
+		// The owning operator is a field now, not a prefix repeated inside the
+		// message, and the trailing "(<path>)" TouchDesigner appends is gone.
+		const entry = errors.find((e) => e.nodePath === addNodePath);
+		expect(entry).toBeDefined();
+		expect(entry?.message).toBe("Not enough sources specified");
+		expect(entry?.level ?? "error").toBe("error");
+		expect(response.data?.incomplete ?? false).toBe(false);
 	});
 
 	test("Module help should return documentation for TouchDesigner classes", async () => {
