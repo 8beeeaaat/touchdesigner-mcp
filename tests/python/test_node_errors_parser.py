@@ -195,9 +195,31 @@ class TestAttribution:
 		assert len(entries) == 1
 		assert declined == []
 
-	def test_a_wildcard_never_resolves_to_whatever_it_matched(self, scene):
-		# td.op("/project1/probe/*") returns whichever descendant it matched,
-		# so a wildcard in message text must not be accepted as that operator.
+	def test_a_lookup_answering_with_another_operator_is_rejected(
+		self, scene, td_stub
+	):
+		# td.op() takes a glob and answers with whichever operator it matched,
+		# so what comes back is not necessarily what was asked for. The
+		# spelling rule cannot catch this - the path is spelled cleanly - so
+		# only requiring owner.path == path does.
+		node = scene(PROBE, [f"{PROBE}/cb", f"{PROBE}/alpha"])
+		td_stub.answer_with = {f"{PROBE}/beta": f"{PROBE}/alpha"}
+		declined = []
+
+		entries = _parse_op_messages(
+			f"{PROBE}/cb:  Error: ValueError raised\n"
+			f"{PROBE}/beta:  Error: matched something else",
+			"error",
+			node,
+			declined,
+		)
+
+		# Without the guard the second anchor is accepted and an entry is
+		# fabricated blaming alpha, which never failed.
+		assert [e["nodePath"] for e in entries] == [f"{PROBE}/cb"]
+		assert declined == [(f"{PROBE}/beta", "unresolved")]
+
+	def test_a_wildcard_is_rejected_before_any_lookup(self, scene):
 		node = scene(PROBE, [f"{PROBE}/cb", f"{PROBE}/alpha"])
 		declined = []
 
@@ -210,7 +232,20 @@ class TestAttribution:
 		)
 
 		assert len(entries) == 1
-		assert entries[0]["nodePath"] == f"{PROBE}/cb"
+		assert declined == []
+
+	def test_a_dot_in_a_middle_component_is_enough(self, scene):
+		node = scene(PROBE, [f"{PROBE}/cb"])
+		declined = []
+
+		_parse_op_messages(
+			f"{PROBE}/cb:  Error: raised\n"
+			f"{PROBE}/my.folder/op1:  Error: quoted",
+			"error",
+			node,
+			declined,
+		)
+
 		assert declined == []
 
 	def test_a_declined_trailing_path_is_reported_too(self, scene):
@@ -223,7 +258,7 @@ class TestAttribution:
 			f"  Error: boom ({PROBE}/gone)", "error", node, declined
 		)
 
-		assert declined == [f"{PROBE}/gone"]
+		assert declined == [(f"{PROBE}/gone", "unresolved")]
 
 
 class TestRobustness:

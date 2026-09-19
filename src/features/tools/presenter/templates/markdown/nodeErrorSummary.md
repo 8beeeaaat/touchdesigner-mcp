@@ -21,6 +21,14 @@
 {{/unresolvedAnchors}}
 {{/unresolvedAnchors.length}}
 
+{{#lookupFailures.length}}
+> ℹ️ Some operators could not be looked up, so their type is undetermined
+> rather than absent. The entries themselves are still counted:
+{{#lookupFailures}}
+> - `{{{path}}}` (on `{{stream}}`)
+{{/lookupFailures}}
+{{/lookupFailures.length}}
+
 {{#entries.length}}
 | Level | Node | Type | Message |
 | --- | --- | --- | --- |

@@ -186,8 +186,9 @@ class TouchDesignerApiService(IApiService):
 		entries = []
 		skipped = []
 		unresolved = []
+		lookup_failures = []
 		for level, getter in (("error", "errors"), ("warning", "warnings")):
-			declined = []
+			notes = []
 			method = getattr(node, getter, None)
 			if not callable(method):
 				# An older TouchDesigner build may not expose this stream.
@@ -209,12 +210,14 @@ class TouchDesignerApiService(IApiService):
 				if raw:
 					# Parsing stays inside the try. A stream we cannot read is
 					# a stream to record, not a reason to lose the other one.
-					entries.extend(
-						_parse_op_messages(raw, level, node, declined)
-					)
-					unresolved.extend(
-						{"path": path, "stream": getter} for path in declined
-					)
+					entries.extend(_parse_op_messages(raw, level, node, notes))
+					for path, kind in notes:
+						target = (
+							unresolved
+							if kind == "unresolved"
+							else lookup_failures
+						)
+						target.append({"path": path, "stream": getter})
 			except Exception as e:
 				log_message(
 					f"Error reading {getter} from node {node_path}: {str(e)}",
@@ -244,6 +247,7 @@ class TouchDesignerApiService(IApiService):
 				"incomplete": bool(skipped),
 				"skippedStreams": skipped,
 				"unresolvedAnchors": unresolved,
+				"lookupFailures": lookup_failures,
 				"errors": entries,
 			}
 		)
@@ -815,11 +819,20 @@ _MESSAGE_ANCHOR = re.compile(r"^(/\S*?):\s*(Error|Warning):\s*(.*)$")
 _TRAILING_PATH = re.compile(r"\((/[^()\s]*)\)\s*$")
 
 
-# TouchDesigner rejects an operator name containing anything outside this set:
-# creating one raises "Illegal node name specified". A path component with a
-# dot, a hyphen or a space therefore cannot name an operator, which is how a
-# file path quoted in a traceback is told apart from a deleted operator.
-_OP_NAME = re.compile(r"^[A-Za-z0-9_]+$")
+# Characters TouchDesigner was observed to reject in an operator name -
+# create() raises "Illegal node name specified" for each. A path component
+# containing one cannot name an operator, which is what tells a file path
+# quoted in a traceback apart from an operator deleted since.
+#
+# Stated as a denylist on purpose. The two ways this rule can be wrong cost
+# very different amounts: calling an operator a file drops a real failure
+# silently, while calling a file an operator costs one visible
+# unresolvedAnchors entry. An allowlist of characters we happen to have tested
+# fails in the expensive direction for everything we have not; a denylist of
+# characters we have seen rejected fails in the cheap one. Non-ASCII names are
+# rejected by TouchDesigner too, but are left to the lookup for the same
+# reason - failing visibly beats failing silently.
+_ILLEGAL_IN_OP_NAME = set(". -*?[]{}()/\\:;,'\"`!@#$%^&|<>~=+")
 
 # Outcomes of looking a path up, kept distinct because they call for opposite
 # treatment: a lookup that failed says nothing about the path.
@@ -832,7 +845,11 @@ def _looks_like_op_path(path: str) -> bool:
 	"""Whether path could name an operator at all, by spelling alone"""
 
 	parts = [part for part in path.split("/") if part]
-	return bool(parts) and all(_OP_NAME.match(part) for part in parts)
+	if not parts:
+		return False
+	return all(
+		part and not (set(part) & _ILLEGAL_IN_OP_NAME) for part in parts
+	)
 
 
 def _resolve_op(path: str):
@@ -843,11 +860,11 @@ def _resolve_op(path: str):
 	failed, not that the operator is absent - callers must not read it as
 	evidence against the path.
 
-	Only an exact match counts. td.op("/project1/probe/*") happily returns
-	whichever descendant it matched first, so a wildcard in message text would
-	otherwise resolve and get an entry attributed to an operator that never
-	failed. Spelling rules already keep metacharacters out; this keeps the
-	property true even if those rules are loosened later.
+	Only an exact match counts. td.op("/project1/probe/*") answers with
+	whichever descendant it matched first, so a pattern reaching here would
+	otherwise resolve and hand an entry to an operator that never failed. The
+	spelling rule keeps metacharacters out, but this holds the property
+	without depending on it.
 	"""
 
 	try:
@@ -859,71 +876,97 @@ def _resolve_op(path: str):
 	return None, _MISSING
 
 
-def _is_owner_path(path: str, queried_node) -> bool:
-	"""Whether path names an operator inside the inspected subtree
+def _classify_anchor(path: str, queried_node):
+	"""Decide what an anchor-shaped path is, resolving it at most once
 
-	Three things have to hold, and each rules out a different way for message
-	text to be mistaken for the start of a new message:
+	Returns (accepted, owner, note). `note` is None when there is nothing to
+	tell the caller, otherwise "unresolved" or "lookup_failed".
 
-	- inside the queried subtree, so a path quoting an operator elsewhere in
-	  the project cannot split a traceback and blame it;
+	Three things have to hold for an anchor to be accepted, and each rules out
+	a different way for message text to be mistaken for the start of a new
+	message:
+
+	- inside the queried subtree. With recurse=True TouchDesigner attributes
+	  every message to its owning operator and names referenced operators in
+	  the body, never the prefix, so an outside path is quoted text by
+	  definition - declined without comment, since nothing was under-counted;
 	- spelled like an operator, so "/project1/probe/data.csv" raised from
-	  somebody's callback is rejected outright;
+	  somebody's callback is ruled out before TouchDesigner is asked;
 	- known to TouchDesigner, or unknown only because the lookup itself
-	  failed. A path that spells like an operator but resolves to nothing is
-	  most likely one deleted since the message was recorded; declining it
-	  folds its lines into the entry above, so the caller is told through
-	  unresolvedAnchors.
+	  failed.
+
+	A path that spells like an operator and resolves to nothing is most likely
+	one deleted since its message was recorded. Declining it folds its lines
+	into the entry above, which under-counts, so it is reported rather than
+	dropped.
+
+	A lookup that raised is treated as weaker evidence than one that answered
+	"nothing there", which is deliberate rather than an oversight. An answer of
+	None is TouchDesigner reporting on the path; a raise is TouchDesigner
+	failing to, and says nothing about it. Both outcomes are reported, so
+	neither is silent - they differ only in whether the anchor still stands.
 	"""
 
 	root = queried_node.path
 	if path == root:
-		return True
+		return True, queried_node, None
 
 	prefix = root if root.endswith("/") else f"{root}/"
 	if not path.startswith(prefix):
-		return False
+		return False, None, None
 
 	if not _looks_like_op_path(path):
-		return False
+		return False, None, None
 
-	return _resolve_op(path)[1] != _MISSING
+	owner, outcome = _resolve_op(path)
+	if outcome == _MISSING:
+		return False, None, "unresolved"
+	if outcome == _LOOKUP_FAILED:
+		return True, None, "lookup_failed"
+	return True, owner, None
 
 
-def _owner_from_trailing_path(message: str, queried_node, unresolved=None):
-	"""Recover the owning operator from a trailing "(<path>)", or None
+def _split_anchor(line: str, queried_node):
+	"""Classify a line as the start of a new message, or not
 
-	Output captured with recurse=False carries no "<path>:" prefix but still
-	names the owner at the end of its last line. Preferring that over the
-	queried node keeps attribution right for callers that pass such a blob.
+	Returns (anchor, note). `anchor` is (path, level, message, owner) when the
+	line starts one, otherwise None. `note` is (path, kind) when the decline is
+	worth telling the caller about.
+	"""
 
-	A path we decline here is reported the same way a declined anchor is:
-	falling back to the queried node is a misattribution either way.
+	match = _MESSAGE_ANCHOR.match(line)
+	if not match:
+		return None, None
+
+	path = match.group(1)
+	accepted, owner, kind = _classify_anchor(path, queried_node)
+	if not accepted:
+		return None, ((path, kind) if kind else None)
+	return (path, match.group(2).lower(), match.group(3), owner), (
+		(path, kind) if kind else None
+	)
+
+
+def _owner_from_trailing_path(message: str, queried_node):
+	"""Recover the owner from a trailing "(<path>)"
+
+	Returns (path_or_None, owner_or_None, note). Output captured with
+	recurse=False carries no "<path>:" prefix but still names the owner at the
+	end of its last line, and preferring that over the queried node keeps
+	attribution right for callers that pass such a blob. A path declined here
+	is reported the same way a declined anchor is: falling back to the queried
+	node is a misattribution either way.
 	"""
 
 	match = _TRAILING_PATH.search(message)
 	if not match:
-		return None
+		return None, None, None
+
 	path = match.group(1)
-	if _is_owner_path(path, queried_node):
-		return path
-	if (
-		unresolved is not None
-		and _looks_like_op_path(path)
-		and path not in unresolved
-	):
-		unresolved.append(path)
-	return None
-
-
-def _split_anchor(line: str, queried_node):
-	"""Return (path, level, message) if line starts a new message, else None"""
-
-	match = _MESSAGE_ANCHOR.match(line)
-	if match and _is_owner_path(match.group(1), queried_node):
-		return match.group(1), match.group(2).lower(), match.group(3)
-
-	return None
+	accepted, owner, kind = _classify_anchor(path, queried_node)
+	if accepted:
+		return path, owner, ((path, kind) if kind else None)
+	return None, None, ((path, kind) if kind else None)
 
 
 def _strip_redundant_path_suffix(message: str, path: str) -> str:
@@ -940,7 +983,7 @@ def _strip_redundant_path_suffix(message: str, path: str) -> str:
 
 
 def _parse_op_messages(
-	raw: str, level: str, queried_node, unresolved: Optional[list] = None
+	raw: str, level: str, queried_node, notes: Optional[list] = None
 ) -> list:
 	"""Parse one errors()/warnings() blob into structured entries
 
@@ -948,7 +991,17 @@ def _parse_op_messages(
 	parameter expression, for example. Lines that do not start a new message
 	belong to the entry that preceded them, so splitting on newlines alone
 	would report one failure as several and attribute most of them wrongly.
+
+	`notes` collects (path, kind) pairs for paths the caller should hear about:
+	an anchor declined because it resolved to nothing, or one accepted despite
+	the lookup failing. Each path is listed once.
 	"""
+
+	def note(entry):
+		if entry is None or notes is None:
+			return
+		if entry not in notes:
+			notes.append(entry)
 
 	groups = []
 	current = None
@@ -957,25 +1010,13 @@ def _parse_op_messages(
 		if not line.strip():
 			continue
 
-		anchor = _split_anchor(line, queried_node)
-		if anchor is None and unresolved is not None:
-			# The line is shaped like a new message but its path does not name
-			# an operator we can see - a deleted one, or a file path quoted in
-			# someone's traceback. We cannot tell which from the string, so the
-			# line is kept with the entry above it and the ambiguity is
-			# reported rather than silently decided.
-			match = _MESSAGE_ANCHOR.match(line)
-			if (
-				match
-				and _looks_like_op_path(match.group(1))
-				and match.group(1) not in unresolved
-			):
-				unresolved.append(match.group(1))
+		anchor, declined = _split_anchor(line, queried_node)
+		note(declined)
 
 		if anchor:
 			if current:
 				groups.append(current)
-			path, _anchor_level, message = anchor
+			path, _anchor_level, message, owner = anchor
 			# The anchor word only marks where an entry begins. Which stream
 			# produced the line decides the level, so an "errors" blob cannot
 			# report itself as warnings and leave hasErrors false.
@@ -983,6 +1024,7 @@ def _parse_op_messages(
 				"anchored": True,
 				"level": level,
 				"lines": [message],
+				"owner": owner,
 				"path": path,
 			}
 		elif current:
@@ -994,6 +1036,7 @@ def _parse_op_messages(
 				"anchored": False,
 				"level": level,
 				"lines": [line.strip()],
+				"owner": queried_node,
 				"path": queried_node.path,
 			}
 
@@ -1004,18 +1047,25 @@ def _parse_op_messages(
 	for group in groups:
 		message = "\n".join(group["lines"]).strip()
 		path = group["path"]
+		owner = group["owner"]
+
 		if not group["anchored"]:
-			path = (
-				_owner_from_trailing_path(message, queried_node, unresolved)
-				or path
+			recovered, recovered_owner, declined = _owner_from_trailing_path(
+				message, queried_node
 			)
+			note(declined)
+			if recovered:
+				path, owner = recovered, recovered_owner
+
 		message = _strip_redundant_path_suffix(message, path)
 
-		owner = _resolve_op(path)[0]
+		# The name is in the path whether or not the lookup answered, so it is
+		# not withheld when only the type is unknown. An empty opType means
+		# "not determined"; lookupFailures says when that is why.
 		entries.append(
 			{
-				"nodePath": owner.path if owner else path,
-				"nodeName": owner.name if owner else "",
+				"nodePath": path,
+				"nodeName": owner.name if owner else path.rsplit("/", 1)[-1],
 				"opType": owner.OPType if owner else "",
 				"level": group["level"],
 				"message": message,

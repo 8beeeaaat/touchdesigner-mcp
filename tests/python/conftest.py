@@ -55,11 +55,15 @@ class FakeTd:
 		self.ops: dict[str, FakeOp] = {}
 		self.op_raises = False
 		self.op_raises_for: set[str] = set()
+		# path -> the path td.op() answers with, as a glob match would
+		self.answer_with: dict[str, str] = {}
 
 	def op(self, path: str):
 		# td.op() takes a glob, so malformed text reaching it can raise.
 		if self.op_raises or path in self.op_raises_for:
 			raise RuntimeError(f"bad pattern: {path}")
+		if path in self.answer_with:
+			return self.ops.get(self.answer_with[path])
 		if path in self.ops:
 			return self.ops[path]
 		# A pattern returns whichever operator it matched, as TouchDesigner
@@ -82,6 +86,7 @@ def scene():
 		_fake_td.ops.clear()
 		_fake_td.op_raises = False
 		_fake_td.op_raises_for = set()
+		_fake_td.answer_with = {}
 		for path in ops:
 			_fake_td.ops[path] = FakeOp(path)
 		node = FakeOp(queried, op_type)
@@ -92,6 +97,7 @@ def scene():
 	_fake_td.ops.clear()
 	_fake_td.op_raises = False
 	_fake_td.op_raises_for = set()
+	_fake_td.answer_with = {}
 
 
 @pytest.fixture

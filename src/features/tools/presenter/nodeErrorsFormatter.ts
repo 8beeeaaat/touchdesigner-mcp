@@ -31,6 +31,7 @@ export function formatNodeErrors(
 	const warningCount = data.warningCount ?? 0;
 	const skipped = data.skippedStreams ?? [];
 	const unresolved = data.unresolvedAnchors ?? [];
+	const lookupFailures = data.lookupFailures ?? [];
 
 	// Errors first: a warning never blocks a fix that an error already blocks.
 	const ordered = [...entries].sort(
@@ -68,6 +69,10 @@ export function formatNodeErrors(
 			// rather than folded into this claim.
 			incomplete: Boolean(data.incomplete) || skipped.length > 0,
 			listedCount: entries.length,
+			lookupFailures: lookupFailures.map((f) => ({
+				path: f.path,
+				stream: f.stream,
+			})),
 			nodeName: data.nodeName,
 			nodePath: data.nodePath,
 			omittedCount: Math.max(entries.length - items.length, 0),

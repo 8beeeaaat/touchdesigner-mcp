@@ -207,6 +207,39 @@ class TestAnchorsThatCouldNotBeResolved:
 			f"{PROBE}/b",
 			f"{PROBE}/c",
 		]
+		# Accepting the anchors is only half of it: the payload has to say the
+		# lookups failed, or an empty opType reads as "this operator is gone" -
+		# the reading this branch exists to reject.
+		assert [f["path"] for f in report["lookupFailures"]] == [
+			f"{PROBE}/a",
+			f"{PROBE}/b",
+			f"{PROBE}/c",
+		]
+		assert report["unresolvedAnchors"] == []
+		assert [e["nodeName"] for e in report["errors"]] == ["a", "b", "c"]
+
+
+	def test_a_path_outside_the_subtree_is_not_called_ambiguous(self, scene):
+		# With recurse=True TouchDesigner attributes every message to its
+		# owning operator and names referenced operators in the body, never
+		# the prefix — verified on a live scene. An outside path is therefore
+		# quoted text, nothing was under-counted, and saying otherwise would
+		# train a caller to ignore the list.
+		node = scene(PROBE, [f"{PROBE}/cb", "/project1/shared"])
+		node.with_streams(
+			errors=(
+				f"{PROBE}/cb:  Error: ValueError raised\n"
+				"/project1/shared: Error: quoted by the callback"
+			),
+			warnings="",
+		)
+
+		report = report_for(node)
+
+		assert report["errorCount"] == 1
+		assert report["unresolvedAnchors"] == []
+		assert report["lookupFailures"] == []
+		assert "quoted by the callback" in report["errors"][0]["message"]
 
 
 class TestMissingNode:

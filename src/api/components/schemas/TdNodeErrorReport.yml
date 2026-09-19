@@ -83,6 +83,26 @@ properties:
         stream:
           type: string
           description: Which stream it appeared on ("errors" or "warnings")
+  lookupFailures:
+    type: array
+    description: >-
+      Paths whose operator could not be looked up, because the lookup itself
+      failed rather than answering that nothing is there. Their entries are
+      still counted - a failed lookup is no evidence against the path - but
+      opType could not be determined, so an empty opType on those entries
+      means "not determined" rather than "none".
+    items:
+      type: object
+      required:
+        - path
+        - stream
+      properties:
+        path:
+          type: string
+          description: The path whose lookup failed
+        stream:
+          type: string
+          description: Which stream it appeared on ("errors" or "warnings")
   errors:
     type: array
     description: >-

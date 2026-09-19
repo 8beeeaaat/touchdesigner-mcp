@@ -197,6 +197,17 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(text).toContain("attributions are ambiguous");
 	});
 
+	it("says a type is undetermined rather than absent when a lookup failed", async () => {
+		const text = await runTool({
+			...mixed,
+			lookupFailures: [{ path: "/project1/probe/a", stream: "errors" }],
+		});
+
+		expect(text).toContain("could not be looked up");
+		expect(text).toContain("/project1/probe/a");
+		expect(text).not.toContain("Incomplete");
+	});
+
 	it("reports a node with neither errors nor warnings as clean", async () => {
 		const text = await runTool({
 			...warningOnly,
