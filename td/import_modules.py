@@ -31,17 +31,28 @@ def setup():
 			sys.path.remove(path)
 		sys.path.insert(0, path)
 
+	# Not guarded. Every route is defined in this schema, so a component that
+	# starts without it answers nothing while looking healthy - and the
+	# endpoint that would let you diagnose it from outside is one of the
+	# routes that is missing. Recovery means re-importing the component
+	# either way, so a degraded start buys nothing and costs the diagnosis.
+	# A traceback here, with the component visibly failing to initialise, is
+	# the accurate signal.
 	schema_path = find_openapi_schema_path(modules_path)
-	try:
-		if schema_path is None:
-			raise FileNotFoundError(
-				"OpenAPI schema file not found in any known location."
-			)
-		with open(schema_path) as f:
-			openapi_schema = yaml.safe_load(f)
-	except Exception as e:
-		openapi_schema = {}
-		print("Failed to load OpenAPI schema:", e)
+	if schema_path is None:
+		raise FileNotFoundError("OpenAPI schema file not found in any known location.")
+
+	# UTF-8 explicitly: the schema is UTF-8 by specification and
+	# TouchDesigner's Python defaults to ASCII, so one non-ASCII character
+	# anywhere in it would otherwise take down every route.
+	with open(schema_path, encoding="utf-8") as f:
+		openapi_schema = yaml.safe_load(f)
+
+	if not openapi_schema or not openapi_schema.get("paths"):
+		raise ValueError(
+			f"OpenAPI schema at {schema_path} defines no paths; "
+			"the component would start and answer nothing."
+		)
 
 	import mcp
 

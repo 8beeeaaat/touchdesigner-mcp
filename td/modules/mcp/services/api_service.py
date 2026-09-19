@@ -8,9 +8,10 @@ import importlib
 import inspect
 import io
 import pydoc
+import re
 import sys
 import traceback
-from typing import Any, Optional, Protocol
+from typing import Any, NamedTuple, Optional, Protocol
 
 from mcp.services.node_layout import first_free_cell
 import td
@@ -82,7 +83,7 @@ class TouchDesignerApiService(IApiService):
 			log_message(f"Found {class_name} in td module", LogLevel.DEBUG)
 		else:
 			log_message(f"Class not found: {class_name}", LogLevel.WARNING)
-			raise error_result(f"Class or module not found: {class_name}")
+			return error_result(f"Class or module not found: {class_name}")
 
 		methods = []
 		properties = []
@@ -162,82 +163,128 @@ class TouchDesignerApiService(IApiService):
 		node = td.op(node_path)
 
 		if node is None or not node.valid:
-			raise error_result(f"Node not found at path: {node_path}")
+			return error_result(f"Node not found at path: {node_path}")
 
 		node_info = self._get_node_summary(node)
 		return success_result(node_info)
 
 	def get_node_errors(self, node_path: str) -> Result:
-		"""Collect error messages for the specified node and its children"""
+		"""Collect error and warning messages for a node and all its descendants
 
-		node = td.op(node_path)
+		TouchDesigner reports many of the most common failures (missing files,
+		dangling operator references, shader compile failures) as warnings
+		rather than errors, so both streams are collected. Each entry carries a
+		``level`` so callers can tell them apart.
+		"""
 
-		if node is None or not node.valid:
+		node, outcome = _resolve_op(node_path)
+		if outcome == _LOOKUP_FAILED:
+			return error_result(f"Could not look up node at path: {node_path}")
+		if outcome == _MISSING:
+			# td.op() takes a glob, so it can answer with an operator whose
+			# path is not the one asked for. _resolve_op refuses that but
+			# hands the near miss back, so the message can name what actually
+			# answered. Looking it up a second time would let the two calls
+			# disagree, and the second call's `except` would have to report
+			# "not found" — the exact untrue message this branch exists to
+			# avoid. Saying "not found" is only true when nothing answered.
+			if node is not None:
+				return error_result(
+					f"Path {node_path} matched {node.path} rather than "
+					"naming it; pass the exact operator path."
+				)
 			return error_result(f"Node not found at path: {node_path}")
 
-		# Use TouchDesigner's built-in errors() method
-		all_errors = []
-		if hasattr(node, "errors") and callable(node.errors):
+		entries = []
+		skipped = []
+		unresolved = []
+		lookup_failures = []
+		fallback_owners = []
+		for level, getter in (
+			(_LEVEL_ERROR, "errors"),
+			(_LEVEL_WARNING, "warnings"),
+		):
+			notes = []
+			method = getattr(node, getter, None)
+			if not callable(method):
+				# An older TouchDesigner build may not expose this stream.
+				skipped.append(
+					{"stream": getter, "reason": f"OP.{getter} is not available"}
+				)
+				continue
 			try:
-				# errors(recurse=True) returns a string with newline-separated error messages
-				error_output = node.errors(recurse=True)
-				if error_output:
-					# Parse the error output into structured data
-					error_lines = error_output.strip().split("\n")
-					for line in error_lines:
-						line = line.strip()
-						if line:
-							# Extract node path from error message if present
-							# Format: "Error message (node_path)"
-							if "(" in line and line.endswith(")"):
-								message_part, path_part = line.rsplit("(", 1)
-								error_node_path = path_part.rstrip(")")
-								message = message_part.strip()
-
-								# Try to get the actual node to extract more info
-								error_node = td.op(error_node_path)
-								if error_node and error_node.valid:
-									all_errors.append(
-										{
-											"nodePath": error_node.path,
-											"nodeName": error_node.name,
-											"opType": error_node.OPType,
-											"message": message,
-										}
-									)
-								else:
-									all_errors.append(
-										{
-											"nodePath": error_node_path,
-											"nodeName": "",
-											"opType": "",
-											"message": message,
-										}
-									)
-							else:
-								# Simple error message without node path
-								all_errors.append(
-									{
-										"nodePath": node.path,
-										"nodeName": node.name,
-										"opType": node.OPType,
-										"message": line,
-									}
-								)
+				raw = method(recurse=True)
 			except Exception as e:
+				# Only the read is guarded. A failure here is TouchDesigner
+				# declining to answer, which is what skippedStreams means.
 				log_message(
-					f"Error getting errors from node {node_path}: {str(e)}",
+					f"Error reading {getter} from node {node_path}: {str(e)}",
 					LogLevel.WARNING,
 				)
+				skipped.append({"stream": getter, "reason": str(e)})
+				continue
 
+			if raw is None:
+				# Not the same as an empty blob: the stream gave no answer.
+				skipped.append(
+					{"stream": getter, "reason": f"OP.{getter}() returned None"}
+				)
+				continue
+
+			if not raw:
+				continue
+
+			# Parsing is outside the guard above on purpose. Wrapping it would
+			# file our own bug as a TouchDesigner stream failure - including
+			# the KeyError below, whose entire point is to be loud about a
+			# note kind with no home. It would also leave the entries and
+			# notes already appended in the payload beside a claim that the
+			# stream was never read.
+			entries.extend(_parse_op_messages(raw, level, node, notes))
+			targets = {
+				_NOTE_LOOKUP_FAILED: lookup_failures,
+				_NOTE_MISATTRIBUTED: fallback_owners,
+				_NOTE_UNRESOLVED: unresolved,
+			}
+			for note_path, kind in notes:
+				# KeyError rather than a default: a kind with no home would
+				# otherwise be filed under whichever list the fallback picked
+				# and read as a TouchDesigner fault.
+				targets[kind].append({"path": note_path, "stream": getter})
+
+		# Both sides name the level they take. A remainder filter would give a
+		# level nobody planned for a silent home in whichever collection was
+		# written second.
+		errors = [e for e in entries if e["level"] == _LEVEL_ERROR]
+		warnings = [e for e in entries if e["level"] == _LEVEL_WARNING]
+
+		# `errors` stays error-only. A released MCP server reads it as errors
+		# and renders every element under an "N error(s) found" heading, so
+		# mixing warnings in would have it present them as errors to anyone who
+		# updated the component without updating the server.
+		# `incomplete` answers one question: did a stream go unread, leaving the
+		# counts with no ceiling? Declined anchors are reported separately
+		# because they are a different situation - the content is present, just
+		# folded into a neighbouring entry - and a caller's next move differs.
+		# The log only reaches TouchDesigner's textport, so an unread stream has
+		# to be said here or a caller branching on hasErrors is told a project
+		# nobody finished inspecting is clean.
 		return success_result(
 			{
 				"nodePath": node.path,
 				"nodeName": node.name,
 				"opType": node.OPType,
-				"errorCount": len(all_errors),
-				"hasErrors": bool(all_errors),
-				"errors": all_errors,
+				"errorCount": len(errors),
+				"warningCount": len(warnings),
+				"hasErrors": bool(errors),
+				"hasWarnings": bool(warnings),
+				"incomplete": bool(skipped),
+				"skippedStreams": skipped,
+				"unresolvedAnchors": unresolved,
+				"lookupFailures": lookup_failures,
+				"fallbackAttributions": fallback_owners,
+				"errors": errors,
+				"warnings": warnings,
 			}
 		)
 
@@ -260,7 +307,7 @@ class TouchDesignerApiService(IApiService):
 
 		parent_node = td.op(parent_path)
 		if parent_node is None or not parent_node.valid:
-			raise error_result(f"Parent node not found at path: {parent_path}")
+			return error_result(f"Parent node not found at path: {parent_path}")
 
 		if pattern:
 			log_message(
@@ -376,14 +423,14 @@ class TouchDesignerApiService(IApiService):
 
 		node = td.op(node_path)
 		if node is None or not node.valid:
-			raise error_result(f"Node not found at path: {node_path}")
+			return error_result(f"Node not found at path: {node_path}")
 
 		if not hasattr(node, method):
-			raise error_result(f"Method {method} not found on node {node_path}")
+			return error_result(f"Method {method} not found on node {node_path}")
 
 		method = getattr(node, method)
 		if not callable(method):
-			raise error_result(f"{method} is not a callable method")
+			return error_result(f"{method} is not a callable method")
 
 		result = method(*args, **kwargs)
 
@@ -521,7 +568,7 @@ class TouchDesignerApiService(IApiService):
 		node = td.op(node_path)
 
 		if node is None or not node.valid:
-			raise error_result(f"Node not found at path: {node_path}")
+			return error_result(f"Node not found at path: {node_path}")
 
 		updated_properties = []
 		failed_properties = []
@@ -581,9 +628,9 @@ class TouchDesignerApiService(IApiService):
 				LogLevel.WARNING,
 			)
 			if failed_properties:
-				raise error_result("Failed to update any properties")
+				return error_result("Failed to update any properties")
 			else:
-				raise error_result("No matching properties to update")
+				return error_result("No matching properties to update")
 
 	def _get_node_properties(self, node):
 		params_dict = {}
@@ -796,6 +843,387 @@ class TouchDesignerApiService(IApiService):
 			return safe_serialize(item)
 		except Exception:
 			return str(item)
+
+
+# TouchDesigner prefixes each message with the owning operator path when
+# errors()/warnings() are called with recurse=True. The spacing after the colon
+# differs between the two streams ("path:  Error:" vs "path:Warning:"), so the
+# pattern stays loose about it.
+_MESSAGE_ANCHOR = re.compile(r"^(/\S*?):\s*(Error|Warning):\s*(.*)$")
+
+# TouchDesigner closes a message with the owning operator in parentheses.
+_TRAILING_PATH = re.compile(r"\((/[^()\s]*)\)\s*$")
+
+
+# Characters TouchDesigner rejects in an operator name. Every one of these was
+# probed against a live build: create("constantTOP", "a<c>b") raises "Illegal
+# node name specified" for all 32, and no printable ASCII outside them is
+# refused.
+#
+# Written as a denial rather than a permission because the two ways this rule
+# can be wrong cost very different amounts: calling an operator a file drops a
+# real failure silently, while calling a file an operator costs one visible
+# entry. For printable ASCII that choice is cosmetic - the set is exactly the
+# complement of [A-Za-z0-9_] - and the real gain is everything outside it.
+# Non-ASCII names are rejected by TouchDesigner too, but are left to the lookup
+# rather than encoded here, so a build that starts accepting them fails
+# visibly instead of silently.
+#
+# A spelling decline says nothing in the payload, as do the out-of-subtree and
+# reports-nothing declines; only an unresolvable path is recorded. So adding a
+# character here needs the same live evidence these have: get it wrong and a
+# real failure folds into its neighbour with nothing to show for it. The
+# probe that produced this set is tests/python/test_op_name_rule.py.
+_ILLEGAL_IN_OP_NAME = set(". -*?[]{}()/\\:;,'\"`!@#$%^&|<>~=+")
+
+
+# Outcomes of looking a path up, kept distinct because they call for opposite
+# treatment: a lookup that failed says nothing about the path.
+class Note(NamedTuple):
+	"""Something about a path the caller should hear about.
+
+	Named rather than a bare pair because it crosses four functions, and a
+	positional tuple read by index is where the wrong half gets used.
+	"""
+
+	path: str
+	kind: str
+
+
+_LEVEL_ERROR = "error"
+_LEVEL_WARNING = "warning"
+
+_NOTE_UNRESOLVED = "unresolved"
+_NOTE_LOOKUP_FAILED = "lookup_failed"
+_NOTE_MISATTRIBUTED = "misattributed"
+
+# Prefixed so a resolve outcome and a note kind cannot alias: both had a
+# "lookup_failed" member, which compares equal for that one value and diverges
+# for the others - the single case the targets[kind] KeyError cannot catch,
+# because that key does have a home.
+_FOUND = "resolve:found"
+_MISSING = "resolve:missing"
+_LOOKUP_FAILED = "resolve:lookup_failed"
+
+
+def _looks_like_op_path(path: str) -> bool:
+	"""Whether path could name an operator at all, by spelling alone"""
+
+	parts = [part for part in path.split("/") if part]
+	if not parts:
+		return False
+	return all(part and not (set(part) & _ILLEGAL_IN_OP_NAME) for part in parts)
+
+
+def _resolve_op(path: str):
+	"""Look the path up, returning (op_or_None, outcome)
+
+	`path` comes out of message text rather than from TouchDesigner, so the
+	lookup is treated as fallible. No input has been observed to make td.op()
+	raise - malformed globs such as "/project1/[" return None on
+	099.2025.33230 - so _LOOKUP_FAILED is defensive rather than a response to
+	a known trigger. It earns its place by what it means: a raise would say
+	the lookup failed, not that the operator is absent, and reading one as
+	the other is the mistake this module keeps having to correct.
+
+	Only an exact match counts. td.op("/project1/probe/*") answers with
+	whichever descendant it matched first, so a pattern reaching here would
+	otherwise resolve and hand an entry to an operator that never failed. The
+	spelling rule keeps metacharacters out, but this holds the property
+	without depending on it.
+	"""
+
+	try:
+		owner = td.op(path)
+	except Exception:
+		return None, _LOOKUP_FAILED
+	if owner is None or not owner.valid:
+		return None, _MISSING
+	if owner.path == path:
+		return owner, _FOUND
+	# A near miss: something real is there, it is just not what was named.
+	# It is handed back rather than dropped so a caller can say which
+	# operator answered without looking the path up a second time. Callers
+	# must branch on the outcome, not on the operator being None.
+	return owner, _MISSING
+
+
+def _owner_reports_anything(owner) -> bool:
+	"""Whether this operator has a message of its own on either stream
+
+	Evidence separating a real anchor from a path quoted inside somebody's
+	traceback: measured on 099.2025.33230, a working operator returns "" from
+	errors() and warnings() while a failing one returns its message, and
+	TouchDesigner writes a prefixed line only for the latter.
+
+	Both streams are asked, not the one being parsed. The anchor word and the
+	blob it arrives in are treated as independent everywhere else here - the
+	level comes from the stream, precisely because the word cannot be trusted
+	to agree - so probing only the matching stream would decline a genuine
+	anchor whose operator failed on the other one, folding its lines into the
+	entry above with nothing recorded. That is the failure this module exists
+	to remove, and it would have been introduced by the check meant to guard
+	against a different one.
+
+	It does not separate them when the quoted operator has a message of its
+	own; that residue is accepted.
+	"""
+
+	asked = 0
+	for name in ("errors", "warnings"):
+		getter = getattr(owner, name, None)
+		if not callable(getter):
+			# An older build may not expose this stream. Skip it rather than
+			# abstaining outright: returning here on the first one would make
+			# the whole check inoperative on a build with errors() and no
+			# warnings(), and nothing downstream would say it had not run.
+			continue
+		try:
+			said = getter(recurse=False) or ""
+		except Exception:
+			# The lookup failed, which says nothing about the operator, so
+			# this evidence is unavailable and the other checks stand alone.
+			return True
+		asked += 1
+		if said.strip():
+			return True
+
+	# Only when no stream could be asked at all is the evidence unavailable.
+	return asked == 0
+
+
+def _classify_anchor(path: str, queried_node):
+	"""Decide what an anchor-shaped path is, resolving it at most once
+
+	Returns (accepted, owner, note), where note is either None or the Note the
+	caller should report. Pairing it here keeps a caller from attaching the
+	wrong path to a kind.
+
+	Four things have to hold for an anchor to be accepted, and each rules out
+	a different way for message text to be mistaken for the start of a new
+	message:
+
+	- inside the queried subtree. Measured on 099.2025.33230, with operators
+	  referencing ops outside the queried subtree by parameter and by
+	  expression, every anchor recurse=True emitted was the owning operator
+	  and referenced ops appeared only in message bodies - so an outside path
+	  is quoted text, declined without comment. That is an observation about
+	  one build, not a guarantee; if it stops holding, the symptom is a real
+	  failure folding into its neighbour silently;
+	- spelled like an operator, so "/project1/probe/data.csv" raised from
+	  somebody's callback is ruled out before TouchDesigner is asked;
+	- known to TouchDesigner, or unknown only because the lookup itself
+	  failed;
+	- actually carrying a message of its own, on either stream. A traceback
+	  that quotes a healthy sibling, "/project1/probe/shared: Error: ...",
+	  clears every test above it - the path is in the subtree, spelled like an
+	  operator, and resolves - so resolution alone cannot tell a real anchor
+	  from quoted text.
+
+	A path that spells like an operator and resolves to nothing is most likely
+	one deleted since its message was recorded. Declining it folds its lines
+	into the entry above, which under-counts, so it is reported rather than
+	dropped.
+
+	A lookup that raised is treated as weaker evidence than one that answered
+	"nothing there", which is deliberate rather than an oversight. An answer of
+	None is TouchDesigner reporting on the path; a raise is TouchDesigner
+	failing to, and says nothing about it. Both outcomes are reported, so
+	neither is silent - they differ only in whether the anchor still stands.
+	"""
+
+	root = queried_node.path
+	if path == root:
+		return True, queried_node, None
+
+	prefix = root if root.endswith("/") else f"{root}/"
+	if not path.startswith(prefix):
+		return False, None, None
+
+	if not _looks_like_op_path(path):
+		return False, None, None
+
+	owner, outcome = _resolve_op(path)
+	if outcome == _MISSING:
+		return False, None, Note(path, _NOTE_UNRESOLVED)
+	if outcome == _LOOKUP_FAILED:
+		return True, None, Note(path, _NOTE_LOOKUP_FAILED)
+	if not _owner_reports_anything(owner):
+		# It is a real operator and it is fine, so the line is quoting it.
+		# Declining keeps those lines with the entry they belong to, and
+		# nothing is under-counted, so there is nothing to report.
+		return False, None, None
+	return True, owner, None
+
+
+def _split_anchor(line: str, queried_node):
+	"""Classify a line as the start of a new message, or not
+
+	Returns (anchor, note). `anchor` is (path, message, owner) when the line
+	starts one, otherwise None. `note` is a Note when there is something worth
+	telling the caller.
+	"""
+
+	match = _MESSAGE_ANCHOR.match(line)
+	if not match:
+		return None, None
+
+	path = match.group(1)
+	accepted, owner, note = _classify_anchor(path, queried_node)
+	if not accepted:
+		return None, note
+	# The anchor word is deliberately not returned. Which stream produced the
+	# line decides the level, and a value that must be ignored is one an
+	# unused-variable cleanup would start using.
+	return (path, match.group(3), owner), note
+
+
+def _owner_from_trailing_path(message: str, queried_node):
+	"""Recover the owner from a trailing "(<path>)"
+
+	Returns (path_or_None, owner_or_None, note). Output captured with
+	recurse=False carries no "<path>:" prefix but still names the owner at the
+	end of its last line, and preferring that over the queried node keeps
+	attribution right for callers that pass such a blob. A path declined here
+	is reported the same way a declined anchor is: falling back to the queried
+	node is a misattribution either way.
+	"""
+
+	match = _TRAILING_PATH.search(message)
+	if not match:
+		return None, None, None
+
+	path = match.group(1)
+	accepted, owner, note = _classify_anchor(path, queried_node)
+	if accepted:
+		return path, owner, note
+
+	# Declining here has the opposite consequence to declining an anchor.
+	# Nothing folds: the entry stands on its own and is counted once. What
+	# goes wrong is the owner, which falls back to the queried node while
+	# every field on the entry still looks resolved. Reporting that as an
+	# unresolved anchor would send a caller looking for a merged failure that
+	# does not exist.
+	if note and note.kind == _NOTE_UNRESOLVED:
+		note = Note(note.path, _NOTE_MISATTRIBUTED)
+	return None, None, note
+
+
+def _strip_redundant_path_suffix(message: str, path: str) -> str:
+	"""Drop a trailing "(<path>)" that merely repeats the owning operator
+
+	A suffix naming a *different* operator is left alone, since that one
+	carries information.
+	"""
+
+	suffix = f"({path})"
+	if message.endswith(suffix):
+		return message[: -len(suffix)].rstrip()
+	return message
+
+
+def _parse_op_messages(
+	raw: str, level: str, queried_node, notes: Optional[list] = None
+) -> list:
+	"""Parse one errors()/warnings() blob into structured entries
+
+	A single failure can span several lines - a Python traceback raised from a
+	parameter expression, for example. Lines that do not start a new message
+	belong to the entry that preceded them, so splitting on newlines alone
+	would report one failure as several and attribute most of them wrongly.
+
+	`notes` collects Note entries for paths the caller should hear about: an
+	anchor declined because it resolved to nothing, the same on a trailing
+	path, or one accepted despite the lookup failing. Each path is listed once
+	per call, and get_node_errors calls this once per stream, so a path seen
+	on both streams can appear under both.
+	"""
+
+	def note(entry):
+		"""Record a path once, keeping the first outcome seen for it
+
+		A flaky td.op can answer differently on two lines naming the same
+		path. Within one stream the lists are a disjoint categorisation, so a
+		path must not turn up in two of them; across streams it can, carrying
+		its own stream tag.
+		"""
+
+		if entry is None or notes is None:
+			return
+		if any(seen.path == entry.path for seen in notes):
+			return
+		notes.append(entry)
+
+	groups = []
+	current = None
+
+	for line in raw.split("\n"):
+		if not line.strip():
+			continue
+
+		anchor, declined = _split_anchor(line, queried_node)
+		note(declined)
+
+		if anchor:
+			if current:
+				groups.append(current)
+			path, message, owner = anchor
+			# The anchor word only marks where an entry begins. Which stream
+			# produced the line decides the level, so an "errors" blob cannot
+			# report itself as warnings and leave hasErrors false.
+			current = {
+				"anchored": True,
+				"level": level,
+				"lines": [message],
+				"owner": owner,
+				"path": path,
+			}
+		elif current:
+			current["lines"].append(line)
+		else:
+			# No prefix at all: recurse=False style output, or an unexpected
+			# shape. Attribute it to the node that was queried.
+			current = {
+				"anchored": False,
+				"level": level,
+				"lines": [line.strip()],
+				"owner": queried_node,
+				"path": queried_node.path,
+			}
+
+	if current:
+		groups.append(current)
+
+	entries = []
+	for group in groups:
+		message = "\n".join(group["lines"]).strip()
+		path = group["path"]
+		owner = group["owner"]
+
+		if not group["anchored"]:
+			recovered, recovered_owner, declined = _owner_from_trailing_path(
+				message, queried_node
+			)
+			note(declined)
+			if recovered:
+				path, owner = recovered, recovered_owner
+
+		message = _strip_redundant_path_suffix(message, path)
+
+		# The name is in the path whether or not the lookup answered, so it is
+		# not withheld when only the type is unknown. An empty opType means
+		# "not determined"; lookupFailures says when that is why.
+		entries.append(
+			{
+				"nodePath": path,
+				"nodeName": owner.name if owner else path.rsplit("/", 1)[-1],
+				"opType": owner.OPType if owner else "",
+				"level": group["level"],
+				"message": message,
+			}
+		)
+
+	return entries
 
 
 api_service = TouchDesignerApiService()

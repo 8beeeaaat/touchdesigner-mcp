@@ -4,14 +4,17 @@ Logging module for TouchDesigner MCP Web server
 
 from datetime import datetime
 import sys
-from typing import TextIO
+from typing import Optional, TextIO
 
 from utils.types import LogLevel
 
 from .config import DEBUG
 
 
-def _safe_write(stream: TextIO | None, message: str) -> bool:
+# Optional[...] rather than `TextIO | None`: pyproject declares a 3.9 floor for
+# older TouchDesigner builds, and PEP 604 unions are evaluated at import time
+# from 3.10. This module failing to import takes the whole TD side with it.
+def _safe_write(stream: Optional[TextIO], message: str) -> bool:
 	"""Attempt to write to the provided stream while swallowing blocking errors."""
 
 	if stream is None:

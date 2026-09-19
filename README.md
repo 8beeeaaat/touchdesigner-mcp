@@ -42,7 +42,7 @@ Tools allow AI agents to perform actions in TouchDesigner.
 | `get_td_classes`        | Gets a list of TouchDesigner Python classes.                       |
 | `get_td_info`           | Gets information about the TouchDesigner server environment.       |
 | `get_td_module_help`    | Gets Python help() documentation for TouchDesigner modules/classes.|
-| `get_td_node_errors`    | Checks for errors on a specified node and its children. |
+| `get_td_node_errors`    | Checks errors **and warnings** on a node and its descendants. Missing files, dangling references and shader failures are warnings, so no errors does not mean healthy. |
 | `get_td_node_parameters`| Gets the parameters of a specific node.                            |
 | `get_td_nodes`          | Gets nodes under a parent path, with optional filtering.           |
 | `get_top_image`         | Captures the current output of a TOP node as an image.             |
@@ -56,7 +56,7 @@ Prompts provide instructions for AI agents to perform specific actions in TouchD
 | :------------------| :-------------------------------------------------------------------------- |
 | `Search node`      | Fuzzy searches for nodes and retrieves information based on name, family, or type. |
 | `Node connection`  | Provides instructions to connect nodes within TouchDesigner.                |
-| `Check node errors`| Checks for errors on a specified node, and recursively for its children.    |
+| `Check node errors`| Checks errors and warnings on a specified node, and recursively for its descendants. |
 
 ### Resources
 

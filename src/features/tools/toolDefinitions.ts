@@ -256,18 +256,35 @@ console.log(node.properties?.Text);`,
 	}),
 	defineTool({
 		category: "nodes",
-		description: "Check node and descendant errors reported by TouchDesigner",
+		description:
+			"Check errors and warnings on a node and its descendants. TouchDesigner reports missing files, dangling operator references and shader compile failures as warnings, so do not treat hasErrors=false as a healthy node",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { getTdNodeErrors } from './servers/touchdesigner/getTdNodeErrors';
 
 const report = await getTdNodeErrors({
   nodePath: '/project1/text1',
 });
-if (report.hasErrors) {
-  console.log(report.errors?.map(err => err.message));
+
+// Warnings are the more common failure in TouchDesigner — a missing file,
+// a dangling operator reference, a shader that will not compile — and they
+// live in their own array, so hasErrors alone never sees them.
+for (const entry of [...(report.errors ?? []), ...(report.warnings ?? [])]) {
+  console.log(\`[\${entry.level ?? 'error'}] \${entry.nodePath}: \${entry.message}\`);
+}
+
+if (report.hasWarnings === undefined) {
+  // An older TouchDesigner component never inspected the warning stream,
+  // which is not the same as there being none.
+  console.warn('This component does not report warnings; update it to see them.');
+}
+
+if (report.incomplete) {
+  // A message stream could not be read, so the counts are a floor.
+  console.warn('Incomplete report:', report.skippedStreams);
 }`,
 		name: TOOL_NAMES.GET_TD_NODE_ERRORS,
-		returns: "Error report outlining offending nodes, messages, and counts.",
+		returns:
+			"Report with `errors` and `warnings` as separate collections, each entry carrying its level, message and owning node, plus counts. Carries incomplete/skippedStreams when a stream could not be read, and unresolvedAnchors/fallbackAttributions/lookupFailures when an attribution is uncertain.",
 		run: async ({ params, tdClient }) => {
 			const { detailLevel, limit, responseFormat, ...queryParams } = params;
 			const result = await tdClient.getNodeErrors(queryParams);

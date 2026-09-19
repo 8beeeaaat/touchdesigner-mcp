@@ -19,12 +19,133 @@ properties:
     description: Operator type of the inspected node
   errorCount:
     type: integer
-    description: Number of errors that were discovered
+    description: Number of entries with level "error"
+  warningCount:
+    type: integer
+    description: >-
+      Number of entries with level "warning". Absent from a TouchDesigner
+      component older than this field; treat absence as unknown rather than
+      zero where the distinction matters.
   hasErrors:
     type: boolean
     description: Convenience flag indicating if any errors were found
+  hasWarnings:
+    type: boolean
+    description: >-
+      Convenience flag indicating if any warnings were found. Absent from an
+      older component, so do not read its absence as "no warnings".
+  incomplete:
+    type: boolean
+    description: >-
+      True when a message stream could not be read, so the counts have no
+      ceiling and hasErrors false does not mean clean. Declined anchors are
+      reported in unresolvedAnchors instead: that content is present, so it is
+      an attribution caveat rather than a completeness one.
+  skippedStreams:
+    type: array
+    description: Streams that could not be read, with the reason for each
+    items:
+      type: object
+      required:
+        - stream
+        - reason
+      properties:
+        stream:
+          type: string
+          enum:
+            - errors
+            - warnings
+          description: Which stream was skipped
+        reason:
+          type: string
+          description: Why it could not be read
+  unresolvedAnchors:
+    type: array
+    description: >-
+      Paths that began a message but could not be resolved to an operator.
+      Their lines were kept with the preceding entry, so a failure they
+      describe may be folded into another operator's message rather than
+      counted on its own. Paths repeat across messages and are listed once, so
+      this is a lower bound on folded failures, not a ceiling. Only paths
+      spelled like an operator reach this list: TouchDesigner refuses a name
+      containing a dot, hyphen, space or other punctuation, so a path carrying
+      one is ruled out without ever being called ambiguous. What remains is
+      most likely an operator deleted after its message was recorded.
+    items:
+      type: object
+      required:
+        - path
+        - stream
+      properties:
+        path:
+          type: string
+          description: The path that looked like the start of a message
+        stream:
+          type: string
+          enum:
+            - errors
+            - warnings
+          description: Which stream it appeared on
+  fallbackAttributions:
+    type: array
+    description: >-
+      Owners named at the end of an entry's message that could not be
+      resolved, so that entry's nodePath fell back to the node being queried.
+      Nothing was folded and nothing is missing from the counts - the entry
+      stands on its own - but its owner is a guess, and the path named here is
+      still present in the message text.
+    items:
+      type: object
+      required:
+        - path
+        - stream
+      properties:
+        path:
+          type: string
+          description: The owner path that could not be resolved
+        stream:
+          type: string
+          enum:
+            - errors
+            - warnings
+          description: Which stream it appeared on
+  lookupFailures:
+    type: array
+    description: >-
+      Paths whose operator could not be looked up, because the lookup itself
+      failed rather than answering that nothing is there. Their entries are
+      still counted - a failed lookup is no evidence against the path - but
+      opType could not be determined, so an empty opType on those entries
+      means "not determined" rather than "none".
+    items:
+      type: object
+      required:
+        - path
+        - stream
+      properties:
+        path:
+          type: string
+          description: The path whose lookup failed
+        stream:
+          type: string
+          enum:
+            - errors
+            - warnings
+          description: Which stream it appeared on
   errors:
     type: array
-    description: Collection of raw node errors
+    description: >-
+      Entries with level "error". Kept error-only: a client written before
+      warnings were collected renders every element of this array under an
+      "N error(s) found" heading, so mixing them would have it present
+      warnings as errors.
+    items:
+      $ref: ./TdNodeError.yml
+  warnings:
+    type: array
+    description: >-
+      Entries with level "warning". Absent from a TouchDesigner component
+      older than this field, which is not the same as a node having none -
+      see hasWarnings.
     items:
       $ref: ./TdNodeError.yml

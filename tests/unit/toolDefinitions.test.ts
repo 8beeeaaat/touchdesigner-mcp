@@ -96,4 +96,20 @@ describe("deriveParameters", () => {
 			"Type of the node to create",
 		);
 	});
+
+	it("teaches the error-and-warning shape for GET_TD_NODE_ERRORS", () => {
+		// The example reaches the model through toolMetadataFormatter, so it
+		// is the layer where getting this wrong undoes the fix. It has been
+		// wrong twice: once branching on hasErrors, once iterating only
+		// report.errors after warnings moved to their own array.
+		const definition = TOOL_DEFINITIONS.find(
+			(d) => d.name === TOOL_NAMES.GET_TD_NODE_ERRORS,
+		);
+
+		expect(definition).toBeDefined();
+		expect(definition?.example).toContain("report.warnings");
+		expect(definition?.example).not.toMatch(/if \(report\.hasErrors\)/);
+		expect(definition?.description).toContain("warning");
+		expect(definition?.returns).toContain("warnings");
+	});
 });

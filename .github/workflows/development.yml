@@ -22,10 +22,10 @@ jobs:
         with:
           python-version: "3.13"
           cache: "pip"
-      - name: Install Python lint tooling
+      - name: Install Python tooling
         run: |
           python -m pip install --upgrade pip
-          pip install ruff
+          pip install ruff pytest
       - name: Use Node.js from .node-version
         uses: actions/setup-node@v4.0.0
         with:
@@ -35,6 +35,22 @@ jobs:
       - run: npm run gen
       - run: npm run lint
       - run: npm run test:unit
+      # touchDesignerClientAndWebServer needs a live TouchDesigner, so the
+      # mock-backed integration suites are named explicitly rather than
+      # running all of tests/integration here.
+      - run: npm run ci:test:integration
+      - run: npm run test:python
+      # The TD-side modules must import on the floor pyproject declares, not
+      # only on the newest interpreter. Older TouchDesigner builds ship it.
+      - name: Set up the minimum supported Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+      - name: Run TD-side tests on the minimum supported Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          python -m pytest tests/python
       - run: npm run test:e2e
       - name: Test MCPB package build
         run: |
