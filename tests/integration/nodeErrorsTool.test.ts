@@ -414,6 +414,8 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(text).toContain("Errors: 5");
 		expect(text).toContain("Warnings: 2");
 		expect(text).toContain("do not match");
+		// The list is not the whole truth here, so it cannot be an all-clear.
+		expect(text).not.toContain("No errors or warnings reported");
 	});
 
 	it("drops the operator type column at minimal detail", async () => {

@@ -62,6 +62,13 @@ export function formatNodeErrors(
 		listedErrors !== data.errorCount ||
 		(warningsKnown && entries.length - listedErrors !== warningCount);
 
+	// Whether the entries are everything there was to find. Each notice this
+	// formatter can print is a way that claim fails, so anything asserting
+	// completeness has to be gated on all of them together rather than on
+	// whichever one was in mind at the time.
+	const listIsTheWholeTruth =
+		!reportIncomplete && warningsKnown && !countsDisagree;
+
 	const text =
 		entries.length === 0
 			? `Node ${data.nodePath}: nothing listed.`
@@ -69,11 +76,13 @@ export function formatNodeErrors(
 
 	return finalizeFormattedText(text, opts, {
 		context: {
-			// "Nothing to report" and "nothing was reported to me" look alike
-			// from an empty list. Only the first earns the all-clear — the
-			// notices above already account for the second, and printing both
-			// contradicts them in the same breath.
-			cleanlyEmpty: entries.length === 0 && warningsKnown && !reportIncomplete,
+			// An all-clear is a claim that the list is the whole truth, so it
+			// needs every way the list could fall short to be ruled out: a
+			// stream that went unread, a warning stream never inspected, and
+			// counts that do not match what was listed. An empty list on its
+			// own means "nothing was reported to me" just as readily as
+			// "nothing to report", and only the second earns the sentence.
+			cleanlyEmpty: listIsTheWholeTruth && entries.length === 0,
 			countsDisagree,
 			displayed: items.length,
 			entries: items.map((entry) => ({
