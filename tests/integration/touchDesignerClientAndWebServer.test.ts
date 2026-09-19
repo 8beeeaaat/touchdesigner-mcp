@@ -4,7 +4,24 @@ import type { TdNode } from "../../src/gen/endpoints/TouchDesignerAPI";
 import { TouchDesignerClient } from "../../src/tdClient/touchDesignerClient";
 
 const PROJECT_PATH = "/project1";
-const SANDBOX_NAME = "test_base_comp";
+/**
+ * A sandbox name no other run can be holding.
+ *
+ * TouchDesigner renames a colliding name rather than refusing it: asking for
+ * `test_base_comp` when one exists succeeds and creates `test_base_comp4`.
+ * With a fixed name, `beforeAll` discarded that and every test went on using
+ * the hard-coded path — so a run whose predecessor had not cleaned up
+ * operated on the *previous* run's sandbox, children and all, while
+ * `afterAll` deleted that one instead of the node it had just made. Leftovers
+ * accumulated (`test_base_comp1`, `2`, `3`, …) and the failures that followed
+ * were whichever tests happened to care about the sandbox's contents: node
+ * placement and the TOP capture ones. Two runs against the same TouchDesigner
+ * were worse — one's `afterAll` deleted the other's sandbox mid-run.
+ *
+ * Unique per process, so a collision cannot happen; the check in `beforeAll`
+ * fails loudly if one somehow does.
+ */
+const SANDBOX_NAME = `test_base_comp_${process.pid.toString(36)}_${Date.now().toString(36)}`;
 const SANDBOX_PATH = `${PROJECT_PATH}/${SANDBOX_NAME}`;
 /**
  * Verify if a node exists
@@ -62,15 +79,37 @@ describe("TouchDesigner Client E2E Tests", () => {
 	beforeAll(async () => {
 		process.env.TD_WEB_SERVER_HOST = "http://127.0.0.1";
 		process.env.TD_WEB_SERVER_PORT = "9981";
-		await tdClient.createNode({
+		const created = await tdClient.createNode({
 			nodeName: SANDBOX_NAME,
 			nodeType: "baseCOMP",
 			parentPath: PROJECT_PATH,
 		});
+		// The result used to be discarded, which is what let a renamed
+		// sandbox go unnoticed. Every test below assumes SANDBOX_PATH, so if
+		// TouchDesigner put it anywhere else the run is already meaningless
+		// and should say so here rather than fail somewhere downstream.
+		if (!created.success) {
+			throw new Error(`could not create the sandbox: ${created.error}`);
+		}
+		const path = created.data?.result?.path;
+		if (path !== SANDBOX_PATH) {
+			throw new Error(
+				`TouchDesigner placed the sandbox at ${path} rather than ${SANDBOX_PATH}, ` +
+					"so a node of that name already exists and this run would operate on it.",
+			);
+		}
 	});
 
 	afterAll(async () => {
-		await tdClient.deleteNode({ nodePath: SANDBOX_PATH });
+		const deleted = await tdClient.deleteNode({ nodePath: SANDBOX_PATH });
+		// A cleanup that quietly fails is how the leftovers built up in the
+		// first place. Throwing here would mask a real test failure, so this
+		// says so on stderr and leaves the verdict alone.
+		if (!deleted.success) {
+			console.error(
+				`sandbox ${SANDBOX_PATH} was left behind: ${deleted.error}`,
+			);
+		}
 	});
 
 	test("TouchDesigner info endpoint should return server information", async () => {
@@ -490,13 +529,97 @@ describe("TouchDesigner Client E2E Tests", () => {
 
 		const errors = response.data?.errors ?? [];
 		expect(errors.length).toBeGreaterThan(0);
-		expect(
-			errors.some(
-				(msg) =>
-					msg.message ===
-					`${addNodePath}:  Error: Not enough sources specified`,
-			),
-		).toBe(true);
+
+		// The owning operator is a field now, not a prefix repeated inside the
+		// message, and the trailing "(<path>)" TouchDesigner appends is gone.
+		const entry = errors.find((e) => e.nodePath === addNodePath);
+		expect(entry).toBeDefined();
+		expect(entry?.message).toBe("Not enough sources specified");
+		// No `??`: this runs against the component this branch ships, so an
+		// absent field is a real failure, and a fallback would hide exactly
+		// what a live run is here to catch.
+		expect(entry?.level).toBe("error");
+		expect(response.data?.incomplete).toBe(false);
+	});
+
+	test("warnings are collected from a live TouchDesigner, not just errors", async () => {
+		// The feature this release exists for, observed against a real
+		// TouchDesigner rather than a fixture. Every other warning test in the
+		// repo feeds the formatter a payload it wrote itself, or drives the
+		// parser against a stubbed `td` — neither can tell you that
+		// TouchDesigner actually puts these on warnings() rather than errors(),
+		// which is the whole premise. The previous implementation read only
+		// errors(), so this scene came back completely clean.
+		const warnHost = `${SANDBOX_PATH}/warn_host`;
+
+		const created = await tdClient.createNode({
+			nodeName: "warn_host",
+			nodeType: "baseCOMP",
+			parentPath: SANDBOX_PATH,
+		});
+		if (!created.success) {
+			throw new Error(`failed: ${created.error}`);
+		}
+
+		// Two different warning sources, so a single quirk of one operator
+		// cannot carry the test: a dangling operator reference and a file that
+		// is not there. Measured on 099.2025.33230 — both land on warnings()
+		// with errors() empty.
+		//
+		// The dangling reference points inside the run-unique sandbox, not at
+		// a made-up path under /project1. A project that happened to contain
+		// the name would resolve the Select TOP, leave one warning instead of
+		// two, and fail the counts below for a reason that has nothing to do
+		// with the collector. Depending on what is outside its own sandbox is
+		// the same defect this suite already had once, in the sandbox name.
+		const setup = await tdClient.execPythonScript<{ result: unknown }>({
+			script:
+				`host = op('${warnHost}')\n` +
+				`m = host.create('moviefileinTOP', 'missing_movie')\n` +
+				`m.par.file = '/nonexistent/definitely_not_here.mov'\n` +
+				`s = host.create('selectTOP', 'bad_select')\n` +
+				`s.par.top = '${warnHost}/no_such_child'\n` +
+				"host.cook(recurse=True, force=True)\n",
+		});
+		if (!setup.success) {
+			throw new Error(`failed: ${setup.error}`);
+		}
+
+		const response = await tdClient.getNodeErrors({ nodePath: warnHost });
+		if (!response.success) {
+			throw new Error(`failed: ${response.error}`);
+		}
+
+		const warnings = response.data?.warnings ?? [];
+		const errors = response.data?.errors ?? [];
+
+		// Reconciliation: the two operators we broke are the two reported.
+		expect(warnings.map((w) => w.nodePath).sort()).toEqual([
+			`${warnHost}/bad_select`,
+			`${warnHost}/missing_movie`,
+		]);
+		expect(response.data?.warningCount).toBe(2);
+		expect(response.data?.hasWarnings).toBe(true);
+
+		// The discriminating half. A build that files these under errors, or
+		// one that never reads warnings(), fails here rather than quietly
+		// reporting a healthy node.
+		expect(errors).toEqual([]);
+		expect(response.data?.errorCount).toBe(0);
+		expect(response.data?.hasErrors).toBe(false);
+
+		for (const entry of warnings) {
+			expect(entry.level).toBe("warning");
+			// No repeated path prefix, and no trailing "(<path>)".
+			expect(entry.message.startsWith("/")).toBe(false);
+			expect(entry.message.endsWith(")")).toBe(false);
+		}
+
+		// Nothing was skipped, so the counts above are a total and not a floor.
+		expect(response.data?.incomplete).toBe(false);
+		expect(response.data?.skippedStreams ?? []).toEqual([]);
+
+		await tdClient.deleteNode({ nodePath: warnHost });
 	});
 
 	test("Module help should return documentation for TouchDesigner classes", async () => {

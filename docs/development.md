@@ -26,7 +26,7 @@ high-level view of components and data flow, see **[Architecture](./architecture
 3. **Available commands:**
 
    ```bash
-   npm run test      # Run unit and integration tests
+   npm run test      # Run unit, integration, e2e and TD-side Python tests
    npm run dev       # Launch the MCP inspector for debugging
    ```
 
@@ -47,7 +47,6 @@ Use these snippets to point your preferred MCP client at a local build of the se
       "args": [
         "-y",
         "/path/to/your/touchdesigner-mcp/dist/cli.js",
-        "--stdio",
         "--port=9981"
       ]
     },
@@ -67,14 +66,13 @@ Use these snippets to point your preferred MCP client at a local build of the se
 ```json
 {
   "mcpServers": {
-    // claude mcp add -s user touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --stdio --port=9981
+    // claude mcp add -s user touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --port=9981
     "touchdesigner-stdio": {
       "type": "stdio",
       "command": "npx",
       "args": [
         "-y",
         "/path/to/your/touchdesigner-mcp/dist/cli.js",
-        "--stdio",
         "--port=9981"
       ],
       "env": {}
@@ -101,10 +99,10 @@ Use these snippets to point your preferred MCP client at a local build of the se
 ### Codex (`~/.codex/config.toml`)
 
 ```toml
-# codex mcp add touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --stdio --port=9981
+# codex mcp add touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --port=9981
 [mcp_servers.touchdesigner-stdio]
 command = "npx"
-args = ["-y", "/path/to/your/touchdesigner-mcp/dist/cli.js", "--stdio", "--port=9981"]
+args = ["-y", "/path/to/your/touchdesigner-mcp/dist/cli.js", "--port=9981"]
 
 # codex mcp add touchdesigner-http --url http://localhost:6280/mcp
 [mcp_servers.touchdesigner-http]
@@ -140,6 +138,11 @@ args = ["mcp-remote", "http://localhost:6280/mcp"]
    npm test       # Run all tests
    npm run dev    # Launch MCP inspector
    ```
+
+   The TD-side Python tests under `tests/python/` need Python 3.9+ and pytest.
+   An installed `python3 -m pytest` is used when there is one; otherwise `uv`
+   provisions an interpreter, which needs network access. Without either they are skipped locally with a notice,
+   and CI always runs them.
 
 See `CLAUDE.md` for additional developer-focused commands.
 

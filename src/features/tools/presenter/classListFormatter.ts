@@ -14,8 +14,12 @@ import {
 	type PresenterFormat,
 	presentStructuredData,
 } from "./presenter.js";
-import type { FormatterOptions } from "./responseFormatter.js";
+import type {
+	FormatterOptions,
+	TruncationNotice,
+} from "./responseFormatter.js";
 import {
+	describeTruncation,
 	finalizeFormattedText,
 	limitArray,
 	mergeFormatterOptions,
@@ -61,17 +65,58 @@ export function formatClassList(
 		return formatDetailed(data, opts.responseFormat);
 	}
 
-	const { text, context } =
+	// The list is capped once, here, and the capped list is what both the
+	// rendered text and the payload are built from. Capping only the text left
+	// `classListSummary.md` rendering `{{#classes}}` from an unbounded context
+	// — the template never renders the text at all — so `limit` was reaching
+	// nobody, in markdown as much as in json and yaml.
+	const { items: shownClasses } = limitArray(classes, opts.limit);
+	const text =
 		opts.detailLevel === "minimal"
-			? formatClassListMinimal(classes, modules, opts.limit)
-			: formatClassListSummary(classes, modules, opts.limit);
+			? classListMinimalText(classes, shownClasses, modules)
+			: classListSummaryText(classes, shownClasses, modules);
 
-	const ctx = context as Record<string, unknown>;
+	const ctx: Record<string, unknown> = {
+		classCount: classes.length,
+		classes: shownClasses.map((cls) => ({
+			description: cls.description,
+			name: cls.name,
+		})),
+		moduleCount: modules.length,
+		modules,
+	};
+	const truncation = describeTruncation(opts.limit, {
+		classes: { returned: shownClasses.length, total: classes.length },
+	});
+
 	return finalizeFormattedText(text, opts, {
-		context: ctx,
+		// The omission notice goes to the markdown context only. The payload
+		// gets the machine-readable `truncation` record instead, so neither
+		// side has to parse a sentence meant for the other.
+		context: withOmissionFields(ctx, truncation, "classes"),
 		structured: ctx,
 		template: "classListSummary",
+		truncation,
 	});
+}
+
+/**
+ * Add the fields `{{#truncated}}` needs, and only when there is a cut.
+ *
+ * Adding them unconditionally would put `truncated: false` into every payload
+ * that shares this object, which would change the response for a caller who
+ * passed no `limit` at all.
+ */
+function withOmissionFields(
+	context: Record<string, unknown>,
+	truncation: TruncationNotice | undefined,
+	collection: string,
+): Record<string, unknown> {
+	const cut = truncation?.collections[collection];
+	if (!cut) {
+		return context;
+	}
+	return { ...context, omittedCount: cut.omitted, truncated: true };
 }
 
 /**
@@ -97,67 +142,58 @@ export function formatClassDetails(
 			: formatClassDetailsSummary(data, opts.limit);
 
 	const ctx = context as Record<string, unknown>;
+	// Minimal drops every member by design rather than by `limit`, so it
+	// declares no truncation: a notice naming `limit` there would blame the
+	// cap for a choice the detail level made.
+	const truncation =
+		opts.detailLevel === "minimal"
+			? undefined
+			: describeTruncation(opts.limit, {
+					methods: {
+						returned: context.methodsShown,
+						total: context.methodsTotal,
+					},
+					properties: {
+						returned: context.propertiesShown,
+						total: context.propertiesTotal,
+					},
+				});
+
 	return finalizeFormattedText(text, opts, {
 		context: ctx,
 		structured: ctx,
 		template: "classDetailsSummary",
+		truncation,
 	});
 }
 
-function formatClassListMinimal(
+function classListMinimalText(
 	classes: TdPythonClassInfo[],
+	shownClasses: TdPythonClassInfo[],
 	modules: string[],
-	limit?: number,
 ) {
-	const { items: limitedClasses, truncated: classTruncated } = limitArray(
-		classes,
-		limit,
-	);
-	let text = `Classes (${classes.length}): ${limitedClasses
+	let text = `Classes (${classes.length}): ${shownClasses
 		.map((c) => c.name)
 		.join(", ")}`;
-	if (classTruncated) {
-		text += `\n💡 ${classes.length - limitedClasses.length} more classes omitted.`;
+	if (shownClasses.length < classes.length) {
+		text += `\n💡 ${classes.length - shownClasses.length} more classes omitted.`;
 	}
 	if (modules.length > 0) {
 		text += `\nModules (${modules.length}): ${modules.join(", ")}`;
 	}
-	return {
-		context: buildClassListContext(classes, modules),
-		text,
-	};
+	return text;
 }
 
-function formatClassListSummary(
+function classListSummaryText(
 	classes: TdPythonClassInfo[],
+	shownClasses: TdPythonClassInfo[],
 	modules: string[],
-	limit?: number,
 ) {
-	const { items: limitedClasses } = limitArray(classes, limit);
-	const text = `Classes (${classes.length}):\n${limitedClasses
+	return `Classes (${classes.length}):\n${shownClasses
 		.map((c) => `- ${c.name} — ${c.description || ""}`)
 		.join("\n")}\n\nModules (${modules.length}):\n${modules
 		.map((m) => `- ${m}`)
 		.join("\n")}`;
-	return {
-		context: buildClassListContext(classes, modules),
-		text,
-	};
-}
-
-function buildClassListContext(
-	classes: TdPythonClassInfo[],
-	modules: string[],
-) {
-	return {
-		classCount: classes.length,
-		classes: classes.map((cls) => ({
-			description: cls.description,
-			name: cls.name,
-		})),
-		moduleCount: modules.length,
-		modules,
-	};
 }
 
 function formatClassDetailsMinimal(data: ClassDetailsData) {

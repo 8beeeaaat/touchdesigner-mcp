@@ -155,3 +155,9 @@ td/modules/td_server
 .mcpregistry_github_token
 .mcpregistry_registry_token
 .serena
+
+# Generated when the TD-side Python tests provision an interpreter
+uv.lock
+
+# Python build metadata, written when the project is installed (e.g. `uv run`)
+*.egg-info/

@@ -74,6 +74,14 @@ describe("CLI", () => {
 			});
 		});
 
+		it("should keep everything after a host argument's first =", () => {
+			// `split("=")[1]` used to drop the query string.
+			expect(parseArgs(["--host=http://example.test/?token=abc"])).toEqual({
+				host: "http://example.test/?token=abc",
+				port: 9981,
+			});
+		});
+
 		it("should parse both host and port arguments", () => {
 			expect(parseArgs(["--host=127.0.0.1", "--port=9090"])).toEqual({
 				host: "127.0.0.1",
@@ -88,9 +96,64 @@ describe("CLI", () => {
 			});
 		});
 
-		it("should handle invalid port number", () => {
-			const result = parseArgs(["--port=invalid"]);
-			expect(result.port).toBeNaN();
+		it("should exit with error for an invalid --port value", () => {
+			// The trailing three are what `Number.parseInt` used to swallow: it
+			// stops at the first character it cannot read, so each one arrived
+			// as a plausible port (9981, 1, 1) that nobody asked for.
+			for (const value of [
+				"invalid",
+				"0",
+				"70000",
+				"9981junk",
+				"1.5",
+				"1e3",
+				"9981=junk",
+			]) {
+				const mockExit = vi
+					.spyOn(process, "exit")
+					.mockImplementation(() => undefined as never);
+				const mockConsoleError = vi
+					.spyOn(console, "error")
+					.mockImplementation(() => {});
+
+				parseArgs([`--port=${value}`]);
+
+				expect(mockConsoleError).toHaveBeenCalledWith(
+					expect.stringContaining(`Invalid value for --port: "${value}"`),
+				);
+				expect(mockExit).toHaveBeenCalledWith(1);
+
+				mockExit.mockRestore();
+				mockConsoleError.mockRestore();
+			}
+		});
+
+		it("should warn about an unrecognized flag instead of discarding it", () => {
+			const mockConsoleError = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {});
+
+			// A typo like this used to silently fall back to the default port.
+			expect(parseArgs(["--prot=9981"])).toEqual({
+				host: "http://127.0.0.1",
+				port: 9981,
+			});
+			expect(mockConsoleError).toHaveBeenCalledWith(
+				expect.stringContaining('ignoring unrecognized argument "--prot=9981"'),
+			);
+
+			mockConsoleError.mockRestore();
+		});
+
+		it("should not warn about flags parseTransportConfig owns", () => {
+			const mockConsoleError = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {});
+
+			parseArgs(["--mcp-http-port=6280", "--mcp-http-host=127.0.0.1"]);
+
+			expect(mockConsoleError).not.toHaveBeenCalled();
+			mockConsoleError.mockRestore();
 		});
 	});
 
@@ -118,6 +181,27 @@ describe("CLI", () => {
 			if (config.type === "streamable-http") {
 				expect(config.host).toBe("localhost");
 			}
+		});
+
+		it("should exit with error for an --mcp-http-port carrying a second =", () => {
+			const mockExit = vi
+				.spyOn(process, "exit")
+				.mockImplementation(() => undefined as never);
+			const mockConsoleError = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {});
+
+			parseTransportConfig(["--mcp-http-port=6280=bad"]);
+
+			expect(mockConsoleError).toHaveBeenCalledWith(
+				expect.stringContaining(
+					'Invalid value for --mcp-http-port: "6280=bad"',
+				),
+			);
+			expect(mockExit).toHaveBeenCalledWith(1);
+
+			mockExit.mockRestore();
+			mockConsoleError.mockRestore();
 		});
 
 		it("should exit with error for non-numeric port value", () => {
@@ -203,7 +287,7 @@ describe("CLI", () => {
 
 		it("should set environment variables from parsed arguments", async () => {
 			await startServer({
-				argv: ["node", "cli.js", "--stdio", "--host=127.0.0.1", "--port=8080"],
+				argv: ["node", "cli.js", "--host=127.0.0.1", "--port=8080"],
 				nodeEnv: "cli",
 			});
 
@@ -213,7 +297,7 @@ describe("CLI", () => {
 
 		it("should call serveStdio with a server factory in stdio mode", async () => {
 			await startServer({
-				argv: ["node", "cli.js", "--stdio", "--host=127.0.0.1", "--port=8080"],
+				argv: ["node", "cli.js", "--host=127.0.0.1", "--port=8080"],
 				nodeEnv: "cli",
 			});
 
@@ -265,13 +349,7 @@ describe("CLI", () => {
 
 			await expect(
 				startServer({
-					argv: [
-						"node",
-						"cli.js",
-						"--stdio",
-						"--host=127.0.0.1",
-						"--port=8080",
-					],
+					argv: ["node", "cli.js", "--host=127.0.0.1", "--port=8080"],
 					nodeEnv: "cli",
 				}),
 			).rejects.toThrow("Failed to initialize server: Unexpected error");
@@ -284,13 +362,7 @@ describe("CLI", () => {
 
 			await expect(
 				startServer({
-					argv: [
-						"node",
-						"cli.js",
-						"--stdio",
-						"--host=127.0.0.1",
-						"--port=8080",
-					],
+					argv: ["node", "cli.js", "--host=127.0.0.1", "--port=8080"],
 					nodeEnv: "cli",
 				}),
 			).rejects.toThrow("Failed to initialize server: String error");

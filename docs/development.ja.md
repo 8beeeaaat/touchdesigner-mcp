@@ -24,7 +24,7 @@
 3. **利用可能なコマンド:**
 
    ```bash
-   npm run test      # ユニットテストと統合テスト
+   npm run test      # ユニット・統合・e2e・TD 側 Python テスト
    npm run dev       # デバッグ用の MCP Inspector
    ```
 
@@ -44,7 +44,6 @@
       "args": [
         "-y",
         "/path/to/your/touchdesigner-mcp/dist/cli.js",
-        "--stdio",
         "--port=9981"
       ]
     },
@@ -64,14 +63,13 @@
 ```json
 {
   "mcpServers": {
-    // claude mcp add -s user touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --stdio --port=9981
+    // claude mcp add -s user touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --port=9981
     "touchdesigner-stdio": {
       "type": "stdio",
       "command": "npx",
       "args": [
         "-y",
         "/path/to/your/touchdesigner-mcp/dist/cli.js",
-        "--stdio",
         "--port=9981"
       ],
       "env": {}
@@ -98,10 +96,10 @@
 ### Codex (`~/.codex/config.toml`)
 
 ```toml
-# codex mcp add touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --stdio --port=9981
+# codex mcp add touchdesigner-stdio -- npx -y /path/to/your/touchdesigner-mcp/dist/cli.js --port=9981
 [mcp_servers.touchdesigner-stdio]
 command = "npx"
-args = ["-y", "/path/to/your/touchdesigner-mcp/dist/cli.js", "--stdio", "--port=9981"]
+args = ["-y", "/path/to/your/touchdesigner-mcp/dist/cli.js", "--port=9981"]
 
 # codex mcp add touchdesigner-http --url http://localhost:6280/mcp
 [mcp_servers.touchdesigner-http]
@@ -137,6 +135,10 @@ args = ["mcp-remote", "http://localhost:6280/mcp"]
    npm test       # すべてのテストを実行
    npm run dev    # MCP Inspector を起動
    ```
+
+   `tests/python/` の TD 側 Python テストには Python 3.9+ と pytest が必要です。
+   インストール済みの `python3 -m pytest` があればそれを使い、無ければ `uv` が
+   インタプリタを用意します（ネットワークアクセスが必要です）。どちらも無い環境では通知を出してスキップし、CI では必ず実行します。
 
 詳細な開発コマンドは `CLAUDE.md` を参照してください。
 

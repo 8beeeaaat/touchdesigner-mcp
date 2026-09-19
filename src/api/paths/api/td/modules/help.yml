@@ -26,7 +26,8 @@ get:
                 description: Whether the operation was successful
               data:
                 nullable: true
-                $ref: ../../../../index.yml#/components/schemas/ModuleHelp
+                allOf:
+                  - $ref: ../../../../index.yml#/components/schemas/ModuleHelp
               error:
                 nullable: true
                 type: string

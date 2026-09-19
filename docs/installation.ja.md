@@ -28,7 +28,7 @@ TouchDesigner MCP を各種 AI エージェントおよびプラットフォー�
 ## 前提条件
 
 - **TouchDesigner**（最新版推奨）
-- NPM 利用の場合: **Node.js 20.x** 以上。 _Claude Desktopをご利用の場合は不要です_
+- NPM 利用の場合: **Node.js 22.18** 以上、24.x、または 26 以上（23.x・25.x などの奇数リリースは非対応）。 _Claude Desktopをご利用の場合は不要です_
 - Docker 利用の場合: **Docker** と **Docker Compose**
 
 ## TouchDesigner セットアップ（全方法共通）
@@ -94,7 +94,7 @@ Alt+T または Dialogs → Textport でログを確認可能です。
 
 #### 事前準備
 
-- Node.js 20.x 以上
+- Node.js 22.18 以上、24.x、または 26 以上（23.x・25.x などの奇数リリースは非対応）
 - TouchDesigner コンポーネント設置済み（[TouchDesigner セットアップ](#touchdesigner-セットアップ全方法共通)）
 
 準備ができたら、利用するクライアントに以下のいずれかの設定を登録します。
@@ -108,7 +108,7 @@ Alt+T または Dialogs → Textport でログを確認可能です。
   "mcpServers": {
     "touchdesigner": {
       "command": "npx",
-      "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
+      "args": ["-y", "touchdesigner-mcp-server@latest"]
     }
   }
 }
@@ -121,7 +121,7 @@ _任意:_ TouchDesigner を別ホスト/ポートで動かす場合は `--host` 
 コマンドで追加:
 
 ```bash
-claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest --stdio
+claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest
 ```
 
 または `~/.claude.json` を直接編集:
@@ -131,7 +131,7 @@ claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest -
   "mcpServers": {
     "touchdesigner": {
       "command": "npx",
-      "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
+      "args": ["-y", "touchdesigner-mcp-server@latest"]
     }
   }
 }
@@ -140,7 +140,7 @@ claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest -
 #### Codex の例
 
 ```bash
-codex mcp add touchdesigner -- npx -y touchdesigner-mcp-server@latest --stdio
+codex mcp add touchdesigner -- npx -y touchdesigner-mcp-server@latest
 ```
 
 または `~/.codex/config.toml` を直接編集:
@@ -148,13 +148,13 @@ codex mcp add touchdesigner -- npx -y touchdesigner-mcp-server@latest --stdio
 ```toml
 [mcp_servers.touchdesigner]
 command = "npx"
-args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
+args = ["-y", "touchdesigner-mcp-server@latest"]
 ```
 
 #### その他の MCP クライアント
 
 - **command**: `npx`
-- **args**: `["-y", "touchdesigner-mcp-server@latest", "--stdio"]`
+- **args**: `["-y", "touchdesigner-mcp-server@latest"]`
 - **オプション**: `--host=<url>`、`--port=<number>`
 
 ホスト/ポートのオプションは TouchDesigner の接続先を変更する場合のみ追加します。
@@ -265,7 +265,6 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
             "touchdesigner-mcp-server",
             "node",
             "dist/cli.js",
-            "--stdio",
             "--host=http://host.docker.internal"
           ]
         }

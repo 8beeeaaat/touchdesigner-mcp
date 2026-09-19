@@ -30,7 +30,7 @@ component is running.
 ## Prerequisites
 
 - **TouchDesigner** (latest version recommended)
-- For NPM-based installations: **Node.js** 20.x or later _(not required when you only use Claude Desktop with the MCP bundle)_
+- For NPM-based installations: **Node.js** 22.18+, 24.x or 26+, odd-numbered releases such as 23.x and 25.x are not supported _(not required when you only use Claude Desktop with the MCP bundle)_
 - For Docker-based installations: **Docker** and **Docker Compose**
 
 ## TouchDesigner Setup (Required for All Methods)
@@ -100,7 +100,7 @@ Download the following from the [latest release](https://github.com/8beeeaaat/to
 
 #### Installation Prerequisites
 
-- Node.js 20.x or later installed
+- Node.js 22.18+, 24.x or 26+ installed (odd-numbered releases such as 23.x and 25.x are not supported)
 - TouchDesigner components set up (see [TouchDesigner Setup](#touchdesigner-setup-required-for-all-methods))
 
 Once those prerequisites are in place, add the MCP server to your client using one of the following configurations.
@@ -114,7 +114,7 @@ Edit your `claude_desktop_config.json`:
   "mcpServers": {
     "touchdesigner": {
       "command": "npx",
-      "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
+      "args": ["-y", "touchdesigner-mcp-server@latest"]
     }
   }
 }
@@ -127,7 +127,7 @@ _Optional:_ Add `--host` / `--port` arguments if TouchDesigner is not running on
 Run the following command:
 
 ```bash
-claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest --stdio
+claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest
 ```
 
 Or manually edit `~/.claude.json`:
@@ -137,7 +137,7 @@ Or manually edit `~/.claude.json`:
   "mcpServers": {
     "touchdesigner": {
       "command": "npx",
-      "args": ["-y", "touchdesigner-mcp-server@latest", "--stdio"],
+      "args": ["-y", "touchdesigner-mcp-server@latest"]
     }
   }
 }
@@ -148,7 +148,7 @@ Or manually edit `~/.claude.json`:
 Run the following command:
 
 ```bash
-codex mcp add touchdesigner -- npx -y touchdesigner-mcp-server@latest --stdio
+codex mcp add touchdesigner -- npx -y touchdesigner-mcp-server@latest
 ```
 
 Or manually edit `~/.codex/config.toml`:
@@ -156,7 +156,7 @@ Or manually edit `~/.codex/config.toml`:
 ```toml
 [mcp_servers.touchdesigner]
 command = "npx"
-args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
+args = ["-y", "touchdesigner-mcp-server@latest"]
 ```
 
 #### For Other MCP Clients
@@ -164,7 +164,7 @@ args = ["-y", "touchdesigner-mcp-server@latest", "--stdio"]
 Any MCP-compatible client can use the NPM package via stdio transport:
 
 - **Command**: `npx`
-- **Args**: `["-y", "touchdesigner-mcp-server@latest", "--stdio"]`
+- **Args**: `["-y", "touchdesigner-mcp-server@latest"]`
 - **Optional Args**: `--host=<url>`, `--port=<number>`
 
 Add the optional flags only when TouchDesigner is not running on `http://127.0.0.1:9981`.
@@ -277,7 +277,6 @@ Choose a transport configuration:
            "touchdesigner-mcp-server",
            "node",
            "dist/cli.js",
-           "--stdio",
            "--host=http://host.docker.internal"
          ]
        }

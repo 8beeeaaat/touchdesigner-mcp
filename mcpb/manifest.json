@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.3",
   "name": "touchdesigner-mcp",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "display_name": "TouchDesigner MCP Server",
   "description": "AI assistant for TouchDesigner - control nodes, execute Python scripts, and create interactive visual content",
   "long_description": "# TouchDesigner MCP Server\n\nBridge between AI assistants and TouchDesigner for creative coding and visual programming. Features include:\n\n- **Node Operations**: Create, delete, and modify TouchDesigner nodes\n- **Python Execution**: Run Python scripts directly in TouchDesigner environment\n- **Parameter Control**: Update node parameters and connections\n- **Real-time Monitoring**: Get TouchDesigner server information and node details\n- **Creative Assistance**: AI-powered workflow optimization and debugging\n- **Code Execution Manifest**: Generate filesystem-style tool manifests (`describe_td_tools`) for code-mode agents\n\nPerfect for visual artists, creative coders, and interactive media developers who want to leverage AI for TouchDesigner projects.",
@@ -21,7 +21,6 @@
       "args": [
         "-y",
         "touchdesigner-mcp-server@latest",
-        "--stdio",
         "--port=${user_config.TD_WEB_SERVER_PORT}"
       ]
     }
@@ -65,7 +64,7 @@
     },
     {
       "name": "get_td_node_errors",
-      "description": "Check for errors on a specified node and its children"
+      "description": "Check errors and warnings on a node and its descendants. TouchDesigner reports missing files, dangling operator references and shader compile failures as warnings, so an absence of errors is not a healthy node"
     },
     {
       "name": "get_td_node_parameters",
@@ -118,7 +117,7 @@
       "linux"
     ],
     "runtimes": {
-      "node": ">=20.0.0"
+      "node": "^22.18.0 || ^24.0.0 || >=26.0.0"
     }
   },
   "keywords": [

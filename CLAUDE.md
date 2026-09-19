@@ -20,10 +20,12 @@ The project uses OpenAPI 3.0.0 schema-based code generation with a three-step pr
 - `npm run gen` - Run all generation steps in sequence
 
 ### Testing and Quality
-- `npm test` - Run all tests (e2e, integration and unit)
+- `npm test` - Run all tests (e2e, integration, unit, and TouchDesigner-side Python)
 - `npm run test:e2e` - E2E tests: builds `dist/` and drives the built `dist/cli.js` with the real MCP SDK v2 client over stdio and Streamable HTTP (both protocol eras; no TouchDesigner required)
 - `npm run test:integration` - Integration tests with TouchDesigner WebServer
 - `npm run test:unit` - Unit tests for MCP server components
+- `npm run test:python` - TouchDesigner-side Python tests against a stubbed `td` module (no TouchDesigner needed; requires Python 3.9+ with pytest, or `uv`)
+- `npm run ci:test:integration` - The integration suites that need no live TouchDesigner
 - `npm run coverage` - Generate test coverage report
 
 ### HTTP Transport Mode
@@ -151,7 +153,7 @@ The project uses OpenAPI 3.0.0 schema (`src/api/index.yml`) for maintaining cons
 - Both transports serve protocol revision 2026-07-28 with transparent 2025-era fallback (`serveStdio` / `createMcpHandler`)
 - Streamable HTTP is stateless: `TransportFactory` / `TransportRegistry` / `SessionManager` were deleted
 - Tools use `registerTool`, prompts use `registerPrompt` (Zod schemas); the deprecated MCP `logging` capability was dropped (stderr logging instead)
-- Node.js 20+ required
+- Node.js 22.18+, 24.x, or 26+ required (odd-numbered releases are not supported by the toolchain)
 
 **Previous Update**: Generation pipeline simplification
 

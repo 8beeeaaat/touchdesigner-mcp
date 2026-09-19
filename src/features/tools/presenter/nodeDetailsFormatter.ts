@@ -13,6 +13,7 @@ import {
 } from "./presenter.js";
 import type { FormatterOptions } from "./responseFormatter.js";
 import {
+	describeTruncation,
 	finalizeFormattedText,
 	limitArray,
 	mergeFormatterOptions,
@@ -77,6 +78,12 @@ export function formatNodeDetails(
 		context,
 		structured: context,
 		template: "nodeDetailsSummary",
+		truncation: describeTruncation(opts.limit, {
+			properties: {
+				returned: result.context.displayed,
+				total: result.context.total,
+			},
+		}),
 	});
 }
 
