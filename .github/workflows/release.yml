@@ -106,10 +106,16 @@ jobs:
             ```
             Then run `/touchdesigner:setup` to verify the connection, or `/touchdesigner:launch` to start TouchDesigner with the component already imported. You still need the TouchDesigner Components from the Downloads section above.
 
+            ### Quick Start (Codex)
+            Install the ready-to-use plugin from this repository's Codex marketplace; no manual npm build is needed:
+            ```
+            codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
+            codex plugin add touchdesigner@touchdesigner-openai
+            ```
+            Node.js is required; Codex starts the MCP server automatically. Import the TouchDesigner Components from the Downloads section above, then ask Codex to check the TouchDesigner connection or launch TouchDesigner. See the [OpenAI plugin guide](https://github.com/${{ github.repository }}/blob/main/docs/openai-plugin.md) for configuration and ChatGPT connections.
+
             ### Other AI Agents
             See the [Installation Guide](https://github.com/${{ github.repository }}/blob/main/docs/installation.md) _[日本語](https://github.com/${{ github.repository }}/blob/main/docs/installation.ja.md)_ for:
-            - Claude Code
-            - Codex
             - Docker deployment
             - Developer setup
 
