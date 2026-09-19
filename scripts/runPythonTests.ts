@@ -14,6 +14,7 @@
  */
 
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -45,6 +46,39 @@ function isSupported(python: string): boolean {
 	return result.status === 0;
 }
 
+/**
+ * The interpreter a console script runs under, from its shebang.
+ *
+ * Returns null when it cannot be read — an unreadable script is one we cannot
+ * vouch for, and guessing is what this exists to avoid.
+ */
+function interpreterBehind(command: string): string | null {
+	const which = run(process.platform === "win32" ? "where" : "which", [
+		command,
+	]);
+	if (which.status !== 0) {
+		return null;
+	}
+	const scriptPath = which.stdout.split("\n")[0]?.trim();
+	if (!scriptPath) {
+		return null;
+	}
+	try {
+		const firstLine = readFileSync(scriptPath, "utf-8").split("\n")[0] ?? "";
+		const match = firstLine.match(/^#!\s*(\S+)/);
+		if (!match) {
+			return null;
+		}
+		// `#!/usr/bin/env python3` names the interpreter in the next field.
+		const interpreter = match[1].endsWith("/env")
+			? (firstLine.trim().split(/\s+/)[1] ?? null)
+			: match[1];
+		return interpreter;
+	} catch {
+		return null;
+	}
+}
+
 function pickRunner(): Candidate | null {
 	// An installed runner is tried first. uv can provision one, but it reaches
 	// the network to do so, which turns a runnable suite into a failure on a
@@ -58,7 +92,12 @@ function pickRunner(): Candidate | null {
 		}
 	}
 
-	if (has("pytest")) {
+	// A bare `pytest` on PATH is a console script, and nothing so far has said
+	// which interpreter runs it. Selecting it blind can hand the suite to a
+	// version too old to import the modules under test, which then fails at
+	// collection instead of falling through to something that works.
+	const standalone = interpreterBehind("pytest");
+	if (standalone && isSupported(standalone)) {
 		return { args: [testDir], command: "pytest" };
 	}
 

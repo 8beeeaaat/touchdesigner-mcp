@@ -289,6 +289,34 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(text).not.toContain("do not match");
 	});
 
+	it("does not report zero warnings for a component that never looked", async () => {
+		// An older TouchDesigner component sends neither warningCount nor
+		// hasWarnings. Rendering that as 0 claims the stream was inspected.
+		const legacy = {
+			errorCount: 1,
+			errors: [
+				{
+					message: "Not enough sources specified",
+					nodeName: "displace1",
+					nodePath: "/project1/probe/displace1",
+					opType: "displaceTOP",
+				},
+			],
+			hasErrors: true,
+			nodeName: "probe",
+			nodePath: "/project1/probe",
+			opType: "baseCOMP",
+		};
+
+		const text = await runTool(legacy as never);
+
+		expect(text).not.toContain("Warnings: 0");
+		expect(text).toContain("Warnings were not inspected");
+		expect(text).toContain("Not enough sources specified");
+		// The absent count must not read as a disagreement either.
+		expect(text).not.toContain("do not match");
+	});
+
 	it("reports a node with neither errors nor warnings as clean", async () => {
 		const text = await runTool({
 			...warningOnly,

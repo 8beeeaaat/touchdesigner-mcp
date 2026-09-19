@@ -28,6 +28,13 @@ export function formatNodeErrors(
 	}
 
 	const entries = data.errors ?? [];
+	// A component predating warning collection sends neither field. Rendering
+	// that as zero would claim the warning stream was inspected and found
+	// empty, which is the confident-but-wrong report this tool exists to stop
+	// producing — and the reader has no way to tell it from a genuinely clean
+	// node.
+	const warningsKnown =
+		data.warningCount !== undefined || data.hasWarnings !== undefined;
 	const warningCount = data.warningCount ?? 0;
 	const skipped = data.skippedStreams ?? [];
 	const unresolved = data.unresolvedAnchors ?? [];
@@ -45,7 +52,7 @@ export function formatNodeErrors(
 	const listedErrors = entries.filter((e) => e.level !== "warning").length;
 	const countsDisagree =
 		listedErrors !== data.errorCount ||
-		entries.length - listedErrors !== warningCount;
+		(warningsKnown && entries.length - listedErrors !== warningCount);
 
 	const text =
 		entries.length === 0
@@ -83,7 +90,8 @@ export function formatNodeErrors(
 			skippedStreamsOmitted: 0,
 			truncated,
 			unresolvedAnchors: limitPaths(unresolved, opts.limit),
-			warningCount,
+			warningCount: warningsKnown ? warningCount : "not reported",
+			warningsUnknown: !warningsKnown,
 		},
 		structured: data,
 		template: "nodeErrorSummary",

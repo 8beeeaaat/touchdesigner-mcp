@@ -6,6 +6,13 @@
     boundaries these notices exist to keep apart: counts with no ceiling,
     counts that disagree, and counts that are exact while an attribution is
     not. The blank line sits inside each section so it appears only with it. }}
+{{#warningsUnknown}}
+> ⚠️ **Warnings were not inspected.** This TouchDesigner component predates
+> warning collection, so a missing file, a dangling operator reference or a
+> shader that will not compile would not appear here. Update the component to
+> see them.
+
+{{/warningsUnknown}}
 {{#incomplete}}
 > ⚠️ **Incomplete.** A message stream could not be read, so the counts above
 > have no ceiling. Do not read this as a clean node.
