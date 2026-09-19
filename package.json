@@ -22,7 +22,7 @@
 	},
 	"homepage": "https://github.com/8beeeaaat/touchdesigner-mcp#readme",
 	"engines": {
-		"node": ">=22.18.0"
+		"node": "^22.18.0 || ^24.0.0 || >=26.0.0"
 	},
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",

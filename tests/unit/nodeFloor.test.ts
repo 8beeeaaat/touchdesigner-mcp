@@ -53,11 +53,14 @@ describe("the declared Node floor", () => {
 		expect(manifest.compatibility?.runtimes?.node).toBe(declaredRange);
 	});
 
-	it("is a version every direct dependency can run on", () => {
-		// The check that would have caught vitest 5: our floor must satisfy
-		// each dependency's own engines, or we are telling people to use a
-		// Node that cannot install what we depend on.
-		const lowest = floor();
+	it("admits only versions every direct dependency can run on", () => {
+		// `semver.subset`, not "does the floor satisfy it". An earlier version
+		// of this test checked only `minVersion()`, declared `>=22.18.0` and
+		// passed — while that range still advertised Node 23.x and 25.x, which
+		// vitest 5 does not support. Checking the lower bound can only catch a
+		// floor that is too low; it is blind to everything the range lets in
+		// above it, which is where the odd-numbered majors were hiding.
+		const ours = declaredRange ?? "";
 		const direct = {
 			...(pkg.dependencies ?? {}),
 			...(pkg.devDependencies ?? {}),
@@ -67,7 +70,9 @@ describe("the declared Node floor", () => {
 		for (const name of Object.keys(direct)) {
 			let required: string | undefined;
 			try {
-				const dep = readJson(`node_modules/${name}/package.json`) as unknown as {
+				const dep = readJson(
+					`node_modules/${name}/package.json`,
+				) as unknown as {
 					engines?: { node?: string };
 				};
 				required = dep.engines?.node;
@@ -80,7 +85,7 @@ describe("the declared Node floor", () => {
 			if (!required || required === "*") {
 				continue;
 			}
-			if (!semver.satisfies(lowest, required, { includePrerelease: true })) {
+			if (!semver.subset(ours, required)) {
 				unsatisfied.push(`${name} needs ${required}`);
 			}
 		}

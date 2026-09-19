@@ -30,7 +30,7 @@ component is running.
 ## Prerequisites
 
 - **TouchDesigner** (latest version recommended)
-- For NPM-based installations: **Node.js** 22.18 or later _(not required when you only use Claude Desktop with the MCP bundle)_
+- For NPM-based installations: **Node.js** 22.18+, 24.x or 26+ _(not required when you only use Claude Desktop with the MCP bundle)_
 - For Docker-based installations: **Docker** and **Docker Compose**
 
 ## TouchDesigner Setup (Required for All Methods)
@@ -100,7 +100,7 @@ Download the following from the [latest release](https://github.com/8beeeaaat/to
 
 #### Installation Prerequisites
 
-- Node.js 22.18 or later installed
+- Node.js 22.18+, 24.x or 26+ installed (odd-numbered releases such as 23.x and 25.x are not supported)
 - TouchDesigner components set up (see [TouchDesigner Setup](#touchdesigner-setup-required-for-all-methods))
 
 Once those prerequisites are in place, add the MCP server to your client using one of the following configurations.
