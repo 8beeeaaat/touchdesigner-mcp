@@ -91,6 +91,54 @@ class TestStreamsThatCouldNotBeRead:
 		assert (report["errorCount"], report["warningCount"]) == (1, 0)
 
 
+class TestCollectionShape:
+	def test_errors_holds_only_errors(self, scene):
+		# A released MCP server renders every element of `errors` under an
+		# "N error(s) found" heading. Mixing warnings in would have it present
+		# them as errors to anyone who updated the component but not the
+		# server, which the compatibility gate lets through unchanged.
+		node = scene(PROBE, [f"{PROBE}/a", f"{PROBE}/b"])
+		node.with_streams(
+			errors=f"{PROBE}/a:  Error: Not enough sources specified ({PROBE}/a)",
+			warnings=f"{PROBE}/b:Warning: Failed to open file. ({PROBE}/b)",
+		)
+
+		report = report_for(node)
+
+		assert [e["level"] for e in report["errors"]] == ["error"]
+		assert [w["level"] for w in report["warnings"]] == ["warning"]
+		assert report["errors"][0]["nodePath"] == f"{PROBE}/a"
+		assert report["warnings"][0]["nodePath"] == f"{PROBE}/b"
+
+	def test_counts_match_their_own_collection(self, scene):
+		node = scene(PROBE, [f"{PROBE}/a", f"{PROBE}/b"])
+		node.with_streams(
+			errors=f"{PROBE}/a:  Error: Not enough sources specified ({PROBE}/a)",
+			warnings=f"{PROBE}/b:Warning: Failed to open file. ({PROBE}/b)",
+		)
+
+		report = report_for(node)
+
+		assert report["errorCount"] == len(report["errors"]) == 1
+		assert report["warningCount"] == len(report["warnings"]) == 1
+		assert report["hasErrors"] is True
+		assert report["hasWarnings"] is True
+
+	def test_a_warnings_only_node_leaves_errors_empty(self, scene):
+		node = scene(PROBE, [f"{PROBE}/b"])
+		node.with_streams(
+			errors="",
+			warnings=f"{PROBE}/b:Warning: Failed to open file. ({PROBE}/b)",
+		)
+
+		report = report_for(node)
+
+		assert report["errors"] == []
+		assert report["errorCount"] == 0
+		assert report["hasErrors"] is False
+		assert len(report["warnings"]) == 1
+
+
 class TestAnchorsThatCouldNotBeResolved:
 	def test_a_deleted_operator_is_reported_not_silently_merged(self, scene):
 		# Requiring an anchor to resolve is what stops a file path in someone's

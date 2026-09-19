@@ -27,7 +27,10 @@ export function formatNodeErrors(
 		return formatDetailed(data, opts.responseFormat);
 	}
 
-	const entries = data.errors ?? [];
+	// The payload keeps the two apart so an older client cannot render
+	// warnings under an "N error(s) found" heading. Merging them for display
+	// is this layer's job, and the sort below puts errors first.
+	const entries = [...(data.errors ?? []), ...(data.warnings ?? [])];
 	// A component predating warning collection sends neither field. Rendering
 	// that as zero would claim the warning stream was inspected and found
 	// empty, which is the confident-but-wrong report this tool exists to stop

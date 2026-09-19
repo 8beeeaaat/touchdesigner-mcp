@@ -61,7 +61,14 @@ describe("GET_TD_NODE_ERRORS", () => {
 	// deliberately broken operators.
 	const warningOnly: TdNodeErrorReport = {
 		errorCount: 0,
-		errors: [
+		errors: [],
+		hasErrors: false,
+		hasWarnings: true,
+		nodeName: "probe",
+		nodePath: "/project1/probe",
+		opType: "baseCOMP",
+		warningCount: 2,
+		warnings: [
 			{
 				level: "warning",
 				message: "Failed to open file.",
@@ -78,24 +85,11 @@ describe("GET_TD_NODE_ERRORS", () => {
 				opType: "selectTOP",
 			},
 		],
-		hasErrors: false,
-		hasWarnings: true,
-		nodeName: "probe",
-		nodePath: "/project1/probe",
-		opType: "baseCOMP",
-		warningCount: 2,
 	};
 
 	const mixed: TdNodeErrorReport = {
 		errorCount: 1,
 		errors: [
-			{
-				level: "warning",
-				message: "The GLSL Shader has compile errors",
-				nodeName: "bad_glsl",
-				nodePath: "/project1/probe/bad_glsl",
-				opType: "glslTOP",
-			},
 			{
 				level: "error",
 				message:
@@ -113,6 +107,15 @@ describe("GET_TD_NODE_ERRORS", () => {
 		nodePath: "/project1/probe",
 		opType: "baseCOMP",
 		warningCount: 1,
+		warnings: [
+			{
+				level: "warning",
+				message: "The GLSL Shader has compile errors",
+				nodeName: "bad_glsl",
+				nodePath: "/project1/probe/bad_glsl",
+				opType: "glslTOP",
+			},
+		],
 	};
 
 	it("surfaces warnings even when no errors were reported", async () => {
@@ -323,6 +326,7 @@ describe("GET_TD_NODE_ERRORS", () => {
 			errors: [],
 			hasWarnings: false,
 			warningCount: 0,
+			warnings: [],
 		});
 
 		expect(text).toContain("No errors or warnings reported");
@@ -340,6 +344,7 @@ describe("GET_TD_NODE_ERRORS", () => {
 				{ reason: "OP.warnings is not available", stream: "warnings" },
 			],
 			warningCount: 0,
+			warnings: [],
 		});
 
 		expect(text).toContain("Incomplete");
@@ -371,6 +376,7 @@ describe("GET_TD_NODE_ERRORS", () => {
 			hasErrors: true,
 			hasWarnings: true,
 			warningCount: 2,
+			warnings: [],
 		});
 
 		expect(text).toContain("Errors: 5");

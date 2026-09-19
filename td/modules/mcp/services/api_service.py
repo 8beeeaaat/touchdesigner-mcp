@@ -230,8 +230,13 @@ class TouchDesignerApiService(IApiService):
 				skipped.append({"stream": getter, "reason": str(e)})
 				continue
 
-		error_count = sum(1 for entry in entries if entry["level"] == "error")
+		errors = [e for e in entries if e["level"] == "error"]
+		warnings = [e for e in entries if e["level"] != "error"]
 
+		# `errors` stays error-only. A released MCP server reads it as errors
+		# and renders every element under an "N error(s) found" heading, so
+		# mixing warnings in would have it present them as errors to anyone who
+		# updated the component without updating the server.
 		# `incomplete` answers one question: did a stream go unread, leaving the
 		# counts with no ceiling? Declined anchors are reported separately
 		# because they are a different situation - the content is present, just
@@ -244,16 +249,17 @@ class TouchDesignerApiService(IApiService):
 				"nodePath": node.path,
 				"nodeName": node.name,
 				"opType": node.OPType,
-				"errorCount": error_count,
-				"warningCount": len(entries) - error_count,
-				"hasErrors": error_count > 0,
-				"hasWarnings": len(entries) > error_count,
+				"errorCount": len(errors),
+				"warningCount": len(warnings),
+				"hasErrors": bool(errors),
+				"hasWarnings": bool(warnings),
 				"incomplete": bool(skipped),
 				"skippedStreams": skipped,
 				"unresolvedAnchors": unresolved,
 				"lookupFailures": lookup_failures,
 				"fallbackAttributions": fallback_owners,
-				"errors": entries,
+				"errors": errors,
+				"warnings": warnings,
 			}
 		)
 

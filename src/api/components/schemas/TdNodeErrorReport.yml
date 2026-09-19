@@ -126,7 +126,17 @@ properties:
   errors:
     type: array
     description: >-
-      Collection of node messages, both errors and warnings. Use each entry's
-      level to tell them apart.
+      Entries with level "error". Kept error-only: a client written before
+      warnings were collected renders every element of this array under an
+      "N error(s) found" heading, so mixing them would have it present
+      warnings as errors.
+    items:
+      $ref: ./TdNodeError.yml
+  warnings:
+    type: array
+    description: >-
+      Entries with level "warning". Absent from a TouchDesigner component
+      older than this field, which is not the same as a node having none -
+      see hasWarnings.
     items:
       $ref: ./TdNodeError.yml
