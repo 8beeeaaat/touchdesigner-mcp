@@ -6,9 +6,10 @@ export default defineConfig({
 			target: "./td/modules/td_server/openapi_server/openapi/openapi.yaml",
 		},
 		output: {
-			baseUrl: {
-				getBaseUrlFromSpecification: true,
-			},
+			// The base URL is applied at request time in customInstance, from
+			// the environment. Baking it in here meant smuggling a JS template
+			// through the spec's server url and relying on the generator to
+			// emit it unescaped, which orval 8.22 stopped doing.
 			biome: false,
 			clean: true,
 			mock: false,
