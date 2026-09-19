@@ -427,3 +427,28 @@ class TestRobustness:
 		assert entries[0]["nodePath"] == PROBE
 		assert entries[0]["nodeName"] == "jev_probe"
 		assert entries[0]["opType"] == "baseCOMP"
+
+
+class TestLineEndings:
+	"""The one sample here that is not verbatim TD output.
+
+	It is ERRORS_RAW with its line endings rewritten to CRLF. Nobody has
+	confirmed on a Windows TouchDesigner that errors()/warnings() answers that
+	way, so the shape is inferred from the platform, not measured. Splitting
+	on the newline character alone leaves a trailing CR on every interior line
+	of a multi-line entry whenever a blob does arrive that way, and
+	splitlines() is the right call for a blob of unknown provenance either way.
+	"""
+
+	def test_crlf_blob_parses_like_the_lf_blob(self, scene):
+		node = scene(PROBE, BROKEN_OPS)
+
+		lf = _parse_op_messages(ERRORS_RAW, "error", node)
+		crlf = _parse_op_messages(ERRORS_RAW.replace("\n", "\r\n"), "error", node)
+
+		assert crlf == lf
+		assert all("\r" not in entry["message"] for entry in crlf)
+		# The CR only survives on a continuation line — a final strip() clears
+		# it from the last line of every entry — so a sample whose entries
+		# were all single-line would pass whatever the split does.
+		assert "\n" in crlf[0]["message"]

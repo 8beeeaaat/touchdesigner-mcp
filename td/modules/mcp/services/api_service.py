@@ -1157,7 +1157,10 @@ def _parse_op_messages(
 	groups = []
 	current = None
 
-	for line in raw.split("\n"):
+	# splitlines(), not split("\n"): the line endings a blob arrives with are
+	# not guaranteed, and a CRLF one would otherwise leave a trailing carriage
+	# return on every interior line of a multi-line entry.
+	for line in raw.splitlines():
 		if not line.strip():
 			continue
 
