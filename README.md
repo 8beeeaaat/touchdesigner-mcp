@@ -25,6 +25,8 @@ If you are updating, please refer to the procedure in the **[Latest Release](htt
 
 ### Claude Code users: the touchdesigner plugin
 
+Codex and ChatGPT: build the same skills with `npm run plugin:openai`. See the [OpenAI plugin guide](docs/openai-plugin.md) for installation and local TD connections.
+
 This repository doubles as a Claude Code plugin marketplace. The **touchdesigner** plugin installs this MCP server for you and makes its tools easy to drive:
 
 ```bash

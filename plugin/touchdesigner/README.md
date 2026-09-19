@@ -24,6 +24,10 @@ It deliberately does **not** ship TouchDesigner craft knowledge — shader diale
 - **TouchDesigner** with the `mcp_webserver_base.tox` component imported into your project (drag it into `/project1`). Get the `.tox` from the [touchdesigner-mcp repository](https://github.com/8beeeaaat/touchdesigner-mcp) — see its [installation guide](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/docs/installation.md).
 - TouchDesigner's WebServer DAT listening on the default `http://127.0.0.1:9981`
 
+## Codex and ChatGPT
+
+Build the shared skills as an OpenAI plugin with `npm run plugin:openai` from the repository root. See the [Codex / ChatGPT guide](../../docs/openai-plugin.md) for local installation and ChatGPT tunnel connections.
+
 ## Installation
 
 Install from your plugin marketplace, or test locally:
