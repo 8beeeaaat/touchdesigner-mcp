@@ -22,9 +22,16 @@ Diagnose TouchDesigner performance bottlenecks by measuring per-operator cook ti
    ```python
    results = []
    for child in op(root).findChildren():
-       ct = getattr(child, "cookTime", None)
-       if ct is not None:
-           results.append({"path": child.path, "name": child.name, "opType": getattr(child, "OPType", ""), "cookTime": ct})
+   	ct = getattr(child, "cookTime", None)
+   	if ct is not None:
+   		results.append(
+   			{
+   				"path": child.path,
+   				"name": child.name,
+   				"opType": getattr(child, "OPType", ""),
+   				"cookTime": ct,
+   			}
+   		)
    results.sort(key=lambda r: r["cookTime"], reverse=True)
    result = results[:20]
    ```

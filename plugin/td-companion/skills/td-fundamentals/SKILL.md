@@ -56,15 +56,17 @@ TouchDesigner is pull-based and lazy: an operator recomputes ("cooks") only when
 No dedicated "connect nodes" MCP tool exists. Wire operators together with `execute_python_script`, using the input/output connector arrays each operator exposes. Connector indices are operator-specific — an operator's second input is not always index `1` in the sense a caller assumes, and some operators expose more connectors than their UI suggests — so read the actual arrays (`print(len(op(path).inputConnectors))`) or `get_td_class_details` on the operator's class when wiring anything beyond a single-input chain:
 
 ```python
-op('/project1/noise1').outputConnectors[0].connect(op('/project1/level1').inputConnectors[0])
+op("/project1/noise1").outputConnectors[0].connect(
+	op("/project1/level1").inputConnectors[0]
+)
 # equivalently, from the consuming side:
-op('/project1/level1').inputConnectors[0].connect(op('/project1/noise1'))
+op("/project1/level1").inputConnectors[0].connect(op("/project1/noise1"))
 ```
 
 Drive a parameter continuously from a CHOP channel through **parameter export** rather than a wire — in the UI this is normally a drag-and-drop action. When scripting an export, confirm the exact Par/Channel API for the running TD version with `get_td_class_details` rather than assuming a call signature, since this is one of the areas most likely to differ subtly between versions. A one-time or formula-based link instead sets the parameter's **expression** string, which re-evaluates on every cook:
 
 ```python
-op('/project1/noise1').par.tx.expr = "op('lfo1')[0]"
+op("/project1/noise1").par.tx.expr = "op('lfo1')[0]"
 ```
 
 Export and expression are not interchangeable — decide which behavior is wanted (continuous binding vs. formula re-evaluated per cook) before choosing between them.

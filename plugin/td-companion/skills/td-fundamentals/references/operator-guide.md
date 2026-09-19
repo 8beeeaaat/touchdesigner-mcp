@@ -16,14 +16,14 @@ families = sorted(cls.__name__ for cls in td.OP.__subclasses__())
 
 counts = Counter()
 for name in dir(td):
-    cls = getattr(td, name, None)
-    if not (isinstance(cls, type) and issubclass(cls, td.OP)):
-        continue
-    family = getattr(cls, 'family', None)   # abstract intermediates drop out here
-    if family is not None:
-        counts[family] += 1
+	cls = getattr(td, name, None)
+	if not (isinstance(cls, type) and issubclass(cls, td.OP)):
+		continue
+	family = getattr(cls, "family", None)  # abstract intermediates drop out here
+	if family is not None:
+		counts[family] += 1
 
-result = json.dumps({'families': families, 'operators_per_family': dict(counts)})
+result = json.dumps({"families": families, "operators_per_family": dict(counts)})
 ```
 
 Send it through `execute_python_script`. Both the family roster and the per-family counts move between TouchDesigner builds — that is why this is a script rather than a table.
@@ -41,7 +41,9 @@ Converters follow a `<source>to<TARGET>` naming pattern. Discover the ones the i
 ```python
 import td, re
 
-pattern = re.compile(r'^[a-z]+to(' + '|'.join(cls.__name__ for cls in td.OP.__subclasses__()) + r')$')
+pattern = re.compile(
+	r"^[a-z]+to(" + "|".join(cls.__name__ for cls in td.OP.__subclasses__()) + r")$"
+)
 result = sorted(name for name in dir(td) if pattern.match(name))
 ```
 
@@ -57,20 +59,28 @@ Fetch parameter facts on demand, in this order:
 
    ```python
    import json, td
-   CLS = 'noiseTOP'          # operator type to inspect
-   parent = op('/project1') or op('/')
-   n = parent.create(getattr(td, CLS), 'zztmp_lookup')
+
+   CLS = "noiseTOP"  # operator type to inspect
+   parent = op("/project1") or op("/")
+   n = parent.create(getattr(td, CLS), "zztmp_lookup")
    try:
-       result = json.dumps([
-           {'name': p.name, 'label': p.label, 'style': p.style,
-            'default': str(p.default),
-            'page': p.page.name if p.page else '',
-            'menu': list(p.menuNames) if p.isMenu else None,
-            'help': p.help}
-           for p in n.pars()
-           if (p.page.name if p.page else '') not in ('Common',)])
+   	result = json.dumps(
+   		[
+   			{
+   				"name": p.name,
+   				"label": p.label,
+   				"style": p.style,
+   				"default": str(p.default),
+   				"page": p.page.name if p.page else "",
+   				"menu": list(p.menuNames) if p.isMenu else None,
+   				"help": p.help,
+   			}
+   			for p in n.pars()
+   			if (p.page.name if p.page else "") not in ("Common",)
+   		]
+   	)
    finally:
-       n.destroy()
+   	n.destroy()
    ```
 
    `help` is TouchDesigner's official rollover documentation for the parameter; `name` is the exact lowercase key to pass to `update_td_node_parameters`; `menu` lists the legal values for menu-style parameters. To inspect an existing node instead, run the same loop over `op(path).pars()` without creating anything. For dumping several operators in one pass, use the batch variant at `../scripts/dump_operator_pars.py`.

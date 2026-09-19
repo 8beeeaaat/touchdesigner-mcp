@@ -7,19 +7,21 @@ Use this reference when writing Python for `execute_python_script` or for script
 `op(path)` is the universal way to get a reference to an operator. Accept both absolute and relative paths:
 
 ```python
-op('/project1/geo1')          # absolute path
-op('geo1')                    # relative to the calling operator's parent, when used inside network-scoped scripting
-op('../sibling1')              # relative, one level up then into a sibling
+op("/project1/geo1")  # absolute path
+op(
+	"geo1"
+)  # relative to the calling operator's parent, when used inside network-scoped scripting
+op("../sibling1")  # relative, one level up then into a sibling
 ```
 
 `op()` returns `None` if no operator exists at the given path — check for `None` before chaining a `.par` or method access onto the result, since chaining directly onto `None` raises an `AttributeError` that is otherwise easy to misread as an unrelated failure:
 
 ```python
-target = op('/project1/geo1')
+target = op("/project1/geo1")
 if target is None:
-    print('ERROR: no operator at /project1/geo1')
+	print("ERROR: no operator at /project1/geo1")
 else:
-    target.par.tx = 5
+	target.par.tx = 5
 ```
 
 `me` refers to the operator whose script or expression is currently executing — the Text/Script/Execute DAT the code lives in, or the operator whose parameter expression is being evaluated. Use `me` instead of hardcoding an operator's own path, so the same script keeps working if the operator is renamed, moved, or copied elsewhere in the network.
@@ -37,21 +39,21 @@ Prefer absolute paths (`/project1/...`) when a script's identity depends on a fi
 Every operator exposes its parameters through `.par`, followed by the parameter's lowercase name:
 
 ```python
-op('/project1/geo1').par.tx          # returns a Par object, not a plain number
-op('/project1/geo1').par.tx.val      # the currently evaluated value
-op('/project1/geo1').par.tx = 5      # sets a constant value, overwriting any expression
+op("/project1/geo1").par.tx  # returns a Par object, not a plain number
+op("/project1/geo1").par.tx.val  # the currently evaluated value
+op("/project1/geo1").par.tx = 5  # sets a constant value, overwriting any expression
 ```
 
 A bare `op(...).par.tx` is a `Par` object, not the value itself — printing it or comparing it directly to a number will not behave as expected. Call `.eval()` to get the evaluated current value regardless of mode (`.val` reads/writes the raw value of the current mode; `.expr` the expression string):
 
 ```python
-tx_value = op('/project1/geo1').par.tx.val
+tx_value = op("/project1/geo1").par.tx.val
 ```
 
 Set a live formula instead of a constant by writing to `.expr`, a Python expression string re-evaluated on every cook:
 
 ```python
-op('/project1/geo1').par.tx.expr = "op('lfo1')[0]"
+op("/project1/geo1").par.tx.expr = "op('lfo1')[0]"
 ```
 
 Assigning a plain value to the parameter directly (`par.tx = 5`) clears any existing expression and switches the parameter back to a constant. These are mutually exclusive states for a given parameter — decide which one is wanted before writing to it, and confirm the parameter's current mode with `get_td_node_parameters` if the prior state is unknown, rather than assuming it was already a constant.
@@ -59,8 +61,8 @@ Assigning a plain value to the parameter directly (`par.tx = 5`) clears any exis
 Fetch several related parameters at once with `.pars(pattern)`, which returns a list of `Par` objects matching a name pattern rather than a single named lookup:
 
 ```python
-for p in op('/project1/geo1').pars('t?'):   # tx, ty, tz
-    print(p.name, p.eval())
+for p in op("/project1/geo1").pars("t?"):  # tx, ty, tz
+	print(p.name, p.eval())
 ```
 
 Confirm the exact pattern syntax `.pars()` accepts (glob-style vs. TD's own pattern-matching conventions) with `get_td_class_details` before relying on anything beyond a simple prefix/wildcard match, since pattern matching conventions are one of the areas that differ from plain Python string matching.
@@ -79,15 +81,16 @@ Do not treat these as interchangeable. An expression re-evaluates only when its 
 Every operator exposes its direct children as a list:
 
 ```python
-for child in op('/project1/container1').children:
-    print(child.path, child.type)
+for child in op("/project1/container1").children:
+	print(child.path, child.type)
 ```
 
 `.children` returns only direct children, one level deep. To search recursively or filter by type, use `findChildren`:
 
 ```python
 import td
-all_tops = op('/project1').findChildren(type=td.TOP)
+
+all_tops = op("/project1").findChildren(type=td.TOP)
 ```
 
 `findChildren()` with no depth argument searches the entire subtree. `depth` is an **exact-match filter, not a limit** — direct children are depth 1, their children depth 2, and so on, so `findChildren(depth=1)` returns only direct children and `findChildren(depth=0)` returns an empty list. Use `maxDepth` to cap how far down the search goes.
@@ -95,10 +98,16 @@ all_tops = op('/project1').findChildren(type=td.TOP)
 Confirm this on the project at hand rather than trusting it, because getting it wrong returns a plausible-looking result with no error — an empty or truncated list reads exactly like "nothing matched":
 
 ```python
-root = op('/project1') or op('/')
-result = {k: len(root.findChildren(**kw)) for k, kw in {
-    'all': {}, 'depth=0': {'depth': 0}, 'depth=1': {'depth': 1}, 'maxDepth=1': {'maxDepth': 1},
-}.items()}
+root = op("/project1") or op("/")
+result = {
+	k: len(root.findChildren(**kw))
+	for k, kw in {
+		"all": {},
+		"depth=0": {"depth": 0},
+		"depth=1": {"depth": 1},
+		"maxDepth=1": {"maxDepth": 1},
+	}.items()
+}
 ```
 
 Expect `depth=0` to come back empty and `depth=1` to equal `maxDepth=1`; if they don't, the semantics have changed and every traversal built on them needs rechecking. The full set of accepted filter keyword arguments (by name, by path pattern, by tag) is worth confirming with `get_td_class_details` rather than assumed from a single remembered example.
@@ -111,7 +120,8 @@ Raw Python scripting also supports operator creation via a COMP's `.create()` me
 
 ```python
 import td
-new_op = op('/project1').create(td.baseCOMP, 'my_container')
+
+new_op = op("/project1").create(td.baseCOMP, "my_container")
 ```
 
 This creates a `baseCOMP` named `my_container` under `/project1`, referencing the class via the `td` module rather than passing a bare string. Confirm the full `.create()` signature — additional positional or keyword arguments beyond the class and name, and its exact return value and error behavior on a name collision — with `get_td_class_details` before relying on anything beyond this minimal two-argument form, rather than assuming parity with `create_td_node`'s richer parameter set.
