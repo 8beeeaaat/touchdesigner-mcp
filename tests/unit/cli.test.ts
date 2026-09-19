@@ -89,7 +89,17 @@ describe("CLI", () => {
 		});
 
 		it("should exit with error for an invalid --port value", () => {
-			for (const value of ["invalid", "0", "70000"]) {
+			// The trailing three are what `Number.parseInt` used to swallow: it
+			// stops at the first character it cannot read, so each one arrived
+			// as a plausible port (9981, 1, 1) that nobody asked for.
+			for (const value of [
+				"invalid",
+				"0",
+				"70000",
+				"9981junk",
+				"1.5",
+				"1e3",
+			]) {
 				const mockExit = vi
 					.spyOn(process, "exit")
 					.mockImplementation(() => undefined as never);
@@ -162,6 +172,27 @@ describe("CLI", () => {
 			if (config.type === "streamable-http") {
 				expect(config.host).toBe("localhost");
 			}
+		});
+
+		it("should exit with error for a partially numeric --mcp-http-port", () => {
+			const mockExit = vi
+				.spyOn(process, "exit")
+				.mockImplementation(() => undefined as never);
+			const mockConsoleError = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {});
+
+			parseTransportConfig(["--mcp-http-port=6280junk"]);
+
+			expect(mockConsoleError).toHaveBeenCalledWith(
+				expect.stringContaining(
+					'Invalid value for --mcp-http-port: "6280junk"',
+				),
+			);
+			expect(mockExit).toHaveBeenCalledWith(1);
+
+			mockExit.mockRestore();
+			mockConsoleError.mockRestore();
 		});
 
 		it("should exit with error for non-numeric port value", () => {

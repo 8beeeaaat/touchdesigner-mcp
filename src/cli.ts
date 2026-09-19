@@ -26,6 +26,27 @@ const RECOGNIZED_FLAGS = [
 ];
 
 /**
+ * Read a port from a `--flag=value` argument, or exit.
+ *
+ * `Number.parseInt` stops at the first character it cannot read, so it accepts
+ * a numeric prefix and discards the rest: `9981junk` parses as 9981, and both
+ * `1.5` and `1e3` parse as 1. Those all passed the range check and connected
+ * somewhere the user never asked for, which is the opposite of the fail-fast
+ * this validation exists to provide. Demand the whole value be decimal digits
+ * before converting it.
+ */
+function parsePort(flag: string, raw: string): number {
+	const port = /^\d+$/.test(raw) ? Number.parseInt(raw, 10) : Number.NaN;
+	if (Number.isNaN(port) || port < 1 || port > 65535) {
+		console.error(
+			`Invalid value for ${flag}: "${raw}". Please specify a valid port number (1-65535).`,
+		);
+		process.exit(1);
+	}
+	return port;
+}
+
+/**
  * Parse command line arguments for TouchDesigner connection
  */
 export function parseArgs(args?: string[]) {
@@ -40,15 +61,7 @@ export function parseArgs(args?: string[]) {
 		if (arg.startsWith("--host=")) {
 			parsed.host = arg.split("=")[1];
 		} else if (arg.startsWith("--port=")) {
-			const portStr = arg.split("=")[1];
-			const port = Number.parseInt(portStr, 10);
-			if (Number.isNaN(port) || port < 1 || port > 65535) {
-				console.error(
-					`Invalid value for --port: "${portStr}". Please specify a valid port number (1-65535).`,
-				);
-				process.exit(1);
-			}
-			parsed.port = port;
+			parsed.port = parsePort("--port", arg.split("=")[1]);
 		} else if (
 			arg.startsWith("--") &&
 			!RECOGNIZED_FLAGS.some((flag) => arg.startsWith(flag))
@@ -90,14 +103,7 @@ export function parseTransportConfig(args?: string[]): TransportConfig {
 	);
 
 	if (httpPortArg) {
-		const portStr = httpPortArg.split("=")[1];
-		const port = Number.parseInt(portStr, 10);
-		if (Number.isNaN(port) || port < 1 || port > 65535) {
-			console.error(
-				`Invalid value for --mcp-http-port: "${portStr}". Please specify a valid port number (1-65535).`,
-			);
-			process.exit(1);
-		}
+		const port = parsePort("--mcp-http-port", httpPortArg.split("=")[1]);
 		const hostArg = argsToProcess.find((arg) =>
 			arg.startsWith("--mcp-http-host="),
 		);
