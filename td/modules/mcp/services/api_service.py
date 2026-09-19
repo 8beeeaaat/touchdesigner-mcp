@@ -838,17 +838,23 @@ def _looks_like_op_path(path: str) -> bool:
 def _resolve_op(path: str):
 	"""Look the path up, returning (op_or_None, outcome)
 
-	`path` comes out of message text, and td.op() does glob matching, so a
-	stray bracket can raise rather than return None. A raise means the lookup
+	`path` comes out of message text, and td.op() takes a glob, so a stray
+	bracket can raise rather than return None. A raise means the lookup
 	failed, not that the operator is absent - callers must not read it as
 	evidence against the path.
+
+	Only an exact match counts. td.op("/project1/probe/*") happily returns
+	whichever descendant it matched first, so a wildcard in message text would
+	otherwise resolve and get an entry attributed to an operator that never
+	failed. Spelling rules already keep metacharacters out; this keeps the
+	property true even if those rules are loosened later.
 	"""
 
 	try:
 		owner = td.op(path)
 	except Exception:
 		return None, _LOOKUP_FAILED
-	if owner is not None and owner.valid:
+	if owner is not None and owner.valid and owner.path == path:
 		return owner, _FOUND
 	return None, _MISSING
 

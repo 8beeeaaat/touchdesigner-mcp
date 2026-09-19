@@ -195,6 +195,24 @@ class TestAttribution:
 		assert len(entries) == 1
 		assert declined == []
 
+	def test_a_wildcard_never_resolves_to_whatever_it_matched(self, scene):
+		# td.op("/project1/probe/*") returns whichever descendant it matched,
+		# so a wildcard in message text must not be accepted as that operator.
+		node = scene(PROBE, [f"{PROBE}/cb", f"{PROBE}/alpha"])
+		declined = []
+
+		entries = _parse_op_messages(
+			f"{PROBE}/cb:  Error: ValueError raised\n"
+			f"{PROBE}/*:  Error: matched something",
+			"error",
+			node,
+			declined,
+		)
+
+		assert len(entries) == 1
+		assert entries[0]["nodePath"] == f"{PROBE}/cb"
+		assert declined == []
+
 	def test_a_declined_trailing_path_is_reported_too(self, scene):
 		# Falling back to the queried node is a misattribution whichever code
 		# path got there, so the anchor branch is not the only one that says so.

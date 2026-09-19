@@ -6,6 +6,7 @@ whole harness, in the same spirit as ``mcp/services/node_layout.py``, which
 avoids ``import td`` outright so its geometry can be verified here.
 """
 
+import fnmatch
 import sys
 import types
 from pathlib import Path
@@ -59,7 +60,12 @@ class FakeTd:
 		# td.op() takes a glob, so malformed text reaching it can raise.
 		if self.op_raises or path in self.op_raises_for:
 			raise RuntimeError(f"bad pattern: {path}")
-		return self.ops.get(path)
+		if path in self.ops:
+			return self.ops[path]
+		# A pattern returns whichever operator it matched, as TouchDesigner
+		# does — the behaviour the exact-match check exists to reject.
+		matches = fnmatch.filter(sorted(self.ops), path)
+		return self.ops[matches[0]] if matches else None
 
 
 _fake_td = FakeTd()
