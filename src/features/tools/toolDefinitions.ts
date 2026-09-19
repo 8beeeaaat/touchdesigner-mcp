@@ -265,10 +265,17 @@ const report = await getTdNodeErrors({
   nodePath: '/project1/text1',
 });
 
-// hasErrors covers level 'error' only. Warnings are the more common
-// failure in TouchDesigner, so branch on the entries themselves.
-for (const entry of report.errors ?? []) {
+// Warnings are the more common failure in TouchDesigner — a missing file,
+// a dangling operator reference, a shader that will not compile — and they
+// live in their own array, so hasErrors alone never sees them.
+for (const entry of [...(report.errors ?? []), ...(report.warnings ?? [])]) {
   console.log(\`[\${entry.level ?? 'error'}] \${entry.nodePath}: \${entry.message}\`);
+}
+
+if (report.hasWarnings === undefined) {
+  // An older TouchDesigner component never inspected the warning stream,
+  // which is not the same as there being none.
+  console.warn('This component does not report warnings; update it to see them.');
 }
 
 if (report.incomplete) {
@@ -277,7 +284,7 @@ if (report.incomplete) {
 }`,
 		name: TOOL_NAMES.GET_TD_NODE_ERRORS,
 		returns:
-			"Report of offending nodes with each entry's level (error or warning), message and counts. Carries incomplete/skippedStreams when a stream could not be read.",
+			"Report with `errors` and `warnings` as separate collections, each entry carrying its level, message and owning node, plus counts. Carries incomplete/skippedStreams when a stream could not be read, and unresolvedAnchors/fallbackAttributions/lookupFailures when an attribution is uncertain.",
 		run: async ({ params, tdClient }) => {
 			const { detailLevel, limit, responseFormat, ...queryParams } = params;
 			const result = await tdClient.getNodeErrors(queryParams);

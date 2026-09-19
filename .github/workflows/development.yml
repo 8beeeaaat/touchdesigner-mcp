@@ -38,7 +38,7 @@ jobs:
       # touchDesignerClientAndWebServer needs a live TouchDesigner, so the
       # mock-backed integration suites are named explicitly rather than
       # running all of tests/integration here.
-      - run: npm run test:integration:ci
+      - run: npm run ci:test:integration
       - run: npm run test:python
       # The TD-side modules must import on the floor pyproject declares, not
       # only on the newest interpreter. Older TouchDesigner builds ship it.

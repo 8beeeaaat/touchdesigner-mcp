@@ -20,21 +20,25 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const testDir = join(rootDir, "tests", "python");
-const MIN_PYTHON = [3, 9] as const;
+const MIN_PYTHON = [3, 9];
 const isCI = Boolean(process.env.CI);
 
-type Candidate = { command: string; args: string[] };
-
-function run(command: string, args: string[]) {
+/**
+ * @param {string} command
+ * @param {string[]} args
+ */
+function run(command, args) {
 	return spawnSync(command, args, { cwd: rootDir, encoding: "utf-8" });
 }
 
-function has(command: string): boolean {
+/** @param {string} command */
+function has(command) {
 	return run(command, ["--version"]).status === 0;
 }
 
 /** Whether this interpreter is new enough to import the modules under test. */
-function isSupported(python: string): boolean {
+/** @param {string} python */
+function isSupported(python) {
 	// Compared field by field. `sys.version_info` is a tuple, and Python
 	// refuses to order a tuple against a list — which a JSON-serialised array
 	// would be, making every interpreter look unsupported.
@@ -52,7 +56,11 @@ function isSupported(python: string): boolean {
  * Returns null when it cannot be read — an unreadable script is one we cannot
  * vouch for, and guessing is what this exists to avoid.
  */
-function interpreterBehind(command: string): string | null {
+/**
+ * @param {string} command
+ * @returns {string | null}
+ */
+function interpreterBehind(command) {
 	const which = run(process.platform === "win32" ? "where" : "which", [
 		command,
 	]);
@@ -79,7 +87,8 @@ function interpreterBehind(command: string): string | null {
 	}
 }
 
-function pickRunner(): Candidate | null {
+/** @returns {{command: string, args: string[]} | null} */
+function pickRunner() {
 	// An installed runner is tried first. uv can provision one, but it reaches
 	// the network to do so, which turns a runnable suite into a failure on a
 	// machine that is offline or behind a proxy.
