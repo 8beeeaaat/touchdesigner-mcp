@@ -896,7 +896,27 @@ def _resolve_op(path: str):
 	return None, _MISSING
 
 
-def _classify_anchor(path: str, queried_node):
+def _owner_reports_on(owner, level: str) -> bool:
+	"""Whether this operator has a message of its own on the stream being read
+
+	The evidence that separates a real anchor from a path quoted inside
+	somebody's traceback. Both spell alike and both resolve, but TouchDesigner
+	only writes a prefixed line for an operator that actually has something to
+	say, and an operator that is fine reports an empty string.
+	"""
+
+	getter = getattr(owner, "errors" if level == "error" else "warnings", None)
+	if not callable(getter):
+		# Nothing to check against, so this evidence is simply unavailable and
+		# the caller's other checks stand on their own.
+		return True
+	try:
+		return bool((getter(recurse=False) or "").strip())
+	except Exception:
+		return True
+
+
+def _classify_anchor(path: str, queried_node, level: str):
 	"""Decide what an anchor-shaped path is, resolving it at most once
 
 	Returns (accepted, owner, note), where note is either None or the
@@ -914,7 +934,12 @@ def _classify_anchor(path: str, queried_node):
 	- spelled like an operator, so "/project1/probe/data.csv" raised from
 	  somebody's callback is ruled out before TouchDesigner is asked;
 	- known to TouchDesigner, or unknown only because the lookup itself
-	  failed.
+	  failed;
+	- actually carrying a message of its own on the stream being read. A
+	  traceback that quotes a healthy sibling, "/project1/probe/shared:
+	  Error: ...", clears every test above it - the path is in the subtree,
+	  spelled like an operator, and resolves - so resolution alone cannot tell
+	  a real anchor from quoted text.
 
 	A path that spells like an operator and resolves to nothing is most likely
 	one deleted since its message was recorded. Declining it folds its lines
@@ -944,10 +969,15 @@ def _classify_anchor(path: str, queried_node):
 		return False, None, (path, _NOTE_UNRESOLVED)
 	if outcome == _LOOKUP_FAILED:
 		return True, None, (path, _NOTE_LOOKUP_FAILED)
+	if not _owner_reports_on(owner, level):
+		# It is a real operator and it is fine, so the line is quoting it.
+		# Declining keeps those lines with the entry they belong to, and
+		# nothing is under-counted, so there is nothing to report.
+		return False, None, None
 	return True, owner, None
 
 
-def _split_anchor(line: str, queried_node):
+def _split_anchor(line: str, queried_node, level: str):
 	"""Classify a line as the start of a new message, or not
 
 	Returns (anchor, note). `anchor` is (path, message, owner) when the line
@@ -960,7 +990,7 @@ def _split_anchor(line: str, queried_node):
 		return None, None
 
 	path = match.group(1)
-	accepted, owner, note = _classify_anchor(path, queried_node)
+	accepted, owner, note = _classify_anchor(path, queried_node, level)
 	if not accepted:
 		return None, note
 	# The anchor word is deliberately not returned. Which stream produced the
@@ -969,7 +999,7 @@ def _split_anchor(line: str, queried_node):
 	return (path, match.group(3), owner), note
 
 
-def _owner_from_trailing_path(message: str, queried_node):
+def _owner_from_trailing_path(message: str, queried_node, level: str):
 	"""Recover the owner from a trailing "(<path>)"
 
 	Returns (path_or_None, owner_or_None, note). Output captured with
@@ -985,7 +1015,7 @@ def _owner_from_trailing_path(message: str, queried_node):
 		return None, None, None
 
 	path = match.group(1)
-	accepted, owner, note = _classify_anchor(path, queried_node)
+	accepted, owner, note = _classify_anchor(path, queried_node, level)
 	if accepted:
 		return path, owner, note
 
@@ -1049,7 +1079,7 @@ def _parse_op_messages(
 		if not line.strip():
 			continue
 
-		anchor, declined = _split_anchor(line, queried_node)
+		anchor, declined = _split_anchor(line, queried_node, level)
 		note(declined)
 
 		if anchor:
@@ -1090,7 +1120,7 @@ def _parse_op_messages(
 
 		if not group["anchored"]:
 			recovered, recovered_owner, declined = _owner_from_trailing_path(
-				message, queried_node
+				message, queried_node, level
 			)
 			note(declined)
 			if recovered:

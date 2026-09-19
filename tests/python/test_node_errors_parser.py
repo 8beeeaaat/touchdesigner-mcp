@@ -119,6 +119,29 @@ class TestAttribution:
 		assert entries[0]["nodePath"] == f"{PROBE}/script1"
 		assert "downstream note" in entries[0]["message"]
 
+	def test_a_quoted_healthy_sibling_is_not_an_anchor(self, scene):
+		# The hardest case: the quoted path is in the subtree, spelled like an
+		# operator, and resolves to a real one. Every test but the last clears
+		# it. What separates them is that TouchDesigner writes a prefixed line
+		# only for an operator that has something to say, and `shared` is fine.
+		node = scene(PROBE, [f"{PROBE}/cb"], healthy=[f"{PROBE}/shared"])
+		declined = []
+
+		entries = _parse_op_messages(
+			f"{PROBE}/cb:  Error: ValueError raised\n"
+			f"{PROBE}/shared: Error: referenced while handling\n"
+			f'  File "{PROBE}/cb", line 3',
+			"error",
+			node,
+			declined,
+		)
+
+		assert len(entries) == 1
+		assert entries[0]["nodePath"] == f"{PROBE}/cb"
+		assert "referenced while handling" in entries[0]["message"]
+		# Positive evidence that it is quoted text, so nothing is ambiguous.
+		assert declined == []
+
 	def test_quoted_file_inside_the_subtree_is_not_an_anchor(self, scene):
 		# Same shape, but the quoted path sits under the queried node. Being
 		# in the subtree is not enough; it has to be a real operator.

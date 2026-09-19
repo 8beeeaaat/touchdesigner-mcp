@@ -29,6 +29,29 @@ class FakeOp:
 		self.name = path.rsplit("/", 1)[-1] or "root"
 		self.OPType = op_type
 		self.valid = True
+		# TouchDesigner only writes a prefixed line for an operator that has
+		# something to say, so an operator a test puts in a scene has a
+		# message of its own by default. `healthy=` registers one that does
+		# not, which is what a traceback quoting a working sibling looks like.
+		self.errors = lambda recurse=True: "  Error: something"
+		self.warnings = lambda recurse=True: "Warning: something"
+
+	def without_streams(self):
+		"""Drop both message streams, as an older TouchDesigner build has."""
+
+		del self.errors
+		del self.warnings
+		return self
+
+	def reports(self, errors="", warnings=""):
+		"""Give this operator messages of its own, as TouchDesigner would.
+
+		An operator that is fine returns an empty string, which is the
+		evidence that separates a real anchor from a path quoted in somebody
+		else's traceback.
+		"""
+
+		return self.with_streams(errors=errors, warnings=warnings)
 
 	def with_streams(self, errors=None, warnings=None):
 		"""Attach message streams. A string is returned; an Exception raises."""
@@ -82,13 +105,20 @@ sys.modules.setdefault("td", _td_module)
 def scene():
 	"""Build a fake project and return the node a report would be queried on."""
 
-	def make(queried: str = "/project1/probe", ops=(), op_type: str = "baseCOMP"):
+	def make(
+		queried: str = "/project1/probe",
+		ops=(),
+		op_type: str = "baseCOMP",
+		healthy=(),
+	):
 		_fake_td.ops.clear()
 		_fake_td.op_raises = False
 		_fake_td.op_raises_for = set()
 		_fake_td.answer_with = {}
 		for path in ops:
 			_fake_td.ops[path] = FakeOp(path)
+		for path in healthy:
+			_fake_td.ops[path] = FakeOp(path).with_streams(errors="", warnings="")
 		node = FakeOp(queried, op_type)
 		_fake_td.ops[queried] = node
 		return node

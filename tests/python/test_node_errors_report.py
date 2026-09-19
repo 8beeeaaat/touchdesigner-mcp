@@ -21,7 +21,7 @@ class TestStreamsThatCouldNotBeRead:
 	def test_a_missing_stream_is_recorded_not_assumed_empty(self, scene):
 		# An operator with neither errors() nor warnings() stands in for a
 		# TouchDesigner build that does not expose them.
-		node = scene(PROBE, [])
+		node = scene(PROBE, []).without_streams()
 
 		report = report_for(node)
 
