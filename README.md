@@ -25,8 +25,6 @@ If you are updating, please refer to the procedure in the **[Latest Release](htt
 
 ### Claude Code users: the touchdesigner plugin
 
-Codex: register this repository with `codex plugin marketplace add 8beeeaaat/touchdesigner-mcp`, then install `touchdesigner@touchdesigner-openai`. No manual npm build is needed. See the [OpenAI plugin guide](docs/openai-plugin.md) for the PR preview, prerequisites, and ChatGPT connections.
-
 This repository doubles as a Claude Code plugin marketplace. The **touchdesigner** plugin installs this MCP server for you and makes its tools easy to drive:
 
 ```bash
@@ -44,6 +42,19 @@ Then run `/touchdesigner:setup` to verify the connection, or `/touchdesigner:lau
 | Automation | A hook that reminds Claude to verify every network mutation instead of assuming it worked |
 
 Configuration and troubleshooting for the plugin itself live in [plugin/touchdesigner/README.md](plugin/touchdesigner/README.md).
+
+### Codex users: the touchdesigner plugin
+
+Install the **touchdesigner** plugin from this repository's Codex marketplace. No manual npm build is needed:
+
+```bash
+codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
+codex plugin add touchdesigner@touchdesigner-openai
+```
+
+Then ask “Use TouchDesigner setup to check my connection” or “Launch TouchDesigner.” The plugin includes the MCP server and skills for setup, launch, debugging, snapshots, project overviews, and performance measurement.
+
+See the [OpenAI plugin guide](docs/openai-plugin.md) for prerequisites, the PR preview, configuration, and ChatGPT connections.
 
 ## MCP Server Features
 

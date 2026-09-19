@@ -25,8 +25,6 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 
 ### Claude Code ユーザー向け: touchdesigner プラグイン
 
-Codex では `codex plugin marketplace add 8beeeaaat/touchdesigner-mcp` で登録し、`codex plugin add touchdesigner@touchdesigner-openai` で導入できます。利用者による npm ビルドは不要です。PR 版の試用、必要環境、ChatGPT 接続は [OpenAI プラグインガイド](docs/openai-plugin.md)を参照してください。
-
 このリポジトリは Claude Code のプラグインマーケットプレイスも兼ねています。**touchdesigner** プラグインは、この MCP サーバーの導入を代行し、そのツール群を扱いやすくします。
 
 ```bash
@@ -44,6 +42,19 @@ claude plugin install touchdesigner@touchdesigner-mcp
 | 自動化 | ネットワークを変更するたびに「確認したつもり」を防ぎ、検証を促すフック |
 
 プラグイン自体の設定とトラブルシューティングは [plugin/touchdesigner/README.md](plugin/touchdesigner/README.md) を参照してください。
+
+### Codex ユーザー向け: touchdesigner プラグイン
+
+このリポジトリの Codex マーケットプレイスから **touchdesigner** プラグインを導入できます。利用者による npm ビルドは不要です。
+
+```bash
+codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
+codex plugin add touchdesigner@touchdesigner-openai
+```
+
+導入後、「TouchDesigner の接続を確認して」や「TouchDesigner を起動して」と依頼してください。MCP サーバーと、接続確認・起動・デバッグ・画像取得・プロジェクト概要・パフォーマンス計測のスキルが利用できます。
+
+必要環境、PR 版の試用、設定、ChatGPT 接続は [OpenAI プラグインガイド](docs/openai-plugin.md)を参照してください。
 
 ## MCPサーバーの機能
 
