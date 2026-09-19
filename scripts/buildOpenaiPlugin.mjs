@@ -21,6 +21,14 @@ export async function buildOpenaiPlugin({
 	) {
 		throw new Error("host must be an HTTP(S) URL without credentials");
 	}
+	// The runtime appends :port. Reject explicit ports (including :80/:443,
+	// which URL.port normalizes away) and anything beyond an optional root slash.
+	if (!/^https?:\/\/(?:\[[^\]]+\]|[^:/?#]+)\/?$/i.test(host)) {
+		throw new Error(
+			"host must contain only the scheme and hostname; use --port separately (no path, query, or fragment)",
+		);
+	}
+	host = url.origin;
 	if (!/^\d+$/.test(String(port)) || Number(port) < 1 || Number(port) > 65535) {
 		throw new Error("port must be an integer from 1 to 65535");
 	}

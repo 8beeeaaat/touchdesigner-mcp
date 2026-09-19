@@ -30,6 +30,8 @@ codex plugin add touchdesigner@touchdesigner-openai
 
 Host and port configure the TD WebServer, not an MCP HTTP listener. These are resolved at build time; OpenAI does not expand Claude `user_config` placeholders. Avoid installing a second TouchDesigner MCP connection alongside the bundled one.
 
+`--host` accepts an HTTP(S) scheme and hostname, including bracketed IPv6 such as `http://[::1]`. A trailing `/` is removed. Specify the port only with `--port`; host URLs containing a port, path, query, or fragment are rejected.
+
 ## ChatGPT: connect the local server
 
 ChatGPT needs a reachable MCP connection. A local package does not make a cloud conversation able to execute `npx` on your machine. Use [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels) for private access:

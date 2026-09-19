@@ -38,6 +38,48 @@ async function json(file: string) {
 }
 
 describe("OpenAI plugin packaging", () => {
+	it.each([
+		["http://127.0.0.1/", "http://127.0.0.1"],
+		["https://TD.EXAMPLE/", "https://td.example"],
+		["http://[::1]/", "http://[::1]"],
+	])(
+		"normalizes host %s before the runtime appends its port",
+		async (host, expected) => {
+			const out = await directory();
+			await build(out, `--host=${host}`, "--port=9982");
+			const config = await json(
+				path.join(out, "plugins/touchdesigner/.mcp.json"),
+			);
+			const args: string[] = config.mcpServers.touchdesigner.args;
+			const generatedHost = args
+				.find((arg) => arg.startsWith("--host="))
+				?.slice(7);
+			const generatedPort = args
+				.find((arg) => arg.startsWith("--port="))
+				?.slice(7);
+			expect(generatedHost).toBe(expected);
+			expect(new URL(`${generatedHost}:${generatedPort}`).origin).toBe(
+				`${expected}:9982`,
+			);
+		},
+	);
+
+	it.each([
+		"http://127.0.0.1:9981",
+		"http://127.0.0.1:80/",
+		"https://td.example:443",
+		"http://[::1]:9981/",
+		"http://127.0.0.1/api",
+		"http://127.0.0.1/?mode=test",
+		"http://127.0.0.1/#endpoint",
+	])("rejects unusable host %s before writing output", async (host) => {
+		const out = await directory();
+		await expect(build(out, `--host=${host}`)).rejects.toThrow(
+			"use --port separately",
+		);
+		expect(await fs.readdir(out)).toEqual([]);
+	});
+
 	it("ships all shared skills and references with executable MCP arguments", async () => {
 		const out = await directory();
 		await build(out, "--port=9982");
