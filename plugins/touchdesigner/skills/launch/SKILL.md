@@ -1,9 +1,17 @@
 ---
+description: This skill should be used when the user runs /touchdesigner:launch
+  or asks to "start TouchDesigner", "launch TD", "open TouchDesigner with the
+  MCP component", "set up TouchDesigner from scratch", or says TouchDesigner
+  isn't running yet — it launches the TouchDesigner application with
+  mcp_webserver_base.tox imported and waits until the MCP connection is live.
+  For diagnosing an already-running TouchDesigner, the setup skill applies
+  instead.
 name: launch
-description: This skill should be used when the user runs /touchdesigner:launch or asks to "start TouchDesigner", "launch TD", "open TouchDesigner with the MCP component", "set up TouchDesigner from scratch", or says TouchDesigner isn't running yet — it launches the TouchDesigner application with mcp_webserver_base.tox imported and waits until the MCP connection is live. For diagnosing an already-running TouchDesigner, the setup skill applies instead.
-argument-hint: "[tox-path]"
-version: 0.1.0
 ---
+
+## Client integration
+
+Use the connected TouchDesigner server's tools by logical name; discover the actual client namespace instead of constructing a Claude tool prefix. Slash-command examples also work as natural-language requests for the named skill. After any network mutation, read back affected parameters, check `get_td_node_errors`, and inspect `get_top_image` for TOP output when relevant. Do not rely on a post-tool hook to remind you.
 
 # TD Launch
 

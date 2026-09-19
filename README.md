@@ -43,6 +43,19 @@ Then run `/touchdesigner:setup` to verify the connection, or `/touchdesigner:lau
 
 Configuration and troubleshooting for the plugin itself live in [plugin/touchdesigner/README.md](plugin/touchdesigner/README.md).
 
+### Codex users: the touchdesigner plugin
+
+Install the **touchdesigner** plugin from this repository's Codex marketplace. No manual npm build is needed:
+
+```bash
+codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
+codex plugin add touchdesigner@touchdesigner-openai
+```
+
+Then ask “Use TouchDesigner setup to check my connection” or “Launch TouchDesigner.” The plugin includes the MCP server and skills for setup, launch, debugging, snapshots, project overviews, and performance measurement.
+
+See the [OpenAI plugin guide](docs/openai-plugin.md) for prerequisites, the PR preview, configuration, and ChatGPT connections.
+
 ## MCP Server Features
 
 This server enables AI agents to perform operations in TouchDesigner using the Model Context Protocol (MCP).

@@ -1,8 +1,17 @@
 ---
+description: This skill should be used when the user runs /touchdesigner:setup
+  or asks to verify, check, fix, or set up the TouchDesigner connection —
+  trigger phrases include "check my TD connection", "is TouchDesigner
+  connected", "set up touchdesigner-mcp", "TD isn't responding", "fix the
+  TouchDesigner connection", or "verify TouchDesigner is reachable". If
+  TouchDesigner is not running at all and needs to be started, the launch skill
+  applies instead.
 name: setup
-description: This skill should be used when the user runs /touchdesigner:setup or asks to verify, check, fix, or set up the TouchDesigner connection — trigger phrases include "check my TD connection", "is TouchDesigner connected", "set up touchdesigner-mcp", "TD isn't responding", "fix the TouchDesigner connection", or "verify TouchDesigner is reachable". If TouchDesigner is not running at all and needs to be started, the launch skill applies instead.
-version: 0.1.0
 ---
+
+## Client integration
+
+Use the connected TouchDesigner server's tools by logical name; discover the actual client namespace instead of constructing a Claude tool prefix. Slash-command examples also work as natural-language requests for the named skill. After any network mutation, read back affected parameters, check `get_td_node_errors`, and inspect `get_top_image` for TOP output when relevant. Do not rely on a post-tool hook to remind you.
 
 # TD Setup
 

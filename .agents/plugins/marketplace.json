@@ -1,0 +1,20 @@
+{
+	"interface": {
+		"displayName": "TouchDesigner"
+	},
+	"name": "touchdesigner-openai",
+	"plugins": [
+		{
+			"category": "Productivity",
+			"name": "touchdesigner",
+			"policy": {
+				"authentication": "ON_INSTALL",
+				"installation": "AVAILABLE"
+			},
+			"source": {
+				"path": "./plugins/touchdesigner",
+				"source": "local"
+			}
+		}
+	]
+}
