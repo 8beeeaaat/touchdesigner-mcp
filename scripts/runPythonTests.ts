@@ -8,10 +8,9 @@
  * suite. CI is the opposite — a missing interpreter there means the tests
  * silently stopped running, so it exits non-zero.
  *
- * Interpreter choice matters. `td/modules/utils/logging.py` annotates with
- * `TextIO | None`, which needs Python 3.10, while stock macOS ships 3.9 — so
- * an older interpreter fails with a confusing TypeError at import rather than
- * a test failure.
+ * The floor is the version `pyproject.toml` declares, so these tests exercise
+ * what the project says it supports rather than only the newest interpreter
+ * to hand.
  */
 
 import { spawnSync } from "node:child_process";
@@ -20,7 +19,7 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const testDir = join(rootDir, "tests", "python");
-const MIN_PYTHON = [3, 10] as const;
+const MIN_PYTHON = [3, 9] as const;
 const isCI = Boolean(process.env.CI);
 
 type Candidate = { command: string; args: string[] };
@@ -43,14 +42,9 @@ function isSupported(python: string): boolean {
 }
 
 function pickRunner(): Candidate | null {
-	// uv needs nothing installed up front and pins the same version CI uses.
-	if (has("uv")) {
-		return {
-			args: ["run", "--python", "3.13", "--with", "pytest", "pytest", testDir],
-			command: "uv",
-		};
-	}
-
+	// An installed runner is tried first. uv can provision one, but it reaches
+	// the network to do so, which turns a runnable suite into a failure on a
+	// machine that is offline or behind a proxy.
 	for (const python of ["python3", "python"]) {
 		if (!has(python) || !isSupported(python)) {
 			continue;
@@ -62,6 +56,15 @@ function pickRunner(): Candidate | null {
 
 	if (has("pytest")) {
 		return { args: [testDir], command: "pytest" };
+	}
+
+	// Nothing installed. uv needs no interpreter up front and pins the version
+	// CI uses, at the cost of fetching it.
+	if (has("uv")) {
+		return {
+			args: ["run", "--python", "3.13", "--with", "pytest", "pytest", testDir],
+			command: "uv",
+		};
 	}
 
 	return null;

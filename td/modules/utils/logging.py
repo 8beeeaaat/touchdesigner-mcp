@@ -4,14 +4,14 @@ Logging module for TouchDesigner MCP Web server
 
 from datetime import datetime
 import sys
-from typing import TextIO
+from typing import Optional, TextIO
 
 from utils.types import LogLevel
 
 from .config import DEBUG
 
 
-def _safe_write(stream: TextIO | None, message: str) -> bool:
+def _safe_write(stream: Optional[TextIO], message: str) -> bool:
 	"""Attempt to write to the provided stream while swallowing blocking errors."""
 
 	if stream is None:
