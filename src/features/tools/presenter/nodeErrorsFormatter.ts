@@ -6,6 +6,7 @@ import {
 } from "./presenter.js";
 import type { FormatterOptions } from "./responseFormatter.js";
 import {
+	describeTruncation,
 	finalizeFormattedText,
 	limitArray,
 	mergeFormatterOptions,
@@ -36,9 +37,11 @@ export function formatNodeErrors(
 	// `level` is optional, and reading it would make a warning with the field
 	// missing render as an error — the distinction these two arrays exist to
 	// carry, lost on the way out.
+	const reportedErrors = data.errors ?? [];
+	const reportedWarnings = data.warnings ?? [];
 	const entries = [
-		...(data.errors ?? []).map((entry) => ({ ...entry, level: "error" })),
-		...(data.warnings ?? []).map((entry) => ({ ...entry, level: "warning" })),
+		...reportedErrors.map((entry) => ({ ...entry, level: "error" })),
+		...reportedWarnings.map((entry) => ({ ...entry, level: "warning" })),
 	];
 	// A component predating warning collection sends neither field. Rendering
 	// that as zero would claim the warning stream was inspected and found
@@ -61,6 +64,12 @@ export function formatNodeErrors(
 		(a, b) => levelRank(a.level) - levelRank(b.level),
 	);
 	const { items, truncated } = limitArray(ordered, opts.limit);
+
+	// The caveat lists are capped for the structured payload with the same
+	// call the markdown notices use, so the two can never cap differently.
+	const shownAnchors = limitArray(unresolved, opts.limit).items;
+	const shownLookupFailures = limitArray(lookupFailures, opts.limit).items;
+	const shownFallbacks = limitArray(fallbacks, opts.limit).items;
 
 	// Only an unread stream leaves the counts without a ceiling. A declined
 	// anchor keeps its content, so it is reported on its own rather than
@@ -92,6 +101,32 @@ export function formatNodeErrors(
 			: `Node ${data.nodePath}: ${data.errorCount} error(s), ${
 					warningsKnown ? warningCount : "an unreported number of"
 				} warning(s).`;
+
+	// The merge above is errors-first and the sort is stable, so the rows that
+	// survived the cap are the first N of `errors` followed by whatever budget
+	// was left for `warnings`. Counting the survivors by level rather than
+	// re-deriving the split from `limit` is what keeps the payload and the
+	// rendered table showing the same entries.
+	const shownErrors = items.filter((entry) => entry.level === "error").length;
+	const truncation = describeTruncation(opts.limit, {
+		errors: { returned: shownErrors, total: reportedErrors.length },
+		fallbackAttributions: {
+			returned: shownFallbacks.length,
+			total: fallbacks.length,
+		},
+		lookupFailures: {
+			returned: shownLookupFailures.length,
+			total: lookupFailures.length,
+		},
+		unresolvedAnchors: {
+			returned: shownAnchors.length,
+			total: unresolved.length,
+		},
+		warnings: {
+			returned: items.length - shownErrors,
+			total: reportedWarnings.length,
+		},
+	});
 
 	return finalizeFormattedText(text, opts, {
 		context: {
@@ -137,9 +172,58 @@ export function formatNodeErrors(
 			warningCountMissing: !warningsKnown && data.hasWarnings !== undefined,
 			warningsUnknown: !warningsKnown && data.hasWarnings === undefined,
 		},
-		structured: data,
+		structured: capReport(data, truncation !== undefined, {
+			errors: reportedErrors.slice(0, shownErrors),
+			fallbackAttributions: shownFallbacks,
+			lookupFailures: shownLookupFailures,
+			unresolvedAnchors: shownAnchors,
+			warnings: reportedWarnings.slice(0, items.length - shownErrors),
+		}),
 		template: "nodeErrorSummary",
+		truncation,
 	});
+}
+
+/**
+ * Apply the caps to the report the caller receives, keeping its shape.
+ *
+ * The report goes back in the shape the API defines — `errors` and `warnings`
+ * as separate collections, the counts left at the server's totals — because
+ * that is the shape the tool's own usage example reads, and because the counts
+ * are the only thing left saying how much the cap removed. Rewriting them to
+ * match the shortened arrays would make the payload self-consistent and wrong.
+ *
+ * A collection the report never sent stays absent: `unresolvedAnchors` missing
+ * means the component said nothing about ambiguous attributions, which an
+ * empty array would turn into "none found".
+ */
+function capReport(
+	data: NodeErrorReportData,
+	capped: boolean,
+	caps: {
+		errors: NodeErrorReportData["errors"];
+		warnings: NonNullable<NodeErrorReportData["warnings"]>;
+		unresolvedAnchors: NonNullable<NodeErrorReportData["unresolvedAnchors"]>;
+		lookupFailures: NonNullable<NodeErrorReportData["lookupFailures"]>;
+		fallbackAttributions: NonNullable<
+			NodeErrorReportData["fallbackAttributions"]
+		>;
+	},
+): NodeErrorReportData {
+	if (!capped) {
+		// Nothing was removed, so the caller gets the object the server sent,
+		// untouched down to its key order.
+		return data;
+	}
+	const report: NodeErrorReportData = { ...data, errors: caps.errors };
+	if (data.warnings !== undefined) report.warnings = caps.warnings;
+	if (data.unresolvedAnchors !== undefined)
+		report.unresolvedAnchors = caps.unresolvedAnchors;
+	if (data.lookupFailures !== undefined)
+		report.lookupFailures = caps.lookupFailures;
+	if (data.fallbackAttributions !== undefined)
+		report.fallbackAttributions = caps.fallbackAttributions;
+	return report;
 }
 
 /**
