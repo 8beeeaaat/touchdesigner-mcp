@@ -542,6 +542,86 @@ describe("TouchDesigner Client E2E Tests", () => {
 		expect(response.data?.incomplete).toBe(false);
 	});
 
+	test("warnings are collected from a live TouchDesigner, not just errors", async () => {
+		// The feature this release exists for, observed against a real
+		// TouchDesigner rather than a fixture. Every other warning test in the
+		// repo feeds the formatter a payload it wrote itself, or drives the
+		// parser against a stubbed `td` — neither can tell you that
+		// TouchDesigner actually puts these on warnings() rather than errors(),
+		// which is the whole premise. The previous implementation read only
+		// errors(), so this scene came back completely clean.
+		const warnHost = `${SANDBOX_PATH}/warn_host`;
+
+		const created = await tdClient.createNode({
+			nodeName: "warn_host",
+			nodeType: "baseCOMP",
+			parentPath: SANDBOX_PATH,
+		});
+		if (!created.success) {
+			throw new Error(`failed: ${created.error}`);
+		}
+
+		// Two different warning sources, so a single quirk of one operator
+		// cannot carry the test: a dangling operator reference and a file that
+		// is not there. Measured on 099.2025.33230 — both land on warnings()
+		// with errors() empty.
+		//
+		// The dangling reference points inside the run-unique sandbox, not at
+		// a made-up path under /project1. A project that happened to contain
+		// the name would resolve the Select TOP, leave one warning instead of
+		// two, and fail the counts below for a reason that has nothing to do
+		// with the collector. Depending on what is outside its own sandbox is
+		// the same defect this suite already had once, in the sandbox name.
+		const setup = await tdClient.execPythonScript<{ result: unknown }>({
+			script:
+				`host = op('${warnHost}')\n` +
+				`m = host.create('moviefileinTOP', 'missing_movie')\n` +
+				`m.par.file = '/nonexistent/definitely_not_here.mov'\n` +
+				`s = host.create('selectTOP', 'bad_select')\n` +
+				`s.par.top = '${warnHost}/no_such_child'\n` +
+				"host.cook(recurse=True, force=True)\n",
+		});
+		if (!setup.success) {
+			throw new Error(`failed: ${setup.error}`);
+		}
+
+		const response = await tdClient.getNodeErrors({ nodePath: warnHost });
+		if (!response.success) {
+			throw new Error(`failed: ${response.error}`);
+		}
+
+		const warnings = response.data?.warnings ?? [];
+		const errors = response.data?.errors ?? [];
+
+		// Reconciliation: the two operators we broke are the two reported.
+		expect(warnings.map((w) => w.nodePath).sort()).toEqual([
+			`${warnHost}/bad_select`,
+			`${warnHost}/missing_movie`,
+		]);
+		expect(response.data?.warningCount).toBe(2);
+		expect(response.data?.hasWarnings).toBe(true);
+
+		// The discriminating half. A build that files these under errors, or
+		// one that never reads warnings(), fails here rather than quietly
+		// reporting a healthy node.
+		expect(errors).toEqual([]);
+		expect(response.data?.errorCount).toBe(0);
+		expect(response.data?.hasErrors).toBe(false);
+
+		for (const entry of warnings) {
+			expect(entry.level).toBe("warning");
+			// No repeated path prefix, and no trailing "(<path>)".
+			expect(entry.message.startsWith("/")).toBe(false);
+			expect(entry.message.endsWith(")")).toBe(false);
+		}
+
+		// Nothing was skipped, so the counts above are a total and not a floor.
+		expect(response.data?.incomplete).toBe(false);
+		expect(response.data?.skippedStreams ?? []).toEqual([]);
+
+		await tdClient.deleteNode({ nodePath: warnHost });
+	});
+
 	test("Module help should return documentation for TouchDesigner classes", async () => {
 		// Test with common TouchDesigner class
 		const response = await tdClient.getModuleHelp({
