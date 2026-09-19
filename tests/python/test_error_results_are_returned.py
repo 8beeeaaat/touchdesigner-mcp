@@ -12,11 +12,11 @@ instead of
 
     Parent node not found at path: /project1/test_base_comp
 
-Every one of the nine messages was unreachable, and the nine that mattered
-most: they are the ones that say the thing the caller got wrong. The defect
-predates this branch (it arrived in 37ed1f1) and was found from the outside,
-when a live integration run lost its sandbox mid-run and the suite could not
-say so.
+All nine were unreachable, and they are the nine that matter most: each one
+names the thing the caller got wrong — a path, a method, a class, an update
+that changed nothing. The defect predates this branch (it arrived in 37ed1f1)
+and was found from the outside, when a live integration run lost its sandbox
+mid-run and the suite could only report the TypeError.
 
 These tests pin the messages rather than the mechanism, because the mechanism
 is what was wrong. Restoring any ``raise`` makes the corresponding test fail
@@ -81,9 +81,7 @@ class TestANodeThatIsNotThere:
 
 
 class TestAMethodThatIsNotThere:
-	def test_an_absent_method_names_both_the_method_and_the_node(
-		self, service, scene
-	):
+	def test_an_absent_method_names_both_the_method_and_the_node(self, service, scene):
 		node = scene(PROBE, [])
 
 		message = failure_of(
