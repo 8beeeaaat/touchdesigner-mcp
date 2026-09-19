@@ -356,6 +356,49 @@ describe("MCP tool responses", () => {
 		expect(text).toContain("servers/touchdesigner");
 	});
 
+	it("emits each tool's example at detailLevel detailed, in every format", async () => {
+		// The field reached no output at all before: the only code that read
+		// it built a string passed as `text`, and neither path out renders
+		// that — detailedPayload prints the title and the serialized payload,
+		// and json/yaml serialize the structured object, which did not carry
+		// it. Thirteen examples were written and maintained for nothing.
+		const handler = server.getTool(TOOL_NAMES.DESCRIBE_TD_TOOLS);
+		// A line that exists only inside an example, so finding it cannot be
+		// satisfied by the description or the returns text.
+		const fromAnExample = "import { getTdNodeErrors }";
+
+		for (const responseFormat of ["markdown", "json", "yaml"]) {
+			const result = (await handler({
+				detailLevel: "detailed",
+				filter: "node_errors",
+				responseFormat,
+			})) as { content?: Array<{ type: string; text?: string }> };
+
+			const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+			expect(text, `detailed/${responseFormat}`).toContain(fromAnExample);
+		}
+	});
+
+	it("keeps examples out of the summary listing", async () => {
+		// Detailed is the level whose job is "give me everything"; the
+		// examples measure 3613 bytes across the thirteen tools, roughly 900
+		// tokens, which should not ride along on an orientation call.
+		const handler = server.getTool(TOOL_NAMES.DESCRIBE_TD_TOOLS);
+
+		for (const responseFormat of ["markdown", "json", "yaml"]) {
+			const result = (await handler({
+				detailLevel: "summary",
+				filter: "node_errors",
+				responseFormat,
+			})) as { content?: Array<{ type: string; text?: string }> };
+
+			const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+			expect(text, `summary/${responseFormat}`).not.toContain(
+				"import { getTdNodeErrors }",
+			);
+		}
+	});
+
 	it("returns formatted module help preview for GET_TD_MODULE_HELP", async () => {
 		const handler = server.getTool(TOOL_NAMES.GET_TD_MODULE_HELP);
 		const result = (await handler({
