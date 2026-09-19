@@ -388,6 +388,30 @@ class TestMissingNode:
 		assert "matched" in result["error"]
 		assert f"{PROBE}/alpha" in result["error"]
 
+	def test_a_near_miss_is_named_from_a_single_lookup(
+		self, scene, td_stub, monkeypatch
+	):
+		# The message used to come from a second td.op() on the same path,
+		# wrapped in its own `except` that reported "Node not found" — the
+		# precise untrue message the branch above exists to avoid. Two
+		# adjacent lookups can disagree, so the window was real however
+		# narrow. _resolve_op now hands the near miss back and there is
+		# nothing left to disagree with.
+		scene(PROBE, [f"{PROBE}/alpha"])
+		looked_up = []
+		answer = td_stub.op
+		monkeypatch.setattr(
+			td_stub,
+			"op",
+			lambda path: (looked_up.append(path), answer(path))[1],
+		)
+
+		result = TouchDesignerApiService().get_node_errors(f"{PROBE}/al*")
+
+		assert result["success"] is False
+		assert f"{PROBE}/alpha" in result["error"]
+		assert looked_up == [f"{PROBE}/al*"]
+
 	def test_an_unknown_path_fails_rather_than_reporting_clean(self, scene):
 		scene(PROBE, [])
 

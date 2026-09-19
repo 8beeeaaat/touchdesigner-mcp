@@ -180,19 +180,17 @@ class TouchDesignerApiService(IApiService):
 		node, outcome = _resolve_op(node_path)
 		if outcome == _LOOKUP_FAILED:
 			return error_result(f"Could not look up node at path: {node_path}")
-		if node is None:
+		if outcome == _MISSING:
 			# td.op() takes a glob, so it can answer with an operator whose
-			# path is not the one asked for. _resolve_op refuses that, and
-			# saying "not found" would be untrue: something is there, it is
-			# just not what the caller named.
-			matched = None
-			try:
-				matched = td.op(node_path)
-			except Exception:
-				matched = None
-			if matched is not None and getattr(matched, "valid", False):
+			# path is not the one asked for. _resolve_op refuses that but
+			# hands the near miss back, so the message can name what actually
+			# answered. Looking it up a second time would let the two calls
+			# disagree, and the second call's `except` would have to report
+			# "not found" — the exact untrue message this branch exists to
+			# avoid. Saying "not found" is only true when nothing answered.
+			if node is not None:
 				return error_result(
-					f"Path {node_path} matched {matched.path} rather than "
+					f"Path {node_path} matched {node.path} rather than "
 					"naming it; pass the exact operator path."
 				)
 			return error_result(f"Node not found at path: {node_path}")
@@ -939,9 +937,15 @@ def _resolve_op(path: str):
 		owner = td.op(path)
 	except Exception:
 		return None, _LOOKUP_FAILED
-	if owner is not None and owner.valid and owner.path == path:
+	if owner is None or not owner.valid:
+		return None, _MISSING
+	if owner.path == path:
 		return owner, _FOUND
-	return None, _MISSING
+	# A near miss: something real is there, it is just not what was named.
+	# It is handed back rather than dropped so a caller can say which
+	# operator answered without looking the path up a second time. Callers
+	# must branch on the outcome, not on the operator being None.
+	return owner, _MISSING
 
 
 def _owner_reports_anything(owner) -> bool:
