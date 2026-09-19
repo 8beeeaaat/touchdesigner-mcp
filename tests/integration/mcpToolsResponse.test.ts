@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { parse as parseYaml } from "yaml";
 import { TOOL_NAMES } from "../../src/core/constants.js";
 import type { ILogger } from "../../src/core/logger.js";
 import { registerTools } from "../../src/features/tools/register.js";
@@ -396,5 +397,184 @@ describe("MCP tool responses", () => {
 		expect(result.isError).toBe(true);
 		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
 		expect(text).toContain("Module missing");
+	});
+});
+
+/**
+ * `limit` over the registered tools, in the formats that render `structured`.
+ *
+ * The unit suite pins the formatters; this pins the path an agent actually
+ * takes — schema, handler, presenter — because `limit` reaching the formatter
+ * at all is a property of `toolDefinitions.ts`, and `get_td_classes` supplies
+ * its own default there.
+ */
+describe("limit at the MCP boundary", () => {
+	/** Register the tools over a client with one method replaced. */
+	function serverWith(overrides: Partial<TouchDesignerClient>) {
+		const client = createMockTdClient();
+		Object.assign(client, overrides);
+		const server = new MockMcpServer();
+		registerTools(
+			server as unknown as import("@modelcontextprotocol/server").McpServer,
+			logger,
+			client,
+		);
+		return server;
+	}
+
+	async function callTool(
+		server: MockMcpServer,
+		name: string,
+		params: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		const result = (await server.getTool(name)(params)) as {
+			content?: Array<{ type: string; text?: string }>;
+		};
+		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+		return (
+			params.responseFormat === "json" ? JSON.parse(text) : parseYaml(text)
+		) as Record<string, unknown>;
+	}
+
+	const manyErrors = {
+		errorCount: 9,
+		errors: Array.from({ length: 9 }, (_, i) => ({
+			level: "error" as const,
+			message: `failure ${i}`,
+			nodeName: `bad${i}`,
+			nodePath: `/project1/probe/bad${i}`,
+			opType: "textTOP",
+		})),
+		hasErrors: true,
+		hasWarnings: false,
+		nodeName: "probe",
+		nodePath: "/project1/probe",
+		opType: "baseCOMP",
+		warningCount: 0,
+		warnings: [],
+	};
+
+	const manyClasses = Array.from({ length: 120 }, (_, i) => ({
+		description: `class ${i}`,
+		name: `Class${i}`,
+		type: "class" as const,
+	}));
+
+	const classListServer = () =>
+		serverWith({
+			getClasses: (async () => ({
+				data: { classes: manyClasses },
+				success: true,
+			})) as TouchDesignerClient["getClasses"],
+		});
+
+	const errorReportServer = () =>
+		serverWith({
+			getNodeErrors: (async () => ({
+				data: manyErrors,
+				success: true,
+			})) as TouchDesignerClient["getNodeErrors"],
+		});
+
+	it("caps get_td_node_errors in json and says how much it left out", async () => {
+		const payload = await callTool(
+			errorReportServer(),
+			TOOL_NAMES.GET_TD_NODE_ERRORS,
+			{
+				limit: 3,
+				nodePath: "/project1/probe",
+				responseFormat: "json",
+			},
+		);
+
+		expect(payload.errors).toHaveLength(3);
+		expect(payload.truncated).toBe(true);
+		expect(payload.truncation).toMatchObject({
+			collections: { errors: { omitted: 6, returned: 3, total: 9 } },
+			limit: 3,
+		});
+		// The count stays the server's, so the cap is visible as a gap between
+		// what was reported and what came back.
+		expect(payload.errorCount).toBe(9);
+	});
+
+	it("leaves get_td_node_errors uncapped at detailLevel detailed", async () => {
+		const payload = await callTool(
+			errorReportServer(),
+			TOOL_NAMES.GET_TD_NODE_ERRORS,
+			{
+				detailLevel: "detailed",
+				limit: 3,
+				nodePath: "/project1/probe",
+				responseFormat: "yaml",
+			},
+		);
+
+		expect(payload.errors).toHaveLength(9);
+		expect(payload).not.toHaveProperty("truncation");
+	});
+
+	it("caps get_td_nodes in yaml and says how much it left out", async () => {
+		const server = serverWith({
+			getNodes: (async () => ({
+				data: {
+					nodes: Array.from({ length: 8 }, (_, i) => ({
+						id: i,
+						name: `node${i}`,
+						opType: "textTOP",
+						path: `/project1/node${i}`,
+						properties: {},
+					})),
+					parentPath: "/project1",
+				},
+				success: true,
+			})) as TouchDesignerClient["getNodes"],
+		});
+
+		const payload = await callTool(server, TOOL_NAMES.GET_TD_NODES, {
+			limit: 2,
+			parentPath: "/project1",
+			responseFormat: "yaml",
+		});
+
+		const listed = (payload.groups as Array<{ nodes: unknown[] }>).flatMap(
+			(group) => group.nodes,
+		);
+		expect(listed).toHaveLength(2);
+		expect(payload.truncated).toBe(true);
+		expect(payload.truncation).toMatchObject({
+			collections: { nodes: { omitted: 6, returned: 2, total: 8 } },
+			limit: 2,
+		});
+	});
+
+	it("applies the get_td_classes default cap of 50 with no limit from the caller", async () => {
+		// toolDefinitions passes `params.limit ?? 50`, so this tool always has
+		// a cap. Until this fix that cap reached nothing, and a TouchDesigner
+		// build with a thousand classes returned all thousand in every format.
+		const payload = await callTool(
+			classListServer(),
+			TOOL_NAMES.GET_TD_CLASSES,
+			{ responseFormat: "json" },
+		);
+
+		expect(payload.classes).toHaveLength(50);
+		expect(payload.classCount).toBe(120);
+		expect(payload.truncation).toMatchObject({
+			collections: { classes: { omitted: 70, returned: 50, total: 120 } },
+			limit: 50,
+		});
+	});
+
+	it("says in the markdown class list that it stopped at the cap", async () => {
+		const result = (await classListServer().getTool(TOOL_NAMES.GET_TD_CLASSES)({
+			responseFormat: "markdown",
+		})) as { content?: Array<{ type: string; text?: string }> };
+		const text = result.content?.find((c) => c.type === "text")?.text ?? "";
+
+		expect(
+			text.split("\n").filter((line) => line.startsWith("- `Class")),
+		).toHaveLength(50);
+		expect(text).toContain("70 more class(es) omitted");
 	});
 });
