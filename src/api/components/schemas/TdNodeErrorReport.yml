@@ -83,6 +83,26 @@ properties:
         stream:
           type: string
           description: Which stream it appeared on ("errors" or "warnings")
+  fallbackAttributions:
+    type: array
+    description: >-
+      Owners named at the end of an entry's message that could not be
+      resolved, so that entry's nodePath fell back to the node being queried.
+      Nothing was folded and nothing is missing from the counts - the entry
+      stands on its own - but its owner is a guess, and the path named here is
+      still present in the message text.
+    items:
+      type: object
+      required:
+        - path
+        - stream
+      properties:
+        path:
+          type: string
+          description: The owner path that could not be resolved
+        stream:
+          type: string
+          description: Which stream it appeared on ("errors" or "warnings")
   lookupFailures:
     type: array
     description: >-

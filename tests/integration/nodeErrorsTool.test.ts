@@ -208,6 +208,20 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(text).not.toContain("Incomplete");
 	});
 
+	it("says an owner fell back rather than calling it a folded failure", async () => {
+		const text = await runTool({
+			...mixed,
+			fallbackAttributions: [
+				{ path: "/project1/probe/adder", stream: "errors" },
+			],
+		});
+
+		expect(text).toContain("fell back");
+		expect(text).toContain("/project1/probe/adder");
+		expect(text).not.toContain("attributions are ambiguous");
+		expect(text).not.toContain("Incomplete");
+	});
+
 	it("reports a node with neither errors nor warnings as clean", async () => {
 		const text = await runTool({
 			...warningOnly,

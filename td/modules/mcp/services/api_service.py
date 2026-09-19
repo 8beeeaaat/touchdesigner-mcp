@@ -187,6 +187,7 @@ class TouchDesignerApiService(IApiService):
 		skipped = []
 		unresolved = []
 		lookup_failures = []
+		fallback_owners = []
 		for level, getter in (("error", "errors"), ("warning", "warnings")):
 			notes = []
 			method = getattr(node, getter, None)
@@ -211,13 +212,16 @@ class TouchDesignerApiService(IApiService):
 					# Parsing stays inside the try. A stream we cannot read is
 					# a stream to record, not a reason to lose the other one.
 					entries.extend(_parse_op_messages(raw, level, node, notes))
+					targets = {
+						_NOTE_LOOKUP_FAILED: lookup_failures,
+						_NOTE_MISATTRIBUTED: fallback_owners,
+						_NOTE_UNRESOLVED: unresolved,
+					}
 					for path, kind in notes:
-						target = (
-							unresolved
-							if kind == "unresolved"
-							else lookup_failures
-						)
-						target.append({"path": path, "stream": getter})
+						# KeyError rather than a default: a kind with no home
+						# would otherwise be filed under whichever list the
+						# fallback picked and read as a TouchDesigner fault.
+						targets[kind].append({"path": path, "stream": getter})
 			except Exception as e:
 				log_message(
 					f"Error reading {getter} from node {node_path}: {str(e)}",
@@ -248,6 +252,7 @@ class TouchDesignerApiService(IApiService):
 				"skippedStreams": skipped,
 				"unresolvedAnchors": unresolved,
 				"lookupFailures": lookup_failures,
+				"fallbackAttributions": fallback_owners,
 				"errors": entries,
 			}
 		)
@@ -819,23 +824,32 @@ _MESSAGE_ANCHOR = re.compile(r"^(/\S*?):\s*(Error|Warning):\s*(.*)$")
 _TRAILING_PATH = re.compile(r"\((/[^()\s]*)\)\s*$")
 
 
-# Characters TouchDesigner was observed to reject in an operator name -
-# create() raises "Illegal node name specified" for each. A path component
-# containing one cannot name an operator, which is what tells a file path
-# quoted in a traceback apart from an operator deleted since.
+# Characters TouchDesigner rejects in an operator name. Every one of these was
+# probed against a live build: create("constantTOP", "a<c>b") raises "Illegal
+# node name specified" for all 32, and no printable ASCII outside them is
+# refused.
 #
-# Stated as a denylist on purpose. The two ways this rule can be wrong cost
-# very different amounts: calling an operator a file drops a real failure
-# silently, while calling a file an operator costs one visible
-# unresolvedAnchors entry. An allowlist of characters we happen to have tested
-# fails in the expensive direction for everything we have not; a denylist of
-# characters we have seen rejected fails in the cheap one. Non-ASCII names are
-# rejected by TouchDesigner too, but are left to the lookup for the same
-# reason - failing visibly beats failing silently.
+# Written as a denial rather than a permission because the two ways this rule
+# can be wrong cost very different amounts: calling an operator a file drops a
+# real failure silently, while calling a file an operator costs one visible
+# entry. For printable ASCII that choice is cosmetic - the set is exactly the
+# complement of [A-Za-z0-9_] - and the real gain is everything outside it.
+# Non-ASCII names are rejected by TouchDesigner too, but are left to the lookup
+# rather than encoded here, so a build that starts accepting them fails
+# visibly instead of silently.
+#
+# A spelling decline is the one decline that says nothing, which is what keeps
+# the data.csv case clean. So adding a character here needs the same live
+# evidence these have: get it wrong and a real failure folds into its
+# neighbour with nothing in the payload to show for it.
 _ILLEGAL_IN_OP_NAME = set(". -*?[]{}()/\\:;,'\"`!@#$%^&|<>~=+")
 
 # Outcomes of looking a path up, kept distinct because they call for opposite
 # treatment: a lookup that failed says nothing about the path.
+_NOTE_UNRESOLVED = "unresolved"
+_NOTE_LOOKUP_FAILED = "lookup_failed"
+_NOTE_MISATTRIBUTED = "misattributed"
+
 _FOUND = "found"
 _MISSING = "missing"
 _LOOKUP_FAILED = "lookup_failed"
@@ -879,8 +893,9 @@ def _resolve_op(path: str):
 def _classify_anchor(path: str, queried_node):
 	"""Decide what an anchor-shaped path is, resolving it at most once
 
-	Returns (accepted, owner, note). `note` is None when there is nothing to
-	tell the caller, otherwise "unresolved" or "lookup_failed".
+	Returns (accepted, owner, note), where note is either None or the
+	(path, kind) pair the caller should report. Pairing it here keeps a caller
+	from attaching the wrong path to a kind.
 
 	Three things have to hold for an anchor to be accepted, and each rules out
 	a different way for message text to be mistaken for the start of a new
@@ -920,18 +935,18 @@ def _classify_anchor(path: str, queried_node):
 
 	owner, outcome = _resolve_op(path)
 	if outcome == _MISSING:
-		return False, None, "unresolved"
+		return False, None, (path, _NOTE_UNRESOLVED)
 	if outcome == _LOOKUP_FAILED:
-		return True, None, "lookup_failed"
+		return True, None, (path, _NOTE_LOOKUP_FAILED)
 	return True, owner, None
 
 
 def _split_anchor(line: str, queried_node):
 	"""Classify a line as the start of a new message, or not
 
-	Returns (anchor, note). `anchor` is (path, level, message, owner) when the
-	line starts one, otherwise None. `note` is (path, kind) when the decline is
-	worth telling the caller about.
+	Returns (anchor, note). `anchor` is (path, message, owner) when the line
+	starts one, otherwise None. `note` is the (path, kind) pair when there is
+	something worth telling the caller.
 	"""
 
 	match = _MESSAGE_ANCHOR.match(line)
@@ -939,12 +954,13 @@ def _split_anchor(line: str, queried_node):
 		return None, None
 
 	path = match.group(1)
-	accepted, owner, kind = _classify_anchor(path, queried_node)
+	accepted, owner, note = _classify_anchor(path, queried_node)
 	if not accepted:
-		return None, ((path, kind) if kind else None)
-	return (path, match.group(2).lower(), match.group(3), owner), (
-		(path, kind) if kind else None
-	)
+		return None, note
+	# The anchor word is deliberately not returned. Which stream produced the
+	# line decides the level, and a value that must be ignored is one an
+	# unused-variable cleanup would start using.
+	return (path, match.group(3), owner), note
 
 
 def _owner_from_trailing_path(message: str, queried_node):
@@ -963,10 +979,19 @@ def _owner_from_trailing_path(message: str, queried_node):
 		return None, None, None
 
 	path = match.group(1)
-	accepted, owner, kind = _classify_anchor(path, queried_node)
+	accepted, owner, note = _classify_anchor(path, queried_node)
 	if accepted:
-		return path, owner, ((path, kind) if kind else None)
-	return None, None, ((path, kind) if kind else None)
+		return path, owner, note
+
+	# Declining here has the opposite consequence to declining an anchor.
+	# Nothing folds: the entry stands on its own and is counted once. What
+	# goes wrong is the owner, which falls back to the queried node while
+	# every field on the entry still looks resolved. Reporting that as an
+	# unresolved anchor would send a caller looking for a merged failure that
+	# does not exist.
+	if note and note[1] == _NOTE_UNRESOLVED:
+		note = (note[0], _NOTE_MISATTRIBUTED)
+	return None, None, note
 
 
 def _strip_redundant_path_suffix(message: str, path: str) -> str:
@@ -998,10 +1023,18 @@ def _parse_op_messages(
 	"""
 
 	def note(entry):
+		"""Record a path once, keeping the first outcome seen for it
+
+		A flaky td.op can answer differently on two lines naming the same
+		path. The report presents these lists as a disjoint categorisation, so
+		a path must not turn up in two of them.
+		"""
+
 		if entry is None or notes is None:
 			return
-		if entry not in notes:
-			notes.append(entry)
+		if any(path == entry[0] for path, _kind in notes):
+			return
+		notes.append(entry)
 
 	groups = []
 	current = None
@@ -1016,7 +1049,7 @@ def _parse_op_messages(
 		if anchor:
 			if current:
 				groups.append(current)
-			path, _anchor_level, message, owner = anchor
+			path, message, owner = anchor
 			# The anchor word only marks where an entry begins. Which stream
 			# produced the line decides the level, so an "errors" blob cannot
 			# report itself as warnings and leave hasErrors false.

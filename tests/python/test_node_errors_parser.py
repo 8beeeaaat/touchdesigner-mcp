@@ -258,7 +258,7 @@ class TestAttribution:
 			f"  Error: boom ({PROBE}/gone)", "error", node, declined
 		)
 
-		assert declined == [(f"{PROBE}/gone", "unresolved")]
+		assert declined == [(f"{PROBE}/gone", "misattributed")]
 
 
 class TestRobustness:

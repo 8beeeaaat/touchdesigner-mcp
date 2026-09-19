@@ -32,6 +32,7 @@ export function formatNodeErrors(
 	const skipped = data.skippedStreams ?? [];
 	const unresolved = data.unresolvedAnchors ?? [];
 	const lookupFailures = data.lookupFailures ?? [];
+	const fallbacks = data.fallbackAttributions ?? [];
 
 	// Errors first: a warning never blocks a fix that an error already blocks.
 	const ordered = [...entries].sort(
@@ -64,6 +65,10 @@ export function formatNodeErrors(
 				opType: opts.detailLevel === "minimal" ? "" : entry.opType,
 			})),
 			errorCount: data.errorCount,
+			fallbackAttributions: fallbacks.map((f) => ({
+				path: f.path,
+				stream: f.stream,
+			})),
 			// Only an unread stream leaves the counts without a ceiling. A
 			// declined anchor keeps its content, so it is reported on its own
 			// rather than folded into this claim.

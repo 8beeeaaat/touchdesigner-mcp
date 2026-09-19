@@ -21,6 +21,14 @@
 {{/unresolvedAnchors}}
 {{/unresolvedAnchors.length}}
 
+{{#fallbackAttributions.length}}
+> ℹ️ Some entries name an owner we could not resolve, so their node fell back
+> to the one queried. Nothing is missing from the counts; the owner named in
+> the message text is the one that failed:
+{{#fallbackAttributions}}
+> - `{{{path}}}` (on `{{stream}}`)
+{{/fallbackAttributions}}
+{{/fallbackAttributions.length}}
 {{#lookupFailures.length}}
 > ℹ️ Some operators could not be looked up, so their type is undetermined
 > rather than absent. The entries themselves are still counted:

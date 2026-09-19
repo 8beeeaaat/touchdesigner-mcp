@@ -242,6 +242,88 @@ class TestAnchorsThatCouldNotBeResolved:
 		assert "quoted by the callback" in report["errors"][0]["message"]
 
 
+	def test_a_fallback_owner_is_not_called_a_folded_failure(self, scene):
+		# Declining a trailing "(<path>)" has the opposite consequence to
+		# declining an anchor: nothing folds, the entry stands on its own and
+		# is counted once, but its owner falls back to the queried node while
+		# every field still looks resolved. Reporting that as an unresolved
+		# anchor would send a caller hunting a merged failure that is not there.
+		node = scene(PROBE, [])
+		node.with_streams(
+			errors=f"  Error: Not enough sources specified ({PROBE}/adder)",
+			warnings="",
+		)
+
+		report = report_for(node)
+
+		assert report["errorCount"] == 1
+		assert report["unresolvedAnchors"] == []
+		assert report["fallbackAttributions"] == [
+			{"path": f"{PROBE}/adder", "stream": "errors"}
+		]
+		entry = report["errors"][0]
+		assert entry["nodePath"] == PROBE
+		# The real owner is still recoverable from the text.
+		assert f"({PROBE}/adder)" in entry["message"]
+
+	def test_a_resolvable_trailing_owner_is_not_reported_at_all(self, scene):
+		node = scene(PROBE, [f"{PROBE}/adder"])
+		node.with_streams(
+			errors=f"  Error: Not enough sources specified ({PROBE}/adder)",
+			warnings="",
+		)
+
+		report = report_for(node)
+
+		assert report["errors"][0]["nodePath"] == f"{PROBE}/adder"
+		assert report["fallbackAttributions"] == []
+		assert report["unresolvedAnchors"] == []
+
+
+	def test_one_path_lands_in_one_list_only(self, scene, td_stub):
+		# A flaky td.op can answer differently on two lines naming the same
+		# path. The lists are presented as a disjoint categorisation, so the
+		# first outcome wins rather than the path appearing twice.
+		node = scene(PROBE, [])
+
+		class Flaky:
+			def __init__(self):
+				self.seen = 0
+
+			def __call__(self, recurse=True):
+				return (
+					f"{PROBE}/gone:  Error: first\n"
+					f"{PROBE}/gone:  Error: second"
+				)
+
+		node.errors = Flaky()
+		node.warnings = lambda recurse=True: ""
+		calls = {"n": 0}
+		original = td_stub.op
+
+		def flaky_op(path):
+			if path == f"{PROBE}/gone":
+				calls["n"] += 1
+				if calls["n"] > 1:
+					raise RuntimeError("flaky")
+				return None
+			return original(path)
+
+		td_stub.op = flaky_op
+		try:
+			report = report_for(node)
+		finally:
+			td_stub.op = original
+
+		paths = [
+			a["path"]
+			for a in report["unresolvedAnchors"]
+			+ report["lookupFailures"]
+			+ report["fallbackAttributions"]
+		]
+		assert paths == [f"{PROBE}/gone"]
+
+
 class TestMissingNode:
 	def test_an_unknown_path_fails_rather_than_reporting_clean(self, scene):
 		scene(PROBE, [])
