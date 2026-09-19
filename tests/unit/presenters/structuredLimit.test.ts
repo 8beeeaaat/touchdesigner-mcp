@@ -104,53 +104,56 @@ describe("limit in the structured formats", () => {
 		const run = (options: FormatterOptions) =>
 			formatNodeErrors(report(), options);
 
-		it.each(
-			structuredFormats,
-		)("stops the entries at the limit in %s", (responseFormat) => {
-			const payload = payloadOf(
-				run({ limit: 4, responseFormat }),
-				responseFormat,
-			);
+		it.each(structuredFormats)(
+			"stops the entries at the limit in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					run({ limit: 4, responseFormat }),
+					responseFormat,
+				);
 
-			// The cap spans both collections, errors first: four of the six
-			// errors, none of the warnings.
-			expect(payload.errors).toHaveLength(4);
-			expect(payload.warnings).toHaveLength(0);
-		});
+				// The cap spans both collections, errors first: four of the six
+				// errors, none of the warnings.
+				expect(payload.errors).toHaveLength(4);
+				expect(payload.warnings).toHaveLength(0);
+			},
+		);
 
-		it.each(
-			structuredFormats,
-		)("spends the remainder of the limit on warnings in %s", (responseFormat) => {
-			const payload = payloadOf(
-				run({ limit: 8, responseFormat }),
-				responseFormat,
-			);
+		it.each(structuredFormats)(
+			"spends the remainder of the limit on warnings in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					run({ limit: 8, responseFormat }),
+					responseFormat,
+				);
 
-			expect(payload.errors).toHaveLength(6);
-			expect(payload.warnings).toHaveLength(2);
-		});
+				expect(payload.errors).toHaveLength(6);
+				expect(payload.warnings).toHaveLength(2);
+			},
+		);
 
-		it.each(
-			structuredFormats,
-		)("says the entries were cut in %s", (responseFormat) => {
-			const payload = payloadOf(
-				run({ limit: 4, responseFormat }),
-				responseFormat,
-			);
+		it.each(structuredFormats)(
+			"says the entries were cut in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					run({ limit: 4, responseFormat }),
+					responseFormat,
+				);
 
-			expect(payload.truncated).toBe(true);
-			expect(truncationOf(payload)?.limit).toBe(4);
-			expect(truncationOf(payload)?.collections.errors).toEqual({
-				omitted: 2,
-				returned: 4,
-				total: 6,
-			});
-			expect(truncationOf(payload)?.collections.warnings).toEqual({
-				omitted: 4,
-				returned: 0,
-				total: 4,
-			});
-		});
+				expect(payload.truncated).toBe(true);
+				expect(truncationOf(payload)?.limit).toBe(4);
+				expect(truncationOf(payload)?.collections.errors).toEqual({
+					omitted: 2,
+					returned: 4,
+					total: 6,
+				});
+				expect(truncationOf(payload)?.collections.warnings).toEqual({
+					omitted: 4,
+					returned: 0,
+					total: 4,
+				});
+			},
+		);
 
 		it("keeps the server counts as the ceiling", () => {
 			// The counts are what tells a reader how much was left behind, so
@@ -227,28 +230,30 @@ describe("limit in the structured formats", () => {
 			expect(payload).not.toHaveProperty("warnings");
 		});
 
-		it.each(
-			structuredFormats,
-		)("leaves detailLevel 'detailed' uncapped in %s", (responseFormat) => {
-			const payload = payloadOf(
-				run({ detailLevel: "detailed", limit: 2, responseFormat }),
-				responseFormat,
-			);
+		it.each(structuredFormats)(
+			"leaves detailLevel 'detailed' uncapped in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					run({ detailLevel: "detailed", limit: 2, responseFormat }),
+					responseFormat,
+				);
 
-			expect(payload.errors).toHaveLength(6);
-			expect(payload.warnings).toHaveLength(4);
-			expect(payload).not.toHaveProperty("truncation");
-		});
+				expect(payload.errors).toHaveLength(6);
+				expect(payload.warnings).toHaveLength(4);
+				expect(payload).not.toHaveProperty("truncation");
+			},
+		);
 
-		it.each(
-			structuredFormats,
-		)("leaves a payload with no limit untouched in %s", (responseFormat) => {
-			const data = report();
+		it.each(structuredFormats)(
+			"leaves a payload with no limit untouched in %s",
+			(responseFormat) => {
+				const data = report();
 
-			const payload = payloadOf(run({ responseFormat }), responseFormat);
+				const payload = payloadOf(run({ responseFormat }), responseFormat);
 
-			expect(payload).toEqual(JSON.parse(JSON.stringify(data)));
-		});
+				expect(payload).toEqual(JSON.parse(JSON.stringify(data)));
+			},
+		);
 	});
 
 	describe("formatClassList", () => {
@@ -259,33 +264,35 @@ describe("limit in the structured formats", () => {
 		}));
 		const data = { classes, modules: ["td", "tdu"] };
 
-		it.each(
-			structuredFormats,
-		)("stops the classes at the limit in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatClassList(data, { limit: 3, responseFormat }),
-				responseFormat,
-			);
+		it.each(structuredFormats)(
+			"stops the classes at the limit in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatClassList(data, { limit: 3, responseFormat }),
+					responseFormat,
+				);
 
-			expect(payload.classes).toHaveLength(3);
-			expect(payload.classCount).toBe(7);
-		});
+				expect(payload.classes).toHaveLength(3);
+				expect(payload.classCount).toBe(7);
+			},
+		);
 
-		it.each(
-			structuredFormats,
-		)("says the classes were cut in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatClassList(data, { limit: 3, responseFormat }),
-				responseFormat,
-			);
+		it.each(structuredFormats)(
+			"says the classes were cut in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatClassList(data, { limit: 3, responseFormat }),
+					responseFormat,
+				);
 
-			expect(payload.truncated).toBe(true);
-			expect(truncationOf(payload)?.collections.classes).toEqual({
-				omitted: 4,
-				returned: 3,
-				total: 7,
-			});
-		});
+				expect(payload.truncated).toBe(true);
+				expect(truncationOf(payload)?.collections.classes).toEqual({
+					omitted: 4,
+					returned: 3,
+					total: 7,
+				});
+			},
+		);
 
 		it("stops the classes at the limit in markdown too", () => {
 			// The classListSummary template renders the class list from the
@@ -300,34 +307,36 @@ describe("limit in the structured formats", () => {
 			expect(text).toContain("4 more class(es) omitted");
 		});
 
-		it.each(
-			structuredFormats,
-		)("leaves detailLevel 'detailed' uncapped in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatClassList(data, {
-					detailLevel: "detailed",
-					limit: 3,
+		it.each(structuredFormats)(
+			"leaves detailLevel 'detailed' uncapped in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatClassList(data, {
+						detailLevel: "detailed",
+						limit: 3,
+						responseFormat,
+					}),
 					responseFormat,
-				}),
-				responseFormat,
-			);
+				);
 
-			expect(payload.classes).toHaveLength(7);
-			expect(payload).not.toHaveProperty("truncation");
-		});
+				expect(payload.classes).toHaveLength(7);
+				expect(payload).not.toHaveProperty("truncation");
+			},
+		);
 
-		it.each(
-			structuredFormats,
-		)("leaves a payload with no limit untouched in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatClassList(data, { responseFormat }),
-				responseFormat,
-			);
+		it.each(structuredFormats)(
+			"leaves a payload with no limit untouched in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatClassList(data, { responseFormat }),
+					responseFormat,
+				);
 
-			expect(payload.classes).toHaveLength(7);
-			expect(payload).not.toHaveProperty("truncation");
-			expect(payload).not.toHaveProperty("truncated");
-		});
+				expect(payload.classes).toHaveLength(7);
+				expect(payload).not.toHaveProperty("truncation");
+				expect(payload).not.toHaveProperty("truncated");
+			},
+		);
 	});
 
 	describe("formatClassDetails", () => {
@@ -346,58 +355,61 @@ describe("limit in the structured formats", () => {
 			type: "class",
 		};
 
-		it.each(
-			structuredFormats,
-		)("stops the members at the limit and says so in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatClassDetails(details, { limit: 2, responseFormat }),
-				responseFormat,
-			);
-
-			expect(payload.methods).toHaveLength(2);
-			expect(payload.properties).toHaveLength(2);
-			expect(payload.truncated).toBe(true);
-			expect(truncationOf(payload)?.collections.methods).toEqual({
-				omitted: 3,
-				returned: 2,
-				total: 5,
-			});
-			expect(truncationOf(payload)?.collections.properties).toEqual({
-				omitted: 3,
-				returned: 2,
-				total: 5,
-			});
-		});
-
-		it.each(
-			structuredFormats,
-		)("leaves detailLevel 'detailed' uncapped in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatClassDetails(details, {
-					detailLevel: "detailed",
-					limit: 2,
+		it.each(structuredFormats)(
+			"stops the members at the limit and says so in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatClassDetails(details, { limit: 2, responseFormat }),
 					responseFormat,
-				}),
-				responseFormat,
-			);
+				);
 
-			expect(payload.methods).toHaveLength(5);
-			expect(payload.properties).toHaveLength(5);
-			expect(payload).not.toHaveProperty("truncation");
-		});
+				expect(payload.methods).toHaveLength(2);
+				expect(payload.properties).toHaveLength(2);
+				expect(payload.truncated).toBe(true);
+				expect(truncationOf(payload)?.collections.methods).toEqual({
+					omitted: 3,
+					returned: 2,
+					total: 5,
+				});
+				expect(truncationOf(payload)?.collections.properties).toEqual({
+					omitted: 3,
+					returned: 2,
+					total: 5,
+				});
+			},
+		);
 
-		it.each(
-			structuredFormats,
-		)("leaves a payload with no limit untouched in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatClassDetails(details, { responseFormat }),
-				responseFormat,
-			);
+		it.each(structuredFormats)(
+			"leaves detailLevel 'detailed' uncapped in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatClassDetails(details, {
+						detailLevel: "detailed",
+						limit: 2,
+						responseFormat,
+					}),
+					responseFormat,
+				);
 
-			expect(payload.methods).toHaveLength(5);
-			expect(payload).not.toHaveProperty("truncation");
-			expect(payload.truncated).toBe(false);
-		});
+				expect(payload.methods).toHaveLength(5);
+				expect(payload.properties).toHaveLength(5);
+				expect(payload).not.toHaveProperty("truncation");
+			},
+		);
+
+		it.each(structuredFormats)(
+			"leaves a payload with no limit untouched in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatClassDetails(details, { responseFormat }),
+					responseFormat,
+				);
+
+				expect(payload.methods).toHaveLength(5);
+				expect(payload).not.toHaveProperty("truncation");
+				expect(payload.truncated).toBe(false);
+			},
+		);
 	});
 
 	describe("formatNodeList", () => {
@@ -415,22 +427,23 @@ describe("limit in the structured formats", () => {
 				(group) => group.nodes,
 			);
 
-		it.each(
-			structuredFormats,
-		)("stops the nodes at the limit and says so in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatNodeList(data, { limit: 2, responseFormat }),
-				responseFormat,
-			);
+		it.each(structuredFormats)(
+			"stops the nodes at the limit and says so in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatNodeList(data, { limit: 2, responseFormat }),
+					responseFormat,
+				);
 
-			expect(listed(payload)).toHaveLength(2);
-			expect(payload.truncated).toBe(true);
-			expect(truncationOf(payload)?.collections.nodes).toEqual({
-				omitted: 4,
-				returned: 2,
-				total: 6,
-			});
-		});
+				expect(listed(payload)).toHaveLength(2);
+				expect(payload.truncated).toBe(true);
+				expect(truncationOf(payload)?.collections.nodes).toEqual({
+					omitted: 4,
+					returned: 2,
+					total: 6,
+				});
+			},
+		);
 
 		it("still admits the cut when the omission hint is suppressed", () => {
 			// includeHints only governs the human-readable hint. The structured
@@ -460,35 +473,37 @@ describe("limit in the structured formats", () => {
 			expect(text).not.toContain("omitted");
 		});
 
-		it.each(
-			structuredFormats,
-		)("leaves detailLevel 'detailed' uncapped in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatNodeList(data, {
-					detailLevel: "detailed",
-					limit: 2,
+		it.each(structuredFormats)(
+			"leaves detailLevel 'detailed' uncapped in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatNodeList(data, {
+						detailLevel: "detailed",
+						limit: 2,
+						responseFormat,
+					}),
 					responseFormat,
-				}),
-				responseFormat,
-			);
+				);
 
-			expect(payload.nodes).toHaveLength(6);
-			expect(payload).not.toHaveProperty("truncation");
-		});
+				expect(payload.nodes).toHaveLength(6);
+				expect(payload).not.toHaveProperty("truncation");
+			},
+		);
 
-		it.each(
-			structuredFormats,
-		)("leaves a payload with no limit untouched in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatNodeList(data, { responseFormat }),
-				responseFormat,
-			);
+		it.each(structuredFormats)(
+			"leaves a payload with no limit untouched in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatNodeList(data, { responseFormat }),
+					responseFormat,
+				);
 
-			expect(listed(payload)).toHaveLength(6);
-			expect(payload).not.toHaveProperty("truncation");
-			expect(payload.truncated).toBe(false);
-			expect(payload.omittedCount).toBe(0);
-		});
+				expect(listed(payload)).toHaveLength(6);
+				expect(payload).not.toHaveProperty("truncation");
+				expect(payload.truncated).toBe(false);
+				expect(payload.omittedCount).toBe(0);
+			},
+		);
 	});
 
 	describe("formatNodeDetails", () => {
@@ -502,50 +517,53 @@ describe("limit in the structured formats", () => {
 			),
 		};
 
-		it.each(
-			structuredFormats,
-		)("stops the properties at the limit and says so in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatNodeDetails(data, { limit: 2, responseFormat }),
-				responseFormat,
-			);
-
-			expect(payload.properties).toHaveLength(2);
-			expect(payload.truncated).toBe(true);
-			expect(truncationOf(payload)?.collections.properties).toEqual({
-				omitted: 4,
-				returned: 2,
-				total: 6,
-			});
-		});
-
-		it.each(
-			structuredFormats,
-		)("leaves detailLevel 'detailed' uncapped in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatNodeDetails(data, {
-					detailLevel: "detailed",
-					limit: 2,
+		it.each(structuredFormats)(
+			"stops the properties at the limit and says so in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatNodeDetails(data, { limit: 2, responseFormat }),
 					responseFormat,
-				}),
-				responseFormat,
-			);
+				);
 
-			expect(Object.keys(payload.properties as object)).toHaveLength(6);
-			expect(payload).not.toHaveProperty("truncation");
-		});
+				expect(payload.properties).toHaveLength(2);
+				expect(payload.truncated).toBe(true);
+				expect(truncationOf(payload)?.collections.properties).toEqual({
+					omitted: 4,
+					returned: 2,
+					total: 6,
+				});
+			},
+		);
 
-		it.each(
-			structuredFormats,
-		)("leaves a payload with no limit untouched in %s", (responseFormat) => {
-			const payload = payloadOf(
-				formatNodeDetails(data, { responseFormat }),
-				responseFormat,
-			);
+		it.each(structuredFormats)(
+			"leaves detailLevel 'detailed' uncapped in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatNodeDetails(data, {
+						detailLevel: "detailed",
+						limit: 2,
+						responseFormat,
+					}),
+					responseFormat,
+				);
 
-			expect(payload.properties).toHaveLength(6);
-			expect(payload).not.toHaveProperty("truncation");
-			expect(payload.truncated).toBe(false);
-		});
+				expect(Object.keys(payload.properties as object)).toHaveLength(6);
+				expect(payload).not.toHaveProperty("truncation");
+			},
+		);
+
+		it.each(structuredFormats)(
+			"leaves a payload with no limit untouched in %s",
+			(responseFormat) => {
+				const payload = payloadOf(
+					formatNodeDetails(data, { responseFormat }),
+					responseFormat,
+				);
+
+				expect(payload.properties).toHaveLength(6);
+				expect(payload).not.toHaveProperty("truncation");
+				expect(payload.truncated).toBe(false);
+			},
+		);
 	});
 });
