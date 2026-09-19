@@ -5,9 +5,7 @@ required:
   - nodeName
   - opType
   - errorCount
-  - warningCount
   - hasErrors
-  - hasWarnings
   - errors
 properties:
   nodePath:
@@ -24,13 +22,20 @@ properties:
     description: Number of entries with level "error"
   warningCount:
     type: integer
-    description: Number of entries with level "warning"
+    default: 0
+    description: >-
+      Number of entries with level "warning". Absent from a TouchDesigner
+      component older than this field; treat absence as unknown rather than
+      zero where the distinction matters.
   hasErrors:
     type: boolean
     description: Convenience flag indicating if any errors were found
   hasWarnings:
     type: boolean
-    description: Convenience flag indicating if any warnings were found
+    default: false
+    description: >-
+      Convenience flag indicating if any warnings were found. Absent from an
+      older component, so do not read its absence as "no warnings".
   incomplete:
     type: boolean
     default: false

@@ -788,10 +788,6 @@ class TouchDesignerApiService(IApiService):
 # pattern stays loose about it.
 _MESSAGE_ANCHOR = re.compile(r"^(/\S*?):\s*(Error|Warning):\s*(.*)$")
 
-# Fixed-string fallbacks for the same prefix, in case the spacing shifts in a
-# future TouchDesigner build.
-_ANCHOR_FALLBACKS = ((":  Error: ", "error"), (":Warning: ", "warning"))
-
 # TouchDesigner closes a message with the owning operator in parentheses.
 _TRAILING_PATH = re.compile(r"\((/[^()\s]*)\)\s*$")
 
@@ -812,14 +808,19 @@ def _resolve_op(path: str):
 
 
 def _is_owner_path(path: str, queried_node) -> bool:
-	"""Whether path names an operator inside the inspected subtree
+	"""Whether path names a real operator inside the inspected subtree
 
-	Guards the anchor against message text that merely looks like a prefix.
-	A callback raising ValueError("/project1/shared: Error: bad") would
-	otherwise split its own traceback and blame an unrelated operator, so
-	being a valid operator is not enough on its own - it has to sit under the
-	node that was queried. Existence is deliberately not required: the
-	operator may have been destroyed since the message was recorded.
+	Both halves are load-bearing. Message text can quote a path that resolves
+	to a real operator elsewhere in the project, and it can quote one that
+	sits under the queried node but is a file rather than an operator - a
+	callback raising ValueError("/project1/probe/data.csv: Error: bad row")
+	produces exactly that. Either alone lets a line of someone's traceback
+	become an entry for an operator that never failed, which inflates the
+	counts and tears the rest of the traceback off the error it belongs to.
+
+	The cost is an operator destroyed between the message being recorded and
+	the report being read: its lines merge into the preceding entry rather
+	than standing alone. That is the better trade against inventing one.
 	"""
 
 	root = queried_node.path
@@ -830,15 +831,7 @@ def _is_owner_path(path: str, queried_node) -> bool:
 	if not path.startswith(prefix):
 		return False
 
-	if prefix == "/":
-		# Querying the root makes the test above vacuous: every absolute path
-		# starts with "/", including the filesystem paths a Python traceback
-		# carries. Ask TouchDesigner whether the operator is real instead.
-		# An operator destroyed since the message was recorded is lost here,
-		# which is the better trade against inventing one.
-		return _resolve_op(path) is not None
-
-	return True
+	return _resolve_op(path) is not None
 
 
 def _owner_from_trailing_path(message: str, queried_node):
@@ -862,11 +855,6 @@ def _split_anchor(line: str, queried_node):
 	if match and _is_owner_path(match.group(1), queried_node):
 		return match.group(1), match.group(2).lower(), match.group(3)
 
-	for separator, level in _ANCHOR_FALLBACKS:
-		if line.startswith("/") and separator in line:
-			path, message = line.split(separator, 1)
-			if path and " " not in path and _is_owner_path(path, queried_node):
-				return path, level, message
 	return None
 
 

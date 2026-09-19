@@ -91,6 +91,8 @@
 		"test": "run-p test:*",
 		"test:e2e": "npm run build:dist && vitest run ./tests/e2e",
 		"test:integration": "vitest run ./tests/integration",
+		"test:integration:ci": "vitest run ./tests/integration/nodeErrorsTool.test.ts ./tests/integration/mcpToolsResponse.test.ts ./tests/integration/httpTransport.test.ts",
+		"test:python": "pytest tests/python",
 		"test:unit": "vitest run ./tests/unit",
 		"coverage": "vitest run --coverage",
 		"version": "run-p version:*",

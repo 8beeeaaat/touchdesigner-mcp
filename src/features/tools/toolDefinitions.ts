@@ -256,18 +256,28 @@ console.log(node.properties?.Text);`,
 	}),
 	defineTool({
 		category: "nodes",
-		description: "Check node and descendant errors reported by TouchDesigner",
+		description:
+			"Check errors and warnings on a node and its descendants. TouchDesigner reports missing files, dangling operator references and shader compile failures as warnings, so do not treat hasErrors=false as a healthy node",
 		errorComment: REFERENCE_COMMENT,
 		example: `import { getTdNodeErrors } from './servers/touchdesigner/getTdNodeErrors';
 
 const report = await getTdNodeErrors({
   nodePath: '/project1/text1',
 });
-if (report.hasErrors) {
-  console.log(report.errors?.map(err => err.message));
+
+// hasErrors covers level 'error' only. Warnings are the more common
+// failure in TouchDesigner, so branch on the entries themselves.
+for (const entry of report.errors ?? []) {
+  console.log(\`[\${entry.level ?? 'error'}] \${entry.nodePath}: \${entry.message}\`);
+}
+
+if (report.incomplete) {
+  // A message stream could not be read, so the counts are a floor.
+  console.warn('Incomplete report:', report.skippedStreams);
 }`,
 		name: TOOL_NAMES.GET_TD_NODE_ERRORS,
-		returns: "Error report outlining offending nodes, messages, and counts.",
+		returns:
+			"Report of offending nodes with each entry's level (error or warning), message and counts. Carries incomplete/skippedStreams when a stream could not be read.",
 		run: async ({ params, tdClient }) => {
 			const { detailLevel, limit, responseFormat, ...queryParams } = params;
 			const result = await tdClient.getNodeErrors(queryParams);
