@@ -630,7 +630,7 @@ The TouchDesigner MCP Server supports two transport modes, each optimized for di
          "args": [
            "compose", "-f", "/path/to/docker-compose.yml",
            "exec", "-i", "touchdesigner-mcp-server",
-           "node", "dist/cli.js", 
+           "node", "dist/cli.js",
            "--host=http://host.docker.internal"
          ]
        }

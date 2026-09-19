@@ -20,7 +20,7 @@ It deliberately does **not** ship TouchDesigner craft knowledge — shader diale
 
 ## Prerequisites
 
-- **Node.js 20+** (the bundled MCP server runs via `npx`)
+- **Node.js** 22.18+, 24.x or 26+ — odd-numbered releases such as 23.x and 25.x are not supported (the bundled MCP server runs via `npx`)
 - **TouchDesigner** with the `mcp_webserver_base.tox` component imported into your project (drag it into `/project1`). Get the `.tox` from the [touchdesigner-mcp repository](https://github.com/8beeeaaat/touchdesigner-mcp) — see its [installation guide](https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/docs/installation.md).
 - TouchDesigner's WebServer DAT listening on the default `http://127.0.0.1:9981`
 
