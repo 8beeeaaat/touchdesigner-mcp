@@ -26,7 +26,7 @@ properties:
       warnings rather than errors. Which collection an entry arrives in is
       the authority; this repeats it for clients that flatten the two. Stated
       in prose rather than as a schema default, because a default would tell
-      a generator to read an absent level as "error" — which is the opposite
+      a generator to read an absent level as "error", which is the opposite
       of what it means inside warnings.
   message:
     type: string

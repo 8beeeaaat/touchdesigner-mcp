@@ -31,10 +31,13 @@ class FakeOp:
 		self.valid = True
 		# TouchDesigner only writes a prefixed line for an operator that has
 		# something to say, so an operator a test puts in a scene has a
-		# message of its own by default. `healthy=` registers one that does
-		# not, which is what a traceback quoting a working sibling looks like.
+		# message of its own by default — on the errors stream only, since an
+		# operator loud on both is the shape that hides a gate probing the
+		# wrong one. `healthy=` registers one that is quiet on both, which is
+		# what a traceback quoting a working sibling looks like, and
+		# `reports()` sets either stream explicitly.
 		self.errors = lambda recurse=True: "  Error: something"
-		self.warnings = lambda recurse=True: "Warning: something"
+		self.warnings = lambda recurse=True: ""
 
 	def without_streams(self):
 		"""Drop both message streams, as an older TouchDesigner build has."""

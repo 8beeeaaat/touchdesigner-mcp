@@ -119,6 +119,77 @@ class TestAttribution:
 		assert entries[0]["nodePath"] == f"{PROBE}/script1"
 		assert "downstream note" in entries[0]["message"]
 
+	def test_an_operator_loud_on_the_other_stream_is_still_an_anchor(self, scene):
+		# The anchor word and the blob it arrives in are independent — the
+		# level comes from the stream precisely because the word cannot be
+		# trusted. So an operator that failed on warnings, named by a line in
+		# the errors blob, is a real anchor. Probing only the stream being
+		# parsed would find nothing and fold its lines into the entry above,
+		# silently, which is the defect the probe was added to prevent.
+		node = scene(PROBE, [f"{PROBE}/cb"])
+		node_warn_only = scene(PROBE, [f"{PROBE}/cb"])
+		import conftest
+
+		conftest._fake_td.ops[f"{PROBE}/quiet_on_errors"] = conftest.FakeOp(
+			f"{PROBE}/quiet_on_errors"
+		).with_streams(errors="", warnings="Warning: Failed to open file.")
+		declined = []
+
+		entries = _parse_op_messages(
+			f"{PROBE}/cb:  Error: first\n{PROBE}/quiet_on_errors: Warning: second",
+			"error",
+			node_warn_only,
+			declined,
+		)
+
+		assert [e["nodePath"] for e in entries] == [
+			f"{PROBE}/cb",
+			f"{PROBE}/quiet_on_errors",
+		]
+		assert declined == []
+		assert node is not None
+
+	def test_a_capitalised_operator_is_still_an_anchor(self, scene):
+		# Every other operator name in this suite is lowercase, so widening
+		# the name rule to reject capitals would pass every test while folding
+		# a real failure into its neighbour — and capitalised COMP names are
+		# ordinary in a TouchDesigner project.
+		node = scene(PROBE, [f"{PROBE}/cb", f"{PROBE}/MyComp"])
+		declined = []
+
+		entries = _parse_op_messages(
+			f"{PROBE}/cb:  Error: first failure\n"
+			f"{PROBE}/MyComp:  Error: second failure",
+			"error",
+			node,
+			declined,
+		)
+
+		assert [e["nodePath"] for e in entries] == [
+			f"{PROBE}/cb",
+			f"{PROBE}/MyComp",
+		]
+		assert declined == []
+
+	def test_a_sibling_sharing_the_query_prefix_is_outside_the_subtree(self, scene):
+		# The containment test is a string prefix, so it has to end at a path
+		# separator. "/project1/probe2" starts with "/project1/probe" and is a
+		# different container; without the trailing slash its operators would
+		# be treated as anchors and blamed for the queried node's failures.
+		node = scene(PROBE, [f"{PROBE}/cb", "/project1/probe2/x"])
+		declined = []
+
+		entries = _parse_op_messages(
+			f"{PROBE}/cb:  Error: ValueError raised\n"
+			"/project1/probe2/x: Error: quoted by the callback",
+			"error",
+			node,
+			declined,
+		)
+
+		assert [e["nodePath"] for e in entries] == [f"{PROBE}/cb"]
+		assert declined == []
+
 	def test_a_quoted_healthy_sibling_is_not_an_anchor(self, scene):
 		# The hardest case: the quoted path is in the subtree, spelled like an
 		# operator, and resolves to a real one. Every test but the last clears

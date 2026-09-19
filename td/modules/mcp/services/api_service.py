@@ -202,36 +202,43 @@ class TouchDesignerApiService(IApiService):
 				continue
 			try:
 				raw = method(recurse=True)
-				if raw is None:
-					# Not the same as an empty blob: the stream gave no answer.
-					skipped.append(
-						{
-							"stream": getter,
-							"reason": f"OP.{getter}() returned None",
-						}
-					)
-					continue
-				if raw:
-					# Parsing stays inside the try. A stream we cannot read is
-					# a stream to record, not a reason to lose the other one.
-					entries.extend(_parse_op_messages(raw, level, node, notes))
-					targets = {
-						_NOTE_LOOKUP_FAILED: lookup_failures,
-						_NOTE_MISATTRIBUTED: fallback_owners,
-						_NOTE_UNRESOLVED: unresolved,
-					}
-					for note_path, kind in notes:
-						# KeyError rather than a default: a kind with no home
-						# would otherwise be filed under whichever list the
-						# fallback picked and read as a TouchDesigner fault.
-						targets[kind].append({"path": note_path, "stream": getter})
 			except Exception as e:
+				# Only the read is guarded. A failure here is TouchDesigner
+				# declining to answer, which is what skippedStreams means.
 				log_message(
 					f"Error reading {getter} from node {node_path}: {str(e)}",
 					LogLevel.WARNING,
 				)
 				skipped.append({"stream": getter, "reason": str(e)})
 				continue
+
+			if raw is None:
+				# Not the same as an empty blob: the stream gave no answer.
+				skipped.append(
+					{"stream": getter, "reason": f"OP.{getter}() returned None"}
+				)
+				continue
+
+			if not raw:
+				continue
+
+			# Parsing is outside the guard above on purpose. Wrapping it would
+			# file our own bug as a TouchDesigner stream failure - including
+			# the KeyError below, whose entire point is to be loud about a
+			# note kind with no home. It would also leave the entries and
+			# notes already appended in the payload beside a claim that the
+			# stream was never read.
+			entries.extend(_parse_op_messages(raw, level, node, notes))
+			targets = {
+				_NOTE_LOOKUP_FAILED: lookup_failures,
+				_NOTE_MISATTRIBUTED: fallback_owners,
+				_NOTE_UNRESOLVED: unresolved,
+			}
+			for note_path, kind in notes:
+				# KeyError rather than a default: a kind with no home would
+				# otherwise be filed under whichever list the fallback picked
+				# and read as a TouchDesigner fault.
+				targets[kind].append({"path": note_path, "stream": getter})
 
 		# Both sides name the level they take. A remainder filter would give a
 		# level nobody planned for a silent home in whichever collection was
@@ -923,29 +930,42 @@ def _resolve_op(path: str):
 	return None, _MISSING
 
 
-def _owner_reports_on(owner, level: str) -> bool:
-	"""Whether this operator has a message of its own on the stream being read
+def _owner_reports_anything(owner) -> bool:
+	"""Whether this operator has a message of its own on either stream
 
 	Evidence separating a real anchor from a path quoted inside somebody's
 	traceback: measured on 099.2025.33230, a working operator returns "" from
 	errors() and warnings() while a failing one returns its message, and
-	TouchDesigner writes a prefixed line only for the latter. It does not
-	separate them when the quoted operator has a message of its own on the
-	same stream; that residue is accepted.
+	TouchDesigner writes a prefixed line only for the latter.
+
+	Both streams are asked, not the one being parsed. The anchor word and the
+	blob it arrives in are treated as independent everywhere else here - the
+	level comes from the stream, precisely because the word cannot be trusted
+	to agree - so probing only the matching stream would decline a genuine
+	anchor whose operator failed on the other one, folding its lines into the
+	entry above with nothing recorded. That is the failure this module exists
+	to remove, and it would have been introduced by the check meant to guard
+	against a different one.
+
+	It does not separate them when the quoted operator has a message of its
+	own; that residue is accepted.
 	"""
 
-	getter = getattr(owner, "errors" if level == _LEVEL_ERROR else "warnings", None)
-	if not callable(getter):
-		# Nothing to check against, so this evidence is simply unavailable and
-		# the caller's other checks stand on their own.
-		return True
-	try:
-		return bool((getter(recurse=False) or "").strip())
-	except Exception:
-		return True
+	for name in ("errors", "warnings"):
+		getter = getattr(owner, name, None)
+		if not callable(getter):
+			# Nothing to check against, so this evidence is unavailable and
+			# the caller's other checks stand on their own.
+			return True
+		try:
+			if (getter(recurse=False) or "").strip():
+				return True
+		except Exception:
+			return True
+	return False
 
 
-def _classify_anchor(path: str, queried_node, level: str):
+def _classify_anchor(path: str, queried_node):
 	"""Decide what an anchor-shaped path is, resolving it at most once
 
 	Returns (accepted, owner, note), where note is either None or the Note the
@@ -967,11 +987,11 @@ def _classify_anchor(path: str, queried_node, level: str):
 	  somebody's callback is ruled out before TouchDesigner is asked;
 	- known to TouchDesigner, or unknown only because the lookup itself
 	  failed;
-	- actually carrying a message of its own on the stream being read. A
-	  traceback that quotes a healthy sibling, "/project1/probe/shared:
-	  Error: ...", clears every test above it - the path is in the subtree,
-	  spelled like an operator, and resolves - so resolution alone cannot tell
-	  a real anchor from quoted text.
+	- actually carrying a message of its own, on either stream. A traceback
+	  that quotes a healthy sibling, "/project1/probe/shared: Error: ...",
+	  clears every test above it - the path is in the subtree, spelled like an
+	  operator, and resolves - so resolution alone cannot tell a real anchor
+	  from quoted text.
 
 	A path that spells like an operator and resolves to nothing is most likely
 	one deleted since its message was recorded. Declining it folds its lines
@@ -1001,7 +1021,7 @@ def _classify_anchor(path: str, queried_node, level: str):
 		return False, None, Note(path, _NOTE_UNRESOLVED)
 	if outcome == _LOOKUP_FAILED:
 		return True, None, Note(path, _NOTE_LOOKUP_FAILED)
-	if not _owner_reports_on(owner, level):
+	if not _owner_reports_anything(owner):
 		# It is a real operator and it is fine, so the line is quoting it.
 		# Declining keeps those lines with the entry they belong to, and
 		# nothing is under-counted, so there is nothing to report.
@@ -1009,7 +1029,7 @@ def _classify_anchor(path: str, queried_node, level: str):
 	return True, owner, None
 
 
-def _split_anchor(line: str, queried_node, level: str):
+def _split_anchor(line: str, queried_node):
 	"""Classify a line as the start of a new message, or not
 
 	Returns (anchor, note). `anchor` is (path, message, owner) when the line
@@ -1022,7 +1042,7 @@ def _split_anchor(line: str, queried_node, level: str):
 		return None, None
 
 	path = match.group(1)
-	accepted, owner, note = _classify_anchor(path, queried_node, level)
+	accepted, owner, note = _classify_anchor(path, queried_node)
 	if not accepted:
 		return None, note
 	# The anchor word is deliberately not returned. Which stream produced the
@@ -1031,7 +1051,7 @@ def _split_anchor(line: str, queried_node, level: str):
 	return (path, match.group(3), owner), note
 
 
-def _owner_from_trailing_path(message: str, queried_node, level: str):
+def _owner_from_trailing_path(message: str, queried_node):
 	"""Recover the owner from a trailing "(<path>)"
 
 	Returns (path_or_None, owner_or_None, note). Output captured with
@@ -1047,7 +1067,7 @@ def _owner_from_trailing_path(message: str, queried_node, level: str):
 		return None, None, None
 
 	path = match.group(1)
-	accepted, owner, note = _classify_anchor(path, queried_node, level)
+	accepted, owner, note = _classify_anchor(path, queried_node)
 	if accepted:
 		return path, owner, note
 
@@ -1114,7 +1134,7 @@ def _parse_op_messages(
 		if not line.strip():
 			continue
 
-		anchor, declined = _split_anchor(line, queried_node, level)
+		anchor, declined = _split_anchor(line, queried_node)
 		note(declined)
 
 		if anchor:
@@ -1155,7 +1175,7 @@ def _parse_op_messages(
 
 		if not group["anchored"]:
 			recovered, recovered_owner, declined = _owner_from_trailing_path(
-				message, queried_node, level
+				message, queried_node
 			)
 			note(declined)
 			if recovered:

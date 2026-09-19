@@ -6,6 +6,8 @@ looking like a stream with nothing in it, and a message whose owner could not
 be resolved must not quietly vanish into another operator's entry.
 """
 
+import pytest
+
 from mcp.services.api_service import TouchDesignerApiService
 
 PROBE = "/project1/probe"
@@ -61,20 +63,18 @@ class TestStreamsThatCouldNotBeRead:
 			for s in report["skippedStreams"]
 		)
 
-	def test_a_parse_failure_is_recorded_rather_than_thrown(self, scene):
-		# Parsing runs inside the same guard as the read, so a stream that
-		# hands back something unparseable is one more skipped stream, not a
-		# dead call that loses the stream next to it.
+	def test_a_parse_failure_is_not_disguised_as_a_stream_failure(self, scene):
+		# Our own bug must not be filed under skippedStreams. That field means
+		# TouchDesigner declined to answer, and rendering it says "a message
+		# stream could not be read" — pointing a reader at TouchDesigner for a
+		# fault in this parser, with whatever entries had already been
+		# collected still in the payload beside the claim.
 		node = scene(PROBE, [f"{PROBE}/a"])
 		node.errors = lambda recurse=True: ["not", "a", "string"]
-		node.warnings = lambda recurse=True: (
-			f"{PROBE}/a:Warning: Failed to open file. ({PROBE}/a)"
-		)
+		node.warnings = lambda recurse=True: ""
 
-		report = report_for(node)
-
-		assert report["warningCount"] == 1
-		assert [s["stream"] for s in report["skippedStreams"]] == ["errors"]
+		with pytest.raises(AttributeError):
+			TouchDesignerApiService().get_node_errors(node.path)
 
 	def test_both_streams_readable_reports_a_complete_result(self, scene):
 		node = scene(PROBE, [f"{PROBE}/a"])
@@ -362,6 +362,17 @@ class TestAnchorsThatCouldNotBeResolved:
 			+ report["fallbackAttributions"]
 		]
 		assert paths == [f"{PROBE}/gone"]
+
+	def test_a_failed_lookup_on_the_queried_path_is_not_reported_as_absent(
+		self, scene, td_stub
+	):
+		scene(PROBE, [])
+		td_stub.op_raises_for = {PROBE}
+
+		result = TouchDesignerApiService().get_node_errors(PROBE)
+
+		assert result["success"] is False
+		assert "Could not look up" in result["error"]
 
 
 class TestMissingNode:

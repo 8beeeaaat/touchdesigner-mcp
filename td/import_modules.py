@@ -37,7 +37,10 @@ def setup():
 			raise FileNotFoundError(
 				"OpenAPI schema file not found in any known location."
 			)
-		with open(schema_path) as f:
+		# UTF-8 explicitly: the schema is UTF-8 by specification and
+		# TouchDesigner's Python defaults to ASCII, so one non-ASCII character
+		# anywhere in it takes down every route rather than one description.
+		with open(schema_path, encoding="utf-8") as f:
 			openapi_schema = yaml.safe_load(f)
 	except Exception as e:
 		openapi_schema = {}

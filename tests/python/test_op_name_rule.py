@@ -65,6 +65,33 @@ def test_a_name_of_letters_digits_and_underscore_is_accepted():
 		assert looks_like_op_path(f"{PROBE}/{name}"), name
 
 
+def test_the_generated_schema_is_ascii():
+	"""TouchDesigner's Python opens the schema with the platform default.
+
+	`import_modules.setup()` now passes encoding="utf-8", so this is belt and
+	braces — but one non-ASCII character in a description took down every
+	route once, because the failure is not "this description is unreadable",
+	it is "the schema did not load", and the exec endpoint that would let you
+	fix it lives in the schema.
+	"""
+
+	from pathlib import Path
+
+	schema = (
+		Path(__file__).resolve().parents[2]
+		/ "td"
+		/ "modules"
+		/ "td_server"
+		/ "openapi_server"
+		/ "openapi"
+		/ "openapi.yaml"
+	)
+	if not schema.exists():  # generated output; absent before `npm run gen`
+		return
+
+	schema.read_bytes().decode("ascii")
+
+
 def test_a_component_anywhere_in_the_path_is_checked():
 	_, looks_like_op_path = _rule()
 
