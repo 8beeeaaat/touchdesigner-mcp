@@ -288,7 +288,7 @@ if (report.incomplete) {
 // errorCount 0 and incomplete false — the same shape as a healthy node, and
 // nothing above distinguishes the two. To make one visible to this tool,
 // catch it in the callback and call scriptOp.addError(msg), which writes to
-// the errors stream; otherwise it is only in the Textport.`,
+// the errors stream; otherwise it reaches only places this tool does not read.`,
 		name: TOOL_NAMES.GET_TD_NODE_ERRORS,
 		returns:
 			"Report with `errors` and `warnings` as separate collections, each entry carrying its level, message and owning node, plus counts. Carries incomplete/skippedStreams when a stream could not be read, and unresolvedAnchors/fallbackAttributions/lookupFailures when an attribution is uncertain. Built from the operator errors and warnings streams only, so nothing in it — incomplete included — speaks to a Script OP whose callback raised: such an exception is on neither stream and leaves errorCount 0 with incomplete false.",
