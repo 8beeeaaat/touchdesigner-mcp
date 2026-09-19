@@ -19,20 +19,31 @@ describe("nodeErrorsFormatter", () => {
 		opType,
 	});
 
+	/**
+	 * Build a report the way the service does: each entry goes in the
+	 * collection matching its level, since membership is what the formatter
+	 * reads. Taking a single list and splitting it here keeps the cases
+	 * below readable.
+	 */
 	const report = (
-		errors: TdNodeError[],
+		entries: TdNodeError[],
 		overrides: Partial<NodeErrorReportData> = {},
-	): NodeErrorReportData => ({
-		errorCount: errors.filter((e) => e.level !== "warning").length,
-		errors,
-		hasErrors: errors.some((e) => e.level !== "warning"),
-		hasWarnings: errors.some((e) => e.level === "warning"),
-		nodeName: "probe",
-		nodePath: "/project1/probe",
-		opType: "baseCOMP",
-		warningCount: errors.filter((e) => e.level === "warning").length,
-		...overrides,
-	});
+	): NodeErrorReportData => {
+		const errors = entries.filter((e) => e.level !== "warning");
+		const warnings = entries.filter((e) => e.level === "warning");
+		return {
+			errorCount: errors.length,
+			errors,
+			hasErrors: errors.length > 0,
+			hasWarnings: warnings.length > 0,
+			nodeName: "probe",
+			nodePath: "/project1/probe",
+			opType: "baseCOMP",
+			warningCount: warnings.length,
+			warnings,
+			...overrides,
+		};
+	};
 
 	it("reports a clean node", () => {
 		const result = formatNodeErrors(report([]));

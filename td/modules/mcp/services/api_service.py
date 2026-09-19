@@ -11,7 +11,7 @@ import pydoc
 import re
 import sys
 import traceback
-from typing import Any, Optional, Protocol
+from typing import Any, NamedTuple, Optional, Protocol
 
 from mcp.services.node_layout import first_free_cell
 import td
@@ -188,7 +188,10 @@ class TouchDesignerApiService(IApiService):
 		unresolved = []
 		lookup_failures = []
 		fallback_owners = []
-		for level, getter in (("error", "errors"), ("warning", "warnings")):
+		for level, getter in (
+			(_LEVEL_ERROR, "errors"),
+			(_LEVEL_WARNING, "warnings"),
+		):
 			notes = []
 			method = getattr(node, getter, None)
 			if not callable(method):
@@ -217,11 +220,13 @@ class TouchDesignerApiService(IApiService):
 						_NOTE_MISATTRIBUTED: fallback_owners,
 						_NOTE_UNRESOLVED: unresolved,
 					}
-					for path, kind in notes:
+					for note_path, kind in notes:
 						# KeyError rather than a default: a kind with no home
 						# would otherwise be filed under whichever list the
 						# fallback picked and read as a TouchDesigner fault.
-						targets[kind].append({"path": path, "stream": getter})
+						targets[kind].append(
+							{"path": note_path, "stream": getter}
+						)
 			except Exception as e:
 				log_message(
 					f"Error reading {getter} from node {node_path}: {str(e)}",
@@ -230,8 +235,11 @@ class TouchDesignerApiService(IApiService):
 				skipped.append({"stream": getter, "reason": str(e)})
 				continue
 
-		errors = [e for e in entries if e["level"] == "error"]
-		warnings = [e for e in entries if e["level"] != "error"]
+		# Both sides name the level they take. A remainder filter would give a
+		# level nobody planned for a silent home in whichever collection was
+		# written second.
+		errors = [e for e in entries if e["level"] == _LEVEL_ERROR]
+		warnings = [e for e in entries if e["level"] == _LEVEL_WARNING]
 
 		# `errors` stays error-only. A released MCP server reads it as errors
 		# and renders every element under an "N error(s) found" heading, so
@@ -852,13 +860,31 @@ _ILLEGAL_IN_OP_NAME = set(". -*?[]{}()/\\:;,'\"`!@#$%^&|<>~=+")
 
 # Outcomes of looking a path up, kept distinct because they call for opposite
 # treatment: a lookup that failed says nothing about the path.
+class Note(NamedTuple):
+	"""Something about a path the caller should hear about.
+
+	Named rather than a bare pair because it crosses four functions, and a
+	positional tuple read by index is where the wrong half gets used.
+	"""
+
+	path: str
+	kind: str
+
+
+_LEVEL_ERROR = "error"
+_LEVEL_WARNING = "warning"
+
 _NOTE_UNRESOLVED = "unresolved"
 _NOTE_LOOKUP_FAILED = "lookup_failed"
 _NOTE_MISATTRIBUTED = "misattributed"
 
-_FOUND = "found"
-_MISSING = "missing"
-_LOOKUP_FAILED = "lookup_failed"
+# Prefixed so a resolve outcome and a note kind cannot alias: both had a
+# "lookup_failed" member, which compares equal for that one value and diverges
+# for the others - the single case the targets[kind] KeyError cannot catch,
+# because that key does have a home.
+_FOUND = "resolve:found"
+_MISSING = "resolve:missing"
+_LOOKUP_FAILED = "resolve:lookup_failed"
 
 
 def _looks_like_op_path(path: str) -> bool:
@@ -905,7 +931,9 @@ def _owner_reports_on(owner, level: str) -> bool:
 	say, and an operator that is fine reports an empty string.
 	"""
 
-	getter = getattr(owner, "errors" if level == "error" else "warnings", None)
+	getter = getattr(
+		owner, "errors" if level == _LEVEL_ERROR else "warnings", None
+	)
 	if not callable(getter):
 		# Nothing to check against, so this evidence is simply unavailable and
 		# the caller's other checks stand on their own.
@@ -919,9 +947,9 @@ def _owner_reports_on(owner, level: str) -> bool:
 def _classify_anchor(path: str, queried_node, level: str):
 	"""Decide what an anchor-shaped path is, resolving it at most once
 
-	Returns (accepted, owner, note), where note is either None or the
-	(path, kind) pair the caller should report. Pairing it here keeps a caller
-	from attaching the wrong path to a kind.
+	Returns (accepted, owner, note), where note is either None or the Note the
+	caller should report. Pairing it here keeps a caller from attaching the
+	wrong path to a kind.
 
 	Three things have to hold for an anchor to be accepted, and each rules out
 	a different way for message text to be mistaken for the start of a new
@@ -966,9 +994,9 @@ def _classify_anchor(path: str, queried_node, level: str):
 
 	owner, outcome = _resolve_op(path)
 	if outcome == _MISSING:
-		return False, None, (path, _NOTE_UNRESOLVED)
+		return False, None, Note(path, _NOTE_UNRESOLVED)
 	if outcome == _LOOKUP_FAILED:
-		return True, None, (path, _NOTE_LOOKUP_FAILED)
+		return True, None, Note(path, _NOTE_LOOKUP_FAILED)
 	if not _owner_reports_on(owner, level):
 		# It is a real operator and it is fine, so the line is quoting it.
 		# Declining keeps those lines with the entry they belong to, and
@@ -981,8 +1009,8 @@ def _split_anchor(line: str, queried_node, level: str):
 	"""Classify a line as the start of a new message, or not
 
 	Returns (anchor, note). `anchor` is (path, message, owner) when the line
-	starts one, otherwise None. `note` is the (path, kind) pair when there is
-	something worth telling the caller.
+	starts one, otherwise None. `note` is a Note when there is something worth
+	telling the caller.
 	"""
 
 	match = _MESSAGE_ANCHOR.match(line)
@@ -1025,8 +1053,8 @@ def _owner_from_trailing_path(message: str, queried_node, level: str):
 	# every field on the entry still looks resolved. Reporting that as an
 	# unresolved anchor would send a caller looking for a merged failure that
 	# does not exist.
-	if note and note[1] == _NOTE_UNRESOLVED:
-		note = (note[0], _NOTE_MISATTRIBUTED)
+	if note and note.kind == _NOTE_UNRESOLVED:
+		note = Note(note.path, _NOTE_MISATTRIBUTED)
 	return None, None, note
 
 
@@ -1053,7 +1081,7 @@ def _parse_op_messages(
 	belong to the entry that preceded them, so splitting on newlines alone
 	would report one failure as several and attribute most of them wrongly.
 
-	`notes` collects (path, kind) pairs for paths the caller should hear about:
+	`notes` collects Note entries for paths the caller should hear about:
 	an anchor declined because it resolved to nothing, or one accepted despite
 	the lookup failing. Each path is listed once.
 	"""
@@ -1068,7 +1096,7 @@ def _parse_op_messages(
 
 		if entry is None or notes is None:
 			return
-		if any(path == entry[0] for path, _kind in notes):
+		if any(seen.path == entry.path for seen in notes):
 			return
 		notes.append(entry)
 

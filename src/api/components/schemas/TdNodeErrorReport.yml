@@ -22,7 +22,6 @@ properties:
     description: Number of entries with level "error"
   warningCount:
     type: integer
-    default: 0
     description: >-
       Number of entries with level "warning". Absent from a TouchDesigner
       component older than this field; treat absence as unknown rather than
@@ -32,13 +31,11 @@ properties:
     description: Convenience flag indicating if any errors were found
   hasWarnings:
     type: boolean
-    default: false
     description: >-
       Convenience flag indicating if any warnings were found. Absent from an
       older component, so do not read its absence as "no warnings".
   incomplete:
     type: boolean
-    default: false
     description: >-
       True when a message stream could not be read, so the counts have no
       ceiling and hasErrors false does not mean clean. Declined anchors are
@@ -55,7 +52,10 @@ properties:
       properties:
         stream:
           type: string
-          description: Which stream was skipped ("errors" or "warnings")
+          enum:
+            - errors
+            - warnings
+          description: Which stream was skipped
         reason:
           type: string
           description: Why it could not be read
@@ -82,7 +82,10 @@ properties:
           description: The path that looked like the start of a message
         stream:
           type: string
-          description: Which stream it appeared on ("errors" or "warnings")
+          enum:
+            - errors
+            - warnings
+          description: Which stream it appeared on
   fallbackAttributions:
     type: array
     description: >-
@@ -102,7 +105,10 @@ properties:
           description: The owner path that could not be resolved
         stream:
           type: string
-          description: Which stream it appeared on ("errors" or "warnings")
+          enum:
+            - errors
+            - warnings
+          description: Which stream it appeared on
   lookupFailures:
     type: array
     description: >-
@@ -122,7 +128,10 @@ properties:
           description: The path whose lookup failed
         stream:
           type: string
-          description: Which stream it appeared on ("errors" or "warnings")
+          enum:
+            - errors
+            - warnings
+          description: Which stream it appeared on
   errors:
     type: array
     description: >-

@@ -352,6 +352,35 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(text).not.toContain("No errors or warnings reported");
 	});
 
+	it("levels an entry by the array it arrived in, not by its own field", async () => {
+		// `level` is optional on the wire. Reading it instead of the array
+		// membership would render a warning that omitted the field as an
+		// error — losing the distinction the two arrays exist to carry.
+		const text = await runTool({
+			errorCount: 0,
+			errors: [],
+			hasErrors: false,
+			hasWarnings: true,
+			nodeName: "probe",
+			nodePath: "/project1/probe",
+			opType: "baseCOMP",
+			warningCount: 1,
+			warnings: [
+				{
+					message: "Failed to open file.",
+					nodeName: "missing_movie",
+					nodePath: "/project1/probe/missing_movie",
+					opType: "moviefileinTOP",
+				},
+			],
+		} as never);
+
+		expect(text).toContain("| warning |");
+		expect(text).not.toContain("| error |");
+		expect(text).toContain("Errors: 0");
+		expect(text).not.toContain("do not match");
+	});
+
 	it("reports a node with neither errors nor warnings as clean", async () => {
 		const text = await runTool({
 			...warningOnly,

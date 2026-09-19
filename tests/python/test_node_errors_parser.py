@@ -240,7 +240,9 @@ class TestAttribution:
 		# Without the guard the second anchor is accepted and an entry is
 		# fabricated blaming alpha, which never failed.
 		assert [e["nodePath"] for e in entries] == [f"{PROBE}/cb"]
-		assert declined == [(f"{PROBE}/beta", "unresolved")]
+		assert [(n.path, n.kind) for n in declined] == [
+			(f"{PROBE}/beta", "unresolved")
+		]
 
 	def test_a_wildcard_is_rejected_before_any_lookup(self, scene):
 		node = scene(PROBE, [f"{PROBE}/cb", f"{PROBE}/alpha"])
@@ -281,7 +283,9 @@ class TestAttribution:
 			f"  Error: boom ({PROBE}/gone)", "error", node, declined
 		)
 
-		assert declined == [(f"{PROBE}/gone", "misattributed")]
+		assert [(n.path, n.kind) for n in declined] == [
+			(f"{PROBE}/gone", "misattributed")
+		]
 
 
 class TestRobustness:

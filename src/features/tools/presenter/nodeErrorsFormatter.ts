@@ -30,7 +30,16 @@ export function formatNodeErrors(
 	// The payload keeps the two apart so an older client cannot render
 	// warnings under an "N error(s) found" heading. Merging them for display
 	// is this layer's job, and the sort below puts errors first.
-	const entries = [...(data.errors ?? []), ...(data.warnings ?? [])];
+	//
+	// Which array an entry arrived in is the authority on its level, so the
+	// tag is taken from there rather than from the field. An entry's own
+	// `level` is optional, and reading it would make a warning with the field
+	// missing render as an error — the distinction these two arrays exist to
+	// carry, lost on the way out.
+	const entries = [
+		...(data.errors ?? []).map((entry) => ({ ...entry, level: "error" })),
+		...(data.warnings ?? []).map((entry) => ({ ...entry, level: "warning" })),
+	];
 	// A component predating warning collection sends neither field. Rendering
 	// that as zero would claim the warning stream was inspected and found
 	// empty, which is the confident-but-wrong report this tool exists to stop
@@ -57,7 +66,7 @@ export function formatNodeErrors(
 	// folded into this claim.
 	const reportIncomplete = Boolean(data.incomplete) || skipped.length > 0;
 
-	const listedErrors = entries.filter((e) => e.level !== "warning").length;
+	const listedErrors = entries.filter((e) => e.level === "error").length;
 	const countsDisagree =
 		listedErrors !== data.errorCount ||
 		(warningsKnown && entries.length - listedErrors !== warningCount);
