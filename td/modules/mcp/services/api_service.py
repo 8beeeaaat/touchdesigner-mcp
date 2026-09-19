@@ -184,6 +184,7 @@ class TouchDesignerApiService(IApiService):
 
 		entries = []
 		skipped = []
+		unresolved = []
 		for level, getter in (("error", "errors"), ("warning", "warnings")):
 			method = getattr(node, getter, None)
 			if not callable(method):
@@ -194,15 +195,28 @@ class TouchDesignerApiService(IApiService):
 				continue
 			try:
 				raw = method(recurse=True)
+				if raw is None:
+					# Not the same as an empty blob: the stream gave no answer.
+					skipped.append(
+						{
+							"stream": getter,
+							"reason": f"OP.{getter}() returned None",
+						}
+					)
+					continue
+				if raw:
+					# Parsing stays inside the try. A stream we cannot read is
+					# a stream to record, not a reason to lose the other one.
+					entries.extend(
+						_parse_op_messages(raw, level, node, unresolved)
+					)
 			except Exception as e:
 				log_message(
-					f"Error getting {getter} from node {node_path}: {str(e)}",
+					f"Error reading {getter} from node {node_path}: {str(e)}",
 					LogLevel.WARNING,
 				)
 				skipped.append({"stream": getter, "reason": str(e)})
 				continue
-			if raw:
-				entries.extend(_parse_op_messages(raw, level, node))
 
 		error_count = sum(1 for entry in entries if entry["level"] == "error")
 
@@ -219,8 +233,9 @@ class TouchDesignerApiService(IApiService):
 				"warningCount": len(entries) - error_count,
 				"hasErrors": error_count > 0,
 				"hasWarnings": len(entries) > error_count,
-				"incomplete": bool(skipped),
+				"incomplete": bool(skipped or unresolved),
 				"skippedStreams": skipped,
+				"unresolvedAnchors": unresolved,
 				"errors": entries,
 			}
 		)
@@ -871,7 +886,9 @@ def _strip_redundant_path_suffix(message: str, path: str) -> str:
 	return message
 
 
-def _parse_op_messages(raw: str, level: str, queried_node) -> list:
+def _parse_op_messages(
+	raw: str, level: str, queried_node, unresolved: Optional[list] = None
+) -> list:
 	"""Parse one errors()/warnings() blob into structured entries
 
 	A single failure can span several lines - a Python traceback raised from a
@@ -888,6 +905,16 @@ def _parse_op_messages(raw: str, level: str, queried_node) -> list:
 			continue
 
 		anchor = _split_anchor(line, queried_node)
+		if anchor is None and unresolved is not None:
+			# The line is shaped like a new message but its path does not name
+			# an operator we can see - a deleted one, or a file path quoted in
+			# someone's traceback. We cannot tell which from the string, so the
+			# line is kept with the entry above it and the ambiguity is
+			# reported rather than silently decided.
+			declined = _MESSAGE_ANCHOR.match(line)
+			if declined and declined.group(1) not in unresolved:
+				unresolved.append(declined.group(1))
+
 		if anchor:
 			if current:
 				groups.append(current)

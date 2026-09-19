@@ -211,6 +211,21 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(text).toContain("OP.warnings is not available");
 	});
 
+	it("warns when an anchor could not be resolved", async () => {
+		// An operator deleted since the message was recorded looks exactly like
+		// a file path quoted in a traceback, so its lines stay with the entry
+		// above and the count is a floor. The caller has to be told.
+		const text = await runTool({
+			...mixed,
+			incomplete: true,
+			unresolvedAnchors: ["/project1/probe/gone"],
+		});
+
+		expect(text).toContain("Incomplete");
+		expect(text).toContain("/project1/probe/gone");
+		expect(text).toContain("may not be counted");
+	});
+
 	it("renders the counts the server sent, not the row count", async () => {
 		const text = await runTool({
 			...warningOnly,

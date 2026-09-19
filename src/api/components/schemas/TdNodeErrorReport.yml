@@ -40,9 +40,10 @@ properties:
     type: boolean
     default: false
     description: >-
-      True when a message stream could not be read, so the counts below are a
-      floor rather than a total. Do not read hasErrors false as "clean" while
-      this is set.
+      True when a stream could not be read, or when a line that looked like a
+      new message named an operator that could not be resolved. Either way the
+      counts below are a floor rather than a total, so do not read hasErrors
+      false as "clean" while this is set.
   skippedStreams:
     type: array
     description: Streams that could not be read, with the reason for each
@@ -58,6 +59,16 @@ properties:
         reason:
           type: string
           description: Why it could not be read
+  unresolvedAnchors:
+    type: array
+    description: >-
+      Operator paths that began a message but could not be resolved. Their
+      lines were kept with the preceding entry, so a failure they describe may
+      be folded into another operator's message rather than counted on its own.
+      A deleted operator and a file path quoted inside a traceback are
+      indistinguishable here, which is why the ambiguity is reported.
+    items:
+      type: string
   errors:
     type: array
     description: >-

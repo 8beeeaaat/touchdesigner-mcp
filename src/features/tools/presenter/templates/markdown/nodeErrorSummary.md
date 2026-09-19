@@ -6,8 +6,13 @@
 > ⚠️ **Incomplete.** A message stream could not be read, so the counts above
 > are a floor, not a total. Do not read this as a clean node.
 {{#skippedStreams}}
-> - `{{stream}}` — {{reason}}
+> - stream `{{stream}}` — {{reason}}
 {{/skippedStreams}}
+{{#unresolvedAnchors}}
+> - `{{{path}}}` started a message but could not be resolved; its lines were
+>   kept with the entry above it, so a failure there may not be counted
+>   separately.
+{{/unresolvedAnchors}}
 {{/incomplete}}
 {{#countsDisagree}}
 > ⚠️ The reported counts do not match the {{listedCount}} entr(ies) returned.

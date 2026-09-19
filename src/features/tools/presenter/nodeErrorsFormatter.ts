@@ -30,6 +30,7 @@ export function formatNodeErrors(
 	const entries = data.errors ?? [];
 	const warningCount = data.warningCount ?? 0;
 	const skipped = data.skippedStreams ?? [];
+	const unresolved = data.unresolvedAnchors ?? [];
 
 	// Errors first: a warning never blocks a fix that an error already blocks.
 	const ordered = [...entries].sort(
@@ -62,7 +63,8 @@ export function formatNodeErrors(
 				opType: opts.detailLevel === "minimal" ? "" : entry.opType,
 			})),
 			errorCount: data.errorCount,
-			incomplete: Boolean(data.incomplete) || skipped.length > 0,
+			incomplete:
+				Boolean(data.incomplete) || skipped.length > 0 || unresolved.length > 0,
 			listedCount: entries.length,
 			nodeName: data.nodeName,
 			nodePath: data.nodePath,
@@ -73,6 +75,7 @@ export function formatNodeErrors(
 				stream: s.stream,
 			})),
 			truncated,
+			unresolvedAnchors: unresolved.map((path) => ({ path })),
 			warningCount,
 		},
 		structured: data,

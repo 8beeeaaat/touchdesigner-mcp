@@ -17,13 +17,34 @@ sys.path.insert(0, str(REPO_ROOT / "td" / "modules"))
 
 
 class FakeOp:
-	"""The slice of OP the error parser touches."""
+	"""The slice of OP the error parser touches.
+
+	``errors``/``warnings`` are absent unless a test asks for them, which is
+	how an older TouchDesigner build without ``OP.warnings`` behaves.
+	"""
 
 	def __init__(self, path: str, op_type: str = "constantTOP"):
 		self.path = path
 		self.name = path.rsplit("/", 1)[-1] or "root"
 		self.OPType = op_type
 		self.valid = True
+
+	def with_streams(self, errors=None, warnings=None):
+		"""Attach message streams. A string is returned; an Exception raises."""
+
+		def make(value):
+			def stream(recurse=True):
+				if isinstance(value, Exception):
+					raise value
+				return value
+
+			return stream
+
+		if errors is not None:
+			self.errors = make(errors)
+		if warnings is not None:
+			self.warnings = make(warnings)
+		return self
 
 
 class FakeTd:
