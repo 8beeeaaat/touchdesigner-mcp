@@ -92,14 +92,7 @@ describe("CLI", () => {
 			// The trailing three are what `Number.parseInt` used to swallow: it
 			// stops at the first character it cannot read, so each one arrived
 			// as a plausible port (9981, 1, 1) that nobody asked for.
-			for (const value of [
-				"invalid",
-				"0",
-				"70000",
-				"9981junk",
-				"1.5",
-				"1e3",
-			]) {
+			for (const value of ["invalid", "0", "70000", "9981junk", "1.5", "1e3"]) {
 				const mockExit = vi
 					.spyOn(process, "exit")
 					.mockImplementation(() => undefined as never);
