@@ -28,22 +28,8 @@ export function formatNodeErrors(
 	}
 
 	const entries = data.errors ?? [];
-
-	if (entries.length === 0) {
-		const noErrorText = `Node ${data.nodePath} has no reported errors or warnings.`;
-		return finalizeFormattedText(noErrorText, opts, {
-			context: {
-				entries: [],
-				errorCount: 0,
-				nodeName: data.nodeName,
-				nodePath: data.nodePath,
-				opType: data.opType,
-				warningCount: 0,
-			},
-			structured: data,
-			template: "nodeErrorSummary",
-		});
-	}
+	const warningCount = data.warningCount ?? 0;
+	const skipped = data.skippedStreams ?? [];
 
 	// Errors first: a warning never blocks a fix that an error already blocks.
 	const ordered = [...entries].sort(
@@ -51,37 +37,41 @@ export function formatNodeErrors(
 	);
 	const { items, truncated } = limitArray(ordered, opts.limit);
 
-	const warningCount = data.warningCount ?? 0;
-	const header =
-		`Node: ${data.nodePath}\n` +
-		`Operator: ${data.opType} (${data.nodeName})\n` +
-		`${data.errorCount} error(s), ${warningCount} warning(s) found\n`;
+	// The counts come from the server; the rows are what we were given. When
+	// they disagree, say so rather than quietly presenting one as the other.
+	const listedErrors = entries.filter((e) => e.level !== "warning").length;
+	const countsDisagree =
+		listedErrors !== data.errorCount ||
+		entries.length - listedErrors !== warningCount;
 
-	const body =
-		opts.detailLevel === "minimal"
-			? formatMinimal(items)
-			: formatSummary(items);
-
-	let text = `${header}\n${body}`;
-
-	if (truncated) {
-		text += `\n💡 ${entries.length - items.length} more entries omitted.`;
-	}
+	const text =
+		entries.length === 0
+			? `Node ${data.nodePath} has no reported errors or warnings.`
+			: `Node ${data.nodePath}: ${data.errorCount} error(s), ${warningCount} warning(s).`;
 
 	return finalizeFormattedText(text, opts, {
 		context: {
+			countsDisagree,
 			displayed: items.length,
 			entries: items.map((entry) => ({
 				level: entry.level ?? "error",
 				message: collapseMessage(entry.message),
 				nodePath: entry.nodePath,
-				opType: entry.opType,
+				// Minimal drops the operator type; the path already identifies
+				// the node and the type is the least load-bearing column.
+				opType: opts.detailLevel === "minimal" ? "" : entry.opType,
 			})),
 			errorCount: data.errorCount,
+			incomplete: Boolean(data.incomplete) || skipped.length > 0,
+			listedCount: entries.length,
 			nodeName: data.nodeName,
 			nodePath: data.nodePath,
 			omittedCount: Math.max(entries.length - items.length, 0),
 			opType: data.opType,
+			skippedStreams: skipped.map((s) => ({
+				reason: s.reason,
+				stream: s.stream,
+			})),
 			truncated,
 			warningCount,
 		},
@@ -111,24 +101,6 @@ function collapseMessage(message: string): string {
 		.filter(Boolean)
 		.join(" ⏎ ")
 		.replaceAll("|", "\\|");
-}
-
-function formatMinimal(entries: NodeErrorReportData["errors"]) {
-	return entries
-		.map(
-			(entry) =>
-				`- [${entry.level ?? "error"}] ${entry.nodePath}: ${collapseMessage(entry.message)}`,
-		)
-		.join("\n");
-}
-
-function formatSummary(entries: NodeErrorReportData["errors"]) {
-	return entries
-		.map(
-			(entry) =>
-				`- [${entry.level ?? "error"}] ${entry.nodePath} (${entry.opType}): ${collapseMessage(entry.message)}`,
-		)
-		.join("\n");
 }
 
 function formatDetailed(

@@ -130,13 +130,13 @@ describe("nodeErrorsFormatter", () => {
 		expect(result).toContain("| error |");
 	});
 
-	it("carries the level through the minimal plain-text body", () => {
+	it("keeps the level on every row at minimal detail", () => {
 		const result = formatNodeErrors(
 			report([entry("bad_select", "Invalid path for node", "warning")]),
-			{ detailLevel: "minimal", responseFormat: "json" },
+			{ detailLevel: "minimal" },
 		);
 
-		expect(result).toContain('"level": "warning"');
+		expect(result).toContain("| warning |");
 	});
 
 	it("omits entries beyond the limit and says how many", () => {

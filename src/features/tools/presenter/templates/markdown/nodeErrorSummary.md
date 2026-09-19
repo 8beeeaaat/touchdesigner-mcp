@@ -2,6 +2,17 @@
 - Operator: `{{opType}}` ({{nodeName}})
 - Errors: {{errorCount}} · Warnings: {{warningCount}}
 
+{{#incomplete}}
+> ⚠️ **Incomplete.** A message stream could not be read, so the counts above
+> are a floor, not a total. Do not read this as a clean node.
+{{#skippedStreams}}
+> - `{{stream}}` — {{reason}}
+{{/skippedStreams}}
+{{/incomplete}}
+{{#countsDisagree}}
+> ⚠️ The reported counts do not match the {{listedCount}} entr(ies) returned.
+{{/countsDisagree}}
+
 {{#entries.length}}
 | Level | Node | Type | Message |
 | --- | --- | --- | --- |

@@ -183,9 +183,14 @@ class TouchDesignerApiService(IApiService):
 			return error_result(f"Node not found at path: {node_path}")
 
 		entries = []
+		skipped = []
 		for level, getter in (("error", "errors"), ("warning", "warnings")):
 			method = getattr(node, getter, None)
 			if not callable(method):
+				# An older TouchDesigner build may not expose this stream.
+				skipped.append(
+					{"stream": getter, "reason": f"OP.{getter} is not available"}
+				)
 				continue
 			try:
 				raw = method(recurse=True)
@@ -194,12 +199,17 @@ class TouchDesignerApiService(IApiService):
 					f"Error getting {getter} from node {node_path}: {str(e)}",
 					LogLevel.WARNING,
 				)
+				skipped.append({"stream": getter, "reason": str(e)})
 				continue
 			if raw:
 				entries.extend(_parse_op_messages(raw, level, node))
 
 		error_count = sum(1 for entry in entries if entry["level"] == "error")
 
+		# A stream we could not read is not a stream with nothing in it. Say so
+		# in the payload: the log only reaches TouchDesigner's textport, and a
+		# caller branching on hasErrors would otherwise be told a project it
+		# never finished inspecting is clean.
 		return success_result(
 			{
 				"nodePath": node.path,
@@ -209,6 +219,8 @@ class TouchDesignerApiService(IApiService):
 				"warningCount": len(entries) - error_count,
 				"hasErrors": error_count > 0,
 				"hasWarnings": len(entries) > error_count,
+				"incomplete": bool(skipped),
+				"skippedStreams": skipped,
 				"errors": entries,
 			}
 		)
@@ -784,6 +796,21 @@ _ANCHOR_FALLBACKS = ((":  Error: ", "error"), (":Warning: ", "warning"))
 _TRAILING_PATH = re.compile(r"\((/[^()\s]*)\)\s*$")
 
 
+def _resolve_op(path: str):
+	"""Look up path, returning None instead of raising
+
+	`path` comes out of message text, and td.op() does glob matching, so a
+	stray bracket can raise rather than return None. One odd line must not
+	discard every entry parsed before it.
+	"""
+
+	try:
+		owner = td.op(path)
+	except Exception:
+		return None
+	return owner if owner is not None and owner.valid else None
+
+
 def _is_owner_path(path: str, queried_node) -> bool:
 	"""Whether path names an operator inside the inspected subtree
 
@@ -798,8 +825,20 @@ def _is_owner_path(path: str, queried_node) -> bool:
 	root = queried_node.path
 	if path == root:
 		return True
+
 	prefix = root if root.endswith("/") else f"{root}/"
-	return path.startswith(prefix)
+	if not path.startswith(prefix):
+		return False
+
+	if prefix == "/":
+		# Querying the root makes the test above vacuous: every absolute path
+		# starts with "/", including the filesystem paths a Python traceback
+		# carries. Ask TouchDesigner whether the operator is real instead.
+		# An operator destroyed since the message was recorded is lost here,
+		# which is the better trade against inventing one.
+		return _resolve_op(path) is not None
+
+	return True
 
 
 def _owner_from_trailing_path(message: str, queried_node):
@@ -864,10 +903,13 @@ def _parse_op_messages(raw: str, level: str, queried_node) -> list:
 		if anchor:
 			if current:
 				groups.append(current)
-			path, anchor_level, message = anchor
+			path, _anchor_level, message = anchor
+			# The anchor word only marks where an entry begins. Which stream
+			# produced the line decides the level, so an "errors" blob cannot
+			# report itself as warnings and leave hasErrors false.
 			current = {
 				"anchored": True,
-				"level": anchor_level,
+				"level": level,
 				"lines": [message],
 				"path": path,
 			}
@@ -894,13 +936,12 @@ def _parse_op_messages(raw: str, level: str, queried_node) -> list:
 			path = _owner_from_trailing_path(message, queried_node) or path
 		message = _strip_redundant_path_suffix(message, path)
 
-		owner = td.op(path)
-		known = owner is not None and owner.valid
+		owner = _resolve_op(path)
 		entries.append(
 			{
-				"nodePath": owner.path if known else path,
-				"nodeName": owner.name if known else "",
-				"opType": owner.OPType if known else "",
+				"nodePath": owner.path if owner else path,
+				"nodeName": owner.name if owner else "",
+				"opType": owner.OPType if owner else "",
 				"level": group["level"],
 				"message": message,
 			}

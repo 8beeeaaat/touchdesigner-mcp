@@ -31,6 +31,28 @@ properties:
   hasWarnings:
     type: boolean
     description: Convenience flag indicating if any warnings were found
+  incomplete:
+    type: boolean
+    default: false
+    description: >-
+      True when a message stream could not be read, so the counts below are a
+      floor rather than a total. Do not read hasErrors false as "clean" while
+      this is set.
+  skippedStreams:
+    type: array
+    description: Streams that could not be read, with the reason for each
+    items:
+      type: object
+      required:
+        - stream
+        - reason
+      properties:
+        stream:
+          type: string
+          description: Which stream was skipped ("errors" or "warnings")
+        reason:
+          type: string
+          description: Why it could not be read
   errors:
     type: array
     description: >-

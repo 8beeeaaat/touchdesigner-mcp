@@ -191,4 +191,47 @@ describe("GET_TD_NODE_ERRORS", () => {
 
 		expect(text).toContain("No errors or warnings reported");
 	});
+
+	it("does not call a node clean when a stream could not be read", async () => {
+		// An older TD build without OP.warnings, or a stream that raised. The
+		// report must not read as an all-clear on a project never fully seen.
+		const text = await runTool({
+			...warningOnly,
+			errors: [],
+			hasWarnings: false,
+			incomplete: true,
+			skippedStreams: [
+				{ reason: "OP.warnings is not available", stream: "warnings" },
+			],
+			warningCount: 0,
+		});
+
+		expect(text).toContain("Incomplete");
+		expect(text).toContain("warnings");
+		expect(text).toContain("OP.warnings is not available");
+	});
+
+	it("renders the counts the server sent, not the row count", async () => {
+		const text = await runTool({
+			...warningOnly,
+			errorCount: 5,
+			errors: [],
+			hasErrors: true,
+			hasWarnings: true,
+			warningCount: 2,
+		});
+
+		expect(text).toContain("Errors: 5");
+		expect(text).toContain("Warnings: 2");
+		expect(text).toContain("do not match");
+	});
+
+	it("drops the operator type column at minimal detail", async () => {
+		const full = await runTool(mixed);
+		const minimal = await runTool(mixed, { detailLevel: "minimal" });
+
+		expect(full).toContain("constantTOP");
+		expect(minimal).not.toContain("constantTOP");
+		expect(minimal).toContain("AttributeError");
+	});
 });
