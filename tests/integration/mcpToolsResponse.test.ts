@@ -514,6 +514,42 @@ describe("limit at the MCP boundary", () => {
 		expect(payload).not.toHaveProperty("truncation");
 	});
 
+	it("caps a legacy report without giving it a warnings list", async () => {
+		// A TouchDesigner component predating warning collection sends no
+		// `warnings` at all, and the report says so through the absence — the
+		// distinction `warningsUnknown` exists to carry. Capping rebuilds the
+		// report, so this is where an empty array could appear and answer
+		// "are there warnings" on the component's behalf.
+		const server = serverWith({
+			getNodeErrors: (async () => ({
+				data: {
+					errorCount: 5,
+					errors: Array.from({ length: 5 }, (_, i) => ({
+						message: `failure ${i}`,
+						nodeName: `bad${i}`,
+						nodePath: `/project1/probe/bad${i}`,
+						opType: "textTOP",
+					})),
+					hasErrors: true,
+					nodeName: "probe",
+					nodePath: "/project1/probe",
+					opType: "baseCOMP",
+				},
+				success: true,
+			})) as TouchDesignerClient["getNodeErrors"],
+		});
+
+		const payload = await callTool(server, TOOL_NAMES.GET_TD_NODE_ERRORS, {
+			limit: 2,
+			nodePath: "/project1/probe",
+			responseFormat: "json",
+		});
+
+		expect(payload.errors).toHaveLength(2);
+		expect(payload.truncated).toBe(true);
+		expect(payload).not.toHaveProperty("warnings");
+	});
+
 	it("caps get_td_nodes in yaml and says how much it left out", async () => {
 		const server = serverWith({
 			getNodes: (async () => ({
