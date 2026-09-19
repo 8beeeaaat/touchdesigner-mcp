@@ -565,13 +565,20 @@ describe("TouchDesigner Client E2E Tests", () => {
 		// cannot carry the test: a dangling operator reference and a file that
 		// is not there. Measured on 099.2025.33230 — both land on warnings()
 		// with errors() empty.
+		//
+		// The dangling reference points inside the run-unique sandbox, not at
+		// a made-up path under /project1. A project that happened to contain
+		// the name would resolve the Select TOP, leave one warning instead of
+		// two, and fail the counts below for a reason that has nothing to do
+		// with the collector. Depending on what is outside its own sandbox is
+		// the same defect this suite already had once, in the sandbox name.
 		const setup = await tdClient.execPythonScript<{ result: unknown }>({
 			script:
 				`host = op('${warnHost}')\n` +
 				`m = host.create('moviefileinTOP', 'missing_movie')\n` +
 				`m.par.file = '/nonexistent/definitely_not_here.mov'\n` +
 				`s = host.create('selectTOP', 'bad_select')\n` +
-				`s.par.top = '/project1/does_not_exist'\n` +
+				`s.par.top = '${warnHost}/no_such_child'\n` +
 				"host.cook(recurse=True, force=True)\n",
 		});
 		if (!setup.success) {
