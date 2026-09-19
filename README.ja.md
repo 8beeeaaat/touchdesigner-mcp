@@ -41,6 +41,20 @@ codex plugin add touchdesigner@touchdesigner-openai
 
 設定、ChatGPT 接続は [OpenAI プラグインガイド](docs/openai-plugin.md)を参照してください。
 
+### ChatGPT デスクトップユーザー向け（Work / Codex）
+
+ローカルプラグインに対応したデスクトップ版では、同じパソコンの **Codex CLI** からマーケットプレイスを登録します。
+
+```bash
+codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
+```
+
+1. ChatGPT デスクトップアプリを再起動します。
+2. Work / Codex の **Plugins Directory** を開き、配布元に **TouchDesigner**（`touchdesigner-openai`）を選びます。
+3. **TouchDesigner** をインストールし、プラグインを有効にした新しいローカル会話で「TouchDesigner の接続を確認して」と依頼します。
+
+Codex CLI ですでに登録済みなら、再登録は不要です。ローカルマーケットプレイスの利用可否はクライアントとワークスペースの設定に依存します。[公式の登録手順](https://developers.openai.com/plugins/build/plugins#add-a-marketplace-from-the-cli)も参照してください。Web・クラウド上の会話では、[ChatGPT の接続設定](docs/openai-plugin.md#chatgpt-connect-the-local-server)が必要です。
+
 ### その他のクライアント・アップデート
 
 **Claude Desktop（MCPB）**、その他の MCP クライアント、手動設定は [インストールガイド](docs/installation.ja.md)を参照してください。**ChatGPT Web** は [OpenAI 接続ガイド](docs/openai-plugin.md#chatgpt-connect-the-local-server)で案内しています。

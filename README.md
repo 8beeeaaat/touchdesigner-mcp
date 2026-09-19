@@ -41,6 +41,20 @@ Then ask “Use TouchDesigner setup to check my connection” or “Launch Touch
 
 See the [OpenAI plugin guide](docs/openai-plugin.md) for configuration and ChatGPT connections.
 
+### ChatGPT desktop users (Work / Codex)
+
+For a desktop version with local plugin support, register the marketplace using **Codex CLI** on the same computer:
+
+```bash
+codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
+```
+
+1. Restart the ChatGPT desktop app.
+2. In Work / Codex, open **Plugins Directory** and choose the **TouchDesigner** marketplace source (`touchdesigner-openai`).
+3. Install **TouchDesigner**, then start a new local conversation with the plugin enabled and ask “Check my TouchDesigner connection.”
+
+If you already registered the marketplace with Codex CLI, skip re-registration. Local marketplace availability depends on the client and workspace policy. See the [official marketplace guide](https://developers.openai.com/plugins/build/plugins#add-a-marketplace-from-the-cli). For web or cloud conversations, use the [ChatGPT connection setup](docs/openai-plugin.md#chatgpt-connect-the-local-server).
+
 ### Other clients and updates
 
 For **Claude Desktop (MCPB)**, other MCP clients, or manual configuration, see the [Installation Guide](docs/installation.md). For **ChatGPT Web**, see the [OpenAI connection guide](docs/openai-plugin.md#chatgpt-connect-the-local-server).
