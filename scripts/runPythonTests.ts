@@ -34,9 +34,13 @@ function has(command: string): boolean {
 
 /** Whether this interpreter is new enough to import the modules under test. */
 function isSupported(python: string): boolean {
+	// Compared field by field. `sys.version_info` is a tuple, and Python
+	// refuses to order a tuple against a list — which a JSON-serialised array
+	// would be, making every interpreter look unsupported.
+	const [major, minor] = MIN_PYTHON;
 	const result = run(python, [
 		"-c",
-		`import sys; sys.exit(0 if sys.version_info >= ${JSON.stringify(MIN_PYTHON)} else 1)`,
+		`import sys; sys.exit(0 if (sys.version_info.major, sys.version_info.minor) >= (${major}, ${minor}) else 1)`,
 	]);
 	return result.status === 0;
 }

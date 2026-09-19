@@ -138,7 +138,7 @@ args = ["mcp-remote", "http://localhost:6280/mcp"]
    npm run dev    # MCP Inspector を起動
    ```
 
-   `tests/python/` の TD 側 Python テストには Python 3.10+ と pytest が必要です。
+   `tests/python/` の TD 側 Python テストには Python 3.9+ と pytest が必要です。
    `uv` があれば自動的に使用します。無い場合は `pip install pytest` を実行して
    ください。どちらも無い環境では通知を出してスキップし、CI では必ず実行します。
 

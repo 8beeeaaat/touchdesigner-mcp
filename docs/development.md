@@ -141,7 +141,7 @@ args = ["mcp-remote", "http://localhost:6280/mcp"]
    npm run dev    # Launch MCP inspector
    ```
 
-   The TD-side Python tests under `tests/python/` need Python 3.10+ and pytest.
+   The TD-side Python tests under `tests/python/` need Python 3.9+ and pytest.
    `uv` is used automatically when present; otherwise install pytest with
    `pip install pytest`. Without either they are skipped locally with a notice,
    and CI always runs them.
