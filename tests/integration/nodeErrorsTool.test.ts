@@ -439,6 +439,24 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(neverLooked).not.toContain("warning count was not reported");
 	});
 
+	it("trusts skippedStreams even when incomplete is absent", async () => {
+		// The formatter ORs the two because a server can send one without the
+		// other — which is the whole compatibility story. Every other test
+		// sets both, so the disjunct was never exercised on its own.
+		const text = await runTool({
+			...warningOnly,
+			errors: [],
+			hasWarnings: false,
+			skippedStreams: [{ reason: "cook in progress", stream: "warnings" }],
+			warningCount: 0,
+			warnings: [],
+		});
+
+		expect(text).toContain("Incomplete");
+		expect(text).toContain("cook in progress");
+		expect(text).not.toContain("No errors or warnings reported");
+	});
+
 	it("reports a node with neither errors nor warnings as clean", async () => {
 		const text = await runTool({
 			...warningOnly,
