@@ -96,7 +96,8 @@ post:
                 properties:
                   result:
                     description: Result of the execution
-                    $ref: ../../../index.yml#/components/schemas/TdNode
+                    allOf:
+                      - $ref: ../../../index.yml#/components/schemas/TdNode
               error:
                 type: string
                 nullable: true
@@ -136,7 +137,8 @@ delete:
                     description: Whether the node was successfully deleted
                   node:
                     description: Information about the deleted node
-                    $ref: ../../../index.yml#/components/schemas/TdNode
+                    allOf:
+                      - $ref: ../../../index.yml#/components/schemas/TdNode
               error:
                 type: string
                 nullable: true

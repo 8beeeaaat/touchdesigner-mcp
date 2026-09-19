@@ -27,7 +27,8 @@ get:
                 description: Whether the operation was successful
               data:
                 nullable: true
-                $ref: ../../../index.yml#/components/schemas/TdNode
+                allOf:
+                  - $ref: ../../../index.yml#/components/schemas/TdNode
               error:
                 nullable: true
                 type: string
