@@ -26,7 +26,7 @@ It deliberately does **not** ship TouchDesigner craft knowledge — shader diale
 
 ## Codex and ChatGPT
 
-Build the shared skills as an OpenAI plugin with `npm run plugin:openai` from the repository root. See the [Codex / ChatGPT guide](../../docs/openai-plugin.md) for local installation and ChatGPT tunnel connections.
+Install the ready-to-use OpenAI package from this GitHub repository’s Codex marketplace; no manual npm build is needed. See the [Codex / ChatGPT guide](../../docs/openai-plugin.md) for registration, installation, and ChatGPT tunnel connections.
 
 ## Installation
 

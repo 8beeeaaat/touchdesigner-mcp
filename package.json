@@ -103,7 +103,9 @@
 		"gen:openapi": "redocly bundle ./src/api/index.yml -o ./td/modules/td_server/openapi_server/openapi/openapi.yaml",
 		"gen:handlers": "node td/genHandlers.js",
 		"gen:mcp": "orval --config ./orval.config.ts",
-		"plugin:openai": "node scripts/buildOpenaiPlugin.mjs"
+		"plugin:openai": "node scripts/buildOpenaiPlugin.mjs",
+		"plugin:sync": "node scripts/syncOpenaiPlugin.mjs",
+		"plugin:check": "node scripts/syncOpenaiPlugin.mjs --check"
 	},
 	"files": [
 		"dist/**/*"
