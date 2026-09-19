@@ -27,23 +27,35 @@ export function formatNodeErrors(
 		return formatDetailed(data, opts.responseFormat);
 	}
 
-	const errors = data.errors ?? [];
+	const entries = data.errors ?? [];
 
-	if (errors.length === 0 || !data.hasErrors || data.errorCount === 0) {
-		const noErrorText = `Node ${data.nodePath} has no reported errors.`;
+	if (entries.length === 0) {
+		const noErrorText = `Node ${data.nodePath} has no reported errors or warnings.`;
 		return finalizeFormattedText(noErrorText, opts, {
 			context: {
+				entries: [],
 				errorCount: 0,
 				nodeName: data.nodeName,
 				nodePath: data.nodePath,
+				opType: data.opType,
+				warningCount: 0,
 			},
 			structured: data,
 			template: "nodeErrorSummary",
 		});
 	}
 
-	const { items, truncated } = limitArray(errors, opts.limit);
-	const header = `Node: ${data.nodePath}\nOperator: ${data.opType} (${data.nodeName})\n${data.errorCount} error(s) found\n`;
+	// Errors first: a warning never blocks a fix that an error already blocks.
+	const ordered = [...entries].sort(
+		(a, b) => levelRank(a.level) - levelRank(b.level),
+	);
+	const { items, truncated } = limitArray(ordered, opts.limit);
+
+	const warningCount = data.warningCount ?? 0;
+	const header =
+		`Node: ${data.nodePath}\n` +
+		`Operator: ${data.opType} (${data.nodeName})\n` +
+		`${data.errorCount} error(s), ${warningCount} warning(s) found\n`;
 
 	const body =
 		opts.detailLevel === "minimal"
@@ -53,31 +65,67 @@ export function formatNodeErrors(
 	let text = `${header}\n${body}`;
 
 	if (truncated) {
-		text += `\n💡 ${data.errorCount - items.length} more errors omitted.`;
+		text += `\n💡 ${entries.length - items.length} more entries omitted.`;
 	}
 
 	return finalizeFormattedText(text, opts, {
 		context: {
 			displayed: items.length,
+			entries: items.map((entry) => ({
+				level: entry.level ?? "error",
+				message: collapseMessage(entry.message),
+				nodePath: entry.nodePath,
+				opType: entry.opType,
+			})),
 			errorCount: data.errorCount,
 			nodeName: data.nodeName,
 			nodePath: data.nodePath,
+			omittedCount: Math.max(entries.length - items.length, 0),
 			opType: data.opType,
+			truncated,
+			warningCount,
 		},
 		structured: data,
 		template: "nodeErrorSummary",
 	});
 }
 
-function formatMinimal(errors: NodeErrorReportData["errors"]) {
-	return errors
-		.map((entry) => `- ${entry.nodePath}: ${entry.message}`)
+/**
+ * Sort key placing errors ahead of warnings
+ */
+function levelRank(level: string | undefined): number {
+	return level === "warning" ? 1 : 0;
+}
+
+/**
+ * Render a multi-line TouchDesigner message on a single line.
+ *
+ * Messages carrying a Python traceback span several lines, which would break
+ * out of a markdown table cell.
+ */
+function collapseMessage(message: string): string {
+	return message
+		.split("\n")
+		.map((line) => line.trim())
+		.filter(Boolean)
+		.join(" ⏎ ");
+}
+
+function formatMinimal(entries: NodeErrorReportData["errors"]) {
+	return entries
+		.map(
+			(entry) =>
+				`- [${entry.level ?? "error"}] ${entry.nodePath}: ${collapseMessage(entry.message)}`,
+		)
 		.join("\n");
 }
 
-function formatSummary(errors: NodeErrorReportData["errors"]) {
-	return errors
-		.map((entry) => `- ${entry.nodePath} (${entry.opType}): ${entry.message}`)
+function formatSummary(entries: NodeErrorReportData["errors"]) {
+	return entries
+		.map(
+			(entry) =>
+				`- [${entry.level ?? "error"}] ${entry.nodePath} (${entry.opType}): ${collapseMessage(entry.message)}`,
+		)
 		.join("\n");
 }
 

@@ -8,6 +8,7 @@ import importlib
 import inspect
 import io
 import pydoc
+import re
 import sys
 import traceback
 from typing import Any, Optional, Protocol
@@ -168,76 +169,47 @@ class TouchDesignerApiService(IApiService):
 		return success_result(node_info)
 
 	def get_node_errors(self, node_path: str) -> Result:
-		"""Collect error messages for the specified node and its children"""
+		"""Collect error and warning messages for the specified node and its children
+
+		TouchDesigner reports many of the most common failures (missing files,
+		dangling operator references, shader compile failures) as warnings
+		rather than errors, so both streams are collected. Each entry carries a
+		``level`` so callers can tell them apart.
+		"""
 
 		node = td.op(node_path)
 
 		if node is None or not node.valid:
 			return error_result(f"Node not found at path: {node_path}")
 
-		# Use TouchDesigner's built-in errors() method
-		all_errors = []
-		if hasattr(node, "errors") and callable(node.errors):
+		entries = []
+		for level, getter in (("error", "errors"), ("warning", "warnings")):
+			method = getattr(node, getter, None)
+			if not callable(method):
+				continue
 			try:
-				# errors(recurse=True) returns a string with newline-separated error messages
-				error_output = node.errors(recurse=True)
-				if error_output:
-					# Parse the error output into structured data
-					error_lines = error_output.strip().split("\n")
-					for line in error_lines:
-						line = line.strip()
-						if line:
-							# Extract node path from error message if present
-							# Format: "Error message (node_path)"
-							if "(" in line and line.endswith(")"):
-								message_part, path_part = line.rsplit("(", 1)
-								error_node_path = path_part.rstrip(")")
-								message = message_part.strip()
-
-								# Try to get the actual node to extract more info
-								error_node = td.op(error_node_path)
-								if error_node and error_node.valid:
-									all_errors.append(
-										{
-											"nodePath": error_node.path,
-											"nodeName": error_node.name,
-											"opType": error_node.OPType,
-											"message": message,
-										}
-									)
-								else:
-									all_errors.append(
-										{
-											"nodePath": error_node_path,
-											"nodeName": "",
-											"opType": "",
-											"message": message,
-										}
-									)
-							else:
-								# Simple error message without node path
-								all_errors.append(
-									{
-										"nodePath": node.path,
-										"nodeName": node.name,
-										"opType": node.OPType,
-										"message": line,
-									}
-								)
+				raw = method(recurse=True)
 			except Exception as e:
 				log_message(
-					f"Error getting errors from node {node_path}: {str(e)}",
+					f"Error getting {getter} from node {node_path}: {str(e)}",
 					LogLevel.WARNING,
 				)
+				continue
+			if raw:
+				entries.extend(_parse_op_messages(raw, level, node))
+
+		error_count = sum(1 for entry in entries if entry["level"] == "error")
 
 		return success_result(
 			{
 				"nodePath": node.path,
 				"nodeName": node.name,
 				"opType": node.OPType,
-				"errorCount": len(all_errors),
-				"hasErrors": bool(all_errors),
-				"errors": all_errors,
+				"errorCount": error_count,
+				"warningCount": len(entries) - error_count,
+				"hasErrors": error_count > 0,
+				"hasWarnings": len(entries) > error_count,
+				"errors": entries,
 			}
 		)
 
@@ -796,6 +768,118 @@ class TouchDesignerApiService(IApiService):
 			return safe_serialize(item)
 		except Exception:
 			return str(item)
+
+
+# TouchDesigner prefixes each message with the owning operator path when
+# errors()/warnings() are called with recurse=True. The spacing after the colon
+# differs between the two streams ("path:  Error:" vs "path:Warning:"), so the
+# pattern stays loose about it.
+_MESSAGE_ANCHOR = re.compile(r"^(/\S*?):\s*(Error|Warning):\s*(.*)$")
+
+# Fixed-string fallbacks for the same prefix, in case the spacing shifts in a
+# future TouchDesigner build.
+_ANCHOR_FALLBACKS = ((":  Error: ", "error"), (":Warning: ", "warning"))
+
+
+def _is_owner_path(path: str, queried_node) -> bool:
+	"""Whether path plausibly names an operator in the inspected subtree
+
+	Guards the anchor against message text that merely looks like a prefix.
+	A user raising ValueError("/data/foo.csv: Error: bad") from a callback
+	would otherwise split their own traceback into two entries.
+	"""
+
+	owner = td.op(path)
+	if owner is not None and owner.valid:
+		return True
+	# The operator may have been destroyed since the message was recorded;
+	# accept it while it still names something inside the queried subtree.
+	return path == queried_node.path or path.startswith(f"{queried_node.path}/")
+
+
+def _split_anchor(line: str, queried_node):
+	"""Return (path, level, message) if line starts a new message, else None"""
+
+	match = _MESSAGE_ANCHOR.match(line)
+	if match and _is_owner_path(match.group(1), queried_node):
+		return match.group(1), match.group(2).lower(), match.group(3)
+
+	for separator, level in _ANCHOR_FALLBACKS:
+		if line.startswith("/") and separator in line:
+			path, message = line.split(separator, 1)
+			if path and " " not in path and _is_owner_path(path, queried_node):
+				return path, level, message
+	return None
+
+
+def _strip_redundant_path_suffix(message: str, path: str) -> str:
+	"""Drop a trailing "(<path>)" that merely repeats the owning operator
+
+	A suffix naming a *different* operator is left alone, since that one
+	carries information.
+	"""
+
+	suffix = f"({path})"
+	if message.endswith(suffix):
+		return message[: -len(suffix)].rstrip()
+	return message
+
+
+def _parse_op_messages(raw: str, level: str, queried_node) -> list:
+	"""Parse one errors()/warnings() blob into structured entries
+
+	A single failure can span several lines - a Python traceback raised from a
+	parameter expression, for example. Lines that do not start a new message
+	belong to the entry that preceded them, so splitting on newlines alone
+	would report one failure as several and attribute most of them wrongly.
+	"""
+
+	groups = []
+	current = None
+
+	for line in raw.split("\n"):
+		if not line.strip():
+			continue
+
+		anchor = _split_anchor(line, queried_node)
+		if anchor:
+			if current:
+				groups.append(current)
+			path, anchor_level, message = anchor
+			current = {"path": path, "level": anchor_level, "lines": [message]}
+		elif current:
+			current["lines"].append(line)
+		else:
+			# No prefix at all: recurse=False style output, or an unexpected
+			# shape. Attribute it to the node that was queried.
+			current = {
+				"path": queried_node.path,
+				"level": level,
+				"lines": [line.strip()],
+			}
+
+	if current:
+		groups.append(current)
+
+	entries = []
+	for group in groups:
+		message = _strip_redundant_path_suffix(
+			"\n".join(group["lines"]).strip(), group["path"]
+		)
+
+		owner = td.op(group["path"])
+		known = owner is not None and owner.valid
+		entries.append(
+			{
+				"nodePath": owner.path if known else group["path"],
+				"nodeName": owner.name if known else "",
+				"opType": owner.OPType if known else "",
+				"level": group["level"],
+				"message": message,
+			}
+		)
+
+	return entries
 
 
 api_service = TouchDesignerApiService()

@@ -5,7 +5,9 @@ required:
   - nodeName
   - opType
   - errorCount
+  - warningCount
   - hasErrors
+  - hasWarnings
   - errors
 properties:
   nodePath:
@@ -19,12 +21,20 @@ properties:
     description: Operator type of the inspected node
   errorCount:
     type: integer
-    description: Number of errors that were discovered
+    description: Number of entries with level "error"
+  warningCount:
+    type: integer
+    description: Number of entries with level "warning"
   hasErrors:
     type: boolean
     description: Convenience flag indicating if any errors were found
+  hasWarnings:
+    type: boolean
+    description: Convenience flag indicating if any warnings were found
   errors:
     type: array
-    description: Collection of raw node errors
+    description: >-
+      Collection of node messages, both errors and warnings. Use each entry's
+      level to tell them apart.
     items:
       $ref: ./TdNodeError.yml

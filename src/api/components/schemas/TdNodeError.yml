@@ -15,6 +15,18 @@ properties:
   opType:
     type: string
     description: TouchDesigner operator type
+  level:
+    type: string
+    enum:
+      - error
+      - warning
+    default: error
+    description: >-
+      Severity reported by TouchDesigner. Many common failures (missing files,
+      dangling operator references, shader compile failures) are surfaced as
+      warnings rather than errors.
   message:
     type: string
-    description: Error message reported by TouchDesigner
+    description: >-
+      Message reported by TouchDesigner. May span multiple lines when the
+      failure carries a Python traceback.
