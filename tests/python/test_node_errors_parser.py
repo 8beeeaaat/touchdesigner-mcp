@@ -6,7 +6,16 @@ tests hand-write its output as their input, so they cannot catch a parser bug
 by construction.
 """
 
+from conftest import _fake_td
+
 from mcp.services.api_service import _parse_op_messages
+
+
+def conftest_ops():
+	"""The stub's operator table, for a test that needs to break one."""
+
+	return _fake_td.ops
+
 
 PROBE = "/project1/jev_probe"
 
@@ -186,6 +195,27 @@ class TestAttribution:
 		entries = _parse_op_messages(
 			f"{PROBE}/cb:  Error: ValueError raised\n"
 			f"{PROBE}2/x: Error: quoted by the callback",
+			"error",
+			node,
+			declined,
+		)
+
+		assert [e["nodePath"] for e in entries] == [f"{PROBE}/cb"]
+		assert declined == []
+
+	def test_the_gate_still_works_when_one_stream_is_missing(self, scene):
+		# An older build exposes errors() and not warnings(). Abstaining on
+		# the first missing stream would switch the quoted-text check off
+		# entirely on such a build, with nothing in the payload saying it had
+		# not run — so a stream that is absent is skipped, not fatal.
+		node = scene(PROBE, [f"{PROBE}/cb"], healthy=[f"{PROBE}/shared"])
+		quiet = conftest_ops()[f"{PROBE}/shared"]
+		del quiet.warnings
+		declined = []
+
+		entries = _parse_op_messages(
+			f"{PROBE}/cb:  Error: ValueError raised\n"
+			f"{PROBE}/shared: Error: referenced while handling",
 			"error",
 			node,
 			declined,

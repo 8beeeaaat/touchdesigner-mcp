@@ -965,18 +965,27 @@ def _owner_reports_anything(owner) -> bool:
 	own; that residue is accepted.
 	"""
 
+	asked = 0
 	for name in ("errors", "warnings"):
 		getter = getattr(owner, name, None)
 		if not callable(getter):
-			# Nothing to check against, so this evidence is unavailable and
-			# the caller's other checks stand on their own.
-			return True
+			# An older build may not expose this stream. Skip it rather than
+			# abstaining outright: returning here on the first one would make
+			# the whole check inoperative on a build with errors() and no
+			# warnings(), and nothing downstream would say it had not run.
+			continue
 		try:
-			if (getter(recurse=False) or "").strip():
-				return True
+			said = getter(recurse=False) or ""
 		except Exception:
+			# The lookup failed, which says nothing about the operator, so
+			# this evidence is unavailable and the other checks stand alone.
 			return True
-	return False
+		asked += 1
+		if said.strip():
+			return True
+
+	# Only when no stream could be asked at all is the evidence unavailable.
+	return asked == 0
 
 
 def _classify_anchor(path: str, queried_node):
