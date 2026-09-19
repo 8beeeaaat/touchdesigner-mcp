@@ -66,8 +66,8 @@
 {{#entries}}| {{level}} | `{{{nodePath}}}` | `{{opType}}` | {{{message}}} |
 {{/entries}}
 {{/entries.length}}
-{{^entries.length}}
+{{#cleanlyEmpty}}
 _No errors or warnings reported._
-{{/entries.length}}
+{{/cleanlyEmpty}}
 
 {{#truncated}}_💡 {{omittedCount}} more entries omitted._{{/truncated}}

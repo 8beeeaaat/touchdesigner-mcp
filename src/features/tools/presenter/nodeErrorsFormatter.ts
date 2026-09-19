@@ -52,6 +52,11 @@ export function formatNodeErrors(
 
 	// The counts come from the server; the rows are what we were given. When
 	// they disagree, say so rather than quietly presenting one as the other.
+	// Only an unread stream leaves the counts without a ceiling. A declined
+	// anchor keeps its content, so it is reported on its own rather than
+	// folded into this claim.
+	const reportIncomplete = Boolean(data.incomplete) || skipped.length > 0;
+
 	const listedErrors = entries.filter((e) => e.level !== "warning").length;
 	const countsDisagree =
 		listedErrors !== data.errorCount ||
@@ -59,11 +64,16 @@ export function formatNodeErrors(
 
 	const text =
 		entries.length === 0
-			? `Node ${data.nodePath} has no reported errors or warnings.`
+			? `Node ${data.nodePath}: nothing listed.`
 			: `Node ${data.nodePath}: ${data.errorCount} error(s), ${warningCount} warning(s).`;
 
 	return finalizeFormattedText(text, opts, {
 		context: {
+			// "Nothing to report" and "nothing was reported to me" look alike
+			// from an empty list. Only the first earns the all-clear — the
+			// notices above already account for the second, and printing both
+			// contradicts them in the same breath.
+			cleanlyEmpty: entries.length === 0 && warningsKnown && !reportIncomplete,
 			countsDisagree,
 			displayed: items.length,
 			entries: items.map((entry) => ({
@@ -76,10 +86,7 @@ export function formatNodeErrors(
 			})),
 			errorCount: data.errorCount,
 			fallbackAttributions: limitPaths(fallbacks, opts.limit),
-			// Only an unread stream leaves the counts without a ceiling. A
-			// declined anchor keeps its content, so it is reported on its own
-			// rather than folded into this claim.
-			incomplete: Boolean(data.incomplete) || skipped.length > 0,
+			incomplete: reportIncomplete,
 			listedCount: entries.length,
 			lookupFailures: limitPaths(lookupFailures, opts.limit),
 			nodeName: data.nodeName,

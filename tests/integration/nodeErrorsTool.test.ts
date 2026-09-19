@@ -320,6 +320,35 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(text).not.toContain("do not match");
 	});
 
+	it("withholds the clean verdict when warnings were never inspected", async () => {
+		const text = await runTool({
+			errorCount: 0,
+			errors: [],
+			hasErrors: false,
+			nodeName: "probe",
+			nodePath: "/project1/probe",
+			opType: "baseCOMP",
+		} as never);
+
+		expect(text).toContain("Warnings were not inspected");
+		expect(text).not.toContain("No errors or warnings reported");
+	});
+
+	it("withholds the clean verdict when a stream could not be read", async () => {
+		const text = await runTool({
+			...warningOnly,
+			errors: [],
+			hasWarnings: false,
+			incomplete: true,
+			skippedStreams: [{ reason: "cook in progress", stream: "errors" }],
+			warningCount: 0,
+			warnings: [],
+		});
+
+		expect(text).toContain("Incomplete");
+		expect(text).not.toContain("No errors or warnings reported");
+	});
+
 	it("reports a node with neither errors nor warnings as clean", async () => {
 		const text = await runTool({
 			...warningOnly,
