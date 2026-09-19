@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	type DetailLevel,
+	describeTruncation,
 	type FormatterOptions,
 	formatOmissionHint,
 	limitArray,
@@ -91,6 +92,52 @@ describe("responseFormatter", () => {
 			expect(result).toBe(
 				"\n💡 10 more class(s) omitted. Use detailLevel='detailed' or increase limit to see all.",
 			);
+		});
+	});
+
+	describe("describeTruncation", () => {
+		it("should report nothing when the caller set no limit", () => {
+			// A caller who named no cap gets the response they always got, so
+			// this has to answer "nothing was removed" even when handed counts
+			// that disagree — a detail level that shows fewer members is not a
+			// truncation, and a record naming `limit` would blame the cap for
+			// a choice something else made.
+			const result = describeTruncation(undefined, {
+				methods: { returned: 0, total: 5 },
+			});
+
+			expect(result).toBeUndefined();
+		});
+
+		it("should report nothing when every collection kept its items", () => {
+			const result = describeTruncation(10, {
+				methods: { returned: 3, total: 3 },
+				properties: { returned: 0, total: 0 },
+			});
+
+			expect(result).toBeUndefined();
+		});
+
+		it("should list only the collections that lost items", () => {
+			// Listing the intact ones would bury the one that ran out, which
+			// is the only thing a reader is looking for here.
+			const result = describeTruncation(2, {
+				methods: { returned: 2, total: 7 },
+				properties: { returned: 2, total: 2 },
+			});
+
+			expect(result).toEqual({
+				collections: { methods: { omitted: 5, returned: 2, total: 7 } },
+				limit: 2,
+			});
+		});
+
+		it("should not report a negative omission", () => {
+			const result = describeTruncation(5, {
+				entries: { returned: 4, total: 2 },
+			});
+
+			expect(result).toBeUndefined();
 		});
 	});
 

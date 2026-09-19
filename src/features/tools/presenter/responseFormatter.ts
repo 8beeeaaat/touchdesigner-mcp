@@ -82,10 +82,97 @@ export function mergeFormatterOptions(options?: FormatterOptions): {
 	};
 }
 
+/**
+ * What `limit` removed from the structured payload.
+ *
+ * `json` and `yaml` render `structured` and nothing else — no markdown hint
+ * reaches them — so a payload cut down to `limit` items has to carry the fact
+ * itself. Without it the caller cannot tell a capped list from a short one,
+ * which is the same defect as ignoring `limit`, one layer down.
+ *
+ * The counts are per collection because a single `limit` binds several: an
+ * error report caps its entries and each of its three caveat lists, and a
+ * reader deciding whether to ask again needs to know which one ran out.
+ */
+export interface TruncationNotice {
+	/** The cap the caller asked for. */
+	limit: number;
+	/** Only the collections that actually lost items. */
+	collections: Record<
+		string,
+		{ total: number; returned: number; omitted: number }
+	>;
+}
+
 interface FormatterMetadata {
 	template?: string;
 	context?: Record<string, unknown>;
 	structured?: unknown;
+	/**
+	 * What `limit` cut from `structured`, as built by `describeTruncation`.
+	 *
+	 * Present only when something was actually removed, which is what keeps a
+	 * response for a caller who passed no `limit` byte for byte what it was.
+	 */
+	truncation?: TruncationNotice;
+}
+
+/**
+ * Describe what a formatter's caps removed, or nothing if they removed nothing.
+ *
+ * Only the formatter knows which of its collections `limit` binds, so it
+ * declares them here rather than this layer guessing at the payload's shape.
+ * Collections that kept every item are left out: the notice exists to report a
+ * loss, and listing intact collections would bury the one that was cut.
+ */
+export function describeTruncation(
+	limit: number | undefined,
+	collections: Record<string, { total: number; returned: number }>,
+): TruncationNotice | undefined {
+	if (limit === undefined) {
+		return undefined;
+	}
+
+	const cut: TruncationNotice["collections"] = {};
+	for (const [name, { returned, total }] of Object.entries(collections)) {
+		const omitted = Math.max(total - returned, 0);
+		if (omitted > 0) {
+			cut[name] = { omitted, returned, total };
+		}
+	}
+
+	return Object.keys(cut).length === 0
+		? undefined
+		: { collections: cut, limit };
+}
+
+/**
+ * Stamp the structured payload with the record of what was left out.
+ *
+ * `truncated: true` rides along with the detail because it is the field a
+ * reader skimming the payload will look for, and because a formatter whose
+ * context already carries a `truncated` flag may have set it for a different
+ * question — `nodeListFormatter` uses its copy to decide whether to print a
+ * markdown hint, and suppressing the hint must not make the data claim it is
+ * complete.
+ */
+function withTruncationNotice(
+	structured: unknown,
+	truncation: TruncationNotice | undefined,
+): unknown {
+	if (truncation === undefined) {
+		return structured;
+	}
+	if (
+		typeof structured !== "object" ||
+		structured === null ||
+		Array.isArray(structured)
+	) {
+		// Nothing to merge into. Every formatter that declares a truncation
+		// hands over an object, so this is unreachable rather than a policy.
+		return structured;
+	}
+	return { ...structured, truncated: true, truncation };
 }
 
 export function finalizeFormattedText(
@@ -104,7 +191,10 @@ export function finalizeFormattedText(
 		{
 			context: metadata?.context,
 			detailLevel: opts.detailLevel,
-			structured: metadata?.structured,
+			structured: withTruncationNotice(
+				metadata?.structured,
+				metadata?.truncation,
+			),
 			template: metadata?.template,
 			text,
 		},
