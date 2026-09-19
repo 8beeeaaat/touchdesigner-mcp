@@ -155,6 +155,32 @@ describe("GET_TD_NODE_ERRORS", () => {
 		);
 	});
 
+	it("escapes a pipe so it cannot open a new table column", async () => {
+		// Shader diagnostics and quoted Python expressions both carry pipes.
+		const text = await runTool({
+			...mixed,
+			errorCount: 1,
+			errors: [
+				{
+					level: "error",
+					message: "SyntaxError: invalid syntax: a | b | c",
+					nodeName: "bad_expr",
+					nodePath: "/project1/probe/bad_expr",
+					opType: "constantCHOP",
+				},
+			],
+			hasWarnings: false,
+			warningCount: 0,
+		});
+
+		const row = text
+			.split("\n")
+			.find((line) => line.includes("SyntaxError")) as string;
+		expect(row).toContain("a \\| b \\| c");
+		// Level, node, type, message plus the leading and trailing delimiter.
+		expect(row.split(/(?<!\\)\|/).length).toBe(6);
+	});
+
 	it("reports a node with neither errors nor warnings as clean", async () => {
 		const text = await runTool({
 			...warningOnly,

@@ -98,17 +98,19 @@ function levelRank(level: string | undefined): number {
 }
 
 /**
- * Render a multi-line TouchDesigner message on a single line.
+ * Render a TouchDesigner message so it survives a markdown table cell.
  *
- * Messages carrying a Python traceback span several lines, which would break
- * out of a markdown table cell.
+ * Two characters break the row: a newline, which a Python traceback always
+ * carries, and a pipe, which turns up in shader diagnostics and in Python
+ * expressions the message quotes back.
  */
 function collapseMessage(message: string): string {
 	return message
 		.split("\n")
 		.map((line) => line.trim())
 		.filter(Boolean)
-		.join(" ⏎ ");
+		.join(" ⏎ ")
+		.replaceAll("|", "\\|");
 }
 
 function formatMinimal(entries: NodeErrorReportData["errors"]) {

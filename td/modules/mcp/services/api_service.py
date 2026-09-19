@@ -780,21 +780,40 @@ _MESSAGE_ANCHOR = re.compile(r"^(/\S*?):\s*(Error|Warning):\s*(.*)$")
 # future TouchDesigner build.
 _ANCHOR_FALLBACKS = ((":  Error: ", "error"), (":Warning: ", "warning"))
 
+# TouchDesigner closes a message with the owning operator in parentheses.
+_TRAILING_PATH = re.compile(r"\((/[^()\s]*)\)\s*$")
+
 
 def _is_owner_path(path: str, queried_node) -> bool:
-	"""Whether path plausibly names an operator in the inspected subtree
+	"""Whether path names an operator inside the inspected subtree
 
 	Guards the anchor against message text that merely looks like a prefix.
-	A user raising ValueError("/data/foo.csv: Error: bad") from a callback
-	would otherwise split their own traceback into two entries.
+	A callback raising ValueError("/project1/shared: Error: bad") would
+	otherwise split its own traceback and blame an unrelated operator, so
+	being a valid operator is not enough on its own - it has to sit under the
+	node that was queried. Existence is deliberately not required: the
+	operator may have been destroyed since the message was recorded.
 	"""
 
-	owner = td.op(path)
-	if owner is not None and owner.valid:
+	root = queried_node.path
+	if path == root:
 		return True
-	# The operator may have been destroyed since the message was recorded;
-	# accept it while it still names something inside the queried subtree.
-	return path == queried_node.path or path.startswith(f"{queried_node.path}/")
+	prefix = root if root.endswith("/") else f"{root}/"
+	return path.startswith(prefix)
+
+
+def _owner_from_trailing_path(message: str, queried_node):
+	"""Recover the owning operator from a trailing "(<path>)", or None
+
+	Output captured with recurse=False carries no "<path>:" prefix but still
+	names the owner at the end of its last line. Preferring that over the
+	queried node keeps attribution right for callers that pass such a blob.
+	"""
+
+	match = _TRAILING_PATH.search(message)
+	if match and _is_owner_path(match.group(1), queried_node):
+		return match.group(1)
+	return None
 
 
 def _split_anchor(line: str, queried_node):
@@ -846,16 +865,22 @@ def _parse_op_messages(raw: str, level: str, queried_node) -> list:
 			if current:
 				groups.append(current)
 			path, anchor_level, message = anchor
-			current = {"path": path, "level": anchor_level, "lines": [message]}
+			current = {
+				"anchored": True,
+				"level": anchor_level,
+				"lines": [message],
+				"path": path,
+			}
 		elif current:
 			current["lines"].append(line)
 		else:
 			# No prefix at all: recurse=False style output, or an unexpected
 			# shape. Attribute it to the node that was queried.
 			current = {
-				"path": queried_node.path,
+				"anchored": False,
 				"level": level,
 				"lines": [line.strip()],
+				"path": queried_node.path,
 			}
 
 	if current:
@@ -863,15 +888,17 @@ def _parse_op_messages(raw: str, level: str, queried_node) -> list:
 
 	entries = []
 	for group in groups:
-		message = _strip_redundant_path_suffix(
-			"\n".join(group["lines"]).strip(), group["path"]
-		)
+		message = "\n".join(group["lines"]).strip()
+		path = group["path"]
+		if not group["anchored"]:
+			path = _owner_from_trailing_path(message, queried_node) or path
+		message = _strip_redundant_path_suffix(message, path)
 
-		owner = td.op(group["path"])
+		owner = td.op(path)
 		known = owner is not None and owner.valid
 		entries.append(
 			{
-				"nodePath": owner.path if known else group["path"],
+				"nodePath": owner.path if known else path,
 				"nodeName": owner.name if known else "",
 				"opType": owner.OPType if known else "",
 				"level": group["level"],
