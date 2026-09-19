@@ -849,6 +849,9 @@ class TouchDesignerApiService(IApiService):
 # errors()/warnings() are called with recurse=True. The spacing after the colon
 # differs between the two streams ("path:  Error:" vs "path:Warning:"), so the
 # pattern stays loose about it.
+# A line ending is CRLF, CR or LF, and nothing else. See _parse_op_messages.
+_LINE_ENDING = re.compile(r"\r\n|\r|\n")
+
 _MESSAGE_ANCHOR = re.compile(r"^(/\S*?):\s*(Error|Warning):\s*(.*)$")
 
 # TouchDesigner closes a message with the owning operator in parentheses.
@@ -1157,10 +1160,17 @@ def _parse_op_messages(
 	groups = []
 	current = None
 
-	# splitlines(), not split("\n"): the line endings a blob arrives with are
-	# not guaranteed, and a CRLF one would otherwise leave a trailing carriage
-	# return on every interior line of a multi-line entry.
-	for line in raw.splitlines():
+	# Exactly the three line endings, not str.splitlines(). The endings a blob
+	# arrives with are not guaranteed, so a CRLF one must not leave a trailing
+	# carriage return on every interior line of a multi-line entry — but
+	# splitlines() also breaks on \v, \f, \x1c-\x1e, \x85, U+2028 and U+2029,
+	# which are payload characters here, not structure. One inside a message
+	# rewrites the text a JSON/YAML client is handed, and if what follows it
+	# happens to match the anchor above, one failure is reported as two and the
+	# second is attributed to an operator that never failed. That misattribution
+	# is the thing this parser exists to prevent, so the split names its
+	# separators instead of inheriting Python's list.
+	for line in _LINE_ENDING.split(raw):
 		if not line.strip():
 			continue
 
