@@ -320,6 +320,33 @@ describe("GET_TD_NODE_ERRORS", () => {
 		expect(text).not.toContain("do not match");
 	});
 
+	it("flags a hasErrors flag that contradicts the rows it arrived with", async () => {
+		// Both counts agree with the rows, so only the boolean is wrong. The
+		// flag and the count are computed separately on the server, so one can
+		// be stale without the other — and hasErrors is the field a caller is
+		// most likely to branch on, which would call this node clean with an
+		// error sitting in the table below.
+		const text = await runTool({
+			...mixed,
+			errorCount: 1,
+			hasErrors: false,
+			warningCount: 1,
+		});
+
+		expect(text).toContain("do not match");
+	});
+
+	it("flags a hasWarnings flag that contradicts the rows it arrived with", async () => {
+		const text = await runTool({
+			...mixed,
+			errorCount: 1,
+			hasWarnings: false,
+			warningCount: 1,
+		});
+
+		expect(text).toContain("do not match");
+	});
+
 	it("does not report zero warnings for a component that never looked", async () => {
 		// An older TouchDesigner component sends neither warningCount nor
 		// hasWarnings. Rendering that as 0 claims the stream was inspected.
