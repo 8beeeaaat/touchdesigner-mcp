@@ -13,6 +13,7 @@ import {
 } from "./presenter.js";
 import type { FormatterOptions } from "./responseFormatter.js";
 import {
+	describeTruncation,
 	finalizeFormattedText,
 	formatOmissionHint,
 	limitArray,
@@ -85,14 +86,23 @@ export function formatNodeList(
 	}
 
 	const context = result.context as unknown as Record<string, unknown>;
+	// Taken before the hint bookkeeping below rewrites the flags. The payload
+	// and the markdown answer different questions: `includeHints` decides
+	// whether a reader is shown a sentence, but the payload is data, and two
+	// of six nodes filed under `truncated: false, omittedCount: 0` is a lie
+	// about the data whatever the display preference was.
+	const structured = { ...context };
 	context.truncated = hintEnabled;
 	if (!hintEnabled) {
 		context.omittedCount = 0;
 	}
 	return finalizeFormattedText(output, opts, {
 		context,
-		structured: context,
+		structured,
 		template: "nodeListSummary",
+		truncation: describeTruncation(opts.limit, {
+			nodes: { returned: limitedNodes.length, total: totalCount },
+		}),
 	});
 }
 
