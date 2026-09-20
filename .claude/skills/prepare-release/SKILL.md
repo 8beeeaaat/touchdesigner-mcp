@@ -108,11 +108,30 @@ grep -A3 mcpCompatibility package.json
 > The `server.json` `fileSha256` will not match the CI-rebuilt release asset —
 > that mismatch is a known, expected issue. See version-policy.md.
 
-### Step 4b — if (and only if) the npm MAJOR changed
+### Step 4b — the bundled `touchdesigner` plugin
 
-The bundled `touchdesigner` plugin is **not** one of the version-bearing files, and
-`npm version` does not touch it. It resolves the server from npm rather than from
-this tree:
+The plugin is **not** one of the version-bearing files, and `npm version` does not
+touch it. It has two independent knobs; check both on every release.
+
+**Every release — did the plugin's own tree change?**
+
+```bash
+git diff --stat "$LAST_TAG"..HEAD -- plugin/touchdesigner
+```
+
+If anything under `plugin/touchdesigner/` changed in the range, bump `version` in
+`plugin/touchdesigner/.claude-plugin/plugin.json`. That is the plugin's own semver
+axis: it follows the plugin's changes, not the npm version, and it moves on a
+PATCH release just as readily as on a MAJOR one. Marketplace consumers only see
+an update when it moves, so a skill, hook, or manifest fix shipped without a bump
+ships invisibly. It is the only hand-edited copy: the Claude marketplace entry
+deliberately carries no `version`, so this step cannot leave a stale one behind.
+Should one ever be added there, it has to move with this one —
+`tests/unit/pluginManifestSync.test.ts` compares them whenever the marketplace
+names a version, and would fail this release.
+
+**MAJOR only — the server pin.** The plugin resolves the server from npm rather
+than from this tree:
 
 ```
 plugin/touchdesigner/.mcp.json → --package=touchdesigner-mcp-server@^2
@@ -127,37 +146,103 @@ major moved:
    behaviour the new major changed — response shapes, `detailLevel` truncation,
    `get_td_nodes`' `pattern` default, tool argument names.
    `tests/unit/toolListingsSync.test.ts` catches renamed *tools*; nothing catches
-   changed *behaviour*.
-3. Bump `version` in `plugin/touchdesigner/.claude-plugin/plugin.json`. That is the
-   plugin's own axis and moves only when the plugin itself changes. It is the
-   only hand-edited copy: the Claude marketplace entry deliberately carries no
-   `version`, so this step cannot leave a stale one behind. Should one ever be
-   added there, it has to move with this one — `tests/unit/pluginManifestSync.test.ts`
-   compares them whenever the marketplace names a version, and would fail this
-   release.
-4. Run `npm run plugin:sync` and confirm `npm run plugin:check` passes. The Codex
-   package under `plugins/touchdesigner/` is generated from steps 1 and 3 — its
-   `.mcp.json` carries the same `^N` pin and its `.codex-plugin/plugin.json` the
-   same `version` — and CI rejects a stale copy. Commit `plugins/touchdesigner/`
-   and `.agents/plugins/marketplace.json` together with the source edits.
+   changed *behaviour*. Those edits are plugin changes, so the plugin `version`
+   moves too.
 
-On a MINOR or PATCH release, leave the `^N` pin, the skill text, and the plugin
-`version` alone — `^N` already covers it — and `plugin:check` stays green
-without a sync.
+**Whenever either knob moved:** run `npm run plugin:sync` and confirm
+`npm run plugin:check` passes. The Codex package under `plugins/touchdesigner/`
+is generated from these files — its `.mcp.json` carries the same `^N` pin and
+its `.codex-plugin/plugin.json` the same `version` — and CI rejects a stale copy.
+Commit `plugins/touchdesigner/` and `.agents/plugins/marketplace.json` together
+with the source edits.
 
-## Step 5 — commit and open the release PR
+On a MINOR or PATCH release whose range never touched `plugin/touchdesigner/`,
+nothing here moves — `^N` already covers the server, and `plugin:check` stays
+green without a sync.
+
+## Step 5 — build the PR body, then open the release PR
 
 ```bash
 git checkout -b <release-branch>   # if not already on the release/development branch
 git add -A
 git commit -m "release: v<X.Y.Z>"
 git push -u origin <release-branch>
-gh pr create --base main --title "v<X.Y.Z>" --body "<CHANGELOG excerpt for this version>"
 ```
 
-Use the new version's CHANGELOG section as the PR body. **Stop here** — the
-release is published by CI (`release.yml`) after the maintainer merges to `main`.
-Do not merge, tag, or `npm publish` yourself.
+**Build the body before creating the PR.** `gh pr create --body` takes the body
+at creation time, and nothing later in this step edits it — so keywords
+collected afterwards never reach GitHub, which is the exact failure this step
+exists to prevent.
+
+The body is the new version's CHANGELOG section plus **one closing keyword per
+issue this release resolves**. Collect the keywords the range already claims:
+
+```bash
+git log "$LAST_TAG"..HEAD --format='%B' \
+  | grep -oiE '(close[sd]?|fixe?[sd]?|resolve[sd]?) +#[0-9]+' | sort -u
+```
+
+That catches only what somebody already wrote a keyword for. Cross-check it
+against the issues the CHANGELOG entry cites, because a bug fixed in the range
+may never have had one written anywhere — `#220` in v2.1.0 did not, and stayed
+open through the release. Cut the entry out once, into the body file, and read
+the citations back off it:
+
+```bash
+# Read the version back out of package.json rather than retyping it — by this
+# point Step 4 has written it, and an empty variable here makes the pattern
+# match nothing, which is indistinguishable from "the entry cites no issues".
+NEW_VERSION=$(node -p "require('./package.json').version")
+
+# The CHANGELOG entry for this version, stopping at the next version heading.
+awk -v v="## [$NEW_VERSION]" '
+  index($0, v) == 1 { on = 1; print; next }
+  on && /^## \[/ { exit }
+  on { print }
+' CHANGELOG.md > /tmp/release-pr-body.md
+
+grep -oE 'issues/[0-9]+' /tmp/release-pr-body.md | sort -u
+```
+
+Reconcile the two lists by hand — a cited issue is not automatically a closed
+one. On v2.1.0 the range claimed `#221`, `#226` and `#228`; the entry cited
+those plus `#219` and `#220`. `#220` was fixed and needed the keyword nobody had
+written, while `#219` was cited as *still open* and must not get one.
+
+Append the reconciled keywords to the same file, then create the PR from it:
+
+```bash
+cat >> /tmp/release-pr-body.md <<'KEYWORDS'
+
+Closes #220
+Closes #226
+Closes #228
+KEYWORDS
+
+gh pr create --base main --title "v$NEW_VERSION" --body-file /tmp/release-pr-body.md
+```
+
+`Closes #226 and #228` does not work: GitHub closes the first and ignores the
+rest. Every issue needs its own keyword.
+
+If the PR already exists — a re-run, or someone opened it early — put the same
+file through `gh pr edit <number> --body-file /tmp/release-pr-body.md`. Printing
+the keywords without writing them anywhere leaves the issues open.
+
+> **Why the body rather than the commits.** A release PR squash-merges into a
+> single commit whose message is every commit in the range concatenated, and
+> GitHub stops parsing closing keywords partway through a message that large.
+> Measured on v2.1.0, whose squashed message ran to 107,513 bytes: `Closes #221`
+> at byte 52,521 fired, `Closes #228` at byte 78,390 and `Closes #226` at byte
+> 79,538 did not — a cut-off consistent with 64 KiB. The PR body is parsed
+> separately and is not subject to that.
+
+**Stop here** — the release is published by CI (`release.yml`) after the
+maintainer merges to `main`. Do not merge, tag, or `npm publish` yourself.
+
+Once the maintainer has merged, check that the issues actually closed
+(`gh issue list --state open`) and close any stragglers by hand with a comment
+naming the release. Silence here looks exactly like success.
 
 ## Guardrails
 
@@ -165,7 +250,13 @@ Do not merge, tag, or `npm publish` yourself.
 - Never edit the six version files by hand — let `npm version` write them, then
   revert the API trio if needed. Hand edits drift from the sync scripts.
 - `build:mcpb` **before** `version:mcp`, always.
-- On a MAJOR bump, don't forget Step 4b — the `touchdesigner` plugin pins the
-  server by major and `npm version` leaves it behind — and finish it with
-  `npm run plugin:sync`, or `plugin:check` fails the release in CI.
+- Step 4b is not MAJOR-only: a change under `plugin/touchdesigner/` in the range
+  bumps the plugin `version` on any release, and either knob moving needs
+  `npm run plugin:sync`, or `plugin:check` fails the release in CI. Only the
+  `^N` server pin waits for a MAJOR bump — `npm version` leaves it behind.
+- Closing keywords belong in the release PR **body**, and must be in the body
+  passed to `gh pr create` (or written back with `gh pr edit --body-file`) —
+  collecting them after the PR exists changes nothing. Buried in the squashed
+  commit message they are past the size GitHub will read, and the issues stay
+  open with nothing reporting it.
 - Don't "fix" the `server.json` SHA256 mismatch during a release.
