@@ -19,7 +19,11 @@ TouchDesigner MCP acts as a bridge between AI models and the TouchDesigner WebSe
 
 ## Installation
 
-Please refer to the **[Installation Guide](docs/installation.md)**.
+Tell the AI agent you already use:
+
+> Set up https://github.com/8beeeaaat/touchdesigner-mcp
+
+That's it. The full procedure lives in the **[Installation Guide](docs/installation.md)** — it opens with a table matching each AI app to its route, and everyone starts from *TouchDesigner Setup*. Or follow it yourself, step by step.
 
 If you are updating, please refer to the procedure in the **[Latest Release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)**.
 

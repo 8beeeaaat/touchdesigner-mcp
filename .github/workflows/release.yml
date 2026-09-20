@@ -98,10 +98,24 @@ jobs:
             2. Extract `touchdesigner-mcp-td.zip` and import `mcp_webserver_base.tox` into your TouchDesigner project
             3. Double-click `touchdesigner-mcp.mcpb` to install in Claude Desktop
 
+            ### Quick Start (Claude Code)
+            This repository is also a Claude Code plugin marketplace. The `touchdesigner` plugin installs and preconfigures this server for you:
+            ```
+            claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
+            claude plugin install touchdesigner@touchdesigner-mcp
+            ```
+            Then run `/touchdesigner:setup` to verify the connection, or `/touchdesigner:launch` to start TouchDesigner with the component already imported. `/touchdesigner:launch` downloads the TouchDesigner Components itself; for any other route, import them from the Downloads section above first.
+
+            ### Quick Start (Codex)
+            Install the ready-to-use plugin from this repository's Codex marketplace; no manual npm build is needed:
+            ```
+            codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
+            codex plugin add touchdesigner@touchdesigner-openai
+            ```
+            Requires the [Codex CLI](https://developers.openai.com/codex/cli) — a separate terminal tool that does not ship with the ChatGPT desktop app — plus Node.js; Codex starts the MCP server automatically. Import the TouchDesigner Components from the Downloads section above, then ask Codex to check the TouchDesigner connection or launch TouchDesigner. See the [OpenAI plugin guide](https://github.com/${{ github.repository }}/blob/main/docs/openai-plugin.md) for configuration and ChatGPT connections.
+
             ### Other AI Agents
             See the [Installation Guide](https://github.com/${{ github.repository }}/blob/main/docs/installation.md) _[日本語](https://github.com/${{ github.repository }}/blob/main/docs/installation.ja.md)_ for:
-            - Claude Code
-            - Codex
             - Docker deployment
             - Developer setup
 
@@ -136,6 +150,7 @@ jobs:
           node-version-file: ".node-version"
           registry-url: "https://registry.npmjs.org"
       - run: npm ci
+      - run: npm run plugin:check
       - run: npm run build
       - name: Publish to npm
         run: |

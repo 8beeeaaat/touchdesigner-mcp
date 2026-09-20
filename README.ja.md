@@ -19,7 +19,11 @@ TouchDesigner MCPは、AIモデルとTouchDesigner WebServer DAT 間のブリッ
 
 ## インストール方法
 
-**[インストールガイド](docs/installation.ja.md)** を参照してください。
+普段お使いの AI エージェントに、こう伝えてください。
+
+> https://github.com/8beeeaaat/touchdesigner-mcp を導入して
+
+以上！ 手順の全文は **[インストールガイド](docs/installation.ja.md)** にあります。冒頭に AI アプリごとの手順を対応づけた表があり、どの手順でも *TouchDesigner セットアップ* から始めます。自分で進めたい場合はそちらをご覧ください。
 
 アップデートする場合は **[最新リリース](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions)** の手順を参照してください。
 

@@ -64,6 +64,11 @@ Step 0 commits into Keep-a-Changelog sections, write impact-first prose, referen
 the merged PRs, and include the mandatory "Released version … across …" bullet
 whose last sentence records the Step 2 API-axis decision.
 
+If the file already opens with an `## [Unreleased]` block (feature PRs may land
+their entries there ahead of a release), rename that heading to
+`## [X.Y.Z] - YYYY-MM-DD` and fold the new bullets into it — never leave it
+behind as a second block under the released version.
+
 Two sections bracket the entry (both defined in changelog-format.md):
 
 - **`### Upgrade Notes` first** — required whenever the API axis moves, and
@@ -102,6 +107,58 @@ grep -A3 mcpCompatibility package.json
 
 > The `server.json` `fileSha256` will not match the CI-rebuilt release asset —
 > that mismatch is a known, expected issue. See version-policy.md.
+
+### Step 4b — the bundled `touchdesigner` plugin
+
+The plugin is **not** one of the version-bearing files, and `npm version` does not
+touch it. It has two independent knobs; check both on every release.
+
+**Every release — did the plugin's own tree change?**
+
+```bash
+git diff --stat "$LAST_TAG"..HEAD -- plugin/touchdesigner
+```
+
+If anything under `plugin/touchdesigner/` changed in the range, bump `version` in
+`plugin/touchdesigner/.claude-plugin/plugin.json`. That is the plugin's own semver
+axis: it follows the plugin's changes, not the npm version, and it moves on a
+PATCH release just as readily as on a MAJOR one. Marketplace consumers only see
+an update when it moves, so a skill, hook, or manifest fix shipped without a bump
+ships invisibly. It is the only hand-edited copy: the Claude marketplace entry
+deliberately carries no `version`, so this step cannot leave a stale one behind.
+Should one ever be added there, it has to move with this one —
+`tests/unit/pluginManifestSync.test.ts` compares them whenever the marketplace
+names a version, and would fail this release.
+
+**MAJOR only — the server pin.** The plugin resolves the server from npm rather
+than from this tree:
+
+```
+plugin/touchdesigner/.mcp.json → --package=touchdesigner-mcp-server@^2
+```
+
+On a MAJOR bump that pin silently keeps resolving the *old* major, so the plugin
+stops tracking releases without anything failing. When — and only when — the npm
+major moved:
+
+1. Update the `^N` pin in `plugin/touchdesigner/.mcp.json` to the new major.
+2. Re-read the skills under `plugin/touchdesigner/skills/` for claims about server
+   behaviour the new major changed — response shapes, `detailLevel` truncation,
+   `get_td_nodes`' `pattern` default, tool argument names.
+   `tests/unit/toolListingsSync.test.ts` catches renamed *tools*; nothing catches
+   changed *behaviour*. Those edits are plugin changes, so the plugin `version`
+   moves too.
+
+**Whenever either knob moved:** run `npm run plugin:sync` and confirm
+`npm run plugin:check` passes. The Codex package under `plugins/touchdesigner/`
+is generated from these files — its `.mcp.json` carries the same `^N` pin and
+its `.codex-plugin/plugin.json` the same `version` — and CI rejects a stale copy.
+Commit `plugins/touchdesigner/` and `.agents/plugins/marketplace.json` together
+with the source edits.
+
+On a MINOR or PATCH release whose range never touched `plugin/touchdesigner/`,
+nothing here moves — `^N` already covers the server, and `plugin:check` stays
+green without a sync.
 
 ## Step 5 — build the PR body, then open the release PR
 
@@ -193,6 +250,10 @@ naming the release. Silence here looks exactly like success.
 - Never edit the six version files by hand — let `npm version` write them, then
   revert the API trio if needed. Hand edits drift from the sync scripts.
 - `build:mcpb` **before** `version:mcp`, always.
+- Step 4b is not MAJOR-only: a change under `plugin/touchdesigner/` in the range
+  bumps the plugin `version` on any release, and either knob moving needs
+  `npm run plugin:sync`, or `plugin:check` fails the release in CI. Only the
+  `^N` server pin waits for a MAJOR bump — `npm version` leaves it behind.
 - Closing keywords belong in the release PR **body**, and must be in the body
   passed to `gh pr create` (or written back with `gh pr edit --body-file`) —
   collecting them after the PR exists changes nothing. Buried in the squashed

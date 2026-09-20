@@ -4,21 +4,30 @@ TouchDesigner MCP を各種 AI エージェントおよびプラットフォー�
 
 [English](installation.md) / [日本語](installation.ja.md)
 
-## クイックスタート
+## はじめに: どの手順を選ぶか
 
-もっともシンプルなのは Claude Desktop + MCP バンドルの組み合わせです。
-[最新リリース](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest)から
-`touchdesigner-mcp-td.zip` と `touchdesigner-mcp.mcpb` をダウンロードし、TouchDesigner プロジェクトに
-`mcp_webserver_base.tox` をインポート（推奨: `project1/mcp_webserver_base`）、その後 `.mcpb` ファイルを
-ダブルクリックして Claude Desktop に追加すれば、コンポーネント起動後に自動で接続されます。
+セットアップは 2 段階です。まず TouchDesigner プロジェクトにコンポーネントを追加します（全員共通。[TouchDesigner セットアップ](#touchdesigner-セットアップ全方法共通)）。次に、普段 AI と話しているアプリをつなぎます。
+
+| お使いのアプリ | つなぎ方 | ターミナル操作 |
+| :------------- | :------- | :------------- |
+| **Claude Desktop** | [方法1: MCP Bundle](#方法1-mcp-bundleclaude-desktop-限定) — ファイルを 1 つダウンロードしてダブルクリック | 不要 |
+| **Claude Code** | [`touchdesigner` プラグイン](#claude-code-の例) | 必要 |
+| **Codex CLI** | [`touchdesigner` プラグイン](#codex-の例) | 必要 |
+| **ChatGPT デスクトップアプリ**（Work / Codex） | [OpenAI プラグインガイド](openai-plugin.md#chatgpt-desktop-app-work--codex) — Codex CLI も必要 | 必要 |
+| **ChatGPT（Web）** | [セキュアトンネル経由で接続](openai-plugin.md#chatgpt-connect-the-local-server)（上級者向け） | 必要 |
+| その他の MCP クライアント | [方法2: NPM パッケージ](#方法2-npm-パッケージclaude-code--codex--その他-mcp-クライアント向け) | 多くの場合必要 |
+| コンテナ / CI 環境 | [方法3: Docker コンテナ](#方法3-docker-コンテナ) | 必要 |
+
+「ターミナル操作」とは、ターミナル（macOS）や PowerShell（Windows）にコマンドを入力することです。慣れていない場合は、ターミナルをまったく使わない Claude Desktop の手順をおすすめします。
 
 ## 目次
 
+- [はじめに: どの手順を選ぶか](#はじめに-どの手順を選ぶか)
 - [前提条件](#前提条件)
 - [TouchDesigner セットアップ（全方法共通）](#touchdesigner-セットアップ全方法共通)
 - [インストール方法](#mcpサーバーのインストール方法)
-  - [方法1: MCP Bundle（Claude Desktop 推奨）](#方法1-mcp-bundleclaude-desktop-推奨)
-  - [方法2: NPM パッケージ（Claude Code / Codex / その他 MCP クライアント）](#方法2-npm-パッケージclaude-code--codex--その他-mcp-クライアント)
+  - [方法1: MCP Bundle（Claude Desktop 限定）](#方法1-mcp-bundleclaude-desktop-限定)
+  - [方法2: NPM パッケージ（Claude Code / Codex / その他 MCP クライアント向け）](#方法2-npm-パッケージclaude-code--codex--その他-mcp-クライアント向け)
   - [方法3: Docker コンテナ](#方法3-docker-コンテナ)
 - [アップデート方法](#アップデート方法)
 - [HTTP トランスポートモード](#http-トランスポートモード)
@@ -28,7 +37,7 @@ TouchDesigner MCP を各種 AI エージェントおよびプラットフォー�
 ## 前提条件
 
 - **TouchDesigner**（最新版推奨）
-- NPM 利用の場合: **Node.js 22.18** 以上、24.x、または 26 以上（23.x・25.x などの奇数リリースは非対応）。 _Claude Desktopをご利用の場合は不要です_
+- NPM 利用の場合: **Node.js** — [nodejs.org](https://nodejs.org/) から現行の LTS 版をインストールしてください（22.18 以降の 22 系・24 系・26 以降。23.x・25.x などの奇数リリースは非対応）。 _Claude Desktopをご利用の場合は不要です_
 - Docker 利用の場合: **Docker** と **Docker Compose**
 
 ## TouchDesigner セットアップ（全方法共通）
@@ -39,6 +48,8 @@ TouchDesigner MCP を各種 AI エージェントおよびプラットフォー�
 2. ZIP を展開
 3. `mcp_webserver_base.tox` を TouchDesigner プロジェクトにインポート
 4. `/project1/mcp_webserver_base` など任意の場所に配置
+
+> Claude Code または Codex CLI をお使いなら、この作業をアシスタントに任せることもできます。Claude Code では `/touchdesigner:launch`、Codex では「TouchDesigner を起動して」と依頼すれば、コンポーネントをダウンロードし、読み込んだ状態で TouchDesigner を起動します。ただし開くのは新規プロジェクトなので、既存のプロジェクトに導入したい場合は上記の手順で行ってください。
 
 <https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
 
@@ -118,7 +129,16 @@ _任意:_ TouchDesigner を別ホスト/ポートで動かす場合は `--host` 
 
 #### Claude Code の例
 
-コマンドで追加:
+**推奨: touchdesigner プラグインを導入する方法。** この MCP サーバーに加えて、TouchDesigner のスキル、`/touchdesigner:` スラッシュコマンド、ネットワーク変更の検証を促すフックがまとめて入ります。
+
+```bash
+claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
+claude plugin install touchdesigner@touchdesigner-mcp
+```
+
+導入後、`/touchdesigner:setup` で接続を検証してください。TouchDesigner のホストとポートはプラグインオプションとして公開されている（既定値は `http://127.0.0.1` と `9981`）ため、MCP エントリを手で書く必要はありません。設定とトラブルシューティングは [plugin/touchdesigner/README.md](../plugin/touchdesigner/README.md) を参照してください。
+
+プラグインを使わず MCP サーバー単体を追加する場合は、コマンドで追加:
 
 ```bash
 claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest
@@ -138,6 +158,17 @@ claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest
 ```
 
 #### Codex の例
+
+**推奨: touchdesigner プラグインを導入する方法。** この MCP サーバーに加えて、接続確認・起動・デバッグ・画像取得・プロジェクト概要・パフォーマンス計測のスキルがまとめて入ります。[Codex CLI](https://developers.openai.com/codex/cli) が必要です。
+
+```bash
+codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
+codex plugin add touchdesigner@touchdesigner-openai
+```
+
+導入後、新しいセッションで「TouchDesigner の接続を確認して」と依頼してください。設定、ChatGPT デスクトップアプリ・Web からの接続は [OpenAI プラグインガイド](openai-plugin.md)を参照してください。
+
+プラグインを使わず MCP サーバー単体を追加する場合:
 
 ```bash
 codex mcp add touchdesigner -- npx -y touchdesigner-mcp-server@latest

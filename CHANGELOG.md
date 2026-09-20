@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **A Claude Code plugin, `touchdesigner`**, shipped from this repository as a plugin marketplace. `claude plugin marketplace add 8beeeaaat/touchdesigner-mcp` then `claude plugin install touchdesigner@touchdesigner-mcp` installs this MCP server preconfigured — host and port become plugin options rather than hand-written JSON. It adds `/touchdesigner:` commands for `launch`, `setup`, `debug`, `snapshot`, `overview` and `perf`; two auto-loaded skills carrying the conventions the tools expect (operator families, node paths and `nodeType` naming, and resolving TouchDesigner Python APIs through `get_td_classes` / `get_td_class_details` / `get_td_module_help` instead of guessing); and a hook that reminds the agent to verify a network mutation instead of assuming it worked. It deliberately ships no TouchDesigner craft knowledge — shader dialects, effect recipes, optimization theory — because that rots against each TouchDesigner release and nothing here can test it ([#211](https://github.com/8beeeaaat/touchdesigner-mcp/pull/211)).
+- **A Codex marketplace package**, reusing the Claude plugin's eight skills and bundled references/scripts. `codex plugin marketplace add 8beeeaaat/touchdesigner-mcp` then `codex plugin add touchdesigner@touchdesigner-openai` installs it; Node.js is still required, and the client starts the bundled server automatically. The ready-to-install package is committed under `plugins/touchdesigner/` and registered by `.agents/plugins/marketplace.json`. Its skills discover the client's tool namespace instead of assuming Claude's and verify every mutation explicitly, and setup/launch handle clients without local shell access. ChatGPT on the web is not a third target: it reaches the local server only through a separately configured connection (Secure MCP Tunnel or a registered app), which the [OpenAI plugin guide](docs/openai-plugin.md) covers. The installation guides (English and Japanese) gain Claude Code and Codex plugin sections, and the READMEs now point at them. Custom builds (`npm run plugin:openai`) normalize a trailing slash in `--host` and reject embedded ports, paths, queries, and fragments before writing output; supply the port separately with `--port`. None of this changes the MCP API ([#234](https://github.com/8beeeaaat/touchdesigner-mcp/pull/234)).
+- The plugin's `touchdesigner_host` option now says what shape it takes — scheme and hostname only — and the SessionStart hook warns when the stored value carries a port, path, or trailing slash, or has been cleared to an empty string, instead of announcing it as the working endpoint. The bundled server builds its base URL as `host:port`, so such a value fails only on the first tool call, with a bare `Invalid URL` ([#235](https://github.com/8beeeaaat/touchdesigner-mcp/pull/235)).
+
+### Technical
+
+- The plugin's wiring is pinned by tests rather than by review. `tests/unit/pluginManifestSync.test.ts` checks that every `${user_config.*}` the bundled server interpolates is declared, that the marketplace entry agrees with the manifest it points at, and that the mutation hook matches the same tool namespace the skills name in `allowed-tools` — a wrong namespace there would leave the hook silently never firing. `tests/unit/toolListingsSync.test.ts` catches a tool renamed out from under the plugin's documentation ([#211](https://github.com/8beeeaaat/touchdesigner-mcp/pull/211)).
+- Maintainers refresh the committed OpenAI package with `npm run plugin:sync`; CI runs `npm run plugin:check` — on development pushes and before the npm publish — to reject stale, missing, or extra distribution files. Packaging tests cover host validation, shared resources, and switching between local MCP and registered ChatGPT connections without leaving stale configuration; both plugin hook scripts are executed under a matrix of option values. A `.gitattributes` pins line endings to LF so the byte-exact check behaves the same on every platform ([#234](https://github.com/8beeeaaat/touchdesigner-mcp/pull/234)).
+
+### Contributors
+
+- [@8beeeaaat](https://github.com/8beeeaaat) — added the Claude Code plugin marketplace, the Codex marketplace distribution, and ChatGPT connection packaging ([#211](https://github.com/8beeeaaat/touchdesigner-mcp/pull/211), [#234](https://github.com/8beeeaaat/touchdesigner-mcp/pull/234)).
+
 ## [2.1.0] - 2026-09-19
 
 ### Upgrade Notes

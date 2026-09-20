@@ -81,11 +81,11 @@
 		"lint": "run-p lint:*",
 		"lint:biome": "biome check",
 		"lint:tsc": "tsc --noEmit",
-		"lint:python": "ruff check td/ tests/python/ && ruff format --check td/ tests/python/",
+		"lint:python": "ruff check td/ tests/python/ plugin/ && ruff format --check td/ tests/python/ plugin/",
 		"lint:yaml": "prettier --check \"**/*.{yml,yaml}\"",
 		"format": "run-p format:*",
 		"format:biome": "biome check --fix",
-		"format:python": "ruff format td/ tests/python/ && ruff check --fix td/ tests/python/",
+		"format:python": "ruff format td/ tests/python/ plugin/ && ruff check --fix td/ tests/python/ plugin/",
 		"format:yaml": "prettier --write \"**/*.{yml,yaml}\"",
 		"dev": "npx @modelcontextprotocol/inspector node dist/cli.js",
 		"http": "npm run build && node dist/cli.js --mcp-http-port=6280 --mcp-http-host=127.0.0.1 --host=http://127.0.0.1 --port=9981",
@@ -102,7 +102,10 @@
 		"gen": "run-s gen:*",
 		"gen:openapi": "redocly bundle ./src/api/index.yml -o ./td/modules/td_server/openapi_server/openapi/openapi.yaml",
 		"gen:handlers": "node td/genHandlers.js",
-		"gen:mcp": "orval --config ./orval.config.ts"
+		"gen:mcp": "orval --config ./orval.config.ts",
+		"plugin:openai": "node scripts/buildOpenaiPlugin.mjs",
+		"plugin:sync": "node scripts/syncOpenaiPlugin.mjs",
+		"plugin:check": "node scripts/syncOpenaiPlugin.mjs --check"
 	},
 	"files": [
 		"dist/**/*"

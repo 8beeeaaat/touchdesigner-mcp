@@ -32,6 +32,7 @@ jobs:
           node-version-file: ".node-version"
           cache: "npm"
       - run: npm ci
+      - run: npm run plugin:check
       - run: npm run gen
       - run: npm run lint
       - run: npm run test:unit
