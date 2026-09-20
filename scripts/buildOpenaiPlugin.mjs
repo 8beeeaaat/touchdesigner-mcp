@@ -107,12 +107,11 @@ export async function buildOpenaiPlugin({
 			touchdesigner_port: String(port),
 		};
 		const server = claudeMcp.touchdesigner;
-		// The Claude config pins npx's project prefix to `${CLAUDE_PLUGIN_ROOT}` so
-		// the working directory cannot shadow the package (see the Claude
-		// .mcp.json). Codex expands no such variable, so drop the flag rather than
-		// ship the placeholder verbatim; Codex keeps npx's default lookup.
+		// Codex resolves a relative cwd against the plugin root. Pin npm's prefix
+		// too: cwd alone still lets npm walk up to an enclosing checkout's package.
+		server.cwd = ".";
 		server.args = server.args
-			.filter((arg) => !arg.startsWith("--prefix="))
+			.map((arg) => (arg.startsWith("--prefix=") ? "--prefix=." : arg))
 			.map((arg) =>
 				arg.replace(/\$\{user_config\.([^}]+)\}/g, (_, key) => {
 					if (!(key in values))

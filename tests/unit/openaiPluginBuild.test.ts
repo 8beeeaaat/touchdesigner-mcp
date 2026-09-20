@@ -106,13 +106,17 @@ describe("OpenAI plugin packaging", () => {
 		expect(mcp.mcpServers.touchdesigner.command).toBe("npx");
 		expect(mcp.mcpServers.touchdesigner.args).toContain("--port=9982");
 		expect(JSON.stringify(mcp)).not.toContain("${");
-		// The Claude config pins npx's prefix to ${CLAUDE_PLUGIN_ROOT}; Codex
-		// expands no such variable, so the flag is dropped rather than shipped.
+		expect(mcp.mcpServers.touchdesigner.cwd).toBe(".");
 		expect(
 			mcp.mcpServers.touchdesigner.args.filter((arg: string) =>
 				arg.startsWith("--prefix="),
 			),
-		).toEqual([]);
+		).toEqual(["--prefix=."]);
+		expect(
+			mcp.mcpServers.touchdesigner.args.indexOf("--prefix=."),
+		).toBeLessThan(
+			mcp.mcpServers.touchdesigner.args.indexOf("touchdesigner-mcp-server"),
+		);
 		const catalog = await json(
 			path.join(out, ".agents/plugins/marketplace.json"),
 		);
@@ -143,6 +147,39 @@ describe("OpenAI plugin packaging", () => {
 			),
 		);
 		expect(await fs.readdir(plugin)).not.toContain("hooks");
+	});
+
+	it("keeps npm's project root inside a plugin nested in a same-name checkout", async () => {
+		const checkout = await directory();
+		await fs.writeFile(
+			path.join(checkout, "package.json"),
+			JSON.stringify({ name: "touchdesigner-mcp-server", version: "2.0.0" }),
+		);
+		const out = path.join(checkout, "build with spaces");
+		await build(out);
+		const plugin = path.join(out, "plugins/touchdesigner");
+		const { mcpServers } = await json(path.join(plugin, ".mcp.json"));
+		const server = mcpServers.touchdesigner;
+		// Match Codex's plugin-relative cwd resolution, then ask real npm which
+		// project it would use. Without --prefix, npm finds the enclosing checkout.
+		const cwd = path.resolve(plugin, server.cwd);
+		const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+		const options = { cwd, shell: process.platform === "win32" };
+		const before = await exec(npm, ["prefix"], options);
+		const after = await exec(
+			npm,
+			[
+				server.args.find((arg: string) => arg.startsWith("--prefix=")),
+				"prefix",
+			],
+			options,
+		);
+		expect(await fs.realpath(before.stdout.trim())).toBe(
+			await fs.realpath(checkout),
+		);
+		expect(await fs.realpath(after.stdout.trim())).toBe(
+			await fs.realpath(plugin),
+		);
 	});
 
 	it("switches between registered ChatGPT and local MCP without stale connections", async () => {
