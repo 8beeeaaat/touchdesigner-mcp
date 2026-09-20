@@ -107,12 +107,18 @@ export async function buildOpenaiPlugin({
 			touchdesigner_port: String(port),
 		};
 		const server = claudeMcp.touchdesigner;
-		server.args = server.args.map((arg) =>
-			arg.replace(/\$\{user_config\.([^}]+)\}/g, (_, key) => {
-				if (!(key in values)) throw new Error(`Unknown Claude option: ${key}`);
-				return values[key];
-			}),
-		);
+		// Codex resolves a relative cwd against the plugin root. Pin npm's prefix
+		// too: cwd alone still lets npm walk up to an enclosing checkout's package.
+		server.cwd = ".";
+		server.args = server.args
+			.map((arg) => (arg.startsWith("--prefix=") ? "--prefix=." : arg))
+			.map((arg) =>
+				arg.replace(/\$\{user_config\.([^}]+)\}/g, (_, key) => {
+					if (!(key in values))
+						throw new Error(`Unknown Claude option: ${key}`);
+					return values[key];
+				}),
+			);
 		await json(join(plugin, ".mcp.json"), {
 			mcpServers: { touchdesigner: server },
 		});

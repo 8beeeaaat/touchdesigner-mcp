@@ -76,6 +76,7 @@ After changing the plugin configuration, run `/reload-plugins` or start a new Cl
 |---|---|
 | `get_td_info` fails / tools time out | TouchDesigner running? `.tox` imported? WebServer DAT active on the configured port? Run `/touchdesigner:setup` |
 | Tools missing in `/mcp` | Restart Claude Code after enabling the plugin; check `npx` can reach the npm registry |
+| `claude mcp list` shows `CONNECTION_CLOSED` only when the session runs inside the touchdesigner-mcp checkout | The checkout's own `package.json` satisfies `touchdesigner-mcp-server@^2`, so an older plugin's `npx` skipped the install and found no bin. Update the plugin (`claude plugin update touchdesigner@touchdesigner-mcp`), which passes `--prefix=${CLAUDE_PLUGIN_ROOT}` to `npx` |
 | Snapshot is black | Upstream node errors (`/touchdesigner:debug`), or the TOP has zero resolution |
 
 ## License

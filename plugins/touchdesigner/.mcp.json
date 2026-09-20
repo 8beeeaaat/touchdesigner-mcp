@@ -3,12 +3,14 @@
 		"touchdesigner": {
 			"command": "npx",
 			"args": [
+				"--prefix=.",
 				"-y",
 				"--package=touchdesigner-mcp-server@^2",
 				"touchdesigner-mcp-server",
 				"--host=http://127.0.0.1",
 				"--port=9981"
-			]
+			],
+			"cwd": "."
 		}
 	}
 }

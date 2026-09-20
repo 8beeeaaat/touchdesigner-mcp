@@ -15,7 +15,7 @@ Keep one registration, not two. If a `touchdesigner` plugin is already registere
 
 The repository ships `.agents/plugins/marketplace.json` and the complete generated package under `plugins/touchdesigner/`, including all eight skills and their references/scripts. In supported desktop clients, the marketplace also appears as a source in the Plugins Directory. See [OpenAI's Git marketplace instructions](https://developers.openai.com/plugins/build/plugins#add-a-marketplace-from-the-cli).
 
-Node.js 22.18+, 24.x, or 26+ must be installed. The client automatically starts `touchdesigner-mcp-server@^2` through `npx`; users do not run npm commands themselves. The first launch needs access to the npm registry. TouchDesigner must be running with `mcp_webserver_base.tox` imported, listening on `http://127.0.0.1:9981`.
+Node.js 22.18+, 24.x, or 26+ must be installed. The client automatically starts `touchdesigner-mcp-server@^2` through `npx`; users do not run npm commands themselves. The launcher sets plugin-relative `cwd: "."` and `--prefix=.` so npm cannot resolve the server from the session project or an enclosing checkout. The first launch needs access to the npm registry. TouchDesigner must be running with `mcp_webserver_base.tox` imported, listening on `http://127.0.0.1:9981`.
 
 Start a new session and ask “Use TouchDesigner setup to check my connection.” Also try “Give me a TouchDesigner project overview” and “Capture my TOP output.” The six command skills are launch, setup, debug, snapshot, overview, and perf; fundamentals and python-api provide shared conventions. Choose skills from the client's skill picker or request them by name; Claude slash-command syntax is not required.
 
