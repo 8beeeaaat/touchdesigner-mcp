@@ -118,7 +118,16 @@ _任意:_ TouchDesigner を別ホスト/ポートで動かす場合は `--host` 
 
 #### Claude Code の例
 
-コマンドで追加:
+**推奨: touchdesigner プラグインを導入する方法。** この MCP サーバーに加えて、TouchDesigner のスキル、`/touchdesigner:` スラッシュコマンド、ネットワーク変更の検証を促すフックがまとめて入ります。
+
+```bash
+claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
+claude plugin install touchdesigner@touchdesigner-mcp
+```
+
+導入後、`/touchdesigner:setup` で接続を検証してください。TouchDesigner のホストとポートはプラグインオプションとして公開されている（既定値は `http://127.0.0.1` と `9981`）ため、MCP エントリを手で書く必要はありません。設定とトラブルシューティングは [plugin/touchdesigner/README.md](../plugin/touchdesigner/README.md) を参照してください。
+
+プラグインを使わず MCP サーバー単体を追加する場合は、コマンドで追加:
 
 ```bash
 claude mcp add -s user touchdesigner -- npx -y touchdesigner-mcp-server@latest
