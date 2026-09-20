@@ -14,7 +14,7 @@
 		"touchdesigner_host": {
 			"type": "string",
 			"title": "TouchDesigner host",
-			"description": "Base URL of the TouchDesigner WebServer DAT",
+			"description": "Scheme and hostname of the TouchDesigner WebServer DAT, e.g. http://127.0.0.1 — no port, path, or trailing slash. The server appends the port from the TouchDesigner port option.",
 			"required": false,
 			"default": "http://127.0.0.1"
 		},

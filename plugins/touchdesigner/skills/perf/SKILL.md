@@ -19,7 +19,7 @@ Diagnose TouchDesigner performance bottlenecks by measuring per-operator cook ti
 
 ## Workflow
 
-1. Explain up front that real measurement requires running a script via `execute_python_script`, which is not pre-authorized for this skill — the permission prompt that follows is expected, not a malfunction.
+1. Explain up front that real measurement requires running a script via `execute_python_script` — the permission prompt that may follow is expected, not a malfunction.
 
 2. Call `get_td_info` to confirm TouchDesigner is reachable before doing anything else; if it fails, point the user at `/touchdesigner:setup` instead of proceeding.
 

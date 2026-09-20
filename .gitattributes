@@ -1,0 +1,6 @@
+# The OpenAI plugin builder and `npm run plugin:check` compare generated files
+# byte for byte, so line endings must not depend on the checkout platform.
+* text=auto eol=lf
+*.tox binary
+# Committed with CRLF; left untouched so the .tox-side script keeps its bytes.
+td/modules/mcp_webserver_script.py -text

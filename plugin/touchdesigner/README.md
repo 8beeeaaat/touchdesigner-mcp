@@ -56,7 +56,7 @@ Start TouchDesigner, open a project containing `mcp_webserver_base.tox`, then ta
 
 ## Configuration
 
-The plugin asks for the TouchDesigner WebServer host and port when it is enabled. The defaults are `http://127.0.0.1` and `9981`. These values configure the bundled server directly, so its `mcp__plugin_touchdesigner_touchdesigner__...` tool namespace stays unchanged.
+The plugin asks for the TouchDesigner WebServer host and port when it is enabled. The defaults are `http://127.0.0.1` and `9981`. The host is the scheme and hostname only — no port, path, or trailing slash — because the bundled server appends the port itself. These values configure the bundled server directly, so its `mcp__plugin_touchdesigner_touchdesigner__...` tool namespace stays unchanged.
 
 A SessionStart hook reads the same options from `CLAUDE_PLUGIN_OPTION_TOUCHDESIGNER_HOST` / `CLAUDE_PLUGIN_OPTION_TOUCHDESIGNER_PORT` and injects the resolved endpoint into Claude's context for the setup and launch skills.
 

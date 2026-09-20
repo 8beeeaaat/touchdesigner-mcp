@@ -104,7 +104,7 @@ jobs:
             claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
             claude plugin install touchdesigner@touchdesigner-mcp
             ```
-            Then run `/touchdesigner:setup` to verify the connection, or `/touchdesigner:launch` to start TouchDesigner with the component already imported. You still need the TouchDesigner Components from the Downloads section above.
+            Then run `/touchdesigner:setup` to verify the connection, or `/touchdesigner:launch` to start TouchDesigner with the component already imported. `/touchdesigner:launch` downloads the TouchDesigner Components itself; for any other route, import them from the Downloads section above first.
 
             ### Quick Start (Codex)
             Install the ready-to-use plugin from this repository's Codex marketplace; no manual npm build is needed:
@@ -150,6 +150,7 @@ jobs:
           node-version-file: ".node-version"
           registry-url: "https://registry.npmjs.org"
       - run: npm ci
+      - run: npm run plugin:check
       - run: npm run build
       - name: Publish to npm
         run: |

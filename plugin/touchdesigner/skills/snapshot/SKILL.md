@@ -2,6 +2,7 @@
 name: snapshot
 description: This skill should be used when the user runs /touchdesigner:snapshot or asks to see, preview, capture, or confirm the visual output of a TouchDesigner TOP — trigger phrases include "show me the output", "what does this look like", "capture the render", "snapshot the TOP", "check the visual output", or "is this TOP rendering correctly".
 argument-hint: "[top-path]"
+allowed-tools: ["mcp__plugin_touchdesigner_touchdesigner__get_td_nodes", "mcp__plugin_touchdesigner_touchdesigner__get_top_image", "mcp__plugin_touchdesigner_touchdesigner__get_td_node_errors", "mcp__plugin_touchdesigner_touchdesigner__get_td_node_parameters"]
 version: 0.1.0
 ---
 
@@ -22,8 +23,8 @@ Capture and visually confirm the current output of a TouchDesigner TOP.
 4. Present the returned image to the user (it comes back as an image content block, rendered directly) along with a short description of what's visible: the general composition, dominant colors, and — if the user stated what they expected to see — whether it matches that intent.
 
 5. If the image is black, blank, or otherwise clearly empty, walk likely causes rather than reporting failure outright:
-   - **Upstream error** — check with `get_td_node_errors`. This tool is not pre-authorized for this skill, so calling it will trigger a permission prompt; that's expected.
-   - **Resolution** — a TOP with a zero or degenerate resolution renders nothing; this can only be confirmed by inspecting parameters (`get_td_node_parameters`) or running a script, both outside this skill's pre-authorized tools, so mention it as a hypothesis if it can't be directly confirmed.
+   - **Upstream error** — check with `get_td_node_errors` on the TOP and on its parent COMP.
+   - **Resolution** — a TOP with a zero or degenerate resolution renders nothing; confirm it with `get_td_node_parameters`, or with a script when the parameters are inconclusive; if it can't be checked directly, mention it as a hypothesis.
    - **Display/bypass flag** — a wrong pick in step 2 can leave a different node cooking than the one being viewed; reconsider whether a different TOP further down the chain is the actual intended output.
 
 6. Report findings clearly: what was captured, what it shows, and — if empty — which of the above causes look most likely given what could actually be checked with the tools available.

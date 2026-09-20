@@ -43,7 +43,7 @@ describe("OpenAI plugin packaging", () => {
 		["https://TD.EXAMPLE/", "https://td.example"],
 		["http://[::1]/", "http://[::1]"],
 	])(
-		"normalizes host %s before the runtime appends its port",
+		"normalizes host %s before the server appends its port",
 		async (host, expected) => {
 			const out = await directory();
 			await build(out, `--host=${host}`, "--port=9982");
@@ -72,6 +72,7 @@ describe("OpenAI plugin packaging", () => {
 		"http://127.0.0.1/api",
 		"http://127.0.0.1/?mode=test",
 		"http://127.0.0.1/#endpoint",
+		"http://127.0.0.1\\api",
 	])("rejects unusable host %s before writing output", async (host) => {
 		const out = await directory();
 		await expect(build(out, `--host=${host}`)).rejects.toThrow(
@@ -79,6 +80,17 @@ describe("OpenAI plugin packaging", () => {
 		);
 		expect(await fs.readdir(out)).toEqual([]);
 	});
+
+	it.each(["127.0.0.1", "localhost"])(
+		"rejects scheme-less host %s with the project's own message",
+		async (host) => {
+			const out = await directory();
+			await expect(build(out, `--host=${host}`)).rejects.toThrow(
+				"host must be an HTTP(S) URL",
+			);
+			expect(await fs.readdir(out)).toEqual([]);
+		},
+	);
 
 	it("ships all shared skills and references with executable MCP arguments", async () => {
 		const out = await directory();
@@ -101,13 +113,17 @@ describe("OpenAI plugin packaging", () => {
 		const skills = await fs.readdir(
 			path.join(repo, "plugin/touchdesigner/skills"),
 		);
-		expect(await fs.readdir(path.join(plugin, "skills"))).toEqual(skills);
+		expect((await fs.readdir(path.join(plugin, "skills"))).sort()).toEqual(
+			[...skills].sort(),
+		);
 		for (const skill of skills) {
 			const text = await fs.readFile(
 				path.join(plugin, "skills", skill, "SKILL.md"),
 				"utf8",
 			);
-			const frontmatter = parse(text.split("---")[1]);
+			const frontmatter = parse(
+				text.match(/^---\n([\s\S]*?)\n---\n/)?.[1] ?? "",
+			);
 			expect(Object.keys(frontmatter).sort()).toEqual(["description", "name"]);
 			expect(text).not.toContain("mcp__plugin_");
 			expect(text).toContain("After any network mutation");

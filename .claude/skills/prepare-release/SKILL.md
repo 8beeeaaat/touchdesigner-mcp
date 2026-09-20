@@ -64,6 +64,11 @@ Step 0 commits into Keep-a-Changelog sections, write impact-first prose, referen
 the merged PRs, and include the mandatory "Released version … across …" bullet
 whose last sentence records the Step 2 API-axis decision.
 
+If the file already opens with an `## [Unreleased]` block (feature PRs may land
+their entries there ahead of a release), rename that heading to
+`## [X.Y.Z] - YYYY-MM-DD` and fold the new bullets into it — never leave it
+behind as a second block under the released version.
+
 Two sections bracket the entry (both defined in changelog-format.md):
 
 - **`### Upgrade Notes` first** — required whenever the API axis moves, and
@@ -125,12 +130,20 @@ major moved:
    changed *behaviour*.
 3. Bump `version` in `plugin/touchdesigner/.claude-plugin/plugin.json`. That is the
    plugin's own axis and moves only when the plugin itself changes. It is the
-   only copy: the marketplace entry deliberately carries no `version`, so that
-   this step cannot leave a stale one behind. Should one ever be added there, it
-   has to move with this one — `tests/unit/pluginManifestSync.test.ts` compares
-   them whenever the marketplace names a version, and would fail this release.
+   only hand-edited copy: the Claude marketplace entry deliberately carries no
+   `version`, so this step cannot leave a stale one behind. Should one ever be
+   added there, it has to move with this one — `tests/unit/pluginManifestSync.test.ts`
+   compares them whenever the marketplace names a version, and would fail this
+   release.
+4. Run `npm run plugin:sync` and confirm `npm run plugin:check` passes. The Codex
+   package under `plugins/touchdesigner/` is generated from steps 1 and 3 — its
+   `.mcp.json` carries the same `^N` pin and its `.codex-plugin/plugin.json` the
+   same `version` — and CI rejects a stale copy. Commit `plugins/touchdesigner/`
+   and `.agents/plugins/marketplace.json` together with the source edits.
 
-On a MINOR or PATCH release, leave all three alone — `^N` already covers it.
+On a MINOR or PATCH release, leave the `^N` pin, the skill text, and the plugin
+`version` alone — `^N` already covers it — and `plugin:check` stays green
+without a sync.
 
 ## Step 5 — commit and open the release PR
 
@@ -153,5 +166,6 @@ Do not merge, tag, or `npm publish` yourself.
   revert the API trio if needed. Hand edits drift from the sync scripts.
 - `build:mcpb` **before** `version:mcp`, always.
 - On a MAJOR bump, don't forget Step 4b — the `touchdesigner` plugin pins the
-  server by major and `npm version` leaves it behind.
+  server by major and `npm version` leaves it behind — and finish it with
+  `npm run plugin:sync`, or `plugin:check` fails the release in CI.
 - Don't "fix" the `server.json` SHA256 mismatch during a release.

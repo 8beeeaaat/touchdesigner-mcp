@@ -3,9 +3,9 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 // The touchdesigner plugin wires its TouchDesigner endpoint through Claude Code's
-// `userConfig` mechanism, which is real but undocumented: the Claude Code binary
-// substitutes `${user_config.<key>}` in .mcp.json, and skips the MCP server
-// entirely when a *required* option has no value ("has missing required
+// `userConfig` mechanism: the Claude Code binary substitutes `${user_config.<key>}`
+// in .mcp.json, and skips the MCP server entirely when a *required* option has
+// no value (observed on Claude Code 2.1.278 as "has missing required
 // configuration, skipping MCP config"). Nothing fails loudly when these files
 // drift — an unresolved placeholder reaches the server verbatim, and a renamed
 // option silently reverts the endpoint to a default while the SessionStart hook
@@ -98,8 +98,9 @@ describe("touchdesigner userConfig wiring", () => {
 	// Binding it to the bundled server's namespace fixes that but trades a
 	// visible false positive for an invisible false negative: if the namespace
 	// ever changes shape, the hook simply stops firing and nothing says so.
-	// `allowed-tools` names the same namespace and would break loudly, so pin
-	// the two together and let this fail instead of the hook going quiet.
+	// `allowed-tools` names the same namespace, and a wrong entry there at least
+	// shows up as unexpected permission prompts, so pin the two together and let
+	// this test fail instead of the hook going quiet.
 	it("matches the same server namespace the skills name in allowed-tools", async () => {
 		const hooks = JSON.parse(
 			await readRepoFile(`${PLUGIN_DIR}/hooks/hooks.json`),
@@ -154,9 +155,9 @@ describe("marketplace entry", () => {
 		// Nothing validates the copied description, so it drifts in silence.
 		expect(entry.description).toBe(manifest.description);
 
-		// `version` is optional here (270 of the 284 entries in the official
-		// marketplace omit it) and Claude Code cross-checks it against plugin.json
-		// when present, so only assert the agreement it would report.
+		// `version` is optional in a marketplace entry. When both it and plugin.json
+		// name one, Claude Code uses the plugin.json value, so a stale marketplace
+		// version would silently mask a bump; assert agreement whenever one is set.
 		if (entry.version !== undefined) {
 			expect(entry.version).toBe(manifest.version);
 		}
