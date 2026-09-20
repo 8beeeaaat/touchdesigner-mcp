@@ -14,11 +14,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: "pip"
@@ -27,7 +27,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ruff pytest
       - name: Use Node.js from .node-version
-        uses: actions/setup-node@v4.0.0
+        uses: actions/setup-node@v7
         with:
           node-version-file: ".node-version"
           cache: "npm"
@@ -44,7 +44,7 @@ jobs:
       # The TD-side modules must import on the floor pyproject declares, not
       # only on the newest interpreter. Older TouchDesigner builds ship it.
       - name: Set up the minimum supported Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.9"
       - name: Run TD-side tests on the minimum supported Python
