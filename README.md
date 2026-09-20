@@ -7,43 +7,76 @@ This is an implementation of an MCP (Model Context Protocol) server for TouchDes
 
 [English](README.md) / [日本語](README.ja.md)
 
-## Quick start: install the plugin (recommended)
+## Quick start
 
-**New to MCP? If you use Claude Code or Codex, start with the `touchdesigner` plugin.** Your AI client configures and starts the MCP server for you. You do not need to write MCP configuration JSON, clone this repository, or run an npm build.
+TouchDesigner MCP lets an AI assistant look inside a running TouchDesigner project — read the network, build and wire nodes, run Python, check for errors. Setting it up has two steps: add a component to TouchDesigner, then connect the app you talk to AI in.
 
-1. Install **TouchDesigner** and **Node.js 22.18+, 24.x, or 26+** on your computer.
-2. Install the plugin using the commands for your client below.
-3. Start a new client session and use the launch or setup instructions below. The launch skill can help download the MCP component and open it in TouchDesigner when local shell access is available. To prepare an existing project yourself, download [TouchDesigner Components from the latest release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest), extract the archive, and drag `mcp_webserver_base.tox` into your project. Keep the extracted files together.
+### Step 1 — Add the component to TouchDesigner
 
-### Claude Code users: the touchdesigner plugin
+Everyone does this, whichever AI app you use.
 
-This repository doubles as a Claude Code plugin marketplace. The **touchdesigner** plugin installs this MCP server for you and makes its tools easy to drive:
+1. Download **touchdesigner-mcp-td.zip** from the [latest release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest) and unzip it somewhere you will keep it.
+2. Leave the unzipped folder as it is. `mcp_webserver_base.tox` loads the `modules/` folder sitting next to it, so moving the `.tox` file out on its own breaks it.
+3. Drag `mcp_webserver_base.tox` into your TouchDesigner project — `/project1` is a good place for it.
+
+A video walkthrough, and how to confirm it loaded, are in the [Installation Guide](docs/installation.md#touchdesigner-setup-required-for-all-methods).
+
+> Using Claude Code or the Codex CLI? You can let the assistant do this instead — in Claude Code run `/touchdesigner:launch`, in Codex just ask it to launch TouchDesigner. Either way it downloads the component and opens TouchDesigner with it already loaded. It starts a fresh project rather than opening one of yours, so follow the steps above for an existing project.
+
+### Step 2 — Connect the app you talk to AI in
+
+| The app you use | How to connect | Terminal needed |
+| :--------------- | :-------------- | :-------------- |
+| **Claude Desktop** | [Double-click one downloaded file](#claude-desktop) | No |
+| **Claude Code** | [Install the `touchdesigner` plugin](#claude-code) | Yes |
+| **Codex CLI** | [Install the `touchdesigner` plugin](#codex-cli) | Yes |
+| **ChatGPT desktop app** (Work / Codex) | [Register the marketplace with the Codex CLI](#chatgpt-desktop-app-work--codex) | Yes |
+| **ChatGPT on the web** | [Connect through a secure tunnel](docs/openai-plugin.md#chatgpt-connect-the-local-server) — advanced | Yes |
+| Another MCP client | [Installation Guide](docs/installation.md) | Usually |
+
+"Terminal needed" means you type commands into Terminal (macOS) or PowerShell (Windows). If that is unfamiliar territory, the Claude Desktop route avoids it entirely.
+
+#### Claude Desktop
+
+No terminal, no configuration files to edit.
+
+1. Download **touchdesigner-mcp.mcpb** from the [latest release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest/download/touchdesigner-mcp.mcpb).
+2. Double-click the file. Claude Desktop installs it as an extension.
+3. Restart Claude Desktop, start a new chat, and ask "Check my TouchDesigner connection."
+
+The extension connects to TouchDesigner on port `9981` by default; if your WebServer DAT uses another port, change it in the extension's settings. Details in [Method 1: MCP Bundle](docs/installation.md#method-1-mcp-bundle-claude-desktop-only).
+
+#### Claude Code
+
+Requires **Node.js** — install the current LTS from [nodejs.org](https://nodejs.org/) (22.18+, 24.x or 26+; odd-numbered releases such as 23.x and 25.x are not supported).
+
+This repository doubles as a Claude Code plugin marketplace. The **touchdesigner** plugin installs and configures the MCP server for you, so there is no configuration JSON to write, no repository to clone, and no npm build to run:
 
 ```bash
 claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
 claude plugin install touchdesigner@touchdesigner-mcp
 ```
 
-Then run `/touchdesigner:setup` to verify the connection, or `/touchdesigner:launch` to start TouchDesigner with the component already imported.
+Start a new session, then run `/touchdesigner:setup` to verify the connection, or `/touchdesigner:launch` to start TouchDesigner with the component already imported.
 
 Configuration and troubleshooting for the plugin itself live in [plugin/touchdesigner/README.md](plugin/touchdesigner/README.md).
 
-### Codex users: the touchdesigner plugin
+#### Codex CLI
 
-Install the **touchdesigner** plugin from this repository's Codex marketplace. No manual npm build is needed:
+Requires **Node.js** — the current LTS from [nodejs.org](https://nodejs.org/) (22.18+, 24.x or 26+) — and the [Codex CLI](https://developers.openai.com/codex/cli). Install the **touchdesigner** plugin from this repository's Codex marketplace — again, no manual npm build:
 
 ```bash
 codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
 codex plugin add touchdesigner@touchdesigner-openai
 ```
 
-Then ask “Use TouchDesigner setup to check my connection” or “Launch TouchDesigner.” The plugin includes the MCP server and skills for setup, launch, debugging, snapshots, project overviews, and performance measurement.
+Start a new session and ask "Check my TouchDesigner connection" or "Launch TouchDesigner." The plugin bundles the MCP server together with skills for setup, launch, debugging, snapshots, project overviews, and performance measurement. Codex has no `/touchdesigner:` slash commands — ask in plain language, or pick a skill from the client's skill picker.
 
 See the [OpenAI plugin guide](docs/openai-plugin.md) for configuration and ChatGPT connections.
 
-### ChatGPT desktop users (Work / Codex)
+#### ChatGPT desktop app (Work / Codex)
 
-For a desktop version with local plugin support, register the marketplace using **Codex CLI** on the same computer:
+The desktop app can use local plugins, but registering one goes through the **Codex CLI**, which is a separate terminal tool and does not ship with the ChatGPT app. Install it from [Codex CLI setup](https://developers.openai.com/codex/cli), then run:
 
 ```bash
 codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
@@ -51,15 +84,13 @@ codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
 
 1. Restart the ChatGPT desktop app.
 2. In Work / Codex, open **Plugins Directory** and choose the **TouchDesigner** marketplace source (`touchdesigner-openai`).
-3. Install **TouchDesigner**, then start a new local conversation with the plugin enabled and ask “Check my TouchDesigner connection.”
+3. Install the **TouchDesigner** plugin from that source, then start a new local conversation with the plugin enabled and ask "Check my TouchDesigner connection."
 
-If you already registered the marketplace with Codex CLI, skip re-registration. Local marketplace availability depends on the client and workspace policy. See the [official marketplace guide](https://developers.openai.com/plugins/build/plugins#add-a-marketplace-from-the-cli). For web or cloud conversations, use the [ChatGPT connection setup](docs/openai-plugin.md#chatgpt-connect-the-local-server).
+If you already registered the marketplace with the Codex CLI, skip the command. Whether local marketplaces appear at all depends on your client version and workspace policy — see the [official marketplace guide](https://developers.openai.com/plugins/build/plugins#add-a-marketplace-from-the-cli). For conversations on the web or in the cloud, use the [ChatGPT connection setup](docs/openai-plugin.md#chatgpt-connect-the-local-server) instead.
 
-### Other clients and updates
+### Updating
 
-For **Claude Desktop (MCPB)**, other MCP clients, or manual configuration, see the [Installation Guide](docs/installation.md). For **ChatGPT Web**, see the [OpenAI connection guide](docs/openai-plugin.md#chatgpt-connect-the-local-server).
-
-Already using the server? Follow the [update instructions in the latest release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions).
+Already running an earlier version? Follow the [update instructions in the latest release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest#for-updates-from-previous-versions).
 
 ## Overview
 

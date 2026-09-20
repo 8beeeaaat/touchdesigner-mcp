@@ -154,7 +154,16 @@ Or manually edit `~/.claude.json`:
 
 #### For Codex
 
-Run the following command:
+**Recommended: install the touchdesigner plugin instead.** It bundles this server and adds skills for setup, launch, debugging, snapshots, project overviews, and performance measurement. It needs the [Codex CLI](https://developers.openai.com/codex/cli):
+
+```bash
+codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
+codex plugin add touchdesigner@touchdesigner-openai
+```
+
+Then start a new session and ask "Check my TouchDesigner connection." See the [OpenAI plugin guide](openai-plugin.md) for configuration, the ChatGPT desktop app, and ChatGPT on the web.
+
+To add the server on its own, without the plugin, run the following command:
 
 ```bash
 codex mcp add touchdesigner -- npx -y touchdesigner-mcp-server@latest

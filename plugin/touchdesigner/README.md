@@ -30,13 +30,20 @@ Install the ready-to-use OpenAI package from this GitHub repository’s Codex ma
 
 ## Installation
 
-Install from your plugin marketplace, or test locally:
+The plugin ships from this repository's own marketplace:
+
+```bash
+claude plugin marketplace add 8beeeaaat/touchdesigner-mcp
+claude plugin install touchdesigner@touchdesigner-mcp
+```
+
+Start a new Claude Code session, then run `/touchdesigner:setup` to confirm the connection end to end.
+
+To try a local checkout instead of the published marketplace:
 
 ```bash
 claude --plugin-dir /path/to/touchdesigner
 ```
-
-On first use, run `/touchdesigner:setup` to confirm the connection end to end.
 
 ## Usage
 

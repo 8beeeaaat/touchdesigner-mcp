@@ -2,6 +2,8 @@
 
 ## Install from the GitHub marketplace
 
+**Prerequisite: the Codex CLI**, installed on the same computer as TouchDesigner. It is a separate terminal tool — it does not come with the ChatGPT desktop app. Follow [Codex CLI setup](https://developers.openai.com/codex/cli) first. Both commands below are typed into a terminal.
+
 No repository clone, `npm install`, or plugin build is needed. Register this repository with Codex and install the ready-to-use package:
 
 ```bash
@@ -9,14 +11,7 @@ codex plugin marketplace add 8beeeaaat/touchdesigner-mcp
 codex plugin add touchdesigner@touchdesigner-openai
 ```
 
-Before this change reaches the default branch, test the PR branch instead:
-
-```bash
-codex plugin marketplace add 8beeeaaat/touchdesigner-mcp --ref feat/openai-touchdesigner-plugin
-codex plugin add touchdesigner@touchdesigner-openai
-```
-
-Use one registration, not both. If already registered from a local build or another ref, remove the old plugin and marketplace first with `codex plugin remove touchdesigner@touchdesigner-openai` and `codex plugin marketplace remove touchdesigner-openai`, then add the desired source.
+Keep one registration, not two. If a `touchdesigner` plugin is already registered from a local build or a different source, remove it first with `codex plugin remove touchdesigner@touchdesigner-openai` and `codex plugin marketplace remove touchdesigner-openai`, then add the source above.
 
 The repository ships `.agents/plugins/marketplace.json` and the complete generated package under `plugins/touchdesigner/`, including all eight skills and their references/scripts. In supported desktop clients, the marketplace also appears as a source in the Plugins Directory. See [OpenAI's Git marketplace instructions](https://developers.openai.com/plugins/build/plugins#add-a-marketplace-from-the-cli).
 
