@@ -107,12 +107,19 @@ export async function buildOpenaiPlugin({
 			touchdesigner_port: String(port),
 		};
 		const server = claudeMcp.touchdesigner;
-		server.args = server.args.map((arg) =>
-			arg.replace(/\$\{user_config\.([^}]+)\}/g, (_, key) => {
-				if (!(key in values)) throw new Error(`Unknown Claude option: ${key}`);
-				return values[key];
-			}),
-		);
+		// The Claude config pins npx's project prefix to `${CLAUDE_PLUGIN_ROOT}` so
+		// the working directory cannot shadow the package (see the Claude
+		// .mcp.json). Codex expands no such variable, so drop the flag rather than
+		// ship the placeholder verbatim; Codex keeps npx's default lookup.
+		server.args = server.args
+			.filter((arg) => !arg.startsWith("--prefix="))
+			.map((arg) =>
+				arg.replace(/\$\{user_config\.([^}]+)\}/g, (_, key) => {
+					if (!(key in values))
+						throw new Error(`Unknown Claude option: ${key}`);
+					return values[key];
+				}),
+			);
 		await json(join(plugin, ".mcp.json"), {
 			mcpServers: { touchdesigner: server },
 		});

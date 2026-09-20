@@ -124,6 +124,34 @@ describe("touchdesigner userConfig wiring", () => {
 	});
 });
 
+describe("bundled server launch", () => {
+	// npx resolves `--package=<name>@<range>` against the local project tree
+	// before installing, and that tree includes the project's own package.json.
+	// Claude Code spawns stdio servers in the working directory, so a session
+	// started inside this repository — whose package.json *is*
+	// touchdesigner-mcp-server 2.x — made npx skip the install and then fail
+	// with `sh: touchdesigner-mcp-server: command not found`, which Claude Code
+	// reported as CONNECTION_CLOSED. Pointing npm's project prefix at the plugin
+	// root, which has no package.json, makes the lookup independent of cwd.
+	it("pins npx's project prefix to the plugin root so cwd cannot shadow the package", async () => {
+		const { touchdesigner } = JSON.parse(
+			await readRepoFile(`${PLUGIN_DIR}/.mcp.json`),
+		) as { touchdesigner: { args: string[]; command: string } };
+
+		expect(touchdesigner.command).toBe("npx");
+		const prefix = touchdesigner.args.findIndex((arg) =>
+			arg.startsWith("--prefix="),
+		);
+		// Everything after the bin name is passed to the server, not to npx.
+		const bin = touchdesigner.args.indexOf("touchdesigner-mcp-server");
+		expect(prefix).toBeGreaterThanOrEqual(0);
+		expect(touchdesigner.args[prefix]).toMatch(
+			/^--prefix=\$\{CLAUDE_PLUGIN_ROOT\}$/,
+		);
+		expect(bin).toBeGreaterThan(prefix);
+	});
+});
+
 describe("marketplace entry", () => {
 	it("agrees with the plugin manifest it points at", async () => {
 		const manifest = await readPluginManifest();

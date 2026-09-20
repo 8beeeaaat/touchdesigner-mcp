@@ -106,6 +106,13 @@ describe("OpenAI plugin packaging", () => {
 		expect(mcp.mcpServers.touchdesigner.command).toBe("npx");
 		expect(mcp.mcpServers.touchdesigner.args).toContain("--port=9982");
 		expect(JSON.stringify(mcp)).not.toContain("${");
+		// The Claude config pins npx's prefix to ${CLAUDE_PLUGIN_ROOT}; Codex
+		// expands no such variable, so the flag is dropped rather than shipped.
+		expect(
+			mcp.mcpServers.touchdesigner.args.filter((arg: string) =>
+				arg.startsWith("--prefix="),
+			),
+		).toEqual([]);
 		const catalog = await json(
 			path.join(out, ".agents/plugins/marketplace.json"),
 		);

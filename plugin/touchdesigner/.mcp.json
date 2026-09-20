@@ -2,6 +2,7 @@
 	"touchdesigner": {
 		"command": "npx",
 		"args": [
+			"--prefix=${CLAUDE_PLUGIN_ROOT}",
 			"-y",
 			"--package=touchdesigner-mcp-server@^2",
 			"touchdesigner-mcp-server",
