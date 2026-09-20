@@ -113,9 +113,51 @@ git push -u origin <release-branch>
 gh pr create --base main --title "v<X.Y.Z>" --body "<CHANGELOG excerpt for this version>"
 ```
 
-Use the new version's CHANGELOG section as the PR body. **Stop here** — the
-release is published by CI (`release.yml`) after the maintainer merges to `main`.
-Do not merge, tag, or `npm publish` yourself.
+Use the new version's CHANGELOG section as the PR body, and **append a closing
+keyword for every issue this release resolves**. Collect the ones the range
+already claims:
+
+```bash
+git log "$LAST_TAG"..HEAD --format='%B' \
+  | grep -oiE '(close[sd]?|fixe?[sd]?|resolve[sd]?) +#[0-9]+' | sort -u
+```
+
+That catches only what somebody already wrote a keyword for. Cross-check it
+against the issues the CHANGELOG entry cites, because a bug fixed in the range
+may never have had one written anywhere — `#220` in v2.1.0 did not, and stayed
+open through the release:
+
+```bash
+sed -n "/^## \[$NEW_VERSION\]/,/^## \[/p" CHANGELOG.md \
+  | grep -oE 'issues/[0-9]+' | sort -u
+```
+
+Put the reconciled result at the end of the PR body, one keyword per issue, each
+on its own line:
+
+```markdown
+Closes #226
+Closes #228
+Closes #220
+```
+
+`Closes #226 and #228` does not work: GitHub closes the first and ignores the
+rest. Every issue needs its own keyword.
+
+> **Why the body rather than the commits.** A release PR squash-merges into a
+> single commit whose message is every commit in the range concatenated, and
+> GitHub stops parsing closing keywords partway through a message that large.
+> Measured on v2.1.0, whose squashed message ran to 107,513 bytes: `Closes #221`
+> at byte 52,521 fired, `Closes #228` at byte 78,390 and `Closes #226` at byte
+> 79,538 did not — a cut-off consistent with 64 KiB. The PR body is parsed
+> separately and is not subject to that.
+
+**Stop here** — the release is published by CI (`release.yml`) after the
+maintainer merges to `main`. Do not merge, tag, or `npm publish` yourself.
+
+Once the maintainer has merged, check that the issues actually closed
+(`gh issue list --state open`) and close any stragglers by hand with a comment
+naming the release. Silence here looks exactly like success.
 
 ## Guardrails
 
@@ -123,4 +165,7 @@ Do not merge, tag, or `npm publish` yourself.
 - Never edit the six version files by hand — let `npm version` write them, then
   revert the API trio if needed. Hand edits drift from the sync scripts.
 - `build:mcpb` **before** `version:mcp`, always.
+- Closing keywords belong in the release PR **body**. Buried in the squashed
+  commit message they are past the size GitHub will read, and the issues stay
+  open with nothing reporting it.
 - Don't "fix" the `server.json` SHA256 mismatch during a release.
