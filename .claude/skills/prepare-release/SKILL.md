@@ -128,6 +128,10 @@ may never have had one written anywhere — `#220` in v2.1.0 did not, and stayed
 open through the release:
 
 ```bash
+# Read the version back out of package.json rather than retyping it — by this
+# point Step 4 has written it, and an empty variable here makes `sed` match
+# nothing and print nothing, which is indistinguishable from "no issues cited".
+NEW_VERSION=$(node -p "require('./package.json').version")
 sed -n "/^## \[$NEW_VERSION\]/,/^## \[/p" CHANGELOG.md \
   | grep -oE 'issues/[0-9]+' | sort -u
 ```
