@@ -4,16 +4,25 @@ TouchDesigner MCP を各種 AI エージェントおよびプラットフォー�
 
 [English](installation.md) / [日本語](installation.ja.md)
 
-## クイックスタート
+## はじめに: どの手順を選ぶか
 
-もっともシンプルなのは Claude Desktop + MCP バンドルの組み合わせです。
-[最新リリース](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest)から
-`touchdesigner-mcp-td.zip` と `touchdesigner-mcp.mcpb` をダウンロードし、TouchDesigner プロジェクトに
-`mcp_webserver_base.tox` をインポート（推奨: `project1/mcp_webserver_base`）、その後 `.mcpb` ファイルを
-ダブルクリックして Claude Desktop に追加すれば、コンポーネント起動後に自動で接続されます。
+セットアップは 2 段階です。まず TouchDesigner プロジェクトにコンポーネントを追加します（全員共通。[TouchDesigner セットアップ](#touchdesigner-セットアップ全方法共通)）。次に、普段 AI と話しているアプリをつなぎます。
+
+| お使いのアプリ | つなぎ方 | ターミナル操作 |
+| :------------- | :------- | :------------- |
+| **Claude Desktop** | [方法1: MCP Bundle](#方法1-mcp-bundleclaude-desktop-限定) — ファイルを 1 つダウンロードしてダブルクリック | 不要 |
+| **Claude Code** | [`touchdesigner` プラグイン](#claude-code-の例) | 必要 |
+| **Codex CLI** | [`touchdesigner` プラグイン](#codex-の例) | 必要 |
+| **ChatGPT デスクトップアプリ**（Work / Codex） | [OpenAI プラグインガイド](openai-plugin.md#chatgpt-desktop-app-work--codex) — Codex CLI も必要 | 必要 |
+| **ChatGPT（Web）** | [セキュアトンネル経由で接続](openai-plugin.md#chatgpt-connect-the-local-server)（上級者向け） | 必要 |
+| その他の MCP クライアント | [方法2: NPM パッケージ](#方法2-npm-パッケージclaude-code--codex--その他-mcp-クライアント向け) | 多くの場合必要 |
+| コンテナ / CI 環境 | [方法3: Docker コンテナ](#方法3-docker-コンテナ) | 必要 |
+
+「ターミナル操作」とは、ターミナル（macOS）や PowerShell（Windows）にコマンドを入力することです。慣れていない場合は、ターミナルをまったく使わない Claude Desktop の手順をおすすめします。
 
 ## 目次
 
+- [はじめに: どの手順を選ぶか](#はじめに-どの手順を選ぶか)
 - [前提条件](#前提条件)
 - [TouchDesigner セットアップ（全方法共通）](#touchdesigner-セットアップ全方法共通)
 - [インストール方法](#mcpサーバーのインストール方法)
@@ -28,7 +37,7 @@ TouchDesigner MCP を各種 AI エージェントおよびプラットフォー�
 ## 前提条件
 
 - **TouchDesigner**（最新版推奨）
-- NPM 利用の場合: **Node.js 22.18** 以上、24.x、または 26 以上（23.x・25.x などの奇数リリースは非対応）。 _Claude Desktopをご利用の場合は不要です_
+- NPM 利用の場合: **Node.js** — [nodejs.org](https://nodejs.org/) から現行の LTS 版をインストールしてください（22.18 以降の 22 系・24 系・26 以降。23.x・25.x などの奇数リリースは非対応）。 _Claude Desktopをご利用の場合は不要です_
 - Docker 利用の場合: **Docker** と **Docker Compose**
 
 ## TouchDesigner セットアップ（全方法共通）
@@ -39,6 +48,8 @@ TouchDesigner MCP を各種 AI エージェントおよびプラットフォー�
 2. ZIP を展開
 3. `mcp_webserver_base.tox` を TouchDesigner プロジェクトにインポート
 4. `/project1/mcp_webserver_base` など任意の場所に配置
+
+> Claude Code または Codex CLI をお使いなら、この作業をアシスタントに任せることもできます。Claude Code では `/touchdesigner:launch`、Codex では「TouchDesigner を起動して」と依頼すれば、コンポーネントをダウンロードし、読み込んだ状態で TouchDesigner を起動します。ただし開くのは新規プロジェクトなので、既存のプロジェクトに導入したい場合は上記の手順で行ってください。
 
 <https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
 

@@ -19,6 +19,16 @@ Node.js 22.18+, 24.x, or 26+ must be installed. The client automatically starts 
 
 Start a new session and ask “Use TouchDesigner setup to check my connection.” Also try “Give me a TouchDesigner project overview” and “Capture my TOP output.” The six command skills are launch, setup, debug, snapshot, overview, and perf; fundamentals and python-api provide shared conventions. Choose skills from the client's skill picker or request them by name; Claude slash-command syntax is not required.
 
+## ChatGPT desktop app (Work / Codex)
+
+The desktop app can use local plugins, but registering one goes through the Codex CLI described above — there is no way to add this marketplace from inside the app. Once `codex plugin marketplace add 8beeeaaat/touchdesigner-mcp` has run on the same computer:
+
+1. Restart the ChatGPT desktop app.
+2. In Work / Codex, open **Plugins Directory** and choose the **TouchDesigner** marketplace source (`touchdesigner-openai`).
+3. Install the **TouchDesigner** plugin from that source, then start a new local conversation with the plugin enabled and ask "Check my TouchDesigner connection."
+
+Whether local marketplaces appear at all depends on your client version and workspace policy. For conversations on the web or in the cloud, see [ChatGPT: connect the local server](#chatgpt-connect-the-local-server) below instead.
+
 ## Custom connection packages
 
 The marketplace package uses the default TD endpoint. For a custom endpoint or registered ChatGPT connection, a maintainer can generate and distribute a separate local package. This advanced workflow requires a repository checkout and `npm ci`; ordinary marketplace installation above does not.

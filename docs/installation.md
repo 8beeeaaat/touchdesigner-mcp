@@ -4,18 +4,25 @@ Installation guide for TouchDesigner MCP across different AI agents and platform
 
 [English](installation.md) / [日本語](installation.ja.md)
 
-## Quick Start
+## Start here: which route is yours?
 
-Most users can get running quickly with the Claude Desktop bundle flow. Download both
-`touchdesigner-mcp-td.zip` and `touchdesigner-mcp.mcpb` from the
-[latest release](https://github.com/8beeeaaat/touchdesigner-mcp/releases/latest),
-import `mcp_webserver_base.tox` into your TouchDesigner project
-(`project1/mcp_webserver_base` is recommended), then double-click the `.mcpb` file to
-install it in Claude Desktop. The bundle automatically connects to TouchDesigner once the
-component is running.
+Setup has two halves. First add a component to your TouchDesigner project — everyone does this, see [TouchDesigner Setup](#touchdesigner-setup-required-for-all-methods). Then connect the app you talk to AI in:
+
+| The app you use | How to connect | Terminal needed |
+| :--------------- | :-------------- | :-------------- |
+| **Claude Desktop** | [Method 1: MCP Bundle](#method-1-mcp-bundle-claude-desktop-only) — download one file and double-click it | No |
+| **Claude Code** | [The `touchdesigner` plugin](#for-claude-code) | Yes |
+| **Codex CLI** | [The `touchdesigner` plugin](#for-codex) | Yes |
+| **ChatGPT desktop app** (Work / Codex) | [OpenAI plugin guide](openai-plugin.md#chatgpt-desktop-app-work--codex) — also needs the Codex CLI | Yes |
+| **ChatGPT on the web** | [Connect through a secure tunnel](openai-plugin.md#chatgpt-connect-the-local-server) — advanced | Yes |
+| Another MCP client | [Method 2: NPM Package](#method-2-npm-package-claude-code-codex-and-other-mcp-clients) | Usually |
+| A container or CI setup | [Method 3: Docker Container](#method-3-docker-container) | Yes |
+
+"Terminal needed" means you type commands into Terminal (macOS) or PowerShell (Windows). If that is unfamiliar territory, the Claude Desktop route avoids it entirely.
 
 ## Table of Contents
 
+- [Start here: which route is yours?](#start-here-which-route-is-yours)
 - [Prerequisites](#prerequisites)
 - [TouchDesigner Setup (Required for All Methods)](#touchdesigner-setup-required-for-all-methods)
 - [MCP Server Installation Methods](#mcp-server-installation-methods)
@@ -30,7 +37,7 @@ component is running.
 ## Prerequisites
 
 - **TouchDesigner** (latest version recommended)
-- For NPM-based installations: **Node.js** 22.18+, 24.x or 26+, odd-numbered releases such as 23.x and 25.x are not supported _(not required when you only use Claude Desktop with the MCP bundle)_
+- For NPM-based installations: **Node.js** — install the current LTS from [nodejs.org](https://nodejs.org/) (22.18+, 24.x or 26+; odd-numbered releases such as 23.x and 25.x are not supported) _(not required when you only use Claude Desktop with the MCP bundle)_
 - For Docker-based installations: **Docker** and **Docker Compose**
 
 ## TouchDesigner Setup (Required for All Methods)
@@ -41,6 +48,8 @@ component is running.
 2. Extract the ZIP file
 3. Import `mcp_webserver_base.tox` into your TouchDesigner project
 4. Place it at `/project1/mcp_webserver_base` (or your preferred location)
+
+> Using Claude Code or the Codex CLI? You can let the assistant do this instead — in Claude Code run `/touchdesigner:launch`, in Codex just ask it to launch TouchDesigner. Either way it downloads the component and opens TouchDesigner with it already loaded. It starts a fresh project rather than opening one of yours, so follow the steps above when you want the component in an existing project.
 
 <https://github.com/user-attachments/assets/215fb343-6ed8-421c-b948-2f45fb819ff4>
 
