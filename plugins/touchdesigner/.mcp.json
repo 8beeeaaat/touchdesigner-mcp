@@ -5,8 +5,7 @@
 			"args": [
 				"--prefix=.",
 				"-y",
-				"--package=touchdesigner-mcp-server@^2",
-				"touchdesigner-mcp-server",
+				"touchdesigner-mcp-server@2.1.0",
 				"--host=http://127.0.0.1",
 				"--port=9981"
 			],

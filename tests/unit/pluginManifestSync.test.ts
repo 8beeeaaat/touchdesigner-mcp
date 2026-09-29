@@ -124,31 +124,68 @@ describe("touchdesigner userConfig wiring", () => {
 	});
 });
 
-describe("bundled server launch", () => {
-	// npx resolves `--package=<name>@<range>` against the local project tree
-	// before installing, and that tree includes the project's own package.json.
-	// Claude Code spawns stdio servers in the working directory, so a session
-	// started inside this repository — whose package.json *is*
-	// touchdesigner-mcp-server 2.x — made npx skip the install and then fail
-	// with `sh: touchdesigner-mcp-server: command not found`, which Claude Code
-	// reported as CONNECTION_CLOSED. Pointing npm's project prefix at the plugin
-	// root, which has no package.json, makes the lookup independent of cwd.
-	it("pins npx's project prefix to the plugin root so cwd cannot shadow the package", async () => {
-		const { touchdesigner } = JSON.parse(
-			await readRepoFile(`${PLUGIN_DIR}/.mcp.json`),
-		) as { touchdesigner: { args: string[]; command: string } };
+async function readBundledServer(): Promise<{
+	args: string[];
+	command: string;
+}> {
+	const config = JSON.parse(await readRepoFile(`${PLUGIN_DIR}/.mcp.json`)) as {
+		mcpServers?: Record<string, { args: string[]; command: string }>;
+	};
+	// The directory validates each entry against the documented
+	// `{"mcpServers": {...}}` shape; a bare server map is not that shape.
+	const server = config.mcpServers?.touchdesigner;
+	if (!server) {
+		throw new Error(".mcp.json must declare mcpServers.touchdesigner");
+	}
+	return server;
+}
 
-		expect(touchdesigner.command).toBe("npx");
-		const prefix = touchdesigner.args.findIndex((arg) =>
-			arg.startsWith("--prefix="),
+describe("bundled server launch", () => {
+	// Anthropic's plugin directory checks that npx fetches the exact pinned
+	// package, and reports "Unpinned npx launcher" even for an exact version
+	// when an option can swap in another copy: `--prefix` (a pre-seeded
+	// node_modules there would run instead of the registry package),
+	// `--registry`, `--cache`, and the like. The portal flagged
+	// `--prefix=${CLAUDE_PLUGIN_ROOT}`, so the Claude plugin runs without it.
+	// The cost: npx resolves the spec against the project tree of the session's
+	// working directory, so a session started inside this checkout — whose
+	// package.json *is* touchdesigner-mcp-server — fails with
+	// `sh: touchdesigner-mcp-server: command not found`. The README documents
+	// the workaround; the Codex copy, which is not submitted there, keeps its
+	// `--prefix=.`.
+	it("keeps options that defeat the directory's pin check out of the launcher", async () => {
+		const { args, command } = await readBundledServer();
+
+		expect(command).toBe("npx");
+		// npx treats the first positional argument as the package and passes
+		// everything after it to the server.
+		const spec = args.findIndex((arg) =>
+			arg.startsWith("touchdesigner-mcp-server@"),
 		);
-		// Everything after the bin name is passed to the server, not to npx.
-		const bin = touchdesigner.args.indexOf("touchdesigner-mcp-server");
-		expect(prefix).toBeGreaterThanOrEqual(0);
-		expect(touchdesigner.args[prefix]).toMatch(
-			/^--prefix=\$\{CLAUDE_PLUGIN_ROOT\}$/,
+		expect(spec).toBeGreaterThanOrEqual(0);
+		const npxOptions = args.slice(0, spec);
+		expect(
+			npxOptions.filter((arg) => !arg.startsWith("-")),
+			"a positional argument before the package spec would be taken as the package",
+		).toEqual([]);
+		expect(npxOptions).toEqual(["-y"]);
+	});
+
+	// Anthropic's plugin directory blocks submission on "Unpinned npx
+	// launcher": a range such as `^2` or a tag such as `latest` fails, and only
+	// an exact version passes. `npm version` rewrites the pin through
+	// scripts/syncMcpServerVersions.ts, so it always names the release that
+	// the same commit publishes to npm.
+	it("runs the server at the exact version this repository publishes", async () => {
+		const { args } = await readBundledServer();
+		const { version } = JSON.parse(await readRepoFile("package.json")) as {
+			version: string;
+		};
+
+		const specs = args.filter((arg) =>
+			arg.includes("touchdesigner-mcp-server"),
 		);
-		expect(bin).toBeGreaterThan(prefix);
+		expect(specs).toEqual([`touchdesigner-mcp-server@${version}`]);
 	});
 });
 

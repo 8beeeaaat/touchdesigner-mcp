@@ -4,7 +4,7 @@ description: >
   Prepare a new touchdesigner-mcp release: inspect the unreleased diff since the
   last tag, decide independently how the MCP **package version** and the **MCP
   API version** each move (the API axis stays put unless the server/API contract
-  changed), write the CHANGELOG entry, bump the six version-bearing files, commit,
+  changed), write the CHANGELOG entry, bump the seven version-bearing files, commit,
   and open the development → main release PR. Use when cutting a release, bumping
   the version, updating the CHANGELOG for a release, or when asked to "release",
   "prepare a release", or "cut vX.Y.Z". Pairs with `release-test-audit` (verify
@@ -101,8 +101,10 @@ Then verify the split is correct:
 grep -H version package.json src/api/index.yml pyproject.toml
 grep MCP_API_VERSION td/modules/utils/version.py
 grep -A3 mcpCompatibility package.json
-# package.json version = NEW package version; the API-axis files AND
-# mcpCompatibility.expectedApiVersion = OLD API version (unless Step 2 bumped them)
+grep -H 'touchdesigner-mcp-server@' plugin/touchdesigner/.mcp.json
+# package.json version = NEW package version = the plugin's server pin; the
+# API-axis files AND mcpCompatibility.expectedApiVersion = OLD API version
+# (unless Step 2 bumped them)
 ```
 
 > The `server.json` `fileSha256` will not match the CI-rebuilt release asset —
@@ -110,55 +112,48 @@ grep -A3 mcpCompatibility package.json
 
 ### Step 4b — the bundled `touchdesigner` plugin
 
-The plugin is **not** one of the version-bearing files, and `npm version` does not
-touch it. It has two independent knobs; check both on every release.
-
-**Every release — did the plugin's own tree change?**
-
-```bash
-git diff --stat "$LAST_TAG"..HEAD -- plugin/touchdesigner
-```
-
-If anything under `plugin/touchdesigner/` changed in the range, bump `version` in
-`plugin/touchdesigner/.claude-plugin/plugin.json`. That is the plugin's own semver
-axis: it follows the plugin's changes, not the npm version, and it moves on a
-PATCH release just as readily as on a MAJOR one. Marketplace consumers only see
-an update when it moves, so a skill, hook, or manifest fix shipped without a bump
-ships invisibly. It is the only hand-edited copy: the Claude marketplace entry
-deliberately carries no `version`, so this step cannot leave a stale one behind.
-Should one ever be added there, it has to move with this one —
-`tests/unit/pluginManifestSync.test.ts` compares them whenever the marketplace
-names a version, and would fail this release.
-
-**MAJOR only — the server pin.** The plugin resolves the server from npm rather
-than from this tree:
+The plugin resolves the server from npm rather than from this tree, at the exact
+version this release publishes:
 
 ```
-plugin/touchdesigner/.mcp.json → --package=touchdesigner-mcp-server@^2
+plugin/touchdesigner/.mcp.json → touchdesigner-mcp-server@<package version>
 ```
 
-On a MAJOR bump that pin silently keeps resolving the *old* major, so the plugin
-stops tracking releases without anything failing. When — and only when — the npm
-major moved:
+Anthropic's plugin directory tracks `main` and blocks a range such as `^2`
+("Unpinned npx launcher"), so the pin is exact and `npm version` rewrites it in
+Step 4 through `version:mcp`. `tests/unit/pluginManifestSync.test.ts` fails when
+it differs from `package.json`. Because the pin moves, **every release changes
+`plugin/touchdesigner/`**, and the rest of this step runs on every release.
 
-1. Update the `^N` pin in `plugin/touchdesigner/.mcp.json` to the new major.
-2. Re-read the skills under `plugin/touchdesigner/skills/` for claims about server
-   behaviour the new major changed — response shapes, `detailLevel` truncation,
-   `get_td_nodes`' `pattern` default, tool argument names.
-   `tests/unit/toolListingsSync.test.ts` catches renamed *tools*; nothing catches
-   changed *behaviour*. Those edits are plugin changes, so the plugin `version`
-   moves too.
+1. **Bump the plugin `version`** in
+   `plugin/touchdesigner/.claude-plugin/plugin.json`. That is the plugin's own
+   semver axis — PATCH when only the pin moved, MINOR or MAJOR when skills,
+   hooks, or the manifest changed in a way users notice:
 
-**Whenever either knob moved:** run `npm run plugin:sync` and confirm
-`npm run plugin:check` passes. The Codex package under `plugins/touchdesigner/`
-is generated from these files — its `.mcp.json` carries the same `^N` pin and
-its `.codex-plugin/plugin.json` the same `version` — and CI rejects a stale copy.
-Commit `plugins/touchdesigner/` and `.agents/plugins/marketplace.json` together
-with the source edits.
+   ```bash
+   git diff --stat "$LAST_TAG"..HEAD -- plugin/touchdesigner
+   ```
 
-On a MINOR or PATCH release whose range never touched `plugin/touchdesigner/`,
-nothing here moves — `^N` already covers the server, and `plugin:check` stays
-green without a sync.
+   Marketplace and directory consumers only see an update when it moves, so a
+   pin, skill, hook, or manifest change shipped without a bump ships invisibly.
+   It is the only hand-edited copy: the Claude marketplace entry deliberately
+   carries no `version`. Should one ever be added there, it has to move with
+   this one — the same test compares them whenever the marketplace names a
+   version.
+2. **On a MAJOR npm bump**, re-read the skills under `plugin/touchdesigner/skills/`
+   for claims about server behaviour the new major changed — response shapes,
+   `detailLevel` truncation, `get_td_nodes`' `pattern` default, tool argument
+   names. `tests/unit/toolListingsSync.test.ts` catches renamed *tools*; nothing
+   catches changed *behaviour*.
+3. **Regenerate the Codex copy:** run `npm run plugin:sync` and confirm
+   `npm run plugin:check` passes. The Codex package under `plugins/touchdesigner/`
+   is generated from these files — its `.mcp.json` carries the same pin and its
+   `.codex-plugin/plugin.json` the same `version` — and CI rejects a stale copy.
+   Commit `plugins/touchdesigner/` and `.agents/plugins/marketplace.json`
+   together with the source edits.
+
+`release.yml` publishes to npm when the release PR merges to `main`, so the
+pinned version exists on the registry minutes after the directory can see it.
 
 ## Step 5 — build the PR body, then open the release PR
 
@@ -247,13 +242,12 @@ naming the release. Silence here looks exactly like success.
 ## Guardrails
 
 - Never bump the API axis on a deps-only / refactor-only / docs-only release.
-- Never edit the six version files by hand — let `npm version` write them, then
+- Never edit the seven version files by hand — let `npm version` write them, then
   revert the API trio if needed. Hand edits drift from the sync scripts.
 - `build:mcpb` **before** `version:mcp`, always.
-- Step 4b is not MAJOR-only: a change under `plugin/touchdesigner/` in the range
-  bumps the plugin `version` on any release, and either knob moving needs
-  `npm run plugin:sync`, or `plugin:check` fails the release in CI. Only the
-  `^N` server pin waits for a MAJOR bump — `npm version` leaves it behind.
+- Step 4b runs on every release: `npm version` moves the plugin's exact server
+  pin, so the plugin `version` is bumped and `npm run plugin:sync` run each
+  time, or `plugin:check` fails the release in CI.
 - Closing keywords belong in the release PR **body**, and must be in the body
   passed to `gh pr create` (or written back with `gh pr edit --body-file`) —
   collecting them after the PR exists changes nothing. Buried in the squashed

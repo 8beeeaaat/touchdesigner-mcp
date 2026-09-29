@@ -55,7 +55,7 @@ owns the exact procedure — trust it, don't improvise version edits.
 ## Hard rules
 
 - Tests gate the release: never bump with an unwaived API/MCP surface gap.
-- Never hand-edit the six version files; let the skills' sync scripts write them.
+- Never hand-edit the seven version files; let the skills' sync scripts write them.
 - Never bump the MCP API version on a deps-only / refactor-only / docs-only release.
 - Stop at the opened PR. Merging and publishing are the maintainer's + CI's job.
 - If anything is ambiguous (which version level, whether the API axis moves, a

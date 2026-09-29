@@ -1,13 +1,13 @@
 {
-	"touchdesigner": {
-		"command": "npx",
-		"args": [
-			"--prefix=${CLAUDE_PLUGIN_ROOT}",
-			"-y",
-			"--package=touchdesigner-mcp-server@^2",
-			"touchdesigner-mcp-server",
-			"--host=${user_config.touchdesigner_host}",
-			"--port=${user_config.touchdesigner_port}"
-		]
+	"mcpServers": {
+		"touchdesigner": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"touchdesigner-mcp-server@2.1.0",
+				"--host=${user_config.touchdesigner_host}",
+				"--port=${user_config.touchdesigner_port}"
+			]
+		}
 	}
 }

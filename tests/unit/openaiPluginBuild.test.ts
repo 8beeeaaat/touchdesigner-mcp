@@ -112,11 +112,13 @@ describe("OpenAI plugin packaging", () => {
 				arg.startsWith("--prefix="),
 			),
 		).toEqual(["--prefix=."]);
+		const packageIndex = mcp.mcpServers.touchdesigner.args.findIndex(
+			(arg: string) => arg.startsWith("touchdesigner-mcp-server@"),
+		);
+		expect(packageIndex).toBeGreaterThanOrEqual(0);
 		expect(
 			mcp.mcpServers.touchdesigner.args.indexOf("--prefix=."),
-		).toBeLessThan(
-			mcp.mcpServers.touchdesigner.args.indexOf("touchdesigner-mcp-server"),
-		);
+		).toBeLessThan(packageIndex);
 		const catalog = await json(
 			path.join(out, ".agents/plugins/marketplace.json"),
 		);

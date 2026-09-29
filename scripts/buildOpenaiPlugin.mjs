@@ -106,19 +106,18 @@ export async function buildOpenaiPlugin({
 			touchdesigner_host: host,
 			touchdesigner_port: String(port),
 		};
-		const server = claudeMcp.touchdesigner;
+		const server = claudeMcp.mcpServers.touchdesigner;
 		// Codex resolves a relative cwd against the plugin root. Pin npm's prefix
 		// too: cwd alone still lets npm walk up to an enclosing checkout's package.
+		// The Claude plugin cannot carry `--prefix` (Anthropic's directory stops
+		// checking the npx pin when it is present), so only this copy adds it.
 		server.cwd = ".";
-		server.args = server.args
-			.map((arg) => (arg.startsWith("--prefix=") ? "--prefix=." : arg))
-			.map((arg) =>
-				arg.replace(/\$\{user_config\.([^}]+)\}/g, (_, key) => {
-					if (!(key in values))
-						throw new Error(`Unknown Claude option: ${key}`);
-					return values[key];
-				}),
-			);
+		server.args = ["--prefix=.", ...server.args].map((arg) =>
+			arg.replace(/\$\{user_config\.([^}]+)\}/g, (_, key) => {
+				if (!(key in values)) throw new Error(`Unknown Claude option: ${key}`);
+				return values[key];
+			}),
+		);
 		await json(join(plugin, ".mcp.json"), {
 			mcpServers: { touchdesigner: server },
 		});

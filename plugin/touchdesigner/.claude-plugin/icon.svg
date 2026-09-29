@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="TouchDesigner MCP">
+  <rect width="256" height="256" rx="56" fill="#16181d"/>
+  <g fill="none" stroke="#6ee7c8" stroke-width="10" stroke-linecap="round">
+    <path d="M92 88 C132 88 124 128 164 128"/>
+    <path d="M92 168 C132 168 124 128 164 128"/>
+  </g>
+  <g fill="#23262e" stroke="#e8eaef" stroke-width="8">
+    <rect x="36" y="64" width="64" height="48" rx="10"/>
+    <rect x="36" y="144" width="64" height="48" rx="10"/>
+    <rect x="156" y="104" width="64" height="48" rx="10"/>
+  </g>
+  <g fill="#6ee7c8">
+    <circle cx="100" cy="88" r="9"/>
+    <circle cx="100" cy="168" r="9"/>
+    <circle cx="156" cy="128" r="9"/>
+  </g>
+</svg>
