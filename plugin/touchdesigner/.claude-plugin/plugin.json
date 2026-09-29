@@ -11,6 +11,9 @@
 	"homepage": "https://github.com/8beeeaaat/touchdesigner-mcp",
 	"repository": "https://github.com/8beeeaaat/touchdesigner-mcp",
 	"license": "MIT",
+	"documentationUrl": "https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/plugin/touchdesigner/README.md",
+	"privacyPolicyUrl": "https://github.com/8beeeaaat/touchdesigner-mcp/blob/main/plugin/touchdesigner/README.md#privacy",
+	"supportUrl": "https://github.com/8beeeaaat/touchdesigner-mcp/issues",
 	"userConfig": {
 		"touchdesigner_host": {
 			"type": "string",
