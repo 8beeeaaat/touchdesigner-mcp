@@ -61,6 +61,9 @@ changed. If a **client would behave differently**, the axis moves. If not, rever
 - `mcpb/manifest.json` — `version`
 - `server.json` — top-level `version`, each package entry `version`, the mcpb
   `identifier` download URL (`/download/v<ver>/`), and `fileSha256`
+- `plugin/touchdesigner/.mcp.json` — the exact `touchdesigner-mcp-server@<ver>`
+  the bundled plugin runs through `npx` (Anthropic's plugin directory blocks a
+  range such as `^2`)
 
 **API axis** (`scripts/syncApiServerVersions.ts`, run by `npm run version:api`):
 
@@ -85,7 +88,7 @@ bundle must be built **first**.
 npm run build:mcpb
 
 # 2. Bump. This runs version:api + version:mcp via the `version` script,
-#    writing all six version-bearing files. Choose patch/minor/major.
+#    writing all seven version-bearing files. Choose patch/minor/major.
 npm version patch --no-git-tag-version
 ```
 

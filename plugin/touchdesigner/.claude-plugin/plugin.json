@@ -1,7 +1,8 @@
 {
 	"name": "touchdesigner",
-	"version": "0.1.0",
-	"description": "Drives the touchdesigner-mcp server from Claude Code: bundles and preconfigures the server, adds launch/setup/debug/snapshot/overview/perf as slash commands, teaches the node-path and Python-lookup conventions its tools expect, and reminds Claude to verify every network mutation",
+	"displayName": "TouchDesigner MCP",
+	"version": "0.2.0",
+	"description": "Inspect, build, debug, and verify live TouchDesigner projects: starts the touchdesigner-mcp server, adds launch/setup/debug/snapshot/overview/perf commands, teaches the node-path and Python-lookup conventions its tools expect, and reminds Claude to verify every network mutation",
 	"author": {
 		"name": "sadao komaki",
 		"email": "8beeeaaat@gmail.com",

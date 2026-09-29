@@ -106,7 +106,7 @@ export async function buildOpenaiPlugin({
 			touchdesigner_host: host,
 			touchdesigner_port: String(port),
 		};
-		const server = claudeMcp.touchdesigner;
+		const server = claudeMcp.mcpServers.touchdesigner;
 		// Codex resolves a relative cwd against the plugin root. Pin npm's prefix
 		// too: cwd alone still lets npm walk up to an enclosing checkout's package.
 		server.cwd = ".";

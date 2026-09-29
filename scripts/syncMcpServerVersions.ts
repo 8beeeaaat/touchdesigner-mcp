@@ -100,6 +100,34 @@ writeJsonFile<ServerConfig>("server.json", (serverConfig) => {
 	};
 });
 
+// Anthropic's plugin directory rejects a range such as `^2` in an npx
+// launcher, so the plugin names the exact release this commit publishes.
+// Tabs keep the file byte-identical to how Biome formats it.
+interface PluginMcpConfig {
+	mcpServers: Record<string, { args: string[]; [key: string]: unknown }>;
+}
+
+const pluginMcpPath = "plugin/touchdesigner/.mcp.json";
+{
+	const absPath = join(rootDir, pluginMcpPath);
+	const config = JSON.parse(readFileSync(absPath, "utf8")) as PluginMcpConfig;
+	let pinned = 0;
+	for (const server of Object.values(config.mcpServers)) {
+		server.args = server.args.map((arg) => {
+			if (!arg.startsWith("touchdesigner-mcp-server@")) return arg;
+			pinned++;
+			return `touchdesigner-mcp-server@${packageVersion}`;
+		});
+	}
+	if (pinned !== 1) {
+		throw new Error(
+			`${pluginMcpPath} must name touchdesigner-mcp-server@<version> exactly once; found ${pinned}.`,
+		);
+	}
+	writeFileSync(absPath, `${JSON.stringify(config, null, "\t")}\n`, "utf8");
+	updatedFiles.push(pluginMcpPath);
+}
+
 console.log(
 	`Synchronized MCP Server version ${packageVersion} across: ${updatedFiles.join(", ")}`,
 );

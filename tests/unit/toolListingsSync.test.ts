@@ -97,7 +97,7 @@ describe("README tool tables", () => {
 			await readRepoFile(`${PLUGIN_DIR}/.claude-plugin/plugin.json`),
 		) as { name: string };
 		const serverKeys = Object.keys(
-			JSON.parse(await readRepoFile(`${PLUGIN_DIR}/.mcp.json`)),
+			JSON.parse(await readRepoFile(`${PLUGIN_DIR}/.mcp.json`)).mcpServers,
 		);
 		expect(serverKeys).toHaveLength(1);
 		const prefix = `mcp__plugin_${pluginName}_${serverKeys[0]}__`;
