@@ -141,31 +141,34 @@ async function readBundledServer(): Promise<{
 }
 
 describe("bundled server launch", () => {
-	// npx resolves `<name>@<spec>` against the local project tree before
-	// installing, and that tree includes the project's own package.json.
-	// Claude Code spawns stdio servers in the working directory, so a session
-	// started inside this repository — whose package.json *is*
-	// touchdesigner-mcp-server — made npx skip the install and then fail with
-	// `sh: touchdesigner-mcp-server: command not found`, which Claude Code
-	// reported as CONNECTION_CLOSED. Pointing npm's project prefix at the plugin
-	// root, which has no package.json, makes the lookup independent of cwd.
-	it("pins npx's project prefix to the plugin root so cwd cannot shadow the package", async () => {
+	// Anthropic's plugin directory checks that npx fetches the exact pinned
+	// package, and reports "Unpinned npx launcher" even for an exact version
+	// when an option can swap in another copy: `--prefix` (a pre-seeded
+	// node_modules there would run instead of the registry package),
+	// `--registry`, `--cache`, and the like. The portal flagged
+	// `--prefix=${CLAUDE_PLUGIN_ROOT}`, so the Claude plugin runs without it.
+	// The cost: npx resolves the spec against the project tree of the session's
+	// working directory, so a session started inside this checkout — whose
+	// package.json *is* touchdesigner-mcp-server — fails with
+	// `sh: touchdesigner-mcp-server: command not found`. The README documents
+	// the workaround; the Codex copy, which is not submitted there, keeps its
+	// `--prefix=.`.
+	it("keeps options that defeat the directory's pin check out of the launcher", async () => {
 		const { args, command } = await readBundledServer();
 
 		expect(command).toBe("npx");
-		const prefix = args.findIndex((arg) => arg.startsWith("--prefix="));
 		// npx treats the first positional argument as the package and passes
 		// everything after it to the server.
 		const spec = args.findIndex((arg) =>
 			arg.startsWith("touchdesigner-mcp-server@"),
 		);
-		expect(prefix).toBeGreaterThanOrEqual(0);
-		expect(args[prefix]).toMatch(/^--prefix=\$\{CLAUDE_PLUGIN_ROOT\}$/);
-		expect(spec).toBeGreaterThan(prefix);
+		expect(spec).toBeGreaterThanOrEqual(0);
+		const npxOptions = args.slice(0, spec);
 		expect(
-			args.slice(0, spec).filter((arg) => !arg.startsWith("-")),
+			npxOptions.filter((arg) => !arg.startsWith("-")),
 			"a positional argument before the package spec would be taken as the package",
 		).toEqual([]);
+		expect(npxOptions).toEqual(["-y"]);
 	});
 
 	// Anthropic's plugin directory blocks submission on "Unpinned npx

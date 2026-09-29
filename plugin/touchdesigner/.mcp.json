@@ -3,7 +3,6 @@
 		"touchdesigner": {
 			"command": "npx",
 			"args": [
-				"--prefix=${CLAUDE_PLUGIN_ROOT}",
 				"-y",
 				"touchdesigner-mcp-server@2.1.0",
 				"--host=${user_config.touchdesigner_host}",
