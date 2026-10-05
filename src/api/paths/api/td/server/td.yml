@@ -18,8 +18,7 @@ get:
                 description: Whether the operation was successful
                 type: boolean
               data:
-                nullable: true
-                type: object
+                type: [object, "null"]
                 required:
                   - mcpApiVersion
                   - osName
@@ -43,6 +42,5 @@ get:
                     type: string
                     description: TouchDesigner version number
               error:
-                nullable: true
                 description: Error message if the operation was not successful
-                type: string
+                type: [string, "null"]

@@ -18,14 +18,12 @@ get:
                 type: boolean
                 description: Whether the operation was successful
               data:
-                nullable: true
-                type: object
+                type: [object, "null"]
                 properties:
                   classes:
                     type: array
                     items:
                       $ref: ../../../../index.yml#/components/schemas/TdPythonClassInfo
               error:
-                nullable: true
-                type: string
+                type: [string, "null"]
                 description: Error message if the operation was not successful

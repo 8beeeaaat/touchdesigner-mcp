@@ -25,10 +25,9 @@ get:
                 type: boolean
                 description: Whether the operation was successful
               data:
-                nullable: true
-                allOf:
+                anyOf:
                   - $ref: ../../../../index.yml#/components/schemas/TdPythonClassDetails
+                  - type: "null"
               error:
-                nullable: true
-                type: string
+                type: [string, "null"]
                 description: Error message if the operation was not successful

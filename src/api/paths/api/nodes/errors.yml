@@ -27,6 +27,5 @@ get:
               data:
                 $ref: ../../../index.yml#/components/schemas/TdNodeErrorReport
               error:
-                nullable: true
-                type: string
+                type: [string, "null"]
                 description: Error message if the operation was not successful

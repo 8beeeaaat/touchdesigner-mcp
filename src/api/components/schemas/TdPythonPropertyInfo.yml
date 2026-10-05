@@ -11,6 +11,5 @@ properties:
     type: string
     description: Type of the property
   value:
-    type: object
+    type: [object, "null"]
     description: Current value of the property (if serializable)
-    nullable: true
