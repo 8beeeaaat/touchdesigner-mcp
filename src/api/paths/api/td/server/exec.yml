@@ -34,10 +34,9 @@ post:
                 type: boolean
                 description: Whether the operation was successful
               data:
-                type: object
+                type: [object, "null"]
                 required:
                   - result
-                nullable: true
                 properties:
                   result:
                     description: Result of the executed script
@@ -52,6 +51,5 @@ post:
                     type: string
                     description: Captured standard error output emitted while the script ran
               error:
-                nullable: true
-                type: string
+                type: [string, "null"]
                 description: Error message if the operation was not successful

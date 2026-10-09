@@ -41,8 +41,7 @@ get:
                 type: boolean
                 description: Whether the operation was successful
               data:
-                type: object
-                nullable: true
+                type: [object, "null"]
                 properties:
                   nodes:
                     description: Result of the execution
@@ -50,8 +49,7 @@ get:
                     items:
                       $ref: ../../../index.yml#/components/schemas/TdNode
               error:
-                type: string
-                nullable: true
+                type: [string, "null"]
                 description: Error message if the operation was not successful
 post:
   summary: Create a new node
@@ -91,16 +89,14 @@ post:
                 type: boolean
                 description: Whether the operation was successful
               data:
-                type: object
-                nullable: true
+                type: [object, "null"]
                 properties:
                   result:
                     description: Result of the execution
                     allOf:
                       - $ref: ../../../index.yml#/components/schemas/TdNode
               error:
-                type: string
-                nullable: true
+                type: [string, "null"]
                 description: Error message if the operation was not successful
 delete:
   summary: Delete an existing node
@@ -129,8 +125,7 @@ delete:
                 type: boolean
                 description: Whether the operation was successful
               data:
-                type: object
-                nullable: true
+                type: [object, "null"]
                 properties:
                   deleted:
                     type: boolean
@@ -140,6 +135,5 @@ delete:
                     allOf:
                       - $ref: ../../../index.yml#/components/schemas/TdNode
               error:
-                type: string
-                nullable: true
+                type: [string, "null"]
                 description: Error message if the operation was not successful

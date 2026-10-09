@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make clean` - Remove all generated files (`dist`, `td/modules`, `node_modules`)
 
 ### Code Generation Workflow
-The project uses OpenAPI 3.0.0 schema-based code generation with a three-step process:
+The project uses OpenAPI 3.1.0 schema-based code generation with a three-step process:
 
 - `npm run gen:openapi` - Bundle OpenAPI schema files into single YAML using `@redocly/cli`
 - `npm run gen:handlers` - Generate Python handlers using custom Node.js script with Mustache templates
@@ -107,7 +107,7 @@ Protocol-level sessions were removed by spec revision 2026-07-28: there is no `M
 Design references: `.doc/streamable-http-implementation-plan.md` and `.doc/refactor_sdk_first.md` cover the SDK-first approach and HTTP rollout plan.
 
 ### Code Generation System
-The project uses OpenAPI 3.0.0 schema (`src/api/index.yml`) for maintaining consistency:
+The project uses OpenAPI 3.1.0 schema (`src/api/index.yml`) for maintaining consistency:
 
 - OpenAPI schema bundled via `@redocly/cli` to `td/modules/td_server/openapi_server/openapi/openapi.yaml`
 - TypeScript API client and Zod schemas generated via Orval v8

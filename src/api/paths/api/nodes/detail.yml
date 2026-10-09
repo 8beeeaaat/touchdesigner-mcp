@@ -26,12 +26,11 @@ get:
                 type: boolean
                 description: Whether the operation was successful
               data:
-                nullable: true
-                allOf:
+                anyOf:
                   - $ref: ../../../index.yml#/components/schemas/TdNode
+                  - type: "null"
               error:
-                nullable: true
-                type: string
+                type: [string, "null"]
                 description: Error message if the operation was not successful
 
 patch:
@@ -68,8 +67,7 @@ patch:
                 type: boolean
                 description: Whether the update operation was successful
               data:
-                nullable: true
-                type: object
+                type: [object, "null"]
                 properties:
                   path:
                     type: string
@@ -95,6 +93,5 @@ patch:
                     type: string
                     description: Summary message about the update operation
               error:
-                nullable: true
-                type: string
+                type: [string, "null"]
                 description: Error message if the operation was not successful

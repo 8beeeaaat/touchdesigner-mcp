@@ -49,14 +49,12 @@ post:
                 type: boolean
                 description: Whether the operation was successful
               data:
-                nullable: true
-                type: object
+                type: [object, "null"]
                 required:
                   - result
                 properties:
                   result:
                     description: Result of the method call. Can be any type (equivalent to unknown in TypeScript).
               error:
-                nullable: true
-                type: string
+                type: [string, "null"]
                 description: Error message if the operation was not successful
