@@ -1,8 +1,14 @@
+import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { promisify } from "node:util";
+import { Ajv2020 } from "ajv/dist/2020.js";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import yaml from "yaml";
+
+const exec = promisify(execFile);
 
 // The schema is written in OpenAPI 3.1, where nullability is spelled in JSON
 // Schema: `type: [X, "null"]` for a scalar, `anyOf: [$ref, { type: "null" }]`
@@ -58,5 +64,74 @@ describe("OpenAPI schema (src/api)", () => {
 		);
 
 		expect(offenders).toEqual([]);
+	});
+});
+
+// The keyword check above only catches a `nullable` someone wrote. A field that
+// was never marked nullable at all passes it, yet still rejects the envelope
+// `error_result()` in td/modules/utils/result.py sends on every failure. So
+// validate that envelope against each operation's response schema in the
+// bundle that is actually published.
+
+const REPO = fileURLToPath(new URL("../../", import.meta.url));
+const FAILURE_ENVELOPE = { data: null, error: "boom", success: false };
+
+describe("OpenAPI schema (bundled)", () => {
+	let bundle: { paths: Record<string, Record<string, unknown>> };
+	let tmp: string;
+
+	beforeAll(async () => {
+		tmp = await fs.mkdtemp(path.join(os.tmpdir(), "td-openapi-bundle-"));
+		const out = path.join(tmp, "openapi.yaml");
+		await exec(process.execPath, [
+			path.join(REPO, "node_modules/@redocly/cli/bin/cli.js"),
+			"bundle",
+			path.join(API_DIR, "index.yml"),
+			"-o",
+			out,
+		]);
+		bundle = yaml.parse(await fs.readFile(out, "utf-8"));
+	}, 60_000);
+
+	afterAll(async () => {
+		await fs.rm(tmp, { force: true, recursive: true });
+	});
+
+	it("accepts the failure envelope on every JSON response", () => {
+		// strict: false because the bundle is an OpenAPI document, not a bare
+		// schema; Ajv still resolves the `#/components/...` refs inside it.
+		const ajv = new Ajv2020({ strict: false });
+		ajv.addSchema(bundle, "openapi");
+
+		const operations: string[] = [];
+		const rejected: string[] = [];
+		for (const [route, methods] of Object.entries(bundle.paths)) {
+			for (const method of Object.keys(methods)) {
+				const pointer = [
+					"paths",
+					route,
+					method,
+					"responses",
+					"200",
+					"content",
+					"application/json",
+					"schema",
+				]
+					.map((part) => part.replaceAll("~", "~0").replaceAll("/", "~1"))
+					.join("/");
+				const validate = ajv.getSchema(`openapi#/${pointer}`);
+				if (!validate) {
+					continue;
+				}
+				const operation = `${method.toUpperCase()} ${route}`;
+				operations.push(operation);
+				if (!validate(FAILURE_ENVELOPE)) {
+					rejected.push(`${operation}: ${ajv.errorsText(validate.errors)}`);
+				}
+			}
+		}
+
+		expect(operations.length).toBeGreaterThan(0);
+		expect(rejected).toEqual([]);
 	});
 });
