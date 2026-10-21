@@ -840,6 +840,9 @@ class TouchDesignerApiService(IApiService):
 		if isinstance(item, (int, float, str, bool)) or item is None:
 			return item
 
+		if isinstance(item, (list, tuple, dict)):
+			return self._process_method_result(item)
+
 		if hasattr(td, "op") and callable(td.op):
 			node = td.op(item)
 			if node and hasattr(node, "valid") and node.valid:
