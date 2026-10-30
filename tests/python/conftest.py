@@ -101,6 +101,7 @@ class FakeTd:
 _fake_td = FakeTd()
 _td_module = types.ModuleType("td")
 _td_module.op = lambda path: _fake_td.op(path)
+_td_module.ops = lambda *paths: [n for p in paths if (n := _fake_td.op(p))]
 sys.modules.setdefault("td", _td_module)
 
 
