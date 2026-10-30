@@ -477,6 +477,30 @@ describe("TouchDesigner Client E2E Tests", () => {
 		expect(execResponse.data.result).toBe(1);
 	});
 
+	test("Python script execution returns nested results unchanged", async () => {
+		// Before #245 every nested dict/list reached td.op(), which froze
+		// TouchDesigner or swapped in an unrelated operator (#244). The value
+		// also carries a real operator path, which must stay a plain string.
+		const expected = {
+			a: {
+				component: SANDBOX_PATH,
+				nested: [{ id: 1, name: "synthetic" }, [2, 3]],
+				select: "u v",
+			},
+		};
+		const execResponse = await tdClient.execPythonScript<{
+			result: unknown;
+		}>({
+			script: `result = ${JSON.stringify(expected)}`,
+		});
+
+		expect(execResponse).toBeDefined();
+		if (!execResponse.success) {
+			throw new Error(`failed: ${execResponse.error}`);
+		}
+		expect(execResponse.data.result).toEqual(expected);
+	});
+
 	test("Node error check should return error lists", async () => {
 		const response = await tdClient.getNodeErrors({
 			nodePath: SANDBOX_PATH,
