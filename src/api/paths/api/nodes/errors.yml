@@ -25,7 +25,9 @@ get:
                 type: boolean
                 description: Whether the operation was successful
               data:
-                $ref: ../../../index.yml#/components/schemas/TdNodeErrorReport
+                anyOf:
+                  - $ref: ../../../index.yml#/components/schemas/TdNodeErrorReport
+                  - type: "null"
               error:
                 type: [string, "null"]
                 description: Error message if the operation was not successful
